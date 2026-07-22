@@ -23,6 +23,19 @@
       "category": "architecture"
     },
     {
+      "name": "graphql",
+      "source": "./plugins/graphql",
+      "description": "GraphQL API design guidance and .NET implementation patterns for HotChocolate and GraphQL.NET — schema design, operations, Relay conventions, and performance",
+      "version": "0.1.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["graphql", "hotchocolate", "graphql-dotnet", "api-design", "dotnet"],
+      "category": "api-development"
+    },
+    {
       "name": "refactoring",
       "source": "./plugins/refactoring",
       "description": "Teaches Claude to spot code smells (classic, architectural, and test smells) and apply disciplined, behavior-preserving refactoring",

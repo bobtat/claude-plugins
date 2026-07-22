@@ -1,0 +1,11 @@
+{
+  "name": "graphql",
+  "version": "0.1.0",
+  "description": "GraphQL API design guidance and .NET implementation patterns for HotChocolate and GraphQL.NET — schema design, operations, Relay conventions, and performance",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": ["graphql", "hotchocolate", "graphql-dotnet", "api-design", "dotnet"]
+}
