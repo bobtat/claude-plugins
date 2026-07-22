@@ -20,6 +20,7 @@ Then install a plugin:
 
 | Plugin | Description |
 | ------ | ----------- |
+| [ddd](plugins/ddd) | Domain-driven design guidance for C# applications — aggregates, value objects, domain events, bounded contexts, and module structure |
 | [refactoring](plugins/refactoring) | Teaches Claude to spot code smells (classic, architectural, and test smells) and apply disciplined, behavior-preserving refactoring |
 
 ## Repository layout

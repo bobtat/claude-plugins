@@ -1,0 +1,11 @@
+{
+  "name": "ddd",
+  "version": "0.1.0",
+  "description": "Domain-driven design guidance for C# applications — aggregates, value objects, domain events, bounded contexts, and module structure",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": ["ddd", "domain-driven-design", "csharp", "dotnet", "architecture"]
+}
