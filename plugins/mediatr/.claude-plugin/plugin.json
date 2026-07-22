@@ -1,0 +1,11 @@
+{
+  "name": "mediatr",
+  "version": "0.1.0",
+  "description": "MediatR guidance for in-process messaging in .NET — requests, notifications, pipeline behaviors, registration, and testing",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": ["mediatr", "mediator", "cqrs", "dotnet", "csharp"]
+}

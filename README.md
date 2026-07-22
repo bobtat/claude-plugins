@@ -22,6 +22,7 @@ Then install a plugin:
 | ------ | ----------- |
 | [ddd](plugins/ddd) | Domain-driven design guidance for C# applications — aggregates, value objects, domain events, bounded contexts, and module structure |
 | [graphql](plugins/graphql) | GraphQL API design guidance and .NET implementation patterns for HotChocolate and GraphQL.NET — schema design, operations, Relay conventions, and performance |
+| [mediatr](plugins/mediatr) | MediatR guidance for in-process messaging in .NET — requests, notifications, pipeline behaviors, registration, and testing |
 | [refactoring](plugins/refactoring) | Teaches Claude to spot code smells (classic, architectural, and test smells) and apply disciplined, behavior-preserving refactoring |
 
 ## Repository layout

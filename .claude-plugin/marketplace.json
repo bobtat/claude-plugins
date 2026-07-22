@@ -36,6 +36,19 @@
       "category": "api-development"
     },
     {
+      "name": "mediatr",
+      "source": "./plugins/mediatr",
+      "description": "MediatR guidance for in-process messaging in .NET — requests, notifications, pipeline behaviors, registration, and testing",
+      "version": "0.1.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["mediatr", "mediator", "cqrs", "dotnet", "csharp"],
+      "category": "architecture"
+    },
+    {
       "name": "refactoring",
       "source": "./plugins/refactoring",
       "description": "Teaches Claude to spot code smells (classic, architectural, and test smells) and apply disciplined, behavior-preserving refactoring",
