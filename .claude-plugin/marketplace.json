@@ -1,0 +1,26 @@
+{
+  "name": "bobtat-plugins",
+  "owner": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "metadata": {
+    "description": "bobtat's Claude Code plugins",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "refactoring",
+      "source": "./plugins/refactoring",
+      "description": "Teaches Claude to spot code smells (classic, architectural, and test smells) and apply disciplined, behavior-preserving refactoring",
+      "version": "0.1.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["refactoring", "code-smells", "code-quality", "clean-code"],
+      "category": "code-quality"
+    }
+  ]
+}

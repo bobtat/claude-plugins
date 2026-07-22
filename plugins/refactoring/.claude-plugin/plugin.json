@@ -1,0 +1,11 @@
+{
+  "name": "refactoring",
+  "version": "0.1.0",
+  "description": "Teaches Claude to spot code smells (classic, architectural, and test smells) and apply disciplined, behavior-preserving refactoring",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": ["refactoring", "code-smells", "code-quality", "clean-code"]
+}
