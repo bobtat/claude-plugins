@@ -60,6 +60,19 @@
       "license": "MIT",
       "keywords": ["refactoring", "code-smells", "code-quality", "clean-code"],
       "category": "code-quality"
+    },
+    {
+      "name": "testing",
+      "source": "./plugins/testing",
+      "description": "Teaches Claude to write and review tests worth having — behavior-focused design, disciplined test doubles, right-sized scope, and characterization tests for legacy code",
+      "version": "0.1.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["testing", "unit-tests", "test-doubles", "tdd", "test-quality"],
+      "category": "code-quality"
     }
   ]
 }
