@@ -5,11 +5,27 @@ on, assembled as background for designing a short-term / long-term memory system
 
 **Compiled:** 2026-07-30
 
-**Confidence note:** The two primary surveys ([Storage-to-Experience](#surveys),
-[Mechanisms & Frontiers](#surveys)) and *The AI Hippocampus* were read in full.
-Everything else was located via search and is summarised from abstracts and search
-results. Single-paper claims below are pointers worth following, not verified
-findings. Benchmark numbers from vendor and blog sources are flagged where used.
+## Provenance and confidence
+
+**No source in this document was read in full except the A-Mem paper's main body
+(pp. 1–12; its appendices were not read).** Everything else falls into one of the
+tiers below. This matters for how much weight to put on any given claim.
+
+| Tier | Sources | What this means |
+|---|---|---|
+| **A — read directly** | A-Mem, pp. 1–12 | Text, tables, and ablation figures seen firsthand. Appendices (baselines, prompt templates, extra metrics, per-category *k*) not read. |
+| **B — machine summary of the source** | *From Storage to Experience* (HTML full text), *The AI Hippocampus* (PDF), *Memory for Autonomous LLM Agents* (**abstract page only** — the full paper was never fetched) | A summarising model read these and returned prose; the underlying text was never inspected. No methodology, tables, or citations verified. Unknown what the summariser dropped. |
+| **C — search-result snippets** | Every other paper cited: CoALA, HippoRAG, Generative Agents, MemGPT, MemoryBank, Voyager, all forgetting papers, all safety papers, all benchmarks | Titles, abstracts fragments, and search-engine summaries only. Treat as *pointers to follow*, not findings. |
+| **D — unverified recall** | §1 (Human memory foundations) in its entirety | Written from model training knowledge, not from sources consulted here. All dates and attributions — Teyler & DiScenna 1986, Bjork's storage/retrieval-strength distinction, Nader 2000, Anderson/Bjork/Bjork 1994, etc. — are unverified. Canonical textbook material, so likely correct, but check before citing. |
+
+**Additional caveat on recency.** The compiling model's knowledge cutoff is May
+2026. Most papers cited here carry 2601–2607 arXiv identifiers, i.e. they postdate
+that cutoff entirely. The newest and most frequently cited items in this document
+therefore rest on the *thinnest* evidence — snippets alone, with no background
+knowledge to sanity-check them against. Verify anything from 2026 before relying
+on it, including that the paper exists as described.
+
+Benchmark numbers from vendor and blog sources are flagged inline where used.
 
 ---
 
