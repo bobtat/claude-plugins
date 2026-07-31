@@ -1,0 +1,11 @@
+{
+  "name": "testing",
+  "version": "0.1.0",
+  "description": "Teaches Claude to write and review tests worth having — behavior-focused design, disciplined test doubles, right-sized scope, and characterization tests for legacy code",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": ["testing", "unit-tests", "test-doubles", "tdd", "test-quality"]
+}

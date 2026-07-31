@@ -24,6 +24,7 @@ Then install a plugin:
 | [graphql](plugins/graphql) | GraphQL API design guidance and .NET implementation patterns for HotChocolate and GraphQL.NET — schema design, operations, Relay conventions, and performance |
 | [mediatr](plugins/mediatr) | MediatR guidance for in-process messaging in .NET — requests, notifications, pipeline behaviors, registration, and testing |
 | [refactoring](plugins/refactoring) | Teaches Claude to spot code smells (classic, architectural, and test smells) and apply disciplined, behavior-preserving refactoring |
+| [testing](plugins/testing) | Teaches Claude to write and review tests worth having — behavior-focused design, disciplined test doubles, right-sized scope, and characterization tests for legacy code |
 
 ## Repository layout
 
