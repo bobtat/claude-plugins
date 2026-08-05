@@ -13,6 +13,7 @@ Adds an auto-triggering knowledge skill, a spec-driven writing pipeline, a repo-
 - **Scope selection** — unit (solitary vs. sociable), integration, contract, and E2E: which slice can actually catch which defect, pyramid vs. testing trophy and how to tell which your system needs, suite organization, and speed budgets
 - **Acceptance criteria and outside-in** — the story template, Given/When/Then and how it maps onto arrange/act/assert, ubiquitous language, when Gherkin tooling earns its cost and when it's pure overhead, and why most scenarios should become unit tests rather than end-to-end tests
 - **Legacy-code workflow** — characterization tests, seam discovery, the minimal mechanical changes that make untestable code testable, and sequencing tests before a risky change
+- **Browser and component testing** — selector strategy and why the DOM is an implementation detail, retry-ability and why bare waits are almost never right, what counts as an assertion in a retrying API, component vs. E2E, and the network as the boundary
 - **An anti-pattern catalog** — thirteen anti-patterns with the fix for each, and for every one, when the thing that looks like it is actually correct
 - **A sources file** — where each idea comes from, which parts are the plugin's own synthesis, and what it knowingly doesn't cover
 - **`/test-review`** — audits tests (a path, or the current branch's changed tests) against all of the above and reports findings by severity
@@ -85,6 +86,26 @@ Two design constraints do most of the work:
 The audit diagnoses; it doesn't treat. It ends by handing off to `/test-review` for per-test depth and `/test-write` for the gaps whose intended behavior is known.
 
 **What it cannot tell you:** whether the behavior is *correct*. At repo scale there is no description of what the system should do, so there is no oracle — the audit reports whether the suite would notice a change, and says so in every report. A well-protected module can be well-protected wrong.
+
+## Browser Suites Get Their Own Patterns
+
+A generic TypeScript sweep is not just imprecise against a Cypress suite — it is wrong in a way that fails silently. Measured against a Cypress fixture:
+
+| Signal | Generic TS/JS pattern | Actually present |
+|---|---|---|
+| Assertions | **0** | `.should()` / `.and()` throughout |
+| Sleeps | **0** | `cy.wait(500)` |
+| Network doubles | **0** | `cy.intercept()` |
+
+The first row is the dangerous one. The audit's cheapest high-value check compares test declarations against assertions to find tests that assert nothing — and since idiomatic Cypress contains almost no `expect(`, that check would flag **every file in the suite**. So the sweep detects the framework first and switches pattern sets, and `references/ui-testing.md` carries the criteria for reading them.
+
+Three things that reference gets right which a generic test-quality rubric doesn't:
+
+- **Selector coupling is the UI form of testing implementation.** A CSS class is as much an internal as a private field. Cypress and Playwright independently document the same prescription — `data-*` attributes and user-facing queries over CSS and XPath — so a suite full of `cy.get('.btn-primary')` is failing its own tooling's advice, not a matter of taste. The **brittle-to-stable selector ratio** is the best single fragility metric available without reading anything.
+- **A bare `cy.get(...)` chain is not assertion-free.** It fails when the element never appears, so it asserts existence — an existence-only smoke test, which is a real but much weaker finding than a vacuous test. Getting this distinction wrong in either direction produces a useless report.
+- **End-to-end tests can't be attributed to a module.** One `checkout.cy.ts` traverses routing, auth, cart, pricing, and payment. The audit scores them as *journey-level* protection that never raises any module's score — so a repo whose entire suite is browser E2E correctly reads as near-zero module protection plus a handful of covered journeys.
+
+`/test-review` gained the same vocabulary, and `/test-write` needed none: its outside-in rule — one outer test proves the wiring, the remaining scenarios become fast tests underneath — is already the corrective for an E2E-heavy suite.
 
 ## Why It Emphasizes Fakes Over Mocks
 
@@ -174,6 +195,7 @@ testing/
     │   │   ├── test-scope.md                     # Unit/integration/contract/E2E, pyramid vs trophy, speed budgets
     │   │   ├── legacy-code.md                    # Characterization tests, seams, sprout & wrap
     │   │   ├── bdd.md                            # Story template, GWT, outside-in, when Gherkin pays for itself
+    │   │   ├── ui-testing.md                     # Selectors, retry-ability, component vs E2E (Cypress, Playwright)
     │   │   ├── anti-patterns.md                  # Thirteen anti-patterns, fixes, and their legitimate forms
     │   │   └── sources.md                        # Bibliography, own-synthesis boundary, known gaps
     │   └── examples/
@@ -188,7 +210,7 @@ testing/
     ├── spec-test-verification/SKILL.md           # /test-write 5  — traceability audit, suite run, failure triage
     └── test-auditing/
         ├── SKILL.md                              # /test-audit    — risk model, systemic vs specific, honesty rules
-        └── references/detection-patterns.md      # Sweep patterns per ecosystem; coverage + mutation tooling
+        └── references/detection-patterns.md      # Sweep patterns per ecosystem and for browser suites; coverage + mutation tooling
 ```
 
 ## Related Plugins
