@@ -29,6 +29,12 @@ When a described behavior *is* available for some area, that is `/test-write`'s 
 
 The failure mode of an audit is overclaiming, and it is much more damaging than an incomplete audit — a report that says "well covered" about a module full of vacuous assertions actively removes the pressure to fix it.
 
+### Where the module attribution breaks down
+
+The risk map assumes protection can be attributed to a module. For unit and narrow-integration tests that holds. **For browser end-to-end tests it largely does not** — one `checkout.cy.ts` traverses routing, auth, cart, pricing, and payment, so it cannot be scored as protection for any one of them.
+
+This is a real limit, not a pattern gap. Handle it by scoring E2E separately as **journey-level protection** — list the journeys covered, and do not let their existence raise any module's protection score. A repository whose entire suite is browser E2E has, by this model, near-zero module-level protection and a handful of covered journeys. That is the correct reading and usually the most useful thing the audit can say about such a repo.
+
 ## Why Not Just Run a Coverage Tool
 
 Because coverage measures which lines ran, not whether anything was verified. `references/test-design.md` puts it plainly: a suite with no assertions can reach 100%.
@@ -55,6 +61,8 @@ Count test files and, approximately, tests.
 ### Phase 1 — Mechanical sweep
 
 Ripgrep across the test tree. No reading, no judgment — counts and file lists per signal. Patterns per ecosystem are in `references/detection-patterns.md`.
+
+**Identify the frameworks before sweeping.** A browser suite needs different patterns, and the generic ones fail silently against it: idiomatic Cypress contains almost no `expect(`, so a generic assertion sweep returns zero and the assertion-free heuristic then flags the entire suite. `references/detection-patterns.md` has the browser section; the `testing` skill's `references/ui-testing.md` has the criteria for interpreting it.
 
 Every signal maps to an entry in `references/anti-patterns.md`, which is where the interpretation lives:
 
@@ -107,6 +115,8 @@ Give each agent the area path, the ranking evidence for it, and the aggregate ch
 On the main thread, where the whole picture is visible.
 
 1. **Diagnose suite shape.** Use the method already in `references/test-scope.md`: read what the code *is* — dense conditional logic and calculations imply a pyramid; thin forwarding controllers, mapping, and ORM queries imply a trophy — then compare against the actual slice counts. Report the mismatch, not the ratio. An inverted pyramid on a logic-rich domain is a systemic finding worth more than any individual test defect.
+
+   **Split browser suites by slice before counting.** `cypress/component/` costs near a unit test; `cypress/e2e/` costs seconds and fails for unrelated reasons. Counting them together turns a healthy component-heavy suite and a pathologically E2E-heavy one into the same number.
 2. **Verify before reporting.** Downgrade any "this test cannot fail" claim to `suspected` unless it was executed or is unambiguous on the page (no assertion at all, an assertion on a literal, an empty body). Check the **"actually correct when"** clause in `references/anti-patterns.md` for every pattern before reporting it — at repo scale, a false-positive rate that would be tolerable across ten findings becomes noise across a thousand files, and one confidently wrong finding causes the whole report to be discounted.
 3. **Separate systemic from specific**, below.
 4. **Write the report.**

@@ -69,6 +69,7 @@ Pick the cheapest scope that can actually observe the outcome. "Unit" does not m
 | Query correctness, ORM mapping, schema, transaction/rollback semantics | Integration — real database in a container | Real DB, faked third parties | < 1 s each |
 | HTTP contract: routing, status codes, serialization, auth | Integration — in-process app host | Real app, faked externals | < 1 s each |
 | Agreement with a service you don't control | Contract test against a recorded/verified spec | The real shape, not your guess | — |
+| What a user must *see* — component states, validation display, accessibility | Component test — mounted, no server | Network stubbed | 10–100 ms |
 | One critical path works wired together for real | End-to-end — very few, only the money paths | Nothing faked | Seconds |
 
 Mocking a database and asserting the SQL string tests your string-building, not your query. Either use the real database in the integration slice or don't claim the query works. Full guidance on the pyramid/trophy trade-off, suite organization, and speed budgets: `references/test-scope.md`.
@@ -181,6 +182,7 @@ Loaded by the commands, one phase at a time; each is also useful alone.
 - **`references/test-scope.md`** — Unit (solitary vs sociable), integration, contract, E2E; pyramid vs. trophy; suite organization; speed budgets.
 - **`references/legacy-code.md`** — Characterization tests, seam discovery, Feathers' change algorithm, sprout and wrap, sequencing a risky change.
 - **`references/bdd.md`** — Acceptance criteria and outside-in development: the story template, Given/When/Then and how it maps to arrange/act/assert, ubiquitous language, when Gherkin tooling earns its cost and when it doesn't, and BDD-specific anti-patterns.
+- **`references/ui-testing.md`** — Browser and component tests: selector strategy and why the DOM is an implementation detail, retry-ability and why bare waits are almost never right, what counts as an assertion in a retrying API, component vs. E2E, isolation, and the network as the boundary. Cypress, Playwright, and Testing Library agree on most of it; the file cites all three.
 - **`references/anti-patterns.md`** — Each row of the index above, with the "actually correct when" clause for each.
 - **`references/sources.md`** — Provenance for every claim, which parts are this plugin's own synthesis, and what is knowingly not covered. Consult when a recommendation here conflicts with a codebase's convention and you need to know how much weight it carries.
 
