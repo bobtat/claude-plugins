@@ -37,6 +37,14 @@ Two of its prescriptions are adopted with a stated distinction rather than whole
 **Kent C. Dodds — [Write tests. Not too many. Mostly integration.](https://kentcdodds.com/blog/write-tests)**
 The testing trophy: static analysis, unit, integration, end-to-end, with the weight on integration because it "strike[s] a great balance on the trade-offs between confidence and speed/expense." Note the static-analysis base layer — the trophy is four layers, not a re-proportioned three.
 
+**Michael Feathers — *Getting Empirical about Refactoring*** ([StickyMinds](https://www.stickyminds.com/article/getting-empirical-about-refactoring))
+The churn-vs-complexity view: read version-control history to find refactoring candidates, with the **high-churn × high-complexity** quadrant as the one that matters — code that changes constantly *and* is hard to understand, where conditionals get hacked into conditionals. The risk model in `test-auditing` is this crossed with test protection.
+
+**The primary URL returned HTTP 403 from this environment.** The quadrant semantics above are taken from search-surfaced excerpts of the article and from secondary accounts of Feathers' talks on the same material, not from the article itself. Treat the paraphrase as second-hand, and note this is a different work from *Working Effectively with Legacy Code* cited below.
+
+**Ernesto Tagwerker — [Churn vs. Complexity vs. Code Coverage](https://www.fastruby.io/blog/code-quality/churn-vs-complexity-vs-coverage.html)**
+Adds test coverage as a third dimension to Feathers' two, and frames it as precisely the question `/test-audit` exists to answer: "Should I refactor this module? Should I increase test coverage before I refactor this module?" The high-churn / high-complexity / **low-coverage** combination is the top-risk cell — "refactoring modules that lack proper tests can quickly turn into a nightmare." Implemented as the Ruby tool Skunk (RubyCritic + SimpleCov). Only the three-dimensional framing is used here; the tool is not.
+
 **Andre Hora & Romain Robbes — [Are Coding Agents Generating Over-Mocked Tests? An Empirical Study](https://arxiv.org/abs/2602.00409)** (MSR '26, arXiv:2602.00409, January 2026)
 1,254,878 commits from 2025 across 2,168 TypeScript/JavaScript/Python repositories; 48,563 commits authored or co-authored by Claude Code, Copilot, or Cursor. Their closing recommendation — put mocking guidance in agent configuration files — is the empirical case for this plugin existing.
 
@@ -78,23 +86,26 @@ Not attributable to a source above — stated here so it isn't mistaken for rece
 - The "hook for lifecycle, helper for data" rule of thumb.
 - The four-step handling of vocabulary collisions (reason precisely, write in the codebase's vocabulary, describe behavior when ambiguity matters, don't let a label authorize the wrong double).
 - The workflow orderings and commit sequencing (`test:` → `refactor:` → `feat:`/`fix:`).
+- In `test-auditing`: **defect history as the primary ranking signal** (Feathers and Tagwerker rank on churn, complexity, and coverage — using `fix`/`hotfix`/`revert` commits as a risk input is this plugin's addition), the coverage × assertion-quality cross-reference table, and the systemic-vs-specific reporting split. The sweep signal set is derived from `anti-patterns.md`, but the claim that these particular greps rank areas usefully is untested — see the verification gaps below.
 - All code examples, which are hand-written and illustrative. None were compiled or executed.
 
 ## Not Yet Incorporated
 
 Content gaps:
 
-- **Mutation testing** is recommended in two places as a better signal than coverage, without a source or concrete tooling guidance (Stryker, PIT, mutmut).
+- **Mutation testing** — `test-auditing/references/detection-patterns.md` now names concrete tooling per ecosystem (Stryker.NET, StrykerJS, mutmut, PIT, go-mutesting) and scopes runs to a single module, closing the tooling half of this gap. The underlying claim — that mutation score is a better measure of protection than coverage — still rests on **no consulted source**; it is taken as received wisdom throughout this skill.
 - **Contract testing** is named as a slice in `test-scope.md` without a source or a worked example — the only slice of the five with neither.
 - **Collaborative scenario discovery** — Specification by Example and Example Mapping, named above but not consulted.
-- **Languages.** Examples cover C#, Python, and TypeScript. Nothing for Go, Java, Rust, or Ruby; Go is the case where a naming convention genuinely differs (`go test` only discovers `TestXxx`), which an earlier draft got wrong.
+- **Languages.** Worked examples cover C#, Python, and TypeScript. Nothing for Go, Java, Rust, or Ruby; Go is the case where a naming convention genuinely differs (`go test` only discovers `TestXxx`), which an earlier draft got wrong. `test-auditing/references/detection-patterns.md` adds Go and Java *detection* patterns and tooling, which is not the same as guidance — none of those patterns has been run against a real repository in either language.
 - **Async and concurrent code** beyond the flakiness material, and **fixtures containing sensitive data**, are not covered at all.
 
 Verification gaps — these are about confidence in what is here, not missing content:
 
 - **No code example has been compiled or run** except the refund arithmetic in `examples/outside-in-from-a-story.md`, which was executed and verified case by case. An adversarial review of the first four examples found a hard compile error, a fabricated coverage transcript, a property test that could not detect what the text claimed, and a call to a method that did not exist. Those are fixed; the process gap is not.
 - **Skill triggering has never been measured.** Whether the `description` fires when intended, or over-fires on unrelated senses of "test," is unknown.
-- **`/test-review` has never been run** against a real repository.
+- **None of the three commands has been run against a real repository.** `/test-review`, `/test-write`, and `/test-audit` are all unexercised end to end. `/test-audit` is the most exposed: a wrong sweep pattern produces a confidently wrong map rather than an obvious failure, and its assumption that a mechanical pass can rank areas usefully is untested.
+
+  The sweep patterns themselves are the one exception — every pattern in `test-auditing/references/detection-patterns.md` was **executed against a synthetic fixture** covering C#, TypeScript, Python, and Go, and the match counts checked against hand-verified expectations. That pass caught two real defects: `\[Fact\]` missed `[Fact(Skip = "…")]`, and `\b(it|test)\s*\(` missed `it.skip` and `it.each` — each of which silently undercounts the test denominator used to find assertion-free files. Java patterns and the git-history recipes were not fixture-tested. A synthetic fixture is not a real suite: it proves the regexes match what they claim, not that the signals rank anything usefully.
 - **The gate is an untested hypothesis.** The claim that a stop-and-justify trigger at the mocking-library call outperforms prose guidance is a plausible mechanism and the plugin's headline design choice, but it is unmeasured. If it doesn't work, the plugin's central remedy doesn't work.
 
 Known divergences from the adversarial review, kept deliberately:

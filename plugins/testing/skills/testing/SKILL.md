@@ -156,14 +156,23 @@ A test whose expected value was copied from the code under test cannot fail. And
 
 ## Additional Resources
 
+### Choosing a Command
+
+| You have | Use |
+|---|---|
+| Specific test files, or a branch's changed tests | **`/test-review`** — per-test defects, capped at ~10 findings |
+| A described behavior — ticket, PR, spec, paragraph | **`/test-write`** — tests of that description |
+| A whole repository and no idea where it's weak | **`/test-audit`** — a risk-ranked map, then drill down with the other two |
+
 ### Workflow Skills
 
-Loaded by `/test-write`, one phase at a time; each is also useful alone.
+Loaded by the commands, one phase at a time; each is also useful alone.
 
 - **`behavior-extraction`** — a ticket, PR, or paragraph → numbered behaviors in Given/When/Then, anchored to quotes, plus the register of what the description leaves unspecified.
 - **`test-planning`** — behavior spec + recon → cases, coverage depth, scope, the adversarial critique charter, and the user gate.
 - **`spec-test-writing`** — scaffolding before fan-out, disjoint file ownership, evidence over claims, adversarial code review.
 - **`spec-test-verification`** — traceability audited both ways, full-suite run, and failure triage that distinguishes a wrong test from wrong code.
+- **`test-auditing`** — repository-scale assessment: where protection is weakest relative to what it guards, found by mechanical sweep and a churn/defect risk model rather than by reading everything. Carries `references/detection-patterns.md` (per-ecosystem sweep patterns, coverage and mutation tooling).
 
 ### Reference Files
 

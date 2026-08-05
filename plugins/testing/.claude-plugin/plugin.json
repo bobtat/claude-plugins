@@ -1,11 +1,11 @@
 {
   "name": "testing",
-  "version": "0.2.0",
-  "description": "Teaches Claude to write and review tests worth having — behavior-focused design, disciplined test doubles, right-sized scope, and a plan-gated pipeline that turns a ticket or PR into tests of the described behavior",
+  "version": "0.3.0",
+  "description": "Teaches Claude to write, review, and audit tests worth having — behavior-focused design, disciplined test doubles, a plan-gated pipeline that turns a ticket or PR into tests of the described behavior, and a repo-scale map of where test protection is weakest",
   "author": {
     "name": "bobtat",
     "email": ""
   },
   "license": "MIT",
-  "keywords": ["testing", "unit-tests", "test-doubles", "tdd", "bdd", "acceptance-criteria", "test-quality"]
+  "keywords": ["testing", "unit-tests", "test-doubles", "tdd", "bdd", "acceptance-criteria", "test-quality", "test-coverage", "mutation-testing"]
 }
