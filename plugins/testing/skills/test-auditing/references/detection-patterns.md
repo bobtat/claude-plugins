@@ -141,6 +141,71 @@ Snapshots over a few hundred lines are not reviewed, so their updates are reflex
 
 Compare production directories against the test tree by name. Report directories with substantial code and no test counterpart — crossed with the risk ranking, an untested high-churn module is the top of the map.
 
+## Browser and Component Suites (Cypress, Playwright)
+
+**Detect these before sweeping, and switch patterns if found.** The generic TS/JS patterns above are wrong for a Cypress suite in ways that fail silently — most importantly, idiomatic Cypress contains almost no `expect(`, so the generic assertion pattern reports **zero assertions across the whole suite** and the assertion-free heuristic then flags every file. Criteria for interpreting all of this are in the `testing` skill's `references/ui-testing.md`.
+
+```bash
+fd -e cy.ts -e cy.tsx -e cy.js | head; test -f cypress.config.ts && echo "cypress"
+fd -e spec.ts -e spec.js -p 'e2e|tests' | head; test -f playwright.config.ts && echo "playwright"
+```
+
+### Assertions — the correction that matters
+
+```bash
+rg -c '\.should\(|\.and\(|expect\(' "$T"        # Cypress: .should/.and are the assertion forms
+rg -c 'await expect\(|expect\(' "$T"            # Playwright: web-first assertions
+```
+
+A Cypress test whose body is only `cy.get(...)` / `.click()` chains still asserts *existence*, because those commands fail when the element never appears. Count such files as **existence-only**, not assertion-free — they are smoke tests, which is a different finding from a vacuous test.
+
+```bash
+# Non-retrying Playwright assertions — looks equivalent, waits for nothing
+rg -c 'expect\(await ' "$T"
+```
+
+### Waiting
+
+```bash
+rg -c 'cy\.wait\([0-9]|waitForTimeout\(' "$T"     # bare waits — the anti-pattern
+rg -c "cy\.wait\(['\"]@" "$T"                     # aliased waits — the correct form
+rg -c 'cy\.clock\(|page\.clock' "$T"              # controlled time — a good sign
+```
+
+Report these as a **ratio**. Bare waits are Cypress's own named anti-pattern; aliased waits are its prescribed fix, so the split says whether the suite knows the difference.
+
+### Selector fragility — the best single UI metric
+
+```bash
+rg -c "cy\.get\(['\"][.#]|page\.locator\(['\"][.#]" "$T"                 # brittle: CSS class / id
+rg -c "cy\.get\(['\"]\[data-|getByTestId\(" "$T"                         # stable: test-id contract
+rg -c 'getByRole\(|getByLabel\(|getByText\(|cy\.contains\(' "$T"         # best: user-facing
+```
+
+The **brittle-to-stable ratio** predicts how much of the suite goes red on the next redesign, and it is the strongest fragility signal available without reading anything. Both frameworks document the same prescription (`ui-testing.md`), so a high brittle count is a finding against the project's own tooling's advice, not a matter of taste.
+
+### `.only`, and the rest
+
+```bash
+rg -c '\b(it|test|describe|context)\.only\b' "$T"      # suite-wide outage; report separately
+rg -c 'cy\.intercept\(|cy\.stub\(|cy\.spy\(|page\.route\(' "$T"   # network doubles
+rg -c 'cy\.session\(|storageState' "$T"                # cached auth setup — a good sign
+rg -c 'afterEach\(|after\(' "$T"                       # cleanup-after, against Cypress's advice
+```
+
+**Report `.only` separately from `.skip`, and rank it higher.** A committed `.only` silently reduces a file to one test while CI stays green — it is invisible protection loss, where `.skip` at least reads as a disabled test.
+
+### Slice classification
+
+Do not count a browser suite as one slice. The split changes the shape diagnosis completely:
+
+```bash
+rg --files cypress/component 2>/dev/null | wc -l      # component — near-unit cost
+rg --files cypress/e2e cypress/integration 2>/dev/null | wc -l   # browser E2E — seconds each
+```
+
+`cypress/integration/` is the pre-v10 layout; a repo still using it is likely on an old major version, which is worth noting on its own.
+
 ## Risk Inputs from Git
 
 ```bash

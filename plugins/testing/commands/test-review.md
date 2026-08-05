@@ -15,7 +15,7 @@ allowed-tools: Bash(git diff:*), Bash(git status:*), Bash(git log:*), Bash(git m
 
 ## Task
 
-Audit test quality. **Load the `testing` skill first** and use its references as the criteria for this review — `references/anti-patterns.md` for the catalog, `references/test-doubles.md` for double misuse, `references/test-design.md` for naming/assertion/case-selection standards, and `references/test-scope.md` for slice mismatches.
+Audit test quality. **Load the `testing` skill first** and use its references as the criteria for this review — `references/anti-patterns.md` for the catalog, `references/test-doubles.md` for double misuse, `references/test-design.md` for naming/assertion/case-selection standards, and `references/test-scope.md` for slice mismatches. When the tests drive a browser or mount components, also load `references/ui-testing.md`; several checks below read differently against a retrying API.
 
 ### Step 1 — Determine scope
 
@@ -41,6 +41,14 @@ For every test in scope:
 7. **Is it deterministic?** Real clock, `sleep`, unseeded randomness, unawaited async work, network access, shared mutable state, order dependence.
 8. **Is the scope right?** Mocked database asserting SQL; business arithmetic verified through HTTP; a rule tested end-to-end that a unit test would catch.
 9. **Are cases missing?** Against the production code: untested guard clauses and error branches, and missing boundaries (empty, zero, one, at-limit, over-limit, absent). Name the specific untested behavior, not "needs more coverage."
+10. **For browser and component tests only** — the defect classes that dominate UI suites, per `references/ui-testing.md`:
+    - **Selector coupling.** `cy.get('.btn-primary')`, XPath, `nth-child` — these break on any restyle. Role/label queries or `data-*` test ids don't. Both Cypress and Playwright document this as an anti-pattern, so it's a finding against the project's own tooling's advice.
+    - **Bare waits.** `cy.wait(500)`, `page.waitForTimeout(...)` instead of an aliased route, an event, or a retrying assertion.
+    - **Non-retrying assertions.** `expect(await locator.isVisible()).toBe(true)` looks equivalent to `await expect(locator).toBeVisible()` and waits for nothing — a common flake source.
+    - **Committed `.only`.** Silently reduces a file to one test while CI stays green. Report it above `.skip`.
+    - **Scope.** A business rule verified through the browser that a unit or component test would catch, or five acceptance scenarios turned into five E2E tests where one outer test plus fast tests underneath would do.
+
+    **Do not report a Cypress test as assertion-free because it has no `expect(`.** `.should()` and `.and()` are the assertion forms, and a bare `cy.get(...)` chain still asserts existence — that makes it an existence-only smoke test, which is a different and much weaker finding than a test that asserts nothing.
 
 ### Step 3 — Verify before reporting
 

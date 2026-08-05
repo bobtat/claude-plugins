@@ -37,6 +37,15 @@ Two of its prescriptions are adopted with a stated distinction rather than whole
 **Kent C. Dodds — [Write tests. Not too many. Mostly integration.](https://kentcdodds.com/blog/write-tests)**
 The testing trophy: static analysis, unit, integration, end-to-end, with the weight on integration because it "strike[s] a great balance on the trade-offs between confidence and speed/expense." Note the static-analysis base layer — the trophy is four layers, not a re-proportioned three.
 
+**Cypress — [Best Practices](https://docs.cypress.io/app/core-concepts/best-practices)**
+Source of most of `ui-testing.md`, quoted verbatim: the selector anti-pattern ("using highly brittle selectors that are subject to change") and its fix ("use `data-*` attributes to provide context to your selectors and isolate them from CSS or JS changes"); the waiting anti-pattern ("waiting for arbitrary time periods using `cy.wait(Number)`") and its fix ("use route aliases or assertions to guard Cypress from proceeding until an explicit condition is met"); test independence ("tests should always be able to be run independently from one another **and still pass**"); "only test websites that you control"; and the inverted cleanup rule ("clean up state **before** tests run", because `after` hooks have no guarantee of execution if tests refresh mid-run). Also the documented fact that `cy.get()`, `cy.visit()`, and `cy.request()` carry built-in retry and implicit assertions — which is what makes the "no `expect(` means no assertion" heuristic wrong on Cypress.
+
+**Playwright — [Best Practices](https://playwright.dev/docs/best-practices)**
+The same prescriptions from an independent tool, which is why `ui-testing.md` states them as agreement rather than as one framework's taste: "prefer user-facing attributes to XPath or CSS selectors" because "your DOM can easily change"; `getByRole()` first with test IDs as the explicit-contract fallback; per-test isolation over storage, cookies, and data; "only test what you control"; and web-first assertions, including the specific trap that `expect(await locator.isVisible()).toBe(true)` "won't wait a single second, it will just check the locator is there and return immediately."
+
+**Testing Library — [Guiding Principles](https://testing-library.com/docs/guiding-principles/)**
+"The more your tests resemble the way your software is used, the more confidence they can give you" — attributed there to Kent C. Dodds. The principle underneath the selector ranking in `ui-testing.md`. Note that the page states the principle and the DOM-over-component-instances stance, but does **not** itself lay out the query-priority guidance; the ranking of role/label over test id over CSS is taken from the Cypress and Playwright pages above, not from this one.
+
 **Michael Feathers — *Getting Empirical about Refactoring*** ([StickyMinds](https://www.stickyminds.com/article/getting-empirical-about-refactoring))
 The churn-vs-complexity view: read version-control history to find refactoring candidates, with the **high-churn × high-complexity** quadrant as the one that matters — code that changes constantly *and* is hard to understand, where conditionals get hacked into conditionals. The risk model in `test-auditing` is this crossed with test protection.
 
@@ -86,6 +95,8 @@ Not attributable to a source above — stated here so it isn't mistaken for rece
 - The "hook for lifecycle, helper for data" rule of thumb.
 - The four-step handling of vocabulary collisions (reason precisely, write in the codebase's vocabulary, describe behavior when ambiguity matters, don't let a label authorize the wrong double).
 - The workflow orderings and commit sequencing (`test:` → `refactor:` → `feat:`/`fix:`).
+- In `ui-testing.md`: the **brittle-to-stable selector ratio** as the single best fragility metric for a UI suite; the classification of a bare `cy.get(...)` chain as an **existence-only smoke test** rather than either a real test or an assertion-free one; and the four-level selector ranking as a coupling ordering (the individual preferences are sourced, the ordering is this plugin's).
+- In `test-auditing`: scoring browser end-to-end tests as **journey-level protection** that never raises any module's protection score, because a single E2E test traverses too many modules to be attributed to one.
 - In `test-auditing`: **defect history as the primary ranking signal** (Feathers and Tagwerker rank on churn, complexity, and coverage — using `fix`/`hotfix`/`revert` commits as a risk input is this plugin's addition), the coverage × assertion-quality cross-reference table, and the systemic-vs-specific reporting split. The sweep signal set is derived from `anti-patterns.md`, but the claim that these particular greps rank areas usefully is untested — see the verification gaps below.
 - All code examples, which are hand-written and illustrative. None were compiled or executed.
 
@@ -98,6 +109,7 @@ Content gaps:
 - **Collaborative scenario discovery** — Specification by Example and Example Mapping, named above but not consulted.
 - **Languages.** Worked examples cover C#, Python, and TypeScript. Nothing for Go, Java, Rust, or Ruby; Go is the case where a naming convention genuinely differs (`go test` only discovers `TestXxx`), which an earlier draft got wrong. `test-auditing/references/detection-patterns.md` adds Go and Java *detection* patterns and tooling, which is not the same as guidance — none of those patterns has been run against a real repository in either language.
 - **Async and concurrent code** beyond the flakiness material, and **fixtures containing sensitive data**, are not covered at all.
+- **Visual regression and accessibility testing** are named in `ui-testing.md` only as things a selector assertion might legitimately target. Neither has guidance, tooling, or a source. Selenium and WebdriverIO are not covered at all; `ui-testing.md` generalizes from Cypress and Playwright, which agree with each other and may not represent older tools.
 
 Verification gaps — these are about confidence in what is here, not missing content:
 
@@ -105,7 +117,14 @@ Verification gaps — these are about confidence in what is here, not missing co
 - **Skill triggering has never been measured.** Whether the `description` fires when intended, or over-fires on unrelated senses of "test," is unknown.
 - **None of the three commands has been run against a real repository.** `/test-review`, `/test-write`, and `/test-audit` are all unexercised end to end. `/test-audit` is the most exposed: a wrong sweep pattern produces a confidently wrong map rather than an obvious failure, and its assumption that a mechanical pass can rank areas usefully is untested.
 
-  The sweep patterns themselves are the one exception — every pattern in `test-auditing/references/detection-patterns.md` was **executed against a synthetic fixture** covering C#, TypeScript, Python, and Go, and the match counts checked against hand-verified expectations. That pass caught two real defects: `\[Fact\]` missed `[Fact(Skip = "…")]`, and `\b(it|test)\s*\(` missed `it.skip` and `it.each` — each of which silently undercounts the test denominator used to find assertion-free files. Java patterns and the git-history recipes were not fixture-tested. A synthetic fixture is not a real suite: it proves the regexes match what they claim, not that the signals rank anything usefully.
+  The sweep patterns themselves are the one exception — every pattern in `test-auditing/references/detection-patterns.md` was **executed against synthetic fixtures** covering C#, TypeScript, Python, Go, Cypress, and Playwright, with match counts checked against hand-verified expectations. That pass caught four real defects, each of which would have produced a confidently wrong report rather than a visible failure:
+
+  - Patterns written as markdown table cells needed `\|` to render, but `\|` in a regex is a literal pipe, so every alternation matched nothing.
+  - `\[Fact\]` missed `[Fact(Skip = "…")]`, and `\b(it|test)\s*\(` missed `it.skip` and `it.each` — both undercount the test denominator used to find assertion-free files.
+  - `git log --grep` searches whole commit messages, so a feature commit whose body mentioned "bugs" was classified as a bug fix.
+  - The generic TS/JS assertion pattern returns **zero** against an idiomatic Cypress suite, which would have flagged every file in it as assertion-free.
+
+  Java patterns and the git-history recipes were not fixture-tested. A synthetic fixture is not a real suite: it proves the regexes match what they claim, not that the signals rank anything usefully.
 - **The gate is an untested hypothesis.** The claim that a stop-and-justify trigger at the mocking-library call outperforms prose guidance is a plausible mechanism and the plugin's headline design choice, but it is unmeasured. If it doesn't work, the plugin's central remedy doesn't work.
 
 Known divergences from the adversarial review, kept deliberately:
