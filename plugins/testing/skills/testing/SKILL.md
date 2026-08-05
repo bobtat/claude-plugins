@@ -144,7 +144,26 @@ Writing these wastes effort and creates drag on every future refactor:
 
 Coverage is a diagnostic, not a target: use it to find untested *behaviors*, and treat a chase for a percentage as a way to manufacture tests that assert nothing.
 
+## When the Starting Point Is a Description, Not Code
+
+Everything above assumes you can see the code you are testing. When the starting point is instead a *described* behavior — a ticket, a PR description, acceptance criteria, a paragraph from the user — the job changes: you are checking whether the description is correctly captured in the code, and the code cannot be your source for what the answer should be.
+
+Run **`/test-write`** for that. It extracts a behavior spec from the description before any code is read, plans coverage with a traceability matrix, gets your approval, then writes and audits the tests. The rule it enforces throughout is worth applying even when you are not running the command:
+
+> Expected values come from the description. Where the description is silent, ask — never read the answer out of the implementation.
+
+A test whose expected value was copied from the code under test cannot fail. And a spec-derived test that *does* fail is a finding — the code may not do what was described — never an assertion to weaken until it passes.
+
 ## Additional Resources
+
+### Workflow Skills
+
+Loaded by `/test-write`, one phase at a time; each is also useful alone.
+
+- **`behavior-extraction`** — a ticket, PR, or paragraph → numbered behaviors in Given/When/Then, anchored to quotes, plus the register of what the description leaves unspecified.
+- **`test-planning`** — behavior spec + recon → cases, coverage depth, scope, the adversarial critique charter, and the user gate.
+- **`spec-test-writing`** — scaffolding before fan-out, disjoint file ownership, evidence over claims, adversarial code review.
+- **`spec-test-verification`** — traceability audited both ways, full-suite run, and failure triage that distinguishes a wrong test from wrong code.
 
 ### Reference Files
 
