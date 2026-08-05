@@ -6,7 +6,7 @@ A Claude Code plugin that teaches Claude to write tests worth having — and to 
 
 The premise: a test earns its place by two properties — it **fails when behavior breaks**, and it **stays quiet when behavior doesn't**. Most bad tests fail one of those, usually because they were written against the implementation instead of the behavior. Everything in the plugin serves those two properties.
 
-Adds an auto-triggering knowledge skill, a spec-driven writing pipeline, and two commands:
+Adds an auto-triggering knowledge skill, a spec-driven writing pipeline, a repo-scale audit, and three commands:
 
 - **Test-design fundamentals** — naming that identifies what broke, arrange/act/assert discipline, whole-value assertions, builders over copy-pasted setup, how to choose test cases (happy path → branches → boundaries → equivalence classes), and coverage as a diagnostic rather than a target
 - **A test-double decision framework** — the five doubles and what each couples you to, the query/command distinction that removes most mock bloat, fakes over mocks with contract tests to keep the fake honest, injecting clock/randomness/IO, and reading over-mocking as a production design signal
@@ -17,8 +17,19 @@ Adds an auto-triggering knowledge skill, a spec-driven writing pipeline, and two
 - **A sources file** — where each idea comes from, which parts are the plugin's own synthesis, and what it knowingly doesn't cover
 - **`/test-review`** — audits tests (a path, or the current branch's changed tests) against all of the above and reports findings by severity
 - **`/test-write`** — takes a described behavior (a JIRA ticket, a GitHub PR or issue, a spec file, or free text) and runs a four-phase, plan-gated pipeline that produces tests of *that description*
+- **`/test-audit`** — assesses a whole repository and returns a risk-ranked map of where test protection is weakest relative to what it guards
 
 The guidance is language-agnostic; the five worked examples span C#, Python, and TypeScript deliberately.
+
+### Which command
+
+| You have | Use |
+|---|---|
+| Specific test files, or a branch's changed tests | `/test-review` — per-test defects, capped at ~10 findings |
+| A described behavior — ticket, PR, spec, paragraph | `/test-write` — tests of that description |
+| A whole repository and no idea where it's weak | `/test-audit` — a map, then drill down with the other two |
+
+They compose: the audit finds a weak area, `/test-review` says what's wrong with its tests, `/test-write` writes the ones that are missing.
 
 ## The Description Is the Oracle
 
@@ -47,6 +58,33 @@ For a pull request, this makes the circularity concrete: the oracle is the PR de
 **Phase 5 — Verify.** Traceability audited in both directions, including the check that matters most: does each test actually assert what its behavior's `Then` clause says? Then the **whole** suite runs, and every failure is classified — spec/code mismatch, not-implemented-yet, test defect, environment, or pre-existing. The report names which described behaviors are genuinely protected, which are only nominally covered, and which tests could not be run at all.
 
 Each phase is its own skill, so only the phase in flight occupies context.
+
+## Auditing a Whole Repository
+
+`/test-audit` answers a question neither other command can: **where is this suite weakest relative to what it protects?**
+
+It is deliberately not a bigger `/test-review`. Reviewing a repository file by file produces hundreds of findings nobody acts on, and misses the findings that only exist in aggregate — that the fast slice is 4% of the suite, that 47 files sleep, that the module with the worst bug history has the thinnest tests. None of those are visible one file at a time.
+
+**It does not reimplement coverage tools.** It runs the repo's own, and adds the cross-reference no coverage tool can do alone:
+
+| Coverage | Assertion quality | Reading |
+|---|---|---|
+| Low | — | An honest gap — the tool already found it |
+| High | Strong | Genuinely protected |
+| **High** | **Weak** | **The dangerous cell.** Looks safest, protects least — and only reading finds it |
+
+Five phases: inventory the stack and runner; sweep the test tree mechanically with ripgrep (a five-thousand-file suite cannot be read, and pretending otherwise is how audits lie); rank modules by **risk × weakness**; gate on the user for depth; then deep-read only the selected areas in parallel and synthesize.
+
+The risk half of that ranking is Michael Feathers' churn-vs-complexity view, extended with coverage as a third dimension by Ernesto Tagwerker's Skunk — both credited in `references/sources.md`, including the note that Feathers' original article was unreachable from this environment and the paraphrase is second-hand. The plugin's own addition is **defect history as the primary signal**: `fix`/`hotfix`/`revert` commits per module, which is the closest thing to an oracle available at repo scale. A module that has repeatedly produced bugs and has thin tests is the top of the map by definition, with the evidence attached.
+
+Two design constraints do most of the work:
+
+- **Systemic findings before specific ones.** *"64 test files construct `DateTime.Now` directly; the clock is not injected anywhere in the domain layer"* is one finding with a production-side fix — not 64 findings. A hundred specific findings sharing one cause is one finding reported wrong.
+- **Mutation testing is offered, never assumed.** It is the only measure that answers "would these tests notice a defect," and it can take hours, so it runs on explicit approval and only against the single top-ranked module.
+
+The audit diagnoses; it doesn't treat. It ends by handing off to `/test-review` for per-test depth and `/test-write` for the gaps whose intended behavior is known.
+
+**What it cannot tell you:** whether the behavior is *correct*. At repo scale there is no description of what the system should do, so there is no oracle — the audit reports whether the suite would notice a change, and says so in every report. A well-protected module can be well-protected wrong.
 
 ## Why It Emphasizes Fakes Over Mocks
 
@@ -103,6 +141,13 @@ The commands are explicit:
 /test-write PROJ-455 --bdd            # tests first; the code does not exist yet
 ```
 
+```
+/test-audit                           # the whole repository
+/test-audit src/billing               # scope to a subtree — useful on a monorepo
+/test-audit --no-coverage             # skip running any coverage tool
+/test-audit --mutation                # pre-approve the mutation run on the top module
+```
+
 Claude loads the lean core skill on trigger and pulls in the detailed references and worked examples only when the task needs them. `/test-write` loads its four phase skills one at a time, so a long run does not carry every phase's instructions in context at once.
 
 ## Structure
@@ -111,13 +156,15 @@ Claude loads the lean core skill on trigger and pulls in the detailed references
 testing/
 ├── .claude-plugin/plugin.json
 ├── commands/
-│   ├── test-review.md                            # Test-quality audit
-│   └── test-write.md                             # Orchestrates the spec-driven pipeline and its gates
+│   ├── test-review.md                            # Per-test quality audit of files or a branch diff
+│   ├── test-write.md                             # Orchestrates the spec-driven pipeline and its gates
+│   └── test-audit.md                             # Orchestrates the repo-scale audit and its gates
 ├── agents/
 │   ├── test-planner.md                           # opus  — designs the plan and its traceability matrix
 │   ├── test-plan-critic.md                       # opus  — attacks the plan under a fixed charter
 │   ├── spec-test-author.md                       # sonnet — writes one disjoint slice, reports evidence
-│   └── test-code-critic.md                       # opus  — reviews the written tests against the spec
+│   ├── test-code-critic.md                       # opus  — reviews the written tests against the spec
+│   └── suite-auditor.md                          # sonnet — aggregate protection verdict for one area
 └── skills/
     ├── testing/
     │   ├── SKILL.md                              # Procedure, the mocking gate, scope + doubles tables, anti-pattern index
@@ -135,10 +182,13 @@ testing/
     │       ├── table-driven-parameterized-tests.md   # When a table helps and when it hides meaning (TypeScript)
     │       ├── taming-a-flaky-test.md            # Clock injection and awaited work instead of sleeps (C#)
     │       └── outside-in-from-a-story.md        # Story → criteria → outer test → units (TypeScript)
-    ├── behavior-extraction/SKILL.md              # Phase 1A — ticket/PR/text → behavior spec, no code read
-    ├── test-planning/SKILL.md                    # Phase 3  — cases, depth, scope, critique charter, user gate
-    ├── spec-test-writing/SKILL.md                # Phase 4  — scaffolding, fan-out, evidence, code review
-    └── spec-test-verification/SKILL.md           # Phase 5  — traceability audit, suite run, failure triage
+    ├── behavior-extraction/SKILL.md              # /test-write 1A — ticket/PR/text → behavior spec, no code read
+    ├── test-planning/SKILL.md                    # /test-write 3  — cases, depth, scope, critique charter, user gate
+    ├── spec-test-writing/SKILL.md                # /test-write 4  — scaffolding, fan-out, evidence, code review
+    ├── spec-test-verification/SKILL.md           # /test-write 5  — traceability audit, suite run, failure triage
+    └── test-auditing/
+        ├── SKILL.md                              # /test-audit    — risk model, systemic vs specific, honesty rules
+        └── references/detection-patterns.md      # Sweep patterns per ecosystem; coverage + mutation tooling
 ```
 
 ## Related Plugins
