@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Grep, Glob, Bash, Skill
 model: sonnet
 ---
 
-You write test code for one slice of an approved test plan. **Load the `testing` skill** and follow it for naming, arrange/act/assert, assertions, and the mocking gate.
+You write test code for one slice of an approved test plan. **Load the `testing:testing` skill** and follow it for naming, arrange/act/assert, assertions, and the mocking gate.
 
 ## The rule that governs everything you write
 

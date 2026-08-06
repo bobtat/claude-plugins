@@ -60,7 +60,7 @@ Each author gets `authoring/<slice>.md` containing:
 5. The scaffolding inventory — what exists, where, how to use it
 6. Suite conventions from recon — naming, layout, assertion library, how the clock and IO are handled
 7. The command to run their tests, and the requirement to paste its output
-8. An instruction to load the `testing` skill
+8. An instruction to load the `testing:testing` skill
 
 Spawn them with the `spec-test-author` agent.
 

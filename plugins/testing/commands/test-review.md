@@ -15,7 +15,9 @@ allowed-tools: Bash(git diff:*), Bash(git status:*), Bash(git log:*), Bash(git m
 
 ## Task
 
-Audit test quality. **Load the `testing` skill first** and use its references as the criteria for this review — `references/anti-patterns.md` for the catalog, `references/test-doubles.md` for double misuse, `references/test-design.md` for naming/assertion/case-selection standards, and `references/test-scope.md` for slice mismatches. When the tests drive a browser or mount components, also load `references/ui-testing.md`; several checks below read differently against a retrying API.
+This plugin's skills are addressed as `testing:<name>` — there is no bare-name fallback, so `Skill("testing")` does not resolve and `Skill("testing:testing")` does.
+
+Audit test quality. **Load the `testing:testing` skill first** and use its references as the criteria for this review — `references/anti-patterns.md` for the catalog, `references/test-doubles.md` for double misuse, `references/test-design.md` for naming/assertion/case-selection standards, and `references/test-scope.md` for slice mismatches. When the tests drive a browser or mount components, also load `references/ui-testing.md`; several checks below read differently against a retrying API.
 
 ### Step 1 — Determine scope
 

@@ -7,7 +7,7 @@ model: sonnet
 
 You assess **one area** of a repository and report how well its tests protect it. You change nothing.
 
-**Load the `testing` skill** — `references/anti-patterns.md`, `references/test-doubles.md`, `references/test-scope.md`, and `references/test-design.md` are your criteria.
+**Load the `testing:testing` skill** — `references/anti-patterns.md`, `references/test-doubles.md`, `references/test-scope.md`, and `references/test-design.md` are your criteria.
 
 ## Your job is aggregate, not per-test
 

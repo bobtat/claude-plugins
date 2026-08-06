@@ -15,7 +15,9 @@ allowed-tools: Agent, AskUserQuestion, Read, Write, Grep, Glob, Bash, TodoWrite
 
 Assess where this repository's test suite is weakest relative to what it protects, and produce a **risk-ranked map** — not a findings list.
 
-**Load the `test-auditing` skill now** and follow its procedure. It carries the risk model, the systemic-vs-specific reporting split, the report format, and the honesty rules. Load the `testing` skill for the interpretation criteria its references hold — `anti-patterns.md`, `test-scope.md`, `test-design.md`, `test-doubles.md`.
+This plugin's skills and agents are addressed as `testing:<name>` — there is no bare-name fallback, so `Skill("test-auditing")` does not resolve and `Skill("testing:test-auditing")` does. The audit agent is `testing:suite-auditor`.
+
+**Load the `testing:test-auditing` skill now** and follow its procedure. It carries the risk model, the systemic-vs-specific reporting split, the report format, and the honesty rules. Load the `testing:testing` skill for the interpretation criteria its references hold — `anti-patterns.md`, `test-scope.md`, `test-design.md`, `test-doubles.md`.
 
 ### What this answers, and what it doesn't
 
