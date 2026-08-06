@@ -19,6 +19,7 @@ Adds an auto-triggering knowledge skill, a spec-driven writing pipeline, a repo-
 - **`/test-review`** — audits tests (a path, or the current branch's changed tests) against all of the above and reports findings by severity
 - **`/test-write`** — takes a described behavior (a JIRA ticket, a GitHub PR or issue, a spec file, or free text) and runs a four-phase, plan-gated pipeline that produces tests of *that description*
 - **`/test-audit`** — assesses a whole repository and returns a risk-ranked map of where test protection is weakest relative to what it guards
+- **`/spec-conformance`** — takes a description *and* the code that claims to implement it, and reports per-behavior whether the code conforms, contradicts, or ignores it — with a citation for each and no tests written
 
 The guidance is language-agnostic; the five worked examples span C#, Python, and TypeScript deliberately.
 
@@ -28,13 +29,16 @@ The guidance is language-agnostic; the five worked examples span C#, Python, and
 |---|---|
 | Specific test files, or a branch's changed tests | `/test-review` — per-test defects, capped at ~10 findings |
 | A described behavior — ticket, PR, spec, paragraph | `/test-write` — tests of that description |
-| A whole repository and no idea where it's weak | `/test-audit` — a map, then drill down with the other two |
+| A description *and* the code that claims to implement it | `/spec-conformance` — verdicts on whether they match |
+| A whole repository and no idea where it's weak | `/test-audit` — a map, then drill down with the others |
 
-They compose: the audit finds a weak area, `/test-review` says what's wrong with its tests, `/test-write` writes the ones that are missing.
+They compose: the audit finds a weak area, `/test-review` says what's wrong with its tests, `/spec-conformance` says whether a change did what its ticket promised, and `/test-write` writes the tests that are missing.
+
+`/spec-conformance` and `/test-write` take the same input and answer different questions — *does this PR do what the ticket said?* versus *what tests would prove it?* The first is cheap and reports; the second is expensive and produces a suite. On a PR, run the first, then point the second at what it found missing.
 
 ### Invocation names
 
-Everything a plugin ships is namespaced by the plugin, and **skills have no bare-name fallback**. The six skills are addressable only as `testing:testing`, `testing:behavior-extraction`, `testing:test-planning`, `testing:spec-test-writing`, `testing:spec-test-verification`, and `testing:test-auditing`; the four agents as `testing:test-planner`, `testing:test-plan-critic`, `testing:spec-test-author`, `testing:test-code-critic`.
+Everything a plugin ships is namespaced by the plugin, and **skills have no bare-name fallback**. The seven skills are addressable only as `testing:testing`, `testing:behavior-extraction`, `testing:test-planning`, `testing:spec-test-writing`, `testing:spec-test-verification`, `testing:test-auditing`, and `testing:spec-conformance`; the four agents as `testing:test-planner`, `testing:test-plan-critic`, `testing:spec-test-author`, `testing:test-code-critic`.
 
 This bites harder than it looks. Plugins whose single skill shares the plugin's name — `ddd:ddd`, `refactoring:refactoring` — appear to work under a bare name only when a user-level copy in `~/.claude/skills/` happens to catch it. A plugin-only install has nothing to catch it, and a skill named for a phase rather than the plugin has no near-match either.
 
@@ -69,6 +73,26 @@ The rule cannot be absolute, because recon reads the codebase and brownfield wor
 **Phase 5 — Verify.** Traceability audited in both directions, including the check that matters most: does each test actually assert what its behavior's `Then` clause says? Then the **whole** suite runs, and every failure is classified — spec/code mismatch, not-implemented-yet, test defect, environment, or pre-existing. The report names which described behaviors are genuinely protected, which are only nominally covered, and which tests could not be run at all.
 
 Each phase is its own skill, so only the phase in flight occupies context.
+
+## Checking a Change Against Its Ticket
+
+`/test-write` proves a description is captured in code by building a suite. Sometimes you just want the answer. `/spec-conformance <PR or ticket>` extracts the same frozen behavior spec, then judges the code directly:
+
+| Verdict | Requires before it may be stated |
+|---|---|
+| `conforms` | The `file:line` implementing it |
+| `contradicts` | Anchor quote, code location, and what the code does instead |
+| `absent` | Where it would belong, and confirmation it exists nowhere in the repo |
+| `partial` | Which described cases are handled and which are not |
+| `undeterminable` | Why reading cannot settle it, and what would |
+
+A verdict that can't meet its requirement is discarded rather than downgraded. That is the whole defense against the obvious failure mode: a model handed a ticket and a diff can always construct a story that they match.
+
+Two outputs come free from having a frozen spec, and ordinary code review can't produce either. **Undescribed changes** — behavior in the diff that no part of the description covers, recorded as `observed` for the user to classify as scope creep, a riding fix, or a bug. And **the questions the change answered silently**: every open boundary in the register is somewhere the implementation had to pick a side without being told which. *The ticket never settles whether exactly 24:00:00 is refundable; `BookingPolicy.cs:88` says no.* Nobody wrote that rule down, so no reviewer is checking it and no test is pinning it.
+
+Existing tests covering the described behaviors are then run — targeted, not the whole suite, since this command writes nothing and a full run would drag unrelated failures into a report about one change. Every verdict carries its evidence tier: `tested`, `read`, or `untested`. Execution upgrades only the covered behaviors, and `untested` is a finding in its own right — it names exactly where to point `/test-write` next.
+
+The honest limit, stated in every report: this compares code to a specification. It cannot tell you the specification was right. A change that faithfully implements a bad ticket conforms.
 
 ## Auditing a Whole Repository
 
@@ -189,7 +213,8 @@ testing/
 ├── commands/
 │   ├── test-review.md                            # Per-test quality audit of files or a branch diff
 │   ├── test-write.md                             # Orchestrates the spec-driven pipeline and its gates
-│   └── test-audit.md                             # Orchestrates the repo-scale audit and its gates
+│   ├── test-audit.md                             # Orchestrates the repo-scale audit and its gates
+│   └── spec-conformance.md                       # Orchestrates the description-vs-code check
 ├── agents/
 │   ├── test-planner.md                           # opus  — designs the plan and its traceability matrix
 │   ├── test-plan-critic.md                       # opus  — attacks the plan under a fixed charter
@@ -218,6 +243,7 @@ testing/
     ├── test-planning/SKILL.md                    # /test-write 3  — cases, depth, scope, critique charter, user gate
     ├── spec-test-writing/SKILL.md                # /test-write 4  — scaffolding, fan-out, evidence, code review
     ├── spec-test-verification/SKILL.md           # /test-write 5  — traceability audit, suite run, failure triage
+    ├── spec-conformance/SKILL.md                 # /spec-conformance — verdicts + evidence tiers, frozen-spec discipline
     └── test-auditing/
         ├── SKILL.md                              # /test-audit    — risk model, systemic vs specific, honesty rules
         └── references/detection-patterns.md      # Sweep patterns per ecosystem and for browser suites; coverage + mutation tooling
