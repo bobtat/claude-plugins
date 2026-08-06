@@ -155,6 +155,8 @@ Run **`/test-write`** for that. It extracts a behavior spec from the description
 
 A test whose expected value was copied from the code under test cannot fail. And a spec-derived test that *does* fail is a finding — the code may not do what was described — never an assertion to weaken until it passes.
 
+When the code claiming to implement the description **already exists** and the question is simply whether it matches, run **`/spec-conformance`** instead. It extracts the same behavior spec, then judges the code against it directly and reports per-behavior verdicts with citations. Same discipline, no test suite: the spec is still frozen before any code is read, because a specification revised after seeing the implementation will always find that the implementation satisfies it.
+
 ## Additional Resources
 
 ### Choosing a Command
@@ -163,7 +165,10 @@ A test whose expected value was copied from the code under test cannot fail. And
 |---|---|
 | Specific test files, or a branch's changed tests | **`/test-review`** — per-test defects, capped at ~10 findings |
 | A described behavior — ticket, PR, spec, paragraph | **`/test-write`** — tests of that description |
-| A whole repository and no idea where it's weak | **`/test-audit`** — a risk-ranked map, then drill down with the other two |
+| A description *and* the code that claims to implement it | **`/spec-conformance`** — per-behavior verdicts on whether the code matches, no tests written |
+| A whole repository and no idea where it's weak | **`/test-audit`** — a risk-ranked map, then drill down with the others |
+
+`/spec-conformance` and `/test-write` take the same input and answer different questions. *Does this PR do what the ticket said?* is the first; *what tests would prove it?* is the second. The first is cheap and reports; the second is expensive and produces a suite. Run the first on a PR, then point the second at what it found missing.
 
 ### Workflow Skills
 
@@ -174,6 +179,7 @@ Loaded by the commands, one phase at a time; each is also useful alone.
 - **`spec-test-writing`** — scaffolding before fan-out, disjoint file ownership, evidence over claims, adversarial code review.
 - **`spec-test-verification`** — traceability audited both ways, full-suite run, and failure triage that distinguishes a wrong test from wrong code.
 - **`test-auditing`** — repository-scale assessment: where protection is weakest relative to what it guards, found by mechanical sweep and a churn/defect risk model rather than by reading everything. Carries `references/detection-patterns.md` (per-ecosystem sweep patterns, coverage and mutation tooling).
+- **`spec-conformance`** — a description plus the code that claims to implement it → a per-behavior verdict (`conforms` / `contradicts` / `absent` / `partial` / `undeterminable`) with a code citation for each, the changes nobody described, and the open boundaries the implementation silently picked a side on. Writes no tests.
 
 ### Reference Files
 

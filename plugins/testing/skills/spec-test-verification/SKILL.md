@@ -50,6 +50,8 @@ Every red test falls into exactly one of these, and the classification decides w
 
 Report mismatches like this: the behavior ID and its anchor quote, what the description says should happen, what the code actually does, and the test and line that shows it. That is enough for someone to decide whether it is a bug or a stale ticket.
 
+`/spec-conformance` reaches this same finding without writing tests, and uses this report shape deliberately so the two commands name one thing the same way. The difference is evidence: a mismatch found here is demonstrated by an executing test, while one found there is a reading of the code. Where both have run, this one is the stronger claim.
+
 ## Step 4 — Confirm the tests can fail
 
 A green test never observed red may be asserting nothing. Confirm each new test's red from the **test side** — change the expected value to something wrong, run, confirm it fails for the reason you expect, restore. Never mutate production code to force a red.
