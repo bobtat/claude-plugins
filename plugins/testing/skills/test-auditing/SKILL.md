@@ -177,6 +177,7 @@ The report's only value is that someone can act on it without re-verifying it th
 The audit diagnoses; it does not treat. End by naming the next action for each top area with the command that performs it:
 
 - Weak or fragile tests in a known area → **`/test-review <path>`** for per-test depth
+- A recent change whose ticket or PR described what it should do → **`/spec-conformance <PR or ticket>`** to check the code still matches the description
 - A gap where the intended behavior is known or documented → **`/test-write <ticket, PR, or description>`**
 - Production-side causes (uninjected clock, god class, no seam) → the `refactoring` plugin if installed, whose `references/test-smells.md` reads test pain as a design report. It is a sibling plugin and may be absent; do not read it by relative path.
 

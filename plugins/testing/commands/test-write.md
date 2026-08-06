@@ -64,6 +64,8 @@ Interpret `$ARGUMENTS` to locate the description. Do not read any production cod
 
 If the description is too thin to yield even one testable behavior — a title with no body, "fix the thing" — stop and ask for more. Do not proceed to invent a specification.
 
+**If the user only wants to know whether existing code matches the description, this is the wrong command.** `/spec-conformance` answers that directly — same extraction, same frozen spec, per-behavior verdicts with citations, no test suite. Say so and offer it rather than running five phases to produce an answer they could have had in one. Run `/test-write` when they want the tests.
+
 ## Phase 1 — Explore
 
 Two lanes with different rules. **Lane A runs first and completes before Lane B starts**, so the behavior spec cannot be contaminated by implementation detail.
