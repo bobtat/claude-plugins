@@ -14,7 +14,7 @@ allowed-tools: Agent, AskUserQuestion, Read, Write, Edit, Grep, Glob, Bash, Todo
 
 Write tests that verify **the described behavior is correctly captured in the code**. This is not "write tests for this file." The description is the oracle; the implementation is not.
 
-**Load the `testing` skill now** — its references are the criteria for every phase below. Each phase also has its own skill, loaded at the point it is needed.
+**Load the `testing:testing` skill now** — its references are the criteria for every phase below. Each phase also has its own skill, loaded at the point it is needed.
 
 ### The governing rule
 
@@ -37,9 +37,14 @@ Pass **absolute paths** to every subagent. Tell the user where the directory is 
 
 Track the phases with TodoWrite; this is a long pipeline and the user should be able to see where it is.
 
-### Agents
+### Skills and agents are namespaced
 
-Four agents ship with this plugin and are namespaced by it — spawn them as `testing:test-planner`, `testing:test-plan-critic`, `testing:spec-test-author`, `testing:test-code-critic`. Recon uses the built-in `Explore` agent. If a plugin agent is unavailable, fall back to `general-purpose` and paste the agent file's instructions into the prompt yourself; do not silently skip the step.
+Everything this plugin ships is addressed as `testing:<name>`. **There is no bare-name fallback** — `Skill("behavior-extraction")` does not resolve; `Skill("testing:behavior-extraction")` does.
+
+- **Skills** — `testing:testing`, `testing:behavior-extraction`, `testing:test-planning`, `testing:spec-test-writing`, `testing:spec-test-verification`
+- **Agents** — `testing:test-planner`, `testing:test-plan-critic`, `testing:spec-test-author`, `testing:test-code-critic`. Recon uses the built-in `Explore` agent.
+
+If a skill will not load, say so and continue with the `testing:testing` skill's references rather than proceeding on memory — the phase skills carry the procedures, and improvising them silently is how this pipeline produces a plausible-looking run that skipped its own gates. If a plugin agent is unavailable, fall back to `general-purpose` and paste the agent file's instructions into the prompt yourself; do not silently skip the step.
 
 ---
 
@@ -63,7 +68,7 @@ If the description is too thin to yield even one testable behavior — a title w
 
 Two lanes with different rules. **Lane A runs first and completes before Lane B starts**, so the behavior spec cannot be contaminated by implementation detail.
 
-**Lane A — behavior extraction.** Load the `behavior-extraction` skill. Work only from the description. Produce `behavior-spec.md`: numbered behaviors with stable IDs, each in Given/When/Then, each anchored to a quote from the source, plus the unspecified-behavior register.
+**Lane A — behavior extraction.** Load the `testing:behavior-extraction` skill. Work only from the description. Produce `behavior-spec.md`: numbered behaviors with stable IDs, each in Given/When/Then, each anchored to a quote from the source, plus the unspecified-behavior register.
 
 **Lane B — codebase recon.** Now spawn `Explore` agents (read-only; run them in parallel when the questions are independent) to answer, and write `recon.md`:
 
@@ -91,7 +96,7 @@ Recommend, don't just offer. **Light** — planning inline, one critique pass, o
 
 ## Phase 3 — Plan
 
-Load the `test-planning` skill and follow it. In outline:
+Load the `testing:test-planning` skill and follow it. In outline:
 
 1. **Draft the plan.** Full path: spawn the `test-planner` agent with the absolute paths to `behavior-spec.md` and `recon.md`. Light path: do it yourself.
 2. **Critique it.** Spawn the `test-plan-critic` agent. Address every finding you accept; say why for any you reject. Re-run the critic only if the plan changed materially — at most twice, and "no material findings" is a valid terminal result, not a failure to try hard enough.
@@ -101,13 +106,13 @@ Write the approved result to `test-plan.md`. It is a contract: Phase 4 implement
 
 ## Phase 4 — Write
 
-Load the `spec-test-writing` skill and follow it. In outline: shared scaffolding first and serialized, then authors fan out over disjoint files, then the `test-code-critic` agent reviews what they wrote for simplicity, maintainability, and conformance with the existing suite. Address the findings.
+Load the `testing:spec-test-writing` skill and follow it. In outline: shared scaffolding first and serialized, then authors fan out over disjoint files, then the `test-code-critic` agent reviews what they wrote for simplicity, maintainability, and conformance with the existing suite. Address the findings.
 
 If `--bdd` is set, or recon found that the production code does not exist yet, the tests are written first and are expected to fail. That is the point; do not stub production code to make them pass unless the user asks for the implementation too.
 
 ## Phase 5 — Verify
 
-Load the `spec-test-verification` skill and follow it: audit traceability in both directions, run the whole suite, classify every failure, and report honestly — including which behaviors appear unimplemented and which tests you could not run.
+Load the `testing:spec-test-verification` skill and follow it: audit traceability in both directions, run the whole suite, classify every failure, and report honestly — including which behaviors appear unimplemented and which tests you could not run.
 
 ---
 

@@ -9,7 +9,7 @@ You are an adversarial reviewer of test plans. Your job is to find what the plan
 
 You do not edit the plan. You report findings and let the orchestrator decide.
 
-**Load the `testing` skill** — `references/test-design.md`, `references/test-scope.md`, `references/test-doubles.md`, and `references/anti-patterns.md` are your criteria.
+**Load the `testing:testing` skill** — `references/test-design.md`, `references/test-scope.md`, `references/test-doubles.md`, and `references/anti-patterns.md` are your criteria.
 
 ## Inputs
 

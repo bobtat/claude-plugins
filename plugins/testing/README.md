@@ -32,6 +32,14 @@ The guidance is language-agnostic; the five worked examples span C#, Python, and
 
 They compose: the audit finds a weak area, `/test-review` says what's wrong with its tests, `/test-write` writes the ones that are missing.
 
+### Invocation names
+
+Everything a plugin ships is namespaced by the plugin, and **skills have no bare-name fallback**. The six skills are addressable only as `testing:testing`, `testing:behavior-extraction`, `testing:test-planning`, `testing:spec-test-writing`, `testing:spec-test-verification`, and `testing:test-auditing`; the four agents as `testing:test-planner`, `testing:test-plan-critic`, `testing:spec-test-author`, `testing:test-code-critic`.
+
+This bites harder than it looks. Plugins whose single skill shares the plugin's name — `ddd:ddd`, `refactoring:refactoring` — appear to work under a bare name only when a user-level copy in `~/.claude/skills/` happens to catch it. A plugin-only install has nothing to catch it, and a skill named for a phase rather than the plugin has no near-match either.
+
+Commands are namespaced the same way. `/testing:test-write` is always valid; the short `/test-write` used throughout this README is what the `/` menu offers when nothing else claims the name.
+
 ## The Description Is the Oracle
 
 `/test-write` exists to answer a different question from "does this code work." It answers **is the described behavior correctly captured in the code** — and those come apart constantly.
