@@ -128,8 +128,11 @@ Not everything belongs in the table. Behaviors with a different shape stay as th
 ```typescript
   it("does not include the password in the error output", () => {
     // Guards against leaking the attempted password into logs via errors.
-    const result = validatePassword("Sup3rSecret!");
-    expect(JSON.stringify(result)).not.toContain("Sup3rSecret");
+    // Rejected on purpose — a password that passes produces no errors,
+    // so there would be nothing for it to leak into.
+    const result = validatePassword("sup3rsecret");
+    expect(result.errors).not.toHaveLength(0);
+    expect(JSON.stringify(result)).not.toContain("sup3rsecret");
   });
 
   it("evaluates a 10,000-character password without blowing up", () => {
@@ -185,7 +188,7 @@ import fc from "fast-check";
 
 it("is valid exactly when it reports no errors", () => {
   fc.assert(
-    fc.property(fc.fullUnicodeString(), (password) => {
+    fc.property(unicode, (password) => {
       const { valid, errors } = validatePassword(password);
       expect(valid).toBe(errors.length === 0);
     }),
@@ -194,7 +197,7 @@ it("is valid exactly when it reports no errors", () => {
 
 it("never reports the same rule twice", () => {
   fc.assert(
-    fc.property(fc.fullUnicodeString(), (password) => {
+    fc.property(unicode, (password) => {
       const { errors } = validatePassword(password);
       expect(new Set(errors).size).toBe(errors.length);
     }),
@@ -203,19 +206,35 @@ it("never reports the same rule twice", () => {
 
 it("appending characters never introduces a too_short error", () => {
   fc.assert(
-    fc.property(fc.fullUnicodeString(), fc.fullUnicodeString(), (base, suffix) => {
-      const longer = validatePassword(base + suffix);
-      expect(longer.errors.includes("too_short")).toBe(
-        base.length + suffix.length < 8,
-      );
+    fc.property(unicode, unicode, (base, suffix) => {
+      if (validatePassword(base).errors.includes("too_short")) return;
+      expect(validatePassword(base + suffix).errors.includes("too_short")).toBe(false);
     }),
   );
 });
 ```
 
-Each of these can fail for a real reason: a `valid`/`errors` inconsistency, a duplicated code from two rules firing on the same cause, a length check that counts UTF-16 code units where the requirement is characters (`"😀".length === 2` — a genuine class of bug here, and one `fc.string()` cannot reach because its default alphabet is printable ASCII).
+Each of these can fail for a real reason: a `valid`/`errors` inconsistency, a duplicated code from two rules firing on the same cause, and — for the third — a length rule that is not monotonic under appending.
 
-Two lessons worth carrying: **choose the generator deliberately** — `fc.string()` will never produce the Unicode input you're worried about — and **assert a law, not the formula**. Keep the table too: it documents intent for a reader, while the property hunts for the input you didn't imagine.
+**The third property is worth dwelling on, because the obvious version of it is vacuous.** Writing the assertion as
+
+```typescript
+expect(longer.errors.includes("too_short")).toBe(base.length + suffix.length < 8);   // ✗
+```
+
+restates the implementation: `base.length + suffix.length` *is* `(base + suffix).length` for JavaScript strings, so this is `password.length < 8` written twice, and it can only pass. Worse, it **pins** the bug the prose claims to hunt — `.length` counts UTF-16 code units, so if someone fixed the rule to count graphemes this property would go red and look like the regression. That is the failure this section's own thesis names: *a property that mirrors the production predicate is as vacuous as an example test that computes its own expectation.*
+
+The monotonicity law above is implementation-independent — it never says how long anything is, only that appending cannot make a long-enough password too short — so it survives a change of counting unit and still fails if the rule is wrong.
+
+Two lessons worth carrying: **choose the generator deliberately** — `fc.string()` defaults to printable ASCII and will never produce the Unicode input you're worried about, so declare one explicitly:
+
+```typescript
+const unicode = fc.string({ unit: "grapheme" });   // fast-check v4; fullUnicodeString() was removed
+```
+
+— and **assert a law, not the formula**. Keep the table too: it documents intent for a reader, while the property hunts for the input you didn't imagine.
+
+**Pin the seed on failure.** `fc.assert` draws fresh random inputs each run, which is a determinism violation by this plugin's own standard. When a property fails, fast-check reports a seed and path: re-run with `fc.assert(prop, { seed, path })` to reproduce, then promote the shrunk counterexample into the table above as an ordinary example test. The property finds the case; the table keeps it found.
 
 ## Result
 

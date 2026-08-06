@@ -1,6 +1,6 @@
 {
   "name": "testing",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Teaches Claude to write, review, and audit tests worth having — behavior-focused design, disciplined test doubles, browser and component testing, a plan-gated pipeline that turns a ticket or PR into tests of the described behavior, a check on whether pushed code still matches the description that specified it, and a repo-scale map of where test protection is weakest",
   "author": {
     "name": "bobtat",

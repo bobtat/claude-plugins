@@ -92,6 +92,7 @@ public async Task ProcessExpiredTrials_WhenTrialEndsExactlyNow_DoesNotExpireIt()
 {
     var now = new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero);
     var account = GivenAccount(plan: Plan.Trial, trialEndsAt: now);
+    await _db.SaveChangesAsync();
 
     await NewService(new FixedClock(now)).ProcessExpiredTrialsAsync();
 

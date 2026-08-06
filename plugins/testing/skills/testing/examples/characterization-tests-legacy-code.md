@@ -46,7 +46,8 @@ The only blocker is the clock. A **parameter seam with a default** is additive �
 
 ```python
 def calculate_late_fee(invoice, today=None):
-    today = today or datetime.date.today()
+    if today is None:                      # not `today or …` — see legacy-code.md
+        today = datetime.date.today()
     ...
 ```
 
@@ -153,11 +154,13 @@ Two things this suite already did before any code changed:
 - **`test_premium_cap_applies_after_halving`** pinned an ordering nobody had noticed. Whether it's intended is a product question — but now it can't change silently.
 - **`test_first_chargeable_day_is_six_days_after_due`** pinned the off-by-one interpretation of "5 grace days." The requested rule change is about the grace period, so this is exactly the assertion that must be deliberate rather than accidental.
 
-## Step 4 — The Tests Were Already Confirmed
+## Step 4 — Confirm the Lock Covers the Blast Radius
 
 Every test above was **born red**. Step 2 started each one from a deliberately wrong assertion — `assert calculate_fee(invoice) == "PLACEHOLDER"` — ran it, and read the real value out of the failure message. So each has already been observed failing for the reason it should, which is the whole content of the "watch it fail first" habit.
 
-There is nothing more to confirm, and in particular **do not change `GRACE_DAYS` to `4` to see them all go red at once.** That is tempting, and it does produce a satisfying five-failure output that appears to prove the lock covers the blast radius:
+That settles that each assertion is **live** — it evaluates something and compares. It does not settle the different and more important question: **would this lock notice the change I am about to make?** Step 5 proves the gap from inside this example — the suite reaches 100% statement *and* branch coverage, every test was born red, and it still misses negative amounts entirely.
+
+The tempting way to answer it is to break the production code and watch the suite react. Changing `GRACE_DAYS` to `4` produces a satisfying five-failure output:
 
 ```
 FAILED test_within_grace_period_owes_nothing[5]  - Decimal('15.00') == Decimal('0.00')
@@ -167,7 +170,11 @@ FAILED test_missing_customer_tier_is_treated_as_standard - Decimal('225.00') == 
 FAILED test_premium_customers_pay_half - Decimal('112.50') == Decimal('105.00')
 ```
 
-But it buys nothing you did not already have, and it puts a real defect in the working tree that only a remembered revert removes. Anything that interrupts the sequence — a failing run you stop to investigate, a context limit, a crash — ships it. Commit as `test: characterize existing late-fee calculation`.
+**Don't.** It puts a real defect in the working tree that only a remembered revert removes, and anything interrupting the sequence — a failing run you stop to investigate, a context limit, a crash — ships it.
+
+The right tool answers the same question without that risk: **mutation testing**. `mutmut run --paths-to-mutate billing.py` mutates a scratch copy, runs the suite against each mutant, and reports which survived. A surviving mutant is a change your lock would not notice — precisely what breaking `GRACE_DAYS` was trying to find out, computed across every constant and condition in the blast radius instead of the one you happened to think of, and leaving nothing behind. On a single module it takes minutes.
+
+Run it before Step 6, not after: surviving mutants tell you where the lock is thin while there is still time to thicken it. Then commit as `test: characterize existing late-fee calculation`.
 
 Two of those five are the same input (`an_invoice()` at Jan 20) asserting the same value — `test_missing_customer_tier_is_treated_as_standard` differs only by also asserting that the key is absent. That duplication is worth noticing rather than tolerating: fold the absent-key assertion into the accrual test, or drop it, because two tests failing for one reason is two tests to update every time the rule changes.
 
@@ -206,7 +213,8 @@ PREMIUM_GRACE_DAYS = 10
 
 
 def calculate_late_fee(invoice, today=None):
-    today = today or datetime.date.today()
+    if today is None:                      # not `today or …` — see legacy-code.md
+        today = datetime.date.today()
 
     if invoice["status"] == "paid":
         return Decimal("0.00")
