@@ -5,13 +5,22 @@ description: Use when checking whether code that was written or pushed actually 
 
 # Checking Code Against the Description That Specified It
 
+
+**Reference paths.** This skill ships no `references/` directory of its own — every `references/…` named below belongs to the **`testing`** skill, which must be loaded alongside it.
+
 ## Overview
 
 This answers a reviewer's question, not a test author's: **for each behavior the description states, does the code implement it, contradict it, or ignore it?**
 
 The `/test-write` pipeline reaches the same central finding — its `spec/code mismatch` class in `spec-test-verification` is exactly this — but only after extracting a spec, planning coverage, writing tests, and running them. That is the right cost when you want the tests. It is the wrong cost when you want the answer, and it cannot answer at all for behavior nobody would reasonably write a test for: an error message that must name the offending field, an ordering guarantee in a log, a rejection reason surfaced to the caller.
 
-**What this cannot tell you:** whether the description was *right*. It compares code to a specification. A change that faithfully implements a bad ticket conforms.
+## What This Cannot Tell You
+
+Three limits, in the order they are likely to bite. **State all three in every report** — a reader who takes a verdict at face value is relying on limits they cannot see.
+
+1. **Whether the description was right.** This compares code to a specification. A change that faithfully implements a bad ticket conforms.
+2. **Whether a verdict is trustworthy at all.** The core output is a judgment about whether code satisfies a sentence, and a model handed a ticket and a diff can construct a plausible story for either answer. The evidence requirements, the citations, and `undeterminable` are the designed defenses against that, and **they have not been measured** — see `references/sources.md`. Nothing here makes a verdict as strong as an executed test.
+3. **Whether an `absent` is real.** A false `absent` is the most likely way this procedure produces a wrong answer, because behavior satisfied by pre-existing code that the change merely calls looks identical to behavior that was never implemented.
 
 ## The Discipline This Rests On
 
@@ -38,7 +47,11 @@ Two notes specific to this command:
 
 Read the diff. Then follow into the surrounding code.
 
-Spawn read-only `Explore` agents, one question each: *what code, if any, implements `Bn`?* Give each the behavior in full with its anchor and this instruction verbatim:
+Spawn read-only `Explore` agents to answer: *what code, if any, implements `Bn`?*
+
+**Batch behaviors across agents rather than spawning one per behavior**, and cap the fan-out at four or five. A real ticket yields fifteen to thirty behaviors, and the authoring step in `spec-test-writing` already establishes why unbounded fan-out is a false economy: coordination and review cost exceed the parallelism gain. Group by subsystem where the spec suggests one, otherwise roughly five behaviors per agent.
+
+Give each agent its behaviors in full with their anchors, and this instruction verbatim:
 
 > *Report where the behavior is or is not implemented, with file and line. Do not judge whether it is correct — that is not your output. If the behavior is implemented partly here and partly elsewhere, say so and name both.*
 
@@ -56,17 +69,23 @@ The mirror case is worth naming too: a behavior the description states was *alre
 
 ## Phase 3 — Adjudicate
 
-One verdict per behavior. Each verdict has an evidence requirement, and **a verdict that cannot meet it is not a finding — discard it rather than downgrading the requirement.**
+Exactly one verdict per behavior, and every behavior appears in the report. Each verdict has an evidence requirement, and **a verdict whose evidence you cannot supply falls back to `undeterminable` with the reason — never to silence, and never to the stronger claim with the requirement quietly relaxed.**
 
 | Verdict | Meaning | Requires |
 |---|---|---|
 | `conforms` | Implemented as described | The `file:line` implementing it |
 | `contradicts` | Implemented, but differently than described | Anchor quote, code location, and what the code does instead |
-| `absent` | Nothing implements it | Where it would belong, and confirmation it exists nowhere in the repo |
+| `absent` | Nothing implements it | Where it would belong, and the searches you ran that did not find it |
 | `partial` | Some described cases handled, others not | Which are handled, which are not, each named |
 | `undeterminable` | Reading cannot settle it | Why, and what would settle it |
 
-`undeterminable` is the honest answer when the outcome depends on runtime state, configuration, an external service, or code paths the change does not reveal. **Use it freely.** It is the same convention as `confirmed`/`suspected` in `/test-review` and "not measured" in `/test-audit`, and a report without any is more suspicious than one with several — this command's output is *claims about code*, and overstating certainty is precisely how it becomes worthless.
+Two notes on that table, both of which earlier drafts got wrong:
+
+**`undeterminable` is always reachable**, because its requirement is one you can always meet. It is the floor of the ladder, not an escape from it. Dropping a behavior out of the report entirely would hide it — the same silent-omission defect the per-behavior table exists to prevent.
+
+**`absent` cannot require proof of nonexistence.** No search establishes that code does not exist somewhere in a repository. What it requires is the search log: the queries you ran, and where. If the search space could not be covered — a large repo, dynamic dispatch, generated code, configuration-driven wiring — the honest verdict is `undeterminable`, not `absent`.
+
+`undeterminable` is the honest answer when the outcome depends on runtime state, configuration, an external service, or code paths the change does not reveal. **Use it freely.** It is this command's form of the convention `/test-review` uses (`confirmed` / `unverified — requires running`) and `/test-audit` uses ("not measured"), and a report without any is more suspicious than one with several — this command's output is *claims about code*, and overstating certainty is precisely how it becomes worthless.
 
 Report a contradiction in the shape `spec-test-verification` already uses, so the two commands name one finding the same way: the behavior ID and its anchor quote, what the description says should happen, what the code actually does, and the location that shows it.
 
@@ -138,7 +157,17 @@ Behaviors with no test: <IDs>
 ## Compared against
 Base: <stated plainly>
 Not examined: <anything out of scope, and why>
+
+## What this check cannot tell you
+- Whether the description itself was right. Faithful implementation of a bad ticket conforms.
+- Whether these verdicts are trustworthy: they are readings of code, not executed results,
+  except where marked `tested`. The defenses against a confident wrong reading are designed
+  but unmeasured.
+- Whether an `absent` is real. Behavior satisfied by pre-existing code the change merely
+  calls looks identical to behavior never implemented.
 ```
+
+**The three limits are not optional boilerplate.** They are the difference between a report a reader can calibrate and one they take at face value.
 
 End with the two or three things most worth acting on, ranked.
 
@@ -146,7 +175,7 @@ End with the two or three things most worth acting on, ranked.
 
 ## Honesty Rules
 
-- **Never state a verdict without its evidence.** The requirement per verdict is in the Phase 3 table. Discard, do not downgrade.
+- **Never state a verdict without its evidence.** The requirement per verdict is in the Phase 3 table. Fall back to `undeterminable` with the reason — never drop the behavior, and never relax the requirement to keep the stronger verdict.
 - **Never revise a described behavior after reading code.** Add `observed` ones; change nothing extracted in Phase 1.
 - **Never report `absent` from the diff alone.** Search the repo and record what you searched.
 - **Never describe a test as passing that you did not execute.**
@@ -159,7 +188,9 @@ End with the two or three things most worth acting on, ranked.
 |---|---|---|
 | Extracting behaviors after reading the diff | Every behavior you find is one the diff satisfies; the check returns `conforms` and means nothing | Freeze the spec in Phase 1, before any code |
 | `absent` from the diff alone | Behavior implemented by pre-existing code the change now calls gets reported as missing | Search the repository; record what you searched |
-| A verdict with no citation | Unfalsifiable, and indistinguishable from a plausible guess | Discard it |
+| A verdict with no citation | Unfalsifiable, and indistinguishable from a plausible guess | Fall back to `undeterminable` and say what would settle it |
+| Dropping a behavior that could not be adjudicated | Silent omission — the reader cannot see what you failed to judge | Every behavior gets a row; `undeterminable` is the floor |
+| `absent` claimed as proof of nonexistence | No search establishes that code exists nowhere | Report the searches you ran; if the space could not be covered, `undeterminable` |
 | Certainty everywhere | The output is claims about code, not executed results; a report with no `undeterminable` is overstating | Use `undeterminable` freely and say what would settle it |
 | Treating a green test as proof of conformance | The test may assert something other than the behavior, or its expected value may have come from the code | Check the assertion against the `Then` clause; downgrade to `read` if it does not match |
 | Reporting refactoring as an undescribed change | Renames and extractions change no observable behavior; reporting them buries the real findings | Filter to observable behavior |

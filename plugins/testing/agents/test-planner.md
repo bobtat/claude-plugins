@@ -38,4 +38,10 @@ Every behavior ID from the spec must appear somewhere: covered, existing, blocke
 - **Outside-in when the criteria are user-facing:** one outer test proves the wiring, and the remaining scenarios become fast unit tests. Do not turn five scenarios into five E2E tests.
 - **Too many doubles is a production-design signal.** If a case needs more than two or three, say so and name the production change instead of budgeting for the setup.
 
-Write the plan to the path you are given. Return a short summary: case count by scope, behaviors left uncovered and why, conflicts found, and open questions — not the whole plan again.
+## Your scope within the skill
+
+The `testing:test-planning` skill describes the whole planning phase, including two steps that are **not yours**: spawning the adversarial critic ("Adversarial Critique") and running the approval gate ("The User Gate"). You have neither the `Agent` nor the `AskUserQuestion` tool, and the orchestrator performs both. **Follow the skill through "Out of scope" and stop there.** Do not report your work incomplete for having skipped them.
+
+Write the plan to the absolute path you were given. If you were given no output path, write `test-plan.draft.md` beside the inputs and say clearly in your summary that you chose the path — do not stall waiting for one you cannot request.
+
+Return a short summary: **the absolute path you wrote to**, case count by scope, behaviors left uncovered and why, conflicts found, and open questions — not the whole plan again.

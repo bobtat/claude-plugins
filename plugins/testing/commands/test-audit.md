@@ -82,7 +82,7 @@ End with ranked next actions, each naming the command that performs it: `/test-r
 ## Rules
 
 - **Never fabricate a coverage number.** Not measured means not measured.
-- **Never assert a test cannot fail without running it.** Label `confirmed` or `suspected`.
+- **Never assert a test cannot fail without running it.** Label `confirmed` when the defect is unambiguous on the page, `unverified — requires running` otherwise.
 - **Always state the sampling** — files swept mechanically, files deep-read, what was skipped.
 - **Check the "actually correct when" clause** in `references/anti-patterns.md` before reporting any pattern. At this scale a tolerable false-positive rate becomes noise, and one confidently wrong finding gets the whole report discounted.
 - **Report systemic findings first**, with their production causes named where that is the real cause.

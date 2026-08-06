@@ -20,7 +20,9 @@ Write tests that verify **the described behavior is correctly captured in the co
 
 > **Expected outcomes come from the description. If the description does not say what should happen, that is a question for the user — never a value to read out of the implementation.**
 
-A test whose expected value was derived from the code under test can only confirm the code does what it does. Producing those is the specific failure this command exists to prevent. It applies in every phase, to you and to every subagent you spawn.
+A test whose expected value was derived from the code under test can only confirm the code does what it does. Producing those is the specific failure this command exists to prevent. It applies in every phase, to you and to every subagent you spawn, for every **spec-derived** case.
+
+The single exception is a **characterization case** — one resting on a behavior the spec labels `observed`, which the user explicitly chose to lock rather than confirm at the Phase 3 gate. Those take their expected value from an observed run by design, and they carry their own labeling requirements (`spec-test-writing`, Step 2). An author may only write one when its brief names it as such; a case that merely turns out to need the implementation is an obstacle to report.
 
 Its corollary, which governs Phase 5: **a spec-derived test that goes red may mean the code is wrong.** Never weaken an assertion to make it pass.
 
@@ -100,8 +102,10 @@ Recommend, don't just offer. **Light** — planning inline, one critique pass, o
 
 Load the `testing:test-planning` skill and follow it. In outline:
 
-1. **Draft the plan.** Full path: spawn the `test-planner` agent with the absolute paths to `behavior-spec.md` and `recon.md`. Light path: do it yourself.
-2. **Critique it.** Spawn the `test-plan-critic` agent. Address every finding you accept; say why for any you reject. Re-run the critic only if the plan changed materially — at most twice, and "no material findings" is a valid terminal result, not a failure to try hard enough.
+1. **Draft the plan.** Full path: spawn the `testing:test-planner` agent with the absolute paths to `behavior-spec.md`, `recon.md`, **and the absolute path it must write the draft to** (`test-plan.draft.md` in your working directory). It cannot ask you for one. Require it to return that path. Light path: do it yourself.
+
+   The planner drafts only. **Spawning the critic and running the user gate are yours**, not the planner's — it has neither the `Agent` nor the `AskUserQuestion` tool, and the `testing:test-planning` skill describes all three steps without naming the actor.
+2. **Critique it.** Spawn the `testing:test-plan-critic` agent with the absolute path the planner returned. Address every finding you accept; say why for any you reject. Re-run it only if a case was added, removed, or changed scope — **two critic invocations total at most**, one in light mode. "No material findings" is a valid terminal result, not a failure to try hard enough.
 3. **Review with the user.** Present the traceability matrix, the scope decisions, the unspecified-behavior questions, any `observed` behaviors with your proposed exit for each, and what is deliberately not being tested. Their answers become part of the spec. **Do not proceed without approval** — this gate is the cheapest point in the whole pipeline to change direction.
 
 Write the approved result to `test-plan.md`. It is a contract: Phase 4 implements it and Phase 5 audits against it. Any deviation during authoring gets reported, not absorbed.

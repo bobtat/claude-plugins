@@ -89,7 +89,7 @@ Cache expensive setup rather than repeating it: `cy.session()` for auth, or a st
 
 ## The Network Is the Boundary
 
-`cy.intercept()` and `page.route()` are where `test-doubles.md` applies: the network is a genuine boundary, so doubling it is correct, and a stubbed route is a **fake** — it returns a canned response and you assert on outcomes, not on the fact that a call happened.
+`cy.intercept()` and `page.route()` are where `test-doubles.md` applies: the network is a genuine boundary, so doubling it is correct. A route returning a fixed payload is a **stub** — canned answers supplying indirect inputs, verified by asserting on outcomes rather than on the fact that a call happened. A route handler that keeps state across calls — so a POST changes what the next GET returns — is a **fake**, and it is the better choice whenever a scenario spans more than one request. The distinction is worth keeping precisely here: a stub makes each request independent, which is why multi-step flows built on stubs drift out of sync with themselves.
 
 Both frameworks say to stub rather than reach outward. Cypress: "only test websites that you control. Try to avoid visiting or requiring a 3rd party server," because third parties bring A/B tests, rate limits, and bot detection. Playwright: "only test what you control," using its network API to "guarantee the response needed."
 

@@ -5,6 +5,9 @@ description: Use when turning a behavior specification and codebase recon into a
 
 # Planning Spec-Driven Test Coverage
 
+
+**Reference paths.** This skill ships no `references/` directory of its own — every `references/…` named below belongs to the **`testing`** skill, which must be loaded alongside it.
+
 ## Overview
 
 The plan is a contract. Authoring implements it, verification audits against it, and the user approves it — so it has to be specific enough to disagree with. "Add tests for the refund rules" is not a plan. A numbered list of cases, each traced to a behavior ID, each with a scope and a stated reason, is.
@@ -123,7 +126,9 @@ Every behavior ID from the spec appears somewhere in this document — in tracea
 
 ## Adversarial Critique
 
-Spawn the `test-plan-critic` agent with the plan, the behavior spec, and the recon. Its charter is fixed; a generic "review this" produces generic findings.
+**Orchestrator-owned.** If you are the `test-planner` agent, your work ended with the section above — you have no `Agent` tool and the orchestrator runs this step.
+
+Spawn the `testing:test-plan-critic` agent with the plan, the behavior spec, and the recon. Its charter is fixed; a generic "review this" produces generic findings.
 
 **The charter:**
 
@@ -137,9 +142,11 @@ Spawn the `test-plan-critic` agent with the plan, the behavior spec, and the rec
 8. **Testing the framework.** Cases that assert ORM, serializer, or language behavior instead of the described rule.
 9. **Double overuse**, and where it signals production design rather than test design.
 
-**Iteration rule:** address the findings, then re-run the critic **only if the plan changed materially**. Cap at two rounds. **"No material findings" is a valid and expected terminal result** — a critic on its third pass is inventing work to justify the round, and the churn costs more than it finds. Record findings you rejected, with the reason; a rejected finding the user disagrees with is exactly what the next gate is for.
+**Iteration rule:** address the findings, then re-run the critic **only if a case was added, removed, or changed scope** — a reworded justification or an accepted-but-unchanged finding is not grounds for another round. **Two critic invocations total, maximum**, in full mode; one in light mode. **"No material findings" is a valid and expected terminal result** — a critic on its third pass is inventing work to justify the round, and the churn costs more than it finds. Record findings you rejected, with the reason; a rejected finding the user disagrees with is exactly what the next gate is for.
 
 ## The User Gate
+
+**Orchestrator-owned**, for the same reason as the section above: the `test-planner` agent has no `AskUserQuestion` tool.
 
 **Do not write a test before the user approves the plan.** This is the cheapest point in the pipeline to change direction, and the whole pipeline is downstream of decisions only the user can make.
 

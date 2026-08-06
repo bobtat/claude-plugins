@@ -5,6 +5,9 @@ description: Use when implementing an approved test plan — building shared tes
 
 # Writing Tests From an Approved Plan
 
+
+**Reference paths.** This skill ships no `references/` directory of its own — every `references/…` named below belongs to the **`testing`** skill, which must be loaded alongside it.
+
 ## Overview
 
 Authoring is where a good plan gets diluted. Three things cause it, and the procedure below exists to prevent each:
@@ -61,8 +64,10 @@ Each author gets `authoring/<slice>.md` containing:
 6. Suite conventions from recon — naming, layout, assertion library, how the clock and IO are handled
 7. The command to run their tests, and the requirement to paste its output
 8. An instruction to load the `testing:testing` skill
+9. **The mode — `code exists` or `BDD`.** The author branches on this to classify its own failures, and it cannot read a value the brief does not carry. An author that assumes `code exists` during a BDD run reports every unresolved symbol as a spec/code mismatch, and Phase 5 is instructed to leave those red and report them prominently — so the final report leads with fabricated claims that the code fails to implement behavior nobody has written yet.
+10. Whether any case in the slice is a **characterization case**, named as such. Without that word the author is under the absolute form of the verbatim rule and will correctly refuse to take a value from the implementation.
 
-Spawn them with the `spec-test-author` agent.
+Spawn them with the `testing:spec-test-author` agent.
 
 **If the plan carries characterization cases** — cases resting on a behavior the spec labels `observed`, which the user chose to lock rather than confirm — say so explicitly in that author's brief, and say why the rule above reads differently for them. A characterization test's expected value *does* come from the running code; that is what it is for. The protections are elsewhere: it must be named and commented as documenting current behavior (`references/legacy-code.md` has the procedure), it must never be described as proving the behavior correct, and a red one is not a spec/code mismatch. Keep these in separate files or a clearly separated region from the spec-derived tests — mixing them is how "the code does this" gets read later as "this is required."
 
@@ -89,7 +94,7 @@ Before review, reconcile:
 
 ## Step 5 — Adversarial code review
 
-Spawn the `test-code-critic` agent over everything written. Its charter, in priority order:
+Spawn the `testing:test-code-critic` agent over everything written. Its charter, in priority order:
 
 1. **Oracle integrity.** Does any expected value trace to the implementation rather than the behavior spec? Any test that cannot fail — no meaningful assertion, an assertion on a literal, a double so lenient the path never runs, an over-broad exception assertion?
 2. **Traceability.** Does each test prove the behavior its case claims? A test named for `B3` that asserts something `B3` never said is worse than a missing test, because the audit will count it as coverage.

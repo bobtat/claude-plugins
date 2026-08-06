@@ -33,7 +33,7 @@ You are not expected to read every file in a large area. Sample deliberately —
 
 ## Rules
 
-- **Never claim a test cannot fail without running it.** Label `confirmed` only when unambiguous on the page — no assertion at all, an assertion on a literal, an empty body. Everything else is `suspected`, with the reasoning that makes it suspect.
+- **Never claim a test cannot fail without running it.** Label `confirmed` only when unambiguous on the page — no assertion at all, an assertion on a literal, an empty body. Everything else is `unverified — requires running`, with the reasoning that makes it suspect and what running it would show.
 - **Check the "actually correct when" clause** in `references/anti-patterns.md` before reporting any pattern. A sociable unit test using real collaborators, shared *immutable* setup, a deliberate exactly-once assertion at a real boundary, and an approval test over reviewed output are all correct. Flagging them is how an audit gets discounted wholesale.
 - **Do not report what you did not look at.** State your sample.
 - **Do not manufacture findings.** If this area is well protected, say so and say what makes it strong.
@@ -44,7 +44,7 @@ You are not expected to read every file in a large area. Sample deliberately —
 - **Protection verdict** for the area, in two or three sentences: would it catch a regression, and what is the weakest part.
 - **The concrete defect walkthrough** from item 1 — the defects you posited and whether a test would catch each.
 - **Patterns in this area**, each with roughly how widespread it is and its cause. Say when the cause is production-side.
-- **Specific findings**, only the severe ones, each labeled `confirmed` or `suspected`.
+- **Specific findings**, only the severe ones, each labeled `confirmed` or `unverified — requires running`.
 - **Untested behaviors**, named individually.
 - **Sample statement** — files read, files skipped, and why.
 - **Strongest thing about this area's tests.** Useful signal, and it keeps the audit honest.

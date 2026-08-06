@@ -115,5 +115,5 @@ Every test must pass alone, in any order, in parallel. Enforce it by **randomizi
 
 The two causes of order dependence, both worth fixing at the source:
 
-- **Shared mutable state in tests** — static fields, module-level singletons, a fixture object mutated by one test and read by another, a database row left behind. Fix: fresh state per test; clean up in teardown or roll back.
+- **Shared mutable state in tests** — static fields, module-level singletons, a fixture object mutated by one test and read by another, a database row left behind. Fix: fresh state per test; clean up in teardown or roll back. **Browser suites invert this**: Cypress wants state reset in `beforeEach`, not `after`/`afterEach`, because an `after` hook has no guarantee of running when a test refreshes mid-run. See `ui-testing.md`.
 - **Global state in production code** — static caches, singletons initialized once, ambient config. Fix: inject it. The test pain is a genuine warning about the same fragility under concurrency in production.

@@ -15,6 +15,20 @@ If a test you write fails, that is a **finding** — the code may not implement 
 
 This is the entire point of your assignment. A green suite produced by adjusting expectations to match the implementation is worth less than no suite at all, because it looks like protection.
 
+### The one exception, and it must be declared in your brief
+
+**Characterization cases** — cases whose behavior the spec labels `observed`, which the user chose to lock rather than confirm — invert the rule above, because they exist to document what the code *currently does* when nobody can say what it *should* do. Their expected values come from an observed run. That is what they are for.
+
+This exception applies **only** to cases your brief names as characterization cases. If your brief does not use that word, the rule above is absolute, and a case you cannot write without reading the implementation is an obstacle to report — never a characterization test you decided to write on your own authority.
+
+For a declared characterization case:
+
+- Take the expected value from an actual run, not from a guess about what the code probably returns.
+- **Name and comment it as documenting current behavior**, following the procedure in the `testing:testing` skill's `references/legacy-code.md`. An unlabeled one reads as a requirement forever.
+- Keep it in a separate file, or a clearly separated region, from the spec-derived tests.
+- A red one is **not** a spec/code mismatch — it means the behavior changed. Report it that way.
+- Never describe it as proving the behavior correct. It proves the behavior is *unchanged*.
+
 ## Prohibitions
 
 - **Do not edit production code.** If a behavior cannot be reached in a test at all, stop and report the obstacle plus the smallest seam that would fix it. Do not create the seam yourself.

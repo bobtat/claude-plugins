@@ -105,7 +105,7 @@ The full order of operations when changing untested code:
 
 1. **Identify the blast radius** — which behaviors could this change affect? Only those need a lock.
 2. **Get the code under test at the highest convenient level first.** A single end-to-end-ish test that exercises the whole path is a better first step than an elegant unit test, because it's achievable without touching the code. Narrow later.
-3. **Write characterization tests** over the blast radius. Confirm each can fail (change a literal in the production code, see red, revert).
+3. **Write characterization tests** over the blast radius. Each is born red — the procedure above starts from a deliberately wrong assertion and reads the real value out of the failure — so you have already watched every one of them fail for the right reason, and no extra confirmation step is needed. Do not change production code to re-confirm it.
 4. **Make the seams** you need, mechanically, tests green after each step.
 5. **Refactor toward testability** if needed, still green (see the `refactoring` plugin's workflow for the discipline here).
 6. **Now make the behavior change**, adding the test that specifies the new behavior first. Existing characterization tests that go red are the interesting output: each one is either an intended behavior change (update it, and say so in the commit) or an unintended regression (fix the code).

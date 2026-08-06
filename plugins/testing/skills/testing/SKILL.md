@@ -103,8 +103,6 @@ If a test needs more than two or three doubles of any kind, that is a signal abo
 
 ## Anti-Pattern Index
 
-| Anti-pattern | Symptom while writing it | Do instead | Detail |
-|---|---|---|---|
 Every row has a full entry in `references/anti-patterns.md`, including an "actually correct when" clause. **Read that clause before reporting any of these as a finding** — several have legitimate forms, and skipping it is how a review manufactures false positives.
 
 | Anti-pattern | Symptom while writing it | Do instead |
