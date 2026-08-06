@@ -178,7 +178,7 @@ A fixed clock makes date-boundary behavior (month ends, DST, leap years, expiry)
 
 **Randomness and IDs.** Inject the generator (`IIdGenerator`, `() => string`). In tests, return a sequence. This also makes assertions possible: you can assert the created entity's id, which is impossible with an internal `Guid.NewGuid()`.
 
-**Asynchrony.** Return awaitable handles rather than firing and forgetting. If work is queued for background processing, expose the queue so the test can drain it deterministically; the test then awaits a real signal instead of sleeping and hoping. `await Task.Delay`/`setTimeout` in a test is always a defect.
+**Asynchrony.** Return awaitable handles rather than firing and forgetting. If work is queued for background processing, expose the queue so the test can drain it deterministically; the test then awaits a real signal instead of sleeping and hoping. A **bare** `await Task.Delay`/`setTimeout` used to wait for work to finish is a defect. The call itself is not: it is the standard way to test timeout and cancellation behaviour, it is correct inside a polling helper with a real timeout (`anti-patterns.md`, *Sleep-Based Waiting* → "actually correct when"), and under `vi.useFakeTimers()`/`jest.useFakeTimers()` it advances virtual time and costs nothing.
 
 ## Over-Mocking as a Design Signal
 

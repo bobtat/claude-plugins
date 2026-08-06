@@ -240,7 +240,7 @@ The due-for-renewal rules moved onto `Subscription`, where they're testable as p
 
 ## Step 4 — Test the Orchestration Thinly
 
-The orchestrator's behavior is now: skip when not due, charge, don't extend on failure, extend and notify on success. Four tests, using **fakes** rather than mocks for everything except the two genuine effects:
+The orchestrator's behavior is now: skip when not due, charge, don't extend on failure, extend and notify on success. Five tests — the split described below turned one of the four into two — using **fakes** rather than mocks for everything except the two genuine effects:
 
 ```csharp
 public sealed class SubscriptionRenewalServiceTests
@@ -320,10 +320,10 @@ public sealed class SubscriptionRenewalServiceTests
     }
 
     // Named so the assertions read as rules rather than arithmetic:
-    // due in two days, and a renewal adds thirty from now.
+    // due in two days, and a renewal adds thirty to the existing expiry.
     private static readonly DateTimeOffset DueSoon = Now.AddDays(2);
     private static readonly DateTimeOffset ExpectedRenewedExpiry =
-        new(2026, 4, 2, 12, 0, 0, TimeSpan.Zero);
+        new(2026, 4, 2, 0, 0, 0, TimeSpan.Zero);
 }
 ```
 
@@ -335,7 +335,7 @@ Note what splitting bought. `RenewAsync_WhenDue_ChargesAndExtendsExpiry` and `..
 |---|---|---|
 | Doubles to test pricing | 7 | 0 |
 | Setup lines for a pricing case | ~30 | 1 |
-| Pricing cases actually covered | 1 | 9, incl. all boundaries |
+| Pricing cases actually covered | 1 | 10, incl. all boundaries |
 | Assertion style | Mock call verification | Returned values and observable state |
 | Survives moving the charge behind a new port | No | Yes (pricing tests unaffected) |
 | Interaction assertions remaining | Many, incidental | One, deliberate (charge exactly once) |

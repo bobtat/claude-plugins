@@ -35,7 +35,7 @@ The last two are complements, not rivals. Prefer the user-facing query when the 
 
 ## Retry-Ability, and Why You Should Almost Never Wait
 
-Modern UI frameworks retry locators and assertions until a timeout. Cypress's own list of commands with built-in retry and implicit assertions includes `cy.get()`, `cy.visit()`, and `cy.request()`.
+Modern UI frameworks retry locators and assertions until a timeout. Cypress documents **default assertions** on `cy.get()`, `cy.visit()`, and `cy.request()` — `visit` expects a 200 with `text/html`, `request` expects the server to answer, `get` expects the element to eventually exist. Note that *retry-ability* and *default assertions* are not the same property: since v12 Cypress retries **queries** such as `cy.get()`, while `cy.visit()` and `cy.request()` carry a default assertion without being retried.
 
 Cypress names the anti-pattern flatly — "waiting for arbitrary time periods using `cy.wait(Number)`" — and the fix: "use route aliases or assertions to guard Cypress from proceeding until an explicit condition is met."
 

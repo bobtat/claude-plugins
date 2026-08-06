@@ -66,12 +66,16 @@ def expire_sessions():
 
 # After: same behavior for every existing caller, now testable
 def expire_sessions(now=None, store=None):
-    now = now or datetime.now()
-    store = store or SessionStore()
+    if now is None:
+        now = datetime.now()
+    if store is None:
+        store = SessionStore()
     ...
 ```
 
-That is a two-line change with essentially zero behavioral risk, and it converts an untestable function into a testable one. In C#/Java the equivalent is an overload or an optional constructor parameter.
+That converts an untestable function into a testable one without changing behavior for any existing caller. In C#/Java the equivalent is an overload or an optional constructor parameter.
+
+**Use `is None`, not `x = x or default`.** The `or` form is shorter and is what most examples show, but it substitutes the default for *any* falsy argument — `0`, `""`, `[]`, `False`, `Decimal("0")`, a midnight `time`. It happens to be safe for `datetime`/`date` objects, which are always truthy, and that is exactly what makes it a trap: it works everywhere you first try it and then silently discards a legitimate `0` the day someone parameterizes a number. In a procedure whose entire premise is preserving behavior, do not introduce a value-dependent behavior change to save a line.
 
 ## Common Blockers and Their Fix
 
