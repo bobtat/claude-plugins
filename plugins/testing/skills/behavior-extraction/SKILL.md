@@ -5,6 +5,9 @@ description: Use when turning a described behavior — a JIRA ticket, a GitHub P
 
 # Extracting a Behavior Specification
 
+
+**Reference paths.** This skill ships no `references/` directory of its own — every `references/…` named below belongs to the **`testing`** skill, which must be loaded alongside it.
+
 ## Overview
 
 This is the step that makes spec-driven testing possible. The output is an **oracle**: a statement of what the system should do, derived from what someone said it should do, written before any implementation is read.

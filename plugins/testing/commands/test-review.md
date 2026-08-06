@@ -1,7 +1,7 @@
 ---
 description: Audit tests for quality — behavior vs implementation coupling, mock overuse, missing cases, flakiness, and tests that cannot fail
 argument-hint: [path or glob | --diff] (defaults to tests changed on this branch)
-allowed-tools: Bash(git diff:*), Bash(git status:*), Bash(git log:*), Bash(git merge-base:*), Bash(git branch:*), Read, Grep, Glob
+allowed-tools: Bash(git diff:*), Bash(git status:*), Bash(git log:*), Bash(git merge-base:*), Bash(git branch:*), Bash(git symbolic-ref:*), Bash(git rev-parse:*), Bash(echo:*), Read, Grep, Glob
 ---
 
 ## Context
@@ -34,7 +34,7 @@ For every test in scope:
 
 1. **Could it fail?** Look for tests with no meaningful assertion, assertions inside branches that never execute, loops over possibly-empty collections, `assertNotNull` on always-non-null values, over-broad exception assertions, and doubles so lenient the code path never runs. **This is the highest-value check** — report these first, since they cost maintenance and provide nothing.
 
-   **You cannot fully settle this by reading.** This command has no permission to run tests, and whether a mock is lenient enough to skip the code path or an exception assertion is swallowing a setup failure is often only decidable by executing it. So treat these as **candidates**: report each with the reasoning that makes it suspect, label it `unverified — requires running`, and say what running it would show. Do not state that a test cannot fail as established fact unless the defect is unambiguous on the page (a test body with no assertion at all, an assertion on a literal, an empty test). Offer to re-run the review with test execution if the user wants these confirmed.
+   **You cannot fully settle this by reading.** This command has no permission to run tests, and whether a mock is lenient enough to skip the code path or an exception assertion is swallowing a setup failure is often only decidable by executing it. So treat these as **candidates**: report each with the reasoning that makes it suspect, label it `unverified — requires running`, and say what running it would show. Do not state that a test cannot fail as established fact unless the defect is unambiguous on the page (a test body with no assertion at all, an assertion on a literal, an empty test). Re-running this command will not settle them — it has the same restriction. Name what actually would: ask the user to run the suite outside the command, or point `/spec-conformance` at the change, which does execute targeted tests.
 2. **Does the name state the behavior?** A name that doesn't identify what broke is a defect, because it's read at failure time.
 3. **Is it coupled to implementation?** Assertions on private state, internal call counts, call ordering, or exact log/exception message strings. Would a pure refactoring turn it red?
 4. **Are the doubles justified?** Count them. Are any doubling something that isn't a real boundary (value objects, owned domain collaborators, the subject itself)? Is setup longer than the assertion? Are query calls being `verify`'d?
@@ -75,4 +75,4 @@ For each finding give: file and line, the problem in one sentence, the concrete 
 
 End with a short verdict: whether this suite would actually catch a regression in the code it covers, and the two or three changes with the most leverage. Be specific and factual — if the tests are sound, say that plainly rather than manufacturing findings.
 
-Do not modify any files unless the user asks you to apply the fixes.
+This command cannot modify files — it has no `Edit` or `Write` permission, deliberately, so that a review cannot quietly become a rewrite. If the user wants the fixes applied, say so and let them ask outside the command.

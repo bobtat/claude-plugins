@@ -6,7 +6,7 @@ A Claude Code plugin that teaches Claude to write tests worth having — and to 
 
 The premise: a test earns its place by two properties — it **fails when behavior breaks**, and it **stays quiet when behavior doesn't**. Most bad tests fail one of those, usually because they were written against the implementation instead of the behavior. Everything in the plugin serves those two properties.
 
-Adds an auto-triggering knowledge skill, a spec-driven writing pipeline, a repo-scale audit, and three commands:
+Adds an auto-triggering knowledge skill, a spec-driven writing pipeline, a repo-scale audit, and four commands:
 
 - **Test-design fundamentals** — naming that identifies what broke, arrange/act/assert discipline, whole-value assertions, builders over copy-pasted setup, how to choose test cases (happy path → branches → boundaries → equivalence classes), and coverage as a diagnostic rather than a target
 - **A test-double decision framework** — the five doubles and what each couples you to, the query/command distinction that removes most mock bloat, fakes over mocks with contract tests to keep the fake honest, injecting clock/randomness/IO, and reading over-mocking as a production design signal
@@ -17,7 +17,7 @@ Adds an auto-triggering knowledge skill, a spec-driven writing pipeline, a repo-
 - **An anti-pattern catalog** — thirteen anti-patterns with the fix for each, and for every one, when the thing that looks like it is actually correct
 - **A sources file** — where each idea comes from, which parts are the plugin's own synthesis, and what it knowingly doesn't cover
 - **`/test-review`** — audits tests (a path, or the current branch's changed tests) against all of the above and reports findings by severity
-- **`/test-write`** — takes a described behavior (a JIRA ticket, a GitHub PR or issue, a spec file, or free text) and runs a four-phase, plan-gated pipeline that produces tests of *that description*
+- **`/test-write`** — takes a described behavior (a JIRA ticket, a GitHub PR or issue, a spec file, or free text) and runs a five-phase, plan-gated pipeline that produces tests of *that description*
 - **`/test-audit`** — assesses a whole repository and returns a risk-ranked map of where test protection is weakest relative to what it guards
 - **`/spec-conformance`** — takes a description *and* the code that claims to implement it, and reports per-behavior whether the code conforms, contradicts, or ignores it — with a citation for each and no tests written
 
@@ -38,7 +38,7 @@ They compose: the audit finds a weak area, `/test-review` says what's wrong with
 
 ### Invocation names
 
-Everything a plugin ships is namespaced by the plugin, and **skills have no bare-name fallback**. The seven skills are addressable only as `testing:testing`, `testing:behavior-extraction`, `testing:test-planning`, `testing:spec-test-writing`, `testing:spec-test-verification`, `testing:test-auditing`, and `testing:spec-conformance`; the four agents as `testing:test-planner`, `testing:test-plan-critic`, `testing:spec-test-author`, `testing:test-code-critic`.
+Everything a plugin ships is namespaced by the plugin, and **skills have no bare-name fallback**. The seven skills are addressable only as `testing:testing`, `testing:behavior-extraction`, `testing:test-planning`, `testing:spec-test-writing`, `testing:spec-test-verification`, `testing:test-auditing`, and `testing:spec-conformance`; the five agents as `testing:test-planner`, `testing:test-plan-critic`, `testing:spec-test-author`, `testing:test-code-critic`, and `testing:suite-auditor`.
 
 This bites harder than it looks. Plugins whose single skill shares the plugin's name — `ddd:ddd`, `refactoring:refactoring` — appear to work under a bare name only when a user-level copy in `~/.claude/skills/` happens to catch it. A plugin-only install has nothing to catch it, and a skill named for a phase rather than the plugin has no near-match either.
 
@@ -86,7 +86,7 @@ Each phase is its own skill, so only the phase in flight occupies context.
 | `partial` | Which described cases are handled and which are not |
 | `undeterminable` | Why reading cannot settle it, and what would |
 
-A verdict that can't meet its requirement is discarded rather than downgraded. That is the whole defense against the obvious failure mode: a model handed a ticket and a diff can always construct a story that they match.
+A verdict whose evidence can't be supplied falls back to `undeterminable` with the reason, never to silence and never to the stronger claim with the bar quietly lowered. That is the **designed** defense against the obvious failure mode — a model handed a ticket and a diff can always construct a story that they match. It has not been measured; `references/sources.md` records what remains untested about it.
 
 Two outputs come free from having a frozen spec, and ordinary code review can't produce either. **Undescribed changes** — behavior in the diff that no part of the description covers, recorded as `observed` for the user to classify as scope creep, a riding fix, or a bug. And **the questions the change answered silently**: every open boundary in the register is somewhere the implementation had to pick a side without being told which. *The ticket never settles whether exactly 24:00:00 is refundable; `BookingPolicy.cs:88` says no.* Nobody wrote that rule down, so no reviewer is checking it and no test is pinning it.
 
@@ -108,7 +108,7 @@ It is deliberately not a bigger `/test-review`. Reviewing a repository file by f
 | High | Strong | Genuinely protected |
 | **High** | **Weak** | **The dangerous cell.** Looks safest, protects least — and only reading finds it |
 
-Five phases: inventory the stack and runner; sweep the test tree mechanically with ripgrep (a five-thousand-file suite cannot be read, and pretending otherwise is how audits lie); rank modules by **risk × weakness**; gate on the user for depth; then deep-read only the selected areas in parallel and synthesize.
+Six phases: inventory the stack and runner; sweep the test tree mechanically with ripgrep (a five-thousand-file suite cannot be read, and pretending otherwise is how audits lie); rank modules by **risk × weakness**; gate on the user for depth; deep-read only the selected areas in parallel; then synthesize.
 
 The risk half of that ranking is Michael Feathers' churn-vs-complexity view, extended with coverage as a third dimension by Ernesto Tagwerker's Skunk — both credited in `references/sources.md`, including the note that Feathers' original article was unreachable from this environment and the paraphrase is second-hand. The plugin's own addition is **defect history as the primary signal**: `fix`/`hotfix`/`revert` commits per module, which is the closest thing to an oracle available at repo scale. A module that has repeatedly produced bugs and has thin tests is the top of the map by definition, with the evidence attached.
 

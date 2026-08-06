@@ -44,7 +44,11 @@ Every red test falls into exactly one of these, and the classification decides w
 | **Not implemented yet** | BDD mode — the production code does not exist | Expected. Report as pending, not as a defect. |
 | **Test defect** | The test's setup, wiring, or assertion is wrong; the code is right | Fix the test |
 | **Environment** | Missing dependency, unavailable service, config | Report; do not paper over it with a skip |
-| **Pre-existing failure** | Also fails on a clean checkout | Report as pre-existing and out of scope. Verify with `git stash` or a clean tree before claiming it. |
+| **Pre-existing failure** | Also fails on a clean checkout | Report as pre-existing and out of scope. Verify against the merge-base — see below — before claiming it. |
+
+**Do not verify a pre-existing failure with `git stash`.** By this point Phase 4 has created untracked test files and modified tracked ones. A bare `git stash` leaves the new tests in place, so the tree is not clean and the check proves nothing — while simultaneously shelving the authors' work, which anything interrupting the sequence before the pop will lose. There is no other copy: this pipeline does not commit.
+
+Use a separate worktree instead — `git worktree add <tmp> $(git merge-base HEAD origin/HEAD)`, run the suspect test there, remove it. Better still, record a baseline: run the suite once *before* Phase 4 starts and keep the failure list.
 
 **Do not resolve a spec/code mismatch by changing the test.** Weakening an assertion to reach green converts the most valuable output of this whole pipeline into a green checkmark that means nothing. If you genuinely cannot tell whether the description or the code is right, that is a question for the user, presented with both sides quoted.
 
@@ -97,7 +101,7 @@ These are the rules that make the report usable. Breaking any one makes the whol
 - **Never report a spec/code mismatch as a test defect** to make the run look clean.
 - **Never hide a case you skipped.** Deviations get their own section.
 - **Do not manufacture findings.** If coverage is complete and the suite is green for the right reasons, say that plainly.
-- **Distinguish confirmed from suspected.** A test you read and believe is vacuous, but did not execute, is a candidate — label it.
+- **Distinguish `confirmed` from `unverified`.** A test you read and believe is vacuous, but did not execute, is a candidate — label it.
 - **State the residual risk.** Which described behaviors are now genuinely protected, and which are only nominally covered — for example a behavior whose boundary the user never settled, tested on one side of a guess. **Count characterization tests separately.** They lock current behavior against change; they say nothing about whether it is right, and folding them into the protected count overstates what the run achieved.
 
 ## Closing the Loop

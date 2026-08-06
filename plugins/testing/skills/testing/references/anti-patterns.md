@@ -102,7 +102,9 @@ Quarantine before diagnosing: "Place any non-deterministic test in a quarantined
 
 **Why it hurts:** It's the most expensive kind of test — full maintenance cost, zero protection, plus false confidence and inflated coverage.
 
-**Instead:** Verify every test can fail. Break the production code deliberately (change a literal, invert a condition, return early) and confirm red, then revert. Do this once per test when writing it; it takes seconds. In TDD it's free — you saw red before you made it green. Mutation testing automates this check across the whole suite and is worth running periodically if tooling exists for your language.
+**Instead:** Verify every test can fail, once per test, when you write it. Get the red from the **test side**: change the expected value to something wrong, run, confirm it fails for the reason you expect, restore it. In TDD it's free — you saw red before you made it green. Mutation testing automates this check across the whole suite and is worth running periodically if tooling exists for your language.
+
+Reach for a production-side change (invert a condition, return early) only when the test-side one cannot distinguish — verifying that a *guard clause* is what rejects the input, for example, where a wrong expected value would fail identically whether the guard fired or not. Prefer the test side otherwise, and never leave a production-side edit unreverted: an interrupted sequence leaves a real defect in the working tree, and that risk is why the test side is the default.
 
 **Actually correct when:** A "does not throw" test is legitimate when not throwing is the actual behavior under test (a parser accepting valid input, a migration running idempotently) — assert the successful outcome too where one exists.
 
@@ -163,3 +165,5 @@ Quarantine before diagnosing: "Place any non-deterministic test in a quarantined
 **Why it hurts:** Exact-message assertions break on any wording or localization change while verifying nothing about behavior. Broad catches do the opposite — `Assert.Throws<Exception>` passes when the setup itself fails, so the test is green for the wrong reason.
 
 **Instead:** Assert the specific exception type plus a stable machine-readable code or property. Assert user-facing message text only where the text is genuinely a contract, and then in one dedicated test rather than in every failure test.
+
+**Actually correct when:** The message *is* the contract — a user-facing string someone signed off on, a documented API error body, a CLI output another tool parses. Assert it once, in a test named for the fact that the wording is a commitment, so the next person to reword it sees why it broke. Asserting a base exception type is correct essentially never; the one defensible case is a boundary that genuinely promises "anything thrown in here surfaces as `RequestFailed`," and then the test is about the wrapping, not the failure.

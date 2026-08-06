@@ -68,15 +68,15 @@ Gherkin plus a runner — Cucumber, `behave`, Reqnroll, and their relatives, des
 
 Beyond the general catalog in `anti-patterns.md`:
 
-| Anti-pattern | Why it hurts | Instead |
-|---|---|---|
-| Imperative scenarios (click, type, navigate) | Encodes the UI into the spec; every layout change rewrites it | State intent; put mechanics in step implementations or a page object |
-| One scenario per UI screen | Produces a slow end-to-end suite that tests navigation, not rules | One scenario per *behaviour*; push rule variations to unit tests |
-| Shared mutable `World` between steps | Reintroduces order dependence and mystery guests at the scenario level | Each scenario establishes its own givens |
-| Step-definition explosion | Near-duplicate steps for near-identical sentences | Parameterize steps; agree on canonical phrasings |
-| `Given` clauses naming test data (`user 42`) | Mystery guest — the scenario can't be read alone | `Given a customer with a paid booking` |
-| Every scenario as an end-to-end test | Suite too slow to run, so it stops being a safety net | One outer test for wiring; boundaries underneath |
-| Scenarios written after the code | Loses the entire point — the conversation was the value | Write them before; they're cheapest to correct as sentences |
+| Anti-pattern | Why it hurts | Instead | Actually correct when |
+|---|---|---|---|
+| Imperative scenarios (click, type, navigate) | Encodes the UI into the spec; every layout change rewrites it | State intent; put mechanics in step implementations or a page object | The interaction *is* the requirement — a keyboard-accessibility criterion, a specified wizard order |
+| One scenario per UI screen | Produces a slow end-to-end suite that tests navigation, not rules | One scenario per *behaviour*; push rule variations to unit tests | The screen is the behaviour — a landing page whose content is the deliverable, or a smoke test that a route renders at all |
+| Shared mutable `World` between steps | Reintroduces order dependence and mystery guests at the scenario level | Each scenario establishes its own givens | Never for mutable state. Immutable context assembled by `Given` steps within one scenario is the normal mechanism, not this smell |
+| Step-definition explosion | Near-duplicate steps for near-identical sentences | Parameterize steps; agree on canonical phrasings | Two steps read alike but mean different things in the domain — collapsing them would hide a real distinction |
+| `Given` clauses naming test data (`user 42`) | Mystery guest — the scenario can't be read alone | `Given a customer with a paid booking` | The identifier is itself the domain fact under test — a specific legacy account, a reserved id with defined meaning |
+| Every scenario as an end-to-end test | Suite too slow to run, so it stops being a safety net | One outer test for wiring; boundaries underneath | The criteria are genuinely about integration — a checkout that must span payment, inventory, and email, where the wiring is the risk |
+| Scenarios written after the code | Loses the entire point — the conversation was the value | Write them before; they're cheapest to correct as sentences | Characterizing existing behaviour, where no conversation is available and the goal is a lock rather than a specification — see `legacy-code.md`. Say which you are doing |
 
 ## How This Interacts With the Rest of This Skill
 

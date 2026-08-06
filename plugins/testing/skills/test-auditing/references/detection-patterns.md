@@ -150,6 +150,15 @@ fd -e cy.ts -e cy.tsx -e cy.js | head; test -f cypress.config.ts && echo "cypres
 fd -e spec.ts -e spec.js -p 'e2e|tests' | head; test -f playwright.config.ts && echo "playwright"
 ```
 
+**Set `B` to the browser-suite path only** — `cypress/`, `e2e/`, `tests/e2e/`, whatever the detection above turns up. Every pattern in this section runs against `$B`, never `$T`.
+
+```bash
+B=cypress          # adjust to what was detected
+rg --files "$B" | wc -l
+```
+
+The two are not interchangeable, and one signal in particular breaks badly if you conflate them. Cypress inverts the general cleanup rule — it wants state reset in `beforeEach`, because `after` hooks have no guarantee of running when a test refreshes mid-run — while the `testing` skill's `references/test-scope.md` prescribes teardown cleanup for suites generally. Sweeping `afterEach(` across `$T` on a mixed repo therefore counts every ordinary unit test doing the recommended thing as a finding against advice that does not apply to it.
+
 ### Assertions — the correction that matters
 
 ```bash
@@ -190,7 +199,7 @@ The **brittle-to-stable ratio** predicts how much of the suite goes red on the n
 rg -c '\b(it|test|describe|context)\.only\b' "$T"      # suite-wide outage; report separately
 rg -c 'cy\.intercept\(|cy\.stub\(|cy\.spy\(|page\.route\(' "$T"   # network doubles
 rg -c 'cy\.session\(|storageState' "$T"                # cached auth setup — a good sign
-rg -c 'afterEach\(|after\(' "$T"                       # cleanup-after, against Cypress's advice
+rg -c 'afterEach\(|after\(' "$B"                       # cleanup-after, against Cypress's advice
 ```
 
 **Report `.only` separately from `.skip`, and rank it higher.** A committed `.only` silently reduces a file to one test while CI stays green — it is invisible protection loss, where `.skip` at least reads as a disabled test.

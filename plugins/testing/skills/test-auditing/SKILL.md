@@ -58,6 +58,8 @@ Count test files and, approximately, tests.
 
 **If there are effectively no tests, stop.** The useful output is "here is where to start, ranked by risk" — not an audit of an empty suite. Run the risk model (Phase 2), skip the rest, and report it as a starting plan.
 
+"Effectively no tests" needs a threshold, because this gate selects between two entirely different deliverables and Phase 0 has already counted: **fewer than 10 test files, or fewer than one test file per 50 source files.** Above that, run the full audit even if the suite looks thin — thin-but-real is exactly what the risk map is for. State the counts either way so the reader can disagree with the call.
+
 ### Phase 1 — Mechanical sweep
 
 Ripgrep across the test tree. No reading, no judgment — counts and file lists per signal. Patterns per ecosystem are in `references/detection-patterns.md`.
@@ -102,11 +104,12 @@ Rank, and keep the evidence attached to each row. A ranking whose reasoning is i
 Present the ranked map and let the user choose depth and areas. Carry evidence and a recommendation — behavior of `/test-write`'s depth gate, for the same reason: the user is the one who knows what is worth the spend.
 
 - **Coverage** runs here, using the repo's already-configured tool only. If none is configured, say "not measured" and offer to set one up as a follow-up. Do not install tooling mid-audit.
+- **Run mutation testing in the background and poll**, never as a blocking foreground call. It routinely exceeds any tool timeout, so a foreground run is killed after the approval was granted and the wall-clock already spent. Give the user a time estimate first, cap the run, and if it exceeds the cap report the partial result **labeled as truncated** — a mutation score over a partial run is not a mutation score.
 - **Mutation testing runs only on explicit approval**, and only on the single top-ranked module. It is the one measure that answers "would these tests notice a defect," and it can take hours — so it is offered, scoped, and never run by surprise.
 
 ### Phase 4 — Targeted deep audit
 
-Spawn `suite-auditor` agents in parallel, one per selected area. Each reads the area's tests **and the production code they cover** — most of what matters (over-mocking, wrong scope, weak assertions) is only decidable against the code under test.
+Spawn `testing:suite-auditor` agents in parallel, one per selected area. Each reads the area's tests **and the production code they cover** — most of what matters (over-mocking, wrong scope, weak assertions) is only decidable against the code under test.
 
 Give each agent the area path, the ranking evidence for it, and the aggregate checklist. Keep the per-agent checklist **aggregate**: the strength of protection, what class of defect would slip through, systemic patterns in this area. Per-test defect enumeration is `/test-review`'s job and duplicating it here produces the flat list this format exists to avoid.
 
@@ -117,7 +120,7 @@ On the main thread, where the whole picture is visible.
 1. **Diagnose suite shape.** Use the method already in `references/test-scope.md`: read what the code *is* — dense conditional logic and calculations imply a pyramid; thin forwarding controllers, mapping, and ORM queries imply a trophy — then compare against the actual slice counts. Report the mismatch, not the ratio. An inverted pyramid on a logic-rich domain is a systemic finding worth more than any individual test defect.
 
    **Split browser suites by slice before counting.** `cypress/component/` costs near a unit test; `cypress/e2e/` costs seconds and fails for unrelated reasons. Counting them together turns a healthy component-heavy suite and a pathologically E2E-heavy one into the same number.
-2. **Verify before reporting.** Downgrade any "this test cannot fail" claim to `suspected` unless it was executed or is unambiguous on the page (no assertion at all, an assertion on a literal, an empty body). Check the **"actually correct when"** clause in `references/anti-patterns.md` for every pattern before reporting it — at repo scale, a false-positive rate that would be tolerable across ten findings becomes noise across a thousand files, and one confidently wrong finding causes the whole report to be discounted.
+2. **Verify before reporting.** Downgrade any "this test cannot fail" claim to `unverified — requires running` unless it was executed or is unambiguous on the page (no assertion at all, an assertion on a literal, an empty body). Check the **"actually correct when"** clause in `references/anti-patterns.md` for every pattern before reporting it — at repo scale, a false-positive rate that would be tolerable across ten findings becomes noise across a thousand files, and one confidently wrong finding causes the whole report to be discounted.
 3. **Separate systemic from specific**, below.
 4. **Write the report.**
 
@@ -149,7 +152,7 @@ Report systemic first. They are fewer, they have leverage, and their fixes are u
 <Pattern, count, cause, single fix. Production-side where that is the real cause.>
 
 ## Specific findings
-<Only those severe enough to name. Each labeled confirmed | suspected.>
+<Only those severe enough to name. Each labeled confirmed | unverified.>
 
 ## Coverage
 <Tool, command, result — or "not measured: no coverage tool configured.">
@@ -166,7 +169,7 @@ Report systemic first. They are fewer, they have leverage, and their fixes are u
 The report's only value is that someone can act on it without re-verifying it themselves.
 
 - **Never fabricate a coverage number.** No tool configured means "not measured" — never an estimate, never a guess from test counts.
-- **Never assert a test cannot fail without running it.** `confirmed` versus `suspected`, the convention `/test-review` already uses.
+- **Never assert a test cannot fail without running it.** Label it `confirmed` when the defect is unambiguous on the page, `unverified — requires running` otherwise. This is the convention `/test-review` uses, and the two commands hand off to each other, so the labels have to match.
 - **Always state the sampling.** How many files were swept mechanically, how many were deep-read, what was skipped. An audit that implies whole-repo certainty from a 3% sample is worse than one that reports the 3% honestly.
 - **Call proxies proxies.** Branch density is not complexity; test count is not protection.
 - **Do not manufacture findings.** If the suite is genuinely good, say so and stop. A clean audit is a real result, and padding one destroys the credibility of the next.
