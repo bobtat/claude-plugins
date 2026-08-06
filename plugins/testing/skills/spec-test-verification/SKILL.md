@@ -96,13 +96,13 @@ These are the rules that make the report usable. Breaking any one makes the whol
 - **Never hide a case you skipped.** Deviations get their own section.
 - **Do not manufacture findings.** If coverage is complete and the suite is green for the right reasons, say that plainly.
 - **Distinguish confirmed from suspected.** A test you read and believe is vacuous, but did not execute, is a candidate — label it.
-- **State the residual risk.** Which described behaviors are now genuinely protected, and which are only nominally covered — for example a behavior whose boundary the user never settled, tested on one side of a guess.
+- **State the residual risk.** Which described behaviors are now genuinely protected, and which are only nominally covered — for example a behavior whose boundary the user never settled, tested on one side of a guess. **Count characterization tests separately.** They lock current behavior against change; they say nothing about whether it is right, and folding them into the protected count overstates what the run achieved.
 
 ## Closing the Loop
 
 Before finishing:
 
-1. **Answered register questions become spec.** If the user resolved boundary questions at the plan gate, the spec should show them as `stated` — the artifact should be re-readable later as the record of what was agreed.
+1. **Answered register questions become spec.** If the user resolved boundary questions at the plan gate, the spec should show them as `stated` — the artifact should be re-readable later as the record of what was agreed. The same applies to any `observed` behavior the user confirmed: it is now `stated`, anchored to that confirmation. Behaviors still labeled `observed` at the end stay that way — never promote one because its test passed, since a characterization test passing is what it does by construction.
 2. **Unresolved questions carry forward.** List them in the report; they are the highest-value follow-up.
 3. **Offer to save the plan and spec into the repo.** They are the justification for the suite's shape, and worth keeping if the tests will be reviewed.
 4. **Do not commit unless asked.** If the user does ask, keep it atomic and conventional: `test:` for the tests, a separate `refactor:` for any seam, and never fold a production change into the test commit.

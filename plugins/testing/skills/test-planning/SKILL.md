@@ -127,8 +127,8 @@ Spawn the `test-plan-critic` agent with the plan, the behavior spec, and the rec
 
 **The charter:**
 
-1. **Oracle contamination.** Any expected value that came from the implementation rather than the description. Highest severity — these tests cannot fail.
-2. **Fabricated requirements.** Cases with no behavior ID, or resting on an `inferred` behavior that the user has not confirmed.
+1. **Oracle contamination.** Any expected value that came from the implementation rather than the description. Highest severity — these tests cannot fail. A behavior the spec labels `observed` is contamination that declared itself: the plan may carry it only as a blocked question or an explicitly labeled characterization case, never as an ordinary case.
+2. **Fabricated requirements.** Cases with no behavior ID, or resting on an `inferred` or `observed` behavior that the user has not confirmed.
 3. **Missing behaviors.** Anything in the description with no case, and any rejection/error branch the extraction dropped.
 4. **Missing boundaries.** Limits, empty/zero/one, absent — especially where the description was ambiguous and the plan quietly picked a side instead of blocking on a question.
 5. **Scope inflation and deficit**, per the table above.
@@ -148,11 +148,12 @@ Present, compactly:
 1. **The behavior list**, in their words — the first thing to check is whether extraction understood the ticket at all.
 2. **The traceability matrix** — cases, scopes, counts.
 3. **The open questions** blocking cases. Use `AskUserQuestion` with the concrete options; these are usually boundary decisions with two answers.
-4. **Conflicts** with existing tests, each needing a call.
-5. **What is deliberately not tested**, and why.
-6. **Cost** — roughly how many test files and how much new infrastructure.
+4. **Behaviors that came from the code** — every `observed` entry, with its code location and your proposed exit. The user is the only one who can say whether each is intended behavior worth locking, a bug worth reporting, or noise. Do not bundle these into the general approval; they need individual calls, because promoting one wrongly writes a bug into the spec as a requirement.
+5. **Conflicts** with existing tests, each needing a call.
+6. **What is deliberately not tested**, and why.
+7. **Cost** — roughly how many test files and how much new infrastructure.
 
-Fold the answers into the spec (they become `stated` behaviors) and the plan (blocked cases unblock). If the answers change coverage substantially, show the revised matrix before proceeding — do not treat approval of the old plan as approval of the new one.
+Fold the answers into the spec — resolved register questions become `stated` behaviors, and confirmed `observed` behaviors are promoted to `stated` anchored to the user's confirmation — and into the plan, where blocked cases unblock. If the answers change coverage substantially, show the revised matrix before proceeding; do not treat approval of the old plan as approval of the new one.
 
 ## Planning Anti-Patterns
 

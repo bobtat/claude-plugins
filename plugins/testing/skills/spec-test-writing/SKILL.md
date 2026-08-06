@@ -64,6 +64,8 @@ Each author gets `authoring/<slice>.md` containing:
 
 Spawn them with the `spec-test-author` agent.
 
+**If the plan carries characterization cases** — cases resting on a behavior the spec labels `observed`, which the user chose to lock rather than confirm — say so explicitly in that author's brief, and say why the rule above reads differently for them. A characterization test's expected value *does* come from the running code; that is what it is for. The protections are elsewhere: it must be named and commented as documenting current behavior (`references/legacy-code.md` has the procedure), it must never be described as proving the behavior correct, and a red one is not a spec/code mismatch. Keep these in separate files or a clearly separated region from the spec-derived tests — mixing them is how "the code does this" gets read later as "this is required."
+
 ## Step 3 — What authors must not do
 
 State these as prohibitions in the brief:
@@ -110,6 +112,7 @@ Report to the main pipeline: files created and modified, case-to-test mapping, t
 | Anti-pattern | Why it is fatal here | Instead |
 |---|---|---|
 | Reading the implementation for the expected value | Produces tests that ratify the code, defeating the entire pipeline | Expected values come from the spec; unknowns go back to the user |
+| An unlabeled characterization test | It reads as a requirement forever, and the next reader has no way to tell it was never specified | Name and comment it as documenting current behavior, and keep it out of the spec-derived files |
 | Adjusting an assertion until green | Destroys the finding that justified the run | Leave red, classify, report |
 | Claimed verification | The suite's trustworthiness is the deliverable | Paste the command output |
 | Parallel authors on one file | Silent lost edits | Disjoint file ownership |
