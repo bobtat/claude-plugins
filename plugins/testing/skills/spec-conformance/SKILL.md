@@ -6,7 +6,7 @@ description: Use when checking whether code that was written or pushed actually 
 # Checking Code Against the Description That Specified It
 
 
-**Reference paths.** This skill ships no `references/` directory of its own — every `references/…` named below belongs to the **`testing`** skill, which must be loaded alongside it.
+**Reference paths.** This skill ships no `references/` directory of its own — every `references/…` named below belongs to the **`testing:testing`** skill, which must be loaded alongside it — the bare name `testing` does not resolve.
 
 ## Overview
 

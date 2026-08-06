@@ -6,7 +6,7 @@ description: Use when implementing an approved test plan — building shared tes
 # Writing Tests From an Approved Plan
 
 
-**Reference paths.** This skill ships no `references/` directory of its own — every `references/…` named below belongs to the **`testing`** skill, which must be loaded alongside it.
+**Reference paths.** This skill ships no `references/` directory of its own — every `references/…` named below belongs to the **`testing:testing`** skill, which must be loaded alongside it — the bare name `testing` does not resolve.
 
 ## Overview
 

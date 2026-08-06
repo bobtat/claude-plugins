@@ -6,7 +6,7 @@ description: Use when turning a behavior specification and codebase recon into a
 # Planning Spec-Driven Test Coverage
 
 
-**Reference paths.** This skill ships no `references/` directory of its own — every `references/…` named below belongs to the **`testing`** skill, which must be loaded alongside it.
+**Reference paths.** This skill ships no `references/` directory of its own — every `references/…` named below belongs to the **`testing:testing`** skill, which must be loaded alongside it — the bare name `testing` does not resolve.
 
 ## Overview
 
