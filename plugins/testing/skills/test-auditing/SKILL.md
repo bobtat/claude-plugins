@@ -16,7 +16,7 @@ Two things make the job tractable at scale, and both are non-negotiable:
 1. **Mechanical sweep before reading.** A five-thousand-file suite cannot be read. Grep-able signals across everything, then deep reading only where the ranking says it matters.
 2. **A map, not a list.** Output is modules ranked by risk against protection, with systemic patterns called out once. A flat list of findings is a failure of the format, not a thorough audit.
 
-**Reference paths.** `references/detection-patterns.md` is this skill's own. Every other `references/…` named below belongs to the **`testing`** skill — load it alongside this one, since it holds the criteria the signals here are interpreted against.
+**Reference paths.** `references/detection-patterns.md` is this skill's own. Every other `references/…` named below belongs to the **`testing:testing`** skill — load it alongside this one (the bare name `testing` does not resolve), since it holds the criteria the signals here are interpreted against.
 
 ## What This Can and Cannot Tell You
 
