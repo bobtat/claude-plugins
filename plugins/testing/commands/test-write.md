@@ -75,6 +75,8 @@ Two lanes with different rules. **Lane A runs first and completes before Lane B 
 
 Give each `Explore` agent the behavior spec and this instruction verbatim: *"Report what exists. Do not report what the code computes as though it were the correct answer — expected values are not your output."*
 
+Recon will surface behavior anyway — that is unavoidable when reading a codebase. Anything it reveals that the description never stated enters the spec as an **`observed`** behavior with its code location, never as a `stated` one, and never as an expected value inside an existing behavior. The `behavior-extraction` skill's "When a Behavior Came from the Code" section governs what happens to it.
+
 ## Phase 2 — Depth gate
 
 Summarize what Phase 1 found and let the user choose the pipeline depth. Use `AskUserQuestion`. Carry the evidence, not a bare question:
@@ -93,7 +95,7 @@ Load the `test-planning` skill and follow it. In outline:
 
 1. **Draft the plan.** Full path: spawn the `test-planner` agent with the absolute paths to `behavior-spec.md` and `recon.md`. Light path: do it yourself.
 2. **Critique it.** Spawn the `test-plan-critic` agent. Address every finding you accept; say why for any you reject. Re-run the critic only if the plan changed materially — at most twice, and "no material findings" is a valid terminal result, not a failure to try hard enough.
-3. **Review with the user.** Present the traceability matrix, the scope decisions, the unspecified-behavior questions, and what is deliberately not being tested. Their answers to the open questions become part of the spec. **Do not proceed without approval** — this gate is the cheapest point in the whole pipeline to change direction.
+3. **Review with the user.** Present the traceability matrix, the scope decisions, the unspecified-behavior questions, any `observed` behaviors with your proposed exit for each, and what is deliberately not being tested. Their answers become part of the spec. **Do not proceed without approval** — this gate is the cheapest point in the whole pipeline to change direction.
 
 Write the approved result to `test-plan.md`. It is a contract: Phase 4 implements it and Phase 5 audits against it. Any deviation during authoring gets reported, not absorbed.
 

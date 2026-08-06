@@ -68,8 +68,11 @@ Every behavior gets a stable ID (`B1`, `B2`, …) that the test plan, the test n
 | `stated` | The description says this outcome, in words | Test it |
 | `implied` | Follows necessarily from something stated (a stated maximum implies rejection above it) | Test it; note the inference in one line |
 | `inferred` | Reasonable, standard, probably wanted — but nobody said it | **Goes to the user before it becomes a test.** Never silently promoted. |
+| `observed` | Nobody described it — you read it in the implementation | **No oracle.** Cannot become a correctness test. See below. |
 
 `inferred` is where fabricated specifications enter. Anything you "know" a system like this should do — audit logging, idempotency, rate limits — is `inferred` until someone confirms it. Being right about it does not make it stated.
+
+`observed` is a different kind of label entirely, and it has its own section below. Read it before using it.
 
 ### 5. Name the observable outcome
 
@@ -98,6 +101,39 @@ A register that comes back empty means the extraction was shallow. Real descript
 - **Vocabulary** — the domain terms the description uses and what each means. Tests get named in these words. Where the description's word and the codebase's word differ, note both; recon will confirm which the suite uses, and the mismatch is worth telling the user about.
 - **Non-goals** — anything the description explicitly excludes, defers, or marks out of scope. Writing these down stops the planner from inventing coverage for them and stops the final audit from reporting them as gaps.
 
+## When a Behavior Came from the Code
+
+`observed` is not a fourth rung on the same ladder. `stated`, `implied`, and `inferred` measure distance from the description, and all three keep the oracle independent of the implementation. `observed` breaks that axis: its source *is* the implementation, so a test built from it can only assert that the code does what it does — the exact circularity this pipeline exists to prevent.
+
+That is why the label has to exist. An unlabeled implementation-derived behavior is indistinguishable from a `stated` one by the time it reaches an author, and every downstream phase trusts the label.
+
+### Where it legitimately comes from
+
+Extraction reads no production code, so this should be uncommon. It is not never:
+
+- **Brownfield changes.** The description modifies part of a system whose surrounding behavior is documented only in code. That behavior still has to keep working, and the register cannot ask about what nobody knew to mention.
+- **Recon comes back with answers.** Lane B reads the codebase and will surface behavior even when told not to report computed values as correct answers. `observed` is where that goes; the alternative is that it silently contaminates the spec or is thrown away.
+- **The code answers a register question.** The description leaves a boundary open and the implementation picks a side. Recording which side is useful — as evidence for the user's decision, never as the decision.
+- **You slipped.** You opened the handler before extraction was done. Labeling is the remedy; silence is not.
+
+### The downgrade rule
+
+**Confidence records where the expected outcome came from, not how sure you feel about it.** If you read the implementation and then wrote a number, a message, an ordering, or a boundary into a `Then` clause, that behavior is `observed` — even when the description mentions the behavior, even when you are confident the value is right.
+
+A behavior labeled `stated` whose *outcome* was filled in from the code is the most dangerous artifact this phase can produce. It passes every downstream check by lying about its provenance.
+
+An `observed` behavior anchors to a **code location** (`PricingService.cs:120-134`), not a quote. Name what you read so the user can check it.
+
+### Three exits, and only three
+
+| Exit | When | Result |
+|---|---|---|
+| **Promoted** | The user confirms the behavior is intended | Becomes `stated`, anchored to their confirmation. An ordinary test. |
+| **Characterized** | It must keep working, but nobody can confirm it is *right* | A characterization test per the `testing` skill's `references/legacy-code.md` — named and commented as documenting current behavior, never presented as proof of correctness |
+| **Dropped** | Incidental, or outside the change's blast radius | Listed in the report, not tested |
+
+There is no fourth exit. An `observed` behavior does not become a correctness test by looking obviously right.
+
 ## Output Format
 
 Write `behavior-spec.md`:
@@ -118,13 +154,17 @@ Write `behavior-spec.md`:
 - **When** …
 - **Then** …
 - **Observable:** <what a caller can see>
-- **Anchor:** "<verbatim quote from the source>"
-- **Confidence:** stated | implied | inferred
+- **Anchor:** "<verbatim quote from the source>" — or `<file>:<lines>` if `observed`
+- **Confidence:** stated | implied | inferred | observed
 
 ### B2 — …
 
 ## Unspecified — needs an answer before these become tests
 | # | Question | Affects | Options |
+|---|---|---|---|
+
+## Observed — read from the implementation, not described anywhere
+| ID | Behavior | Code location | Proposed exit (promote / characterize / drop) |
 |---|---|---|---|
 
 ## Non-goals
@@ -135,16 +175,18 @@ Write `behavior-spec.md`:
 
 Do not hand off until all four hold:
 
-1. **No production code was read.** If you read some, say so explicitly in the spec and treat every expected value it could have touched as suspect.
-2. **Every behavior has an anchor, or is labeled `inferred`.** No unattributed behaviors.
-3. **Every expected value traces to the description.** No number in a `Then` clause that the source did not contain.
+1. **No production code was read** — or everything it touched is labeled `observed` and listed in its own section. Reading code is recoverable; hiding that you read it is not.
+2. **Every behavior has an anchor, or is labeled `inferred`.** No unattributed behaviors. An `observed` behavior's anchor is its code location.
+3. **Every expected value traces to the description**, unless its behavior is labeled `observed`. No number in a `Then` clause that the source did not contain and the label does not account for.
 4. **The register is non-empty**, or you can state why this description genuinely left nothing open.
 
 ## Extraction Anti-Patterns
 
 | Anti-pattern | What it looks like | Instead |
 |---|---|---|
-| Reading the code "just to orient" | Opening the handler before extraction is done | Extract first; recon is a separate lane and runs after |
+| Reading the code "just to orient" | Opening the handler before extraction is done | Extract first; recon is a separate lane and runs after. If it already happened, label what it touched `observed` |
+| Laundering an observation | A behavior read off the implementation written up as `stated` because the description happens to mention the topic | The description naming a behavior does not make it the source of the outcome — label `observed` |
+| An `observed` behavior tested for correctness | A characterization finding turned into an ordinary assertion because it looks right | Promote it, characterize it, or drop it — nothing else |
 | Silent inference | Standard behavior appearing as `stated` because it is obviously right | Label `inferred`, ask |
 | Imperative scenarios | `When I click Save` | `When the order is submitted` |
 | Restating the ticket | Behaviors that are the description's bullets copied verbatim | Behaviors are testable claims: trigger plus observable outcome |
