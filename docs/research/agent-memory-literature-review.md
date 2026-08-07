@@ -3,27 +3,45 @@
 A survey of work on memory for LLM agents and the human memory research it draws
 on, assembled as background for designing a short-term / long-term memory system.
 
-**Compiled:** 2026-07-30
+**Compiled:** 2026-07-30 · **Last revised:** 2026-08-07
 
 ## Provenance and confidence
 
-**No source in this document was read in full except the A-Mem paper's main body
-(pp. 1–12; its appendices were not read).** Everything else falls into one of the
-tiers below. This matters for how much weight to put on any given claim.
+Sources fall into the tiers below. This matters for how much weight to put on any
+given claim.
 
 | Tier | Sources | What this means |
 |---|---|---|
-| **A — read directly** | A-Mem, pp. 1–12 | Text, tables, and ablation figures seen firsthand. Appendices (baselines, prompt templates, extra metrics, per-category *k*) not read. |
-| **B — machine summary of the source** | *From Storage to Experience* (HTML full text), *The AI Hippocampus* (PDF), *Memory for Autonomous LLM Agents* (**abstract page only** — the full paper was never fetched) | A summarising model read these and returned prose; the underlying text was never inspected. No methodology, tables, or citations verified. Unknown what the summariser dropped. |
-| **C — search-result snippets** | Every other paper cited: CoALA, HippoRAG, Generative Agents, MemGPT, MemoryBank, Voyager, all forgetting papers, all safety papers, all benchmarks | Titles, abstracts fragments, and search-engine summaries only. Treat as *pointers to follow*, not findings. |
-| **D — unverified recall** | §1 (Human memory foundations) in its entirety | Written from model training knowledge, not from sources consulted here. All dates and attributions — Teyler & DiScenna 1986, Bjork's storage/retrieval-strength distinction, Nader 2000, Anderson/Bjork/Bjork 1994, etc. — are unverified. Canonical textbook material, so likely correct, but check before citing. |
+| **A — read directly** | **CoALA** (pp. 1–4, 7–19 — all of §1 and §4–§8; pp. 5–6, the production-systems background, skipped); **A-Mem** (pp. 1–12; appendices not read) | Text, tables, and figures seen firsthand. |
+| **B — machine summary of the source** | *From Storage to Experience* (HTML full text), *The AI Hippocampus* (PDF), *Memory for Autonomous LLM Agents* (**abstract page only** — the full paper was never fetched) | A summarising model read these and returned prose; the underlying text was never inspected. No methodology, tables, or citations verified. Unknown what the summariser dropped. §3 below shows that this tier *does* lose load-bearing detail. |
+| **C — search-result snippets** | Every other paper cited: HippoRAG, Generative Agents, MemGPT, MemoryBank, Voyager, all forgetting papers, all safety papers, all benchmarks | Titles, abstract fragments, and search-engine summaries only. Existence verified (see below); content not. Treat as *pointers to follow*, not findings. |
+| **D — unverified recall** | §1 (Human memory foundations) | Written from model training knowledge. Two attributions since corroborated by CoALA's own citations (Atkinson & Shiffrin 1968; Baddeley & Hitch 1974). The rest — Teyler & DiScenna 1986, Bjork's storage/retrieval-strength distinction, Nader 2000, Anderson/Bjork/Bjork 1994 — remain unverified. Canonical textbook material, so likely correct, but check before citing. |
 
-**Additional caveat on recency.** The compiling model's knowledge cutoff is May
-2026. Most papers cited here carry 2601–2607 arXiv identifiers, i.e. they postdate
-that cutoff entirely. The newest and most frequently cited items in this document
-therefore rest on the *thinnest* evidence — snippets alone, with no background
-knowledge to sanity-check them against. Verify anything from 2026 before relying
-on it, including that the paper exists as described.
+### Existence check (2026-08-07)
+
+Every arXiv ID cited here was queried against the arXiv API. **All 11 resolve, with
+titles matching what is cited.** No fabricated references.
+
+| ID | Submitted | Title matches |
+|---|---|---|
+| 2601.05504v2 | 2026-01-09 | ✓ Memory Poisoning Attack and Defense on Memory Based LLM-Agents |
+| 2601.09113v1 | 2026-01-14 | ✓ The AI Hippocampus: How Far are We From Human Memory? |
+| 2601.18642v2 | 2026-01-26 | ✓ FadeMem: Biologically-Inspired Forgetting for Efficient Agent Memory |
+| 2602.20867v1 | 2026-02-24 | ✓ SoK: Agentic Skills — Beyond Tool Use in LLM Agents |
+| 2603.07670v1 | 2026-03-08 | ✓ Memory for Autonomous LLM Agents: Mechanisms, Evaluation, and Emerging Frontiers |
+| 2604.00131v2 | 2026-03-31 | ✓ Oblivion: Self-Adaptive Agentic Memory Control through Decay-Driven Activation |
+| 2604.20300v2 | 2026-04-22 | ✓ FSFM: A Biologically-Inspired Framework for Selective Forgetting of Agent Memory |
+| 2605.06716v1 | 2026-05-07 | ✓ From Storage to Experience: A Survey on the Evolution of LLM Agent Memory Mechanisms |
+| 2605.20616v1 | 2026-05-20 | ✓ Auto-Dreamer: Learning Offline Memory Consolidation for Language Agents |
+| 2607.08032v1 | 2026-07-09 | ✓ What to Keep, What to Forget: A Rate–Distortion View of Memory Compaction |
+| 2502.06975v1 | 2025-02-10 | ✓ Position: Episodic Memory is the Missing Piece for Long-Term LLM Agents |
+
+This confirms the papers exist and are titled as cited. It does **not** verify any
+claim about their *contents* — those still rest on tier-C snippets.
+
+**Caveat on recency.** The compiling model's knowledge cutoff is May 2026, so most
+papers here postdate it. Existence is now established; substance is not. Verify
+before relying on any specific finding.
 
 Benchmark numbers from vendor and blog sources are flagged inline where used.
 
@@ -54,7 +72,7 @@ across.
 | Theory | Core claim | What AI borrowed |
 |---|---|---|
 | **Atkinson & Shiffrin (1968)** — multi-store | Sensory register → short-term store → long-term store | The literal STM/LTM box diagram in most agent architectures |
-| **Baddeley & Hitch (1974)**, + episodic buffer (2000) | Working memory is an *active control system*: central executive + phonological loop + visuospatial sketchpad + episodic buffer | Mostly just "context window = working memory" |
+| **Baddeley & Hitch (1974)**, + episodic buffer (2000) | Working memory is an *active control system*: central executive + phonological loop + visuospatial sketchpad + episodic buffer | Usually flattened to "context window = working memory" — though **CoALA explicitly does not make this mistake**; see §3.1 |
 | **Tulving (1972)** | Episodic (events, situated in time and place) vs. semantic (facts, detached from acquisition) | The single most-cited distinction in the field |
 | **Squire** | Declarative vs. procedural | Procedural handled separately and worst — see skill libraries |
 
@@ -187,27 +205,124 @@ with five mechanism families:
 The subliterature that explicitly connects the two fields — most directly relevant
 to a from-scratch design.
 
-### CoALA — Cognitive Architectures for Language Agents
+### 3.1 CoALA — Cognitive Architectures for Language Agents
 
 [arXiv 2309.02427](https://arxiv.org/abs/2309.02427) — Sumers, Yao, Narasimhan &
-Griffiths. **The framing paper.** Imports the classical taxonomy wholesale:
+Griffiths (Princeton). Published in **TMLR 02/2024**; v3 dated 15 Mar 2024.
+**The framing paper**, and the only source in this document read directly at
+length.
 
-- **Working memory** — current context
-- **Long-term memory**, split into:
-  - **Episodic** — records of past events
-  - **Semantic** — factual knowledge
-  - **Procedural** — skills
+CoALA organises agents along three dimensions: **information storage** (working +
+long-term memories), **action space** (internal + external), and **decision-making
+procedure** (an interactive loop of planning and execution).
 
-with an action space partitioned into **external** actions (environment) and
-**internal** actions:
+#### Memory modules
 
-- **Retrieval** — read from long-term memory
-- **Reasoning** — update working memory via the LLM
+**Working memory is not the context window.** This is the paper's most useful
+single idea and the one most often lost in secondary summaries. CoALA is explicit:
+
+> "CoALA's notion of working memory is more general: it is a data structure that
+> persists across LLM calls. On each LLM call, the LLM input is synthesized from a
+> subset of working memory (e.g., a prompt template and relevant variables). The
+> LLM output is then parsed back into other variables (e.g., an action name and
+> arguments) which are stored back in working memory."
+
+So working memory is the **persistent central hub** connecting long-term memory,
+the LLM, and grounding interfaces. The context window is a *rendering* of a subset
+of it, per call — not the thing itself. Any design that treats "what's in context"
+as the working memory has collapsed the architecture's hub into one of its views.
+
+**Long-term memory** splits three ways:
+
+- **Episodic** — experience from earlier decision cycles: training input-output
+  pairs, history event flows, game trajectories. Retrieved into working memory to
+  support reasoning; written to as a form of learning.
+- **Semantic** — knowledge about the world and the agent itself. Traditional RAG
+  is a *fixed, read-only* semantic memory; language agents can additionally write
+  LLM-derived inferences into it.
+- **Procedural** — two distinct forms: **implicit** knowledge in the LLM weights,
+  and **explicit** knowledge in the agent's code. The code divides again into
+  procedures implementing *actions* and procedures implementing the *decision-making
+  itself*.
+
+Three procedural-memory points worth carrying into any design:
+
+1. Procedural memory **must be initialised by the designer** with bootstrap code —
+   unlike episodic and semantic, which may start empty or absent.
+2. Writing to it is **"significantly riskier than writing to episodic or semantic
+   memory, as it can easily introduce bugs or allow an agent to subvert its
+   designers' intentions."**
+3. CoALA advises using code **sparingly**, for generic algorithms that complement
+   LLM limitations (e.g. tree search to mitigate autoregressive myopia), because
+   agent code is interpretable but brittle while LLM parameters are opaque but
+   flexible.
+
+#### Action space
+
+External actions ground the agent (physical, dialogue, digital environments).
+Internal actions are three:
+
+- **Retrieval** — read from long-term memory into working memory
+- **Reasoning** — reads *and writes* working memory, generating new information
 - **Learning** — write to long-term memory
 
-If you want one shared vocabulary to design against, this is it.
+Reasoning and retrieval together constitute **planning**; learning and grounding
+are the actions a decision cycle actually commits to.
 
-### The AI Hippocampus
+#### The decision cycle
+
+Each cycle runs a **planning stage** — propose → evaluate → select — and then an
+**execution stage** that commits either a grounding action or a learning action.
+Planning sub-stages may interleave and iterate.
+
+#### Gaps CoALA named in 2024 that the 2026 literature is now answering
+
+These are worth noting because they show the recent work is filling holes an
+authoritative source identified two years earlier, which is weak corroboration
+that those holes were real:
+
+- **"While our discussion has mostly focused on adding to memory, modifying and
+  deleting (a case of 'unlearning') are understudied in recent language agents."**
+  → the 2026 forgetting cluster (FadeMem, Oblivion, FSFM).
+- **"Adaptive and context-specific recall remains understudied in language
+  agents."** → learned//policy-based retrieval.
+- Learning options for **updating retrieval procedures** are "not studied in recent
+  language agents."
+- On safety: **"Learning actions (especially procedural deletion and modification)
+  could cause internal harm"** — a pre-echo of the memory-poisoning literature.
+
+#### The design recipe (§6)
+
+CoALA gives an explicit three-step procedure for designing a new agent, which is
+directly usable:
+
+1. **Determine what memory modules are necessary.** (Its worked example: a retail
+   assistant needs semantic memory for the catalogue, episodic for each customer's
+   history, procedural to query them, working memory for dialogue state.)
+2. **Define the internal action space** — specifically, read and write access *per
+   module*. In the example: read/write to episodic, but **read-only to semantic and
+   procedural**, so the agent cannot rewrite the inventory or its own code.
+3. **Define the decision-making procedure** — how reasoning and retrieval choose an
+   external or learning action. Explicit tradeoff: complex procedures fit a problem
+   better (Voyager for Minecraft), simpler ones generalise (ReAct).
+
+CoALA also names a simplification that matters for the consolidation design:
+**learning can be deferred to the end of an interaction**, summarising the episode
+before storing it — citing Reflexion and Generative Agents. That is the "consolidate
+at session end" pattern, stated as a deliberate decision-procedure simplification
+rather than an architectural necessity.
+
+#### Where CoALA and the search-snippet account of Generative Agents disagree
+
+CoALA §5 states Generative Agents "use retrieval and reasoning to generate
+reflections on their episodic memory … which are then written to long-term
+**semantic** memory." The search-snippet account in §2 says reflections are stored
+back into the **observation stream** as thought nodes. These may be reconcilable
+(CoALA is recasting Park et al. into its own taxonomy), but **this document cannot
+resolve it** — the Park paper was not read. Check the original before relying on
+either.
+
+### 3.2 The AI Hippocampus
 
 [arXiv 2601.09113](https://arxiv.org/pdf/2601.09113) — direct human-vs-AI
 comparison. Its **gap list** is the most useful part:
@@ -219,7 +334,7 @@ comparison. Its **gap list** is the most useful part:
   monitoring
 - Weak **temporal reasoning** about *when* a memory should apply
 
-### Other bridge work
+### 3.3 Other bridge work
 
 - **[Episodic Memory is the Missing Piece](https://arxiv.org/pdf/2502.06975)** —
   position paper arguing the field over-invests in semantic fact stores and
@@ -229,7 +344,7 @@ comparison. Its **gap list** is the most useful part:
 - **[Dynamic Human-like Memory Recall and Consolidation](https://dl.acm.org/doi/10.1145/3613905.3650839)**
   (CHI EA) — user-facing evaluation of human-like memory behaviour.
 
-### Forgetting as a first-class mechanism
+### 3.4 Forgetting as a first-class mechanism
 
 A visible 2026 research cluster. Common taxonomy: **time-based**,
 **frequency-based**, **importance-driven** forgetting.
@@ -243,7 +358,7 @@ A visible 2026 research cluster. Common taxonomy: **time-based**,
   treatment of memory compaction. Useful because it gives forgetting a principled
   objective rather than a heuristic.
 
-### Offline consolidation ("sleep")
+### 3.5 Offline consolidation ("sleep")
 
 - **[Sleep-time compute](https://www.letta.com/blog/sleep-time-compute/)** (Letta) —
   reframes idle-time memory work as **offline policy improvement**: improve
@@ -346,16 +461,40 @@ retrievals are noise competing with signal.
 
 ## 7. Design implications
 
-Four points the literature is broadly unanimous on, each cutting against a common
-intuition.
+Points the literature is broadly unanimous on, each cutting against a common
+intuition. §7.0 is the one to internalise first; it is sourced from a directly-read
+paper rather than a summary.
 
-### 7.1 Episodic/semantic beats short-term/long-term
+### 7.0 Working memory is a persistent structure, not the context window
 
-Nearly every serious architecture converges on CoALA's decomposition. "Long-term
-memory" as one undifferentiated store is the thing the field consistently
-abandons. Episodic and semantic have different write policies, different decay
-profiles, and different retrieval patterns — collapsing them forces one set of
-choices onto both.
+CoALA's definition — a data structure persisting across LLM calls, from which each
+call's input is *synthesised* — is a materially better design than "short-term
+memory = recent turns in context." It means:
+
+- **What persists and what is shown are separate decisions.** Working memory holds
+  task state, active goals, retrieved material, and parsed outputs. Any given LLM
+  call renders a *subset*.
+- **The eviction problem changes shape.** You are not deciding what to drop from
+  memory; you are deciding what to include in this call's render. Dropped-from-view
+  is not dropped-from-state.
+- **It is the hub.** Working memory is where long-term retrieval lands, where
+  reasoning writes, and where grounding observations arrive. Treating it as a
+  transcript buffer forfeits all of that.
+
+This alone reframes the short-term half of an STM/LTM design.
+
+### 7.1 Episodic/semantic/procedural beats short-term/long-term
+
+Nearly every serious architecture converges on CoALA's decomposition, and CoALA
+itself makes it **three** long-term modules, not two. "Long-term memory" as one
+undifferentiated store is the thing the field consistently abandons. The three have
+different write policies, different decay profiles, different retrieval patterns —
+and, per CoALA, sharply different **risk**: procedural is the only one where a bad
+write can corrupt the agent's own behaviour rather than merely its beliefs.
+
+Concretely, CoALA's design recipe says to define **read/write access per module**
+as an explicit decision. Its worked example gives the agent read/write on episodic
+but **read-only on semantic and procedural**. That asymmetry is a good default.
 
 ### 7.2 Consolidation is the highest-leverage under-built component
 
@@ -364,11 +503,21 @@ stage. It is also the part with the strongest theoretical grounding (CLS) and th
 clearest implementation pattern (offline, batched, into a candidate store with
 rollback).
 
+CoALA supplies a useful framing: **learning is an action the decision procedure
+chooses**, on par with acting on the world — not a fixed schedule bolted on the
+side. Deferring it to end-of-interaction is a legitimate *simplification*, but the
+paper is clear that it is a simplification, and that more flexible agents "treat
+learning on par with external actions," deciding when and what to commit.
+
 ### 7.3 Forgetting is a feature, and it is now its own research area
 
 Not eviction-for-capacity — *selective, importance-weighted decay as a retrieval
 quality mechanism*. Bjork's storage/retrieval-strength distinction gives the
 design directly: **decay accessibility, do not delete**.
+
+Corroborated from an unexpected direction: CoALA flagged in 2024 that "modifying
+and deleting … are understudied," and the 2026 forgetting cluster now exists. The
+gap was real and is being filled.
 
 ### 7.4 Contradiction handling and confidence are the open holes
 
@@ -388,15 +537,28 @@ stuffing, at least until the system is well understood.
 
 ## 8. Reading order
 
-For someone designing a system from scratch:
+~~1. CoALA~~ — **done**, read directly; §3.1 above reflects the source, not a
+summary. Its §§4–6 are the applied core if you want to reread.
 
-1. **[CoALA](https://arxiv.org/abs/2309.02427)** — vocabulary and decomposition. Read first.
-2. **[From Storage to Experience](https://arxiv.org/html/2605.06716v1)** — the map of the field.
+Remaining, for someone designing a system from scratch:
+
+1. **[Generative Agents](https://dl.acm.org/doi/fullHtml/10.1145/3586183.3606763)** —
+   the most-copied concrete design, and needed to resolve the reflection-storage
+   discrepancy noted in §3.1.
+2. **[From Storage to Experience](https://arxiv.org/html/2605.06716v1)** — the map of
+   the field. Currently tier-B; the CoALA experience shows what that costs.
 3. **[The AI Hippocampus](https://arxiv.org/pdf/2601.09113)** — what is still missing.
-4. **[Generative Agents](https://dl.acm.org/doi/fullHtml/10.1145/3586183.3606763)** — the most-copied concrete design.
-5. **[HippoRAG](https://proceedings.neurips.cc/paper_files/paper/2024/file/6ddc001d07ca4f319af96a3024f6dbd1-Paper-Conference.pdf)** — best neuro-to-AI mapping.
-6. **McClelland et al. (1995), CLS** — the theory underneath consolidation.
-7. **[Memory Poisoning Attack and Defense](https://arxiv.org/abs/2601.05504)** — before committing to an architecture.
+   Also tier-B.
+4. **[HippoRAG](https://proceedings.neurips.cc/paper_files/paper/2024/file/6ddc001d07ca4f319af96a3024f6dbd1-Paper-Conference.pdf)** — best neuro-to-AI mapping.
+5. **McClelland et al. (1995), CLS** — the theory underneath consolidation.
+6. **[Memory Poisoning Attack and Defense](https://arxiv.org/abs/2601.05504)** — before
+   committing to an architecture.
+
+**Lesson from doing this once:** reading CoALA directly changed three substantive
+claims in this document (working memory's definition, procedural memory's dual
+nature and risk asymmetry, and the read/write-per-module design step). Tier-B
+summaries preserved the taxonomy but dropped the parts that actually constrain a
+design. Budget for direct reads of anything load-bearing.
 
 ---
 
@@ -410,7 +572,7 @@ For someone designing a system from scratch:
 
 ### Architectures and systems
 
-- [Cognitive Architectures for Language Agents (CoALA)](https://arxiv.org/abs/2309.02427)
+- [Cognitive Architectures for Language Agents (CoALA)](https://arxiv.org/abs/2309.02427) — Sumers, Yao, Narasimhan & Griffiths; **TMLR 02/2024**; [OpenReview](https://openreview.net/forum?id=1i6ZCvflQJ); [companion repo](https://github.com/ysymyth/awesome-language-agents)
 - [A-Mem: Agentic Memory for LLM Agents](https://arxiv.org/abs/2502.12110) — [benchmark code](https://github.com/WujiangXu/AgenticMemory), [production code](https://github.com/WujiangXu/A-mem-sys)
 - [HippoRAG: Neurobiologically Inspired Long-Term Memory for LLMs](https://proceedings.neurips.cc/paper_files/paper/2024/file/6ddc001d07ca4f319af96a3024f6dbd1-Paper-Conference.pdf)
 - [Generative Agents: Interactive Simulacra of Human Behavior](https://dl.acm.org/doi/fullHtml/10.1145/3586183.3606763)
