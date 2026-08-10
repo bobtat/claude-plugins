@@ -23,6 +23,19 @@
       "category": "architecture"
     },
     {
+      "name": "git-workflow",
+      "source": "./plugins/git-workflow",
+      "description": "Teaches Claude to treat version control as a deliverable — atomic conventional commits split from a working tree, branch history made legible without interactive rebase, and pull requests that describe the change rather than the diff, with a hook that blocks the irreversible mistakes",
+      "version": "0.1.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["git", "commits", "conventional-commits", "atomic-commits", "rebase", "git-history", "pull-requests", "github", "gh-cli", "code-review"],
+      "category": "workflow"
+    },
+    {
       "name": "graphql",
       "source": "./plugins/graphql",
       "description": "GraphQL API design guidance and .NET implementation patterns for HotChocolate and GraphQL.NET — schema design, operations, Relay conventions, and performance",
