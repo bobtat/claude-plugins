@@ -1,6 +1,17 @@
 {
-  "description": "Blocks git commands that destroy unrecoverable work, force-push over collaborators, or hang waiting on an interactive editor.",
+  "description": "Routes version-control requests to the git-workflow skill, and blocks git commands that destroy unrecoverable work, force-push over collaborators, or hang waiting on an interactive editor.",
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/route-git-prompt.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
