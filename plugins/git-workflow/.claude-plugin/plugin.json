@@ -1,7 +1,7 @@
 {
   "name": "git-workflow",
-  "version": "0.1.0",
-  "description": "Teaches Claude to treat version control as a deliverable — atomic conventional commits split from a working tree, branch history made legible without interactive rebase, and pull requests that describe the change rather than the diff, with a hook that blocks the irreversible mistakes",
+  "version": "0.2.0",
+  "description": "Teaches Claude to treat version control as a deliverable — atomic conventional commits split from a working tree, branch history made legible without interactive rebase, and pull requests that describe the change rather than the diff, with hooks that route version-control requests to it and block the irreversible mistakes",
   "author": {
     "name": "bobtat",
     "email": ""
