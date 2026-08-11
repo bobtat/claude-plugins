@@ -6,7 +6,7 @@ A Claude Code plugin that treats version control as part of the deliverable, not
 
 The premise: a commit history is read far more often than it is written, by people who cannot ask the author what happened. It has two jobs — **answer "why is this line like this?"** years later via `log -S`, `blame`, and `bisect`, and **let a reviewer read a change as a sequence of comprehensible steps.** Both are destroyed by the same thing: commits that bundle unrelated changes.
 
-Adds an auto-triggering knowledge skill, three commands, one agent, and a hook that blocks the mistakes you cannot undo:
+Adds an auto-triggering knowledge skill, three commands, one agent, and two hooks — one that makes the skill fire reliably, one that blocks the mistakes you cannot undo:
 
 - **Commit composition** — the four-part atomicity test, grouping a working tree by intent rather than by file, precise staging, and per-commit isolation checks so every commit builds on its own
 - **Conventional Commits in full** — every type with its common misuse, the `chore` trap, scope conventions derived from the repo rather than invented, the imperative test for subjects, and what a body should contain that the diff does not
@@ -72,6 +72,28 @@ Two of them exist because the first draft got it wrong: `git clean -fd` slipped 
 
 **Its honest limit:** it matches command *text*. A destructive command assembled from shell variables, a here-doc, or an alias passes straight through.
 
+## The Second Hook Exists Because Auto-Triggering Isn't Reliable
+
+A skill fires when the model matches the request against the skill's description. That match is probabilistic, and it is weakest in the exact case that matters most:
+
+> **"yes commit and open a PR"**
+
+Three things work against it at once. The turn is a *continuation* — "yes" approves something already under discussion, so it reads as assent rather than as a new task. It arrives late in a session about something else, where the momentum of the current work dominates. And the skill's description opens with an *anticipatory* condition ("whenever Claude is about to run `git commit`…") about a tool call that has not happened yet, with the phrases you would actually match on sitting further in.
+
+There is usually competition, too. Anything else that claims commit work — another plugin's `/commit-push-pr`, a user-level "use proactively whenever code changes are ready to be committed" agent — is a plausible response to the same sentence, and picking it means this skill never loads.
+
+`hooks/scripts/route-git-prompt.sh` runs on `UserPromptSubmit`, matches the prompt text directly, and injects a three-line pointer to the skill. Matching text is deterministic, so phrasing weight and conversation position stop mattering.
+
+The tuning is entirely about **not** firing. These are deliberately excluded, because they appear constantly outside version control: `branch`, `stage`/`staging`, `merge` on its own, `history` on its own, `tag`, `check out`. And bare `git` only counts when it is not part of a longer token — otherwise `plugins/git-workflow/README.md` in a file path fires the hook on a request to read a file, which is the one false positive the first draft actually shipped with.
+
+Slash commands are skipped entirely: they already route deterministically, and `/git-workflow:*` loads the skill itself.
+
+```bash
+bash hooks/scripts/test-route.sh    # 45 cases: 27 must-fire, 18 must-stay-quiet
+```
+
+**Its honest limit:** the same one as the guard. It reads the prompt, so an oblique request — "ok, do the thing we discussed" — carries no git vocabulary and does not fire. That case still depends on the ordinary skill match.
+
 ## Why Commits Are Split Before They're Written
 
 The default failure this exists to prevent: a session produces a feature, a bug fix noticed in passing, a formatting sweep, and a debug print — and all four land as `feat: add pagination`. The fix becomes unreviewable, the formatting hides the logic, the debug print ships, and reverting the feature also reverts the fix.
@@ -119,13 +141,14 @@ Or test locally:
 claude --plugin-dir C:\Users\Robert\Documents\GitHub\claude-plugins\plugins\git-workflow
 ```
 
-**Hooks load at session start.** After installing, restart Claude Code before the guard is active.
+**Hooks load at session start.** After installing, restart Claude Code before either hook is active.
 
-**Requirements:** Git ≥ 2.38 for every recipe (`--update-refs`); ≥ 2.32 for the rest. `gh`, authenticated, for `/pr`. The guard script needs `bash` and uses `jq` or `python` if present, falling back to `sed` if neither is.
+**Requirements:** Git ≥ 2.38 for every recipe (`--update-refs`); ≥ 2.32 for the rest. `gh`, authenticated, for `/pr`. Both hook scripts need `bash` and use `jq` or `python` if present, falling back to `sed` if neither is.
 
 ## Usage
 
 The skill triggers on its own whenever Claude is about to run `git commit`, `git push`, `git rebase`, `git reset`, or `gh pr create`, and on requests like:
+
 
 - "Commit this"
 - "Write a commit message for these changes"
@@ -136,6 +159,8 @@ The skill triggers on its own whenever Claude is about to run `git commit`, `git
 - "I committed a secret"
 - "I lost my work"
 - "Fix this merge conflict"
+
+Every phrase in that list is also matched by the `UserPromptSubmit` hook, so it loads deterministically rather than on a description match. See "The Second Hook" above for what the hook deliberately ignores.
 
 The commands are explicit:
 
@@ -168,8 +193,10 @@ git-workflow/
 ├── agents/
 │   └── diff-analyst.md                        # sonnet — proposes a commit split from a large diff
 ├── hooks/
-│   ├── hooks.json                             # PreToolUse(Bash)
+│   ├── hooks.json                             # UserPromptSubmit + PreToolUse(Bash)
 │   └── scripts/
+│       ├── route-git-prompt.sh                # Makes the skill fire deterministically; fails open
+│       ├── test-route.sh                      # 45 cases; run it after editing the router
 │       ├── guard-git.sh                       # State-aware guard; fails open
 │       └── test-guard.sh                      # 55 cases; run it after editing the guard
 └── skills/
