@@ -1,0 +1,11 @@
+{
+  "name": "editing",
+  "version": "0.1.0",
+  "description": "Teaches Claude to edit its own prose — the catalog of tells that mark machine-written text, the clarity moves that rebuild a sentence around its real subject and verb, and the never-invent rules that keep an edit from becoming a rewrite, with a command that runs an edit pass over a draft and an agent that reads a finished document cold",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": ["writing", "editing", "prose", "copyediting", "style", "clarity", "technical-writing", "documentation", "readme", "ai-tells"]
+}

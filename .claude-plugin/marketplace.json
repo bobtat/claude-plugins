@@ -23,6 +23,19 @@
       "category": "architecture"
     },
     {
+      "name": "editing",
+      "source": "./plugins/editing",
+      "description": "Teaches Claude to edit its own prose — the catalog of tells that mark machine-written text, the clarity moves that rebuild a sentence around its real subject and verb, and the never-invent rules that keep an edit from becoming a rewrite, with a command that runs an edit pass over a draft and an agent that reads a finished document cold",
+      "version": "0.1.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["writing", "editing", "prose", "copyediting", "style", "clarity", "technical-writing", "documentation", "readme", "ai-tells"],
+      "category": "writing"
+    },
+    {
       "name": "git-workflow",
       "source": "./plugins/git-workflow",
       "description": "Teaches Claude to treat version control as a deliverable — atomic conventional commits split from a working tree, branch history made legible without interactive rebase, and pull requests that describe the change rather than the diff, with hooks that route version-control requests to it and block the irreversible mistakes",

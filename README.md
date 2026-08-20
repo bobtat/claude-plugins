@@ -21,6 +21,7 @@ Then install a plugin:
 | Plugin | Description |
 | ------ | ----------- |
 | [ddd](plugins/ddd) | Domain-driven design guidance for C# applications — aggregates, value objects, domain events, bounded contexts, and module structure |
+| [editing](plugins/editing) | Teaches Claude to edit prose — its own replies and the documents it writes — by deleting what carries no information and rebuilding what does, with a catalog of the tells that mark machine-written text, Williams-style clarity moves, and never-invent gates that keep an edit from becoming a fabrication |
 | [git-workflow](plugins/git-workflow) | Teaches Claude to treat version control as a deliverable — atomic conventional commits split from a working tree, branch history made legible without interactive rebase, and pull requests that describe the change rather than the diff, with hooks that route version-control requests to it and block the irreversible mistakes |
 | [graphql](plugins/graphql) | GraphQL API design guidance and .NET implementation patterns for HotChocolate and GraphQL.NET — schema design, operations, Relay conventions, and performance |
 | [mediatr](plugins/mediatr) | MediatR guidance for in-process messaging in .NET — requests, notifications, pipeline behaviors, registration, and testing |
