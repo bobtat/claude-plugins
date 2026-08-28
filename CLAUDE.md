@@ -22,6 +22,8 @@ plugins/<name>/
 
 **Skills and commands are namespaced with no bare-name fallback.** A skill is addressable only as `plugin:skill` — `testing:testing`, never bare `testing`. Cross-references inside SKILL.md and agent files must use the namespaced form; a bare name silently resolves to nothing, or appears to work only because a stray copy in `~/.claude/skills/` caught it. Two commits on main (`a8b9eba`, `1fe21cc`) exist solely to fix this.
 
+**A `!` context block in a command must contain no shell expansion.** No `${VAR}`, no `$(cmd)`, no `$HOME`, no `~/`. A block containing expansion cannot be matched against the permission rules, so it is **refused outright rather than prompted for**, and the command fails at invocation with `Shell command permission check failed … Contains expansion`. The blocks in `git-workflow` look like counter-examples — `pr.md` uses `$(git merge-base …)` — but they survive only because they all begin with `git` and this machine has `Bash(git *)` allowlisted; they would fail for anyone without that rule. A plugin published for other people cannot depend on an installer's allowlist, so treat the rule as absolute. Anything needing a path goes in the command body, run through the Bash tool, which expands and prompts normally. Commit `57c4b07` fixes four commands that shipped this way.
+
 A feature and the README update documenting it land as **separate commits** (`feat(testing): …` then `docs(testing): …`), consistent with the atomicity rule below.
 
 ## Commit conventions
