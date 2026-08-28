@@ -18,10 +18,14 @@
 
 These are this repository's own numbers, measured on one developer's machine in August 2026. They are not published figures, and they will differ for other people and other usage patterns.
 
-- **Transcript retention is real and is 30 days.** 161 transcripts on disk, oldest exactly 30 days old, with no `cleanupPeriodDays` override in any settings file. This is the fact the entire capture design rests on — it was verified, not assumed.
-- **gzip compresses real transcripts 2.9x, not the ~10x plain text suggests.** Measured across all 161 files: 101.5 MB raw, 35.5 MB compressed. The largest transcripts compress worst (1.6x) because they carry base64 and dense tool output.
-- **Archive growth at heavy daily use is roughly 400 MB per year.** Extrapolated from 35.5 MB over 30 days. Stated plainly in the README because it is the main cost of the full-transcript capture choice.
-- **The first timestamped record in a transcript is around line 16.** The opening records are session metadata carrying no timestamp, which is why the archive hook scans rather than reading the first line.
+- **Transcript retention is real and is 30 days.** The oldest transcript on disk was exactly 30 days old, with no `cleanupPeriodDays` override in any settings file. This is the fact the entire capture design rests on — it was verified, not assumed.
+- **Transcript content breaks down as: 40.1% session metadata, 44.4% tool traffic (results plus inputs), 7.8% user prompts, 4.7% assistant replies.** Measured across 114 session transcripts holding 22.3 MB of content. This is the measurement that decided what the hook keeps.
+- **Credential-shaped strings cluster in tool traffic.** 120 matches across nine patterns: 92 in tool results and inputs, 28 in user prompts, 4 in assistant replies. Some are certainly false positives (`password =` in documentation and sample code), so treat it as an upper bound on prevalence and a reliable signal about *distribution*.
+- **Keeping only redacted prompts is a 564x reduction.** 65.4 MB of transcripts over 30 days becomes 0.12 MB of digests — about 1 MB per year against roughly 260 MB for gzipped full transcripts.
+- **gzip compresses these transcripts 2.9x, not the ~10x plain text suggests.** Measured across all of them. Recorded because it was the basis of the abandoned full-transcript design, and because the intuition it corrects is a common one.
+- **A Haiku call through `claude -p` takes about 6-8 seconds.** Far past the ~1.5 second `SessionEnd` budget, which is why stage 2 is detached rather than synchronous.
+- **The first timestamped record in a transcript is around line 16.** The opening records are session metadata carrying no timestamp, which is why the hook scans rather than reading the first line.
+- **Subagent transcripts exist separately**, under `<session-id>/subagents/`, and are not passed to the hook. They are never captured.
 
 ## This Plugin's Own Synthesis
 
@@ -38,5 +42,7 @@ Not sourced from anywhere in particular; assembled here because no one place hol
 - **No company's actual framework is encoded.** The ladder is a generic default. Where a real one exists, the plugin should be pointed at it; a review mapped to the wrong ladder is worse than one mapped to none.
 - **Non-GitHub forges are unsupported in the mining commands.** GitLab, Bitbucket, and Azure DevOps have equivalents that are not written down here. Git-level commands work everywhere.
 - **No issue-tracker integration is shipped.** JIRA and Linear go through whatever MCP server or CLI the user has, or through pasted text. The plugin deliberately does not guess at ticket contents.
-- **The archived transcripts are unfiltered.** They contain whatever passed through the session, including secrets. This is a consequence of the full-transcript capture choice and is documented in the README rather than mitigated, because scrubbing would corrupt the evidence being preserved.
+- **Redaction is two imperfect passes.** Regex catches formats; Haiku catches prose. Neither is a guarantee, and a secret phrased unusually enough to defeat both will survive into a digest. `<journal>/exclude` is the only hard answer, and it works by not reading the project at all.
+- **The digest cannot show what was tried and abandoned.** That reasoning lived in the assistant's replies and tool calls, which are discarded. Recovering it requires a sweep inside the 30-day window, where a model reads the still-live transcript and writes prose about it.
+- **An earlier version of this plugin archived complete transcripts.** It was replaced because the measurements above showed the career signal is 7.8% of the bytes and the credential exposure is mostly in the other 92%. The reasoning for the original choice — that scrubbing corrupts evidence — was sound only while the whole transcript was treated as the evidence.
 - **Nothing here is validated against actual promotion outcomes.** The guidance reflects published advice from practitioners and a coherent theory of what reviewers need. No claim is made that following it changes review results.
