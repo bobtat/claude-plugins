@@ -1,0 +1,16 @@
+{
+  "description": "Copies each session transcript into the accomplishments journal before Claude Code's 30-day retention deletes it. Inert until /accomplishments:init creates the journal directory; silent, non-blocking, and fails open in every case.",
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/archive-session.sh\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
