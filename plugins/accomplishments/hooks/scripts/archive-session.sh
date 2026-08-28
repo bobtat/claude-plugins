@@ -7,36 +7,52 @@
 # history afterwards does not recover it: a diff records what changed, never
 # why it mattered or what it cost to find.
 #
-# This hook copies the transcript out of the purge window at session end.
+# This hook rescues the part worth keeping, and only that part.
+#
+# It does NOT copy the transcript. Measured across 114 real transcripts, tool
+# traffic -- file contents read, command output -- is 44% of content and held
+# 92 of the 120 credential-shaped strings found anywhere in them. The user's
+# own prompts are 7.8% of content, held 28, and carry the actual signal: the
+# problem they brought and the decisions they made. Keeping only the prompts
+# drops three quarters of the exposure and about 99.8% of the bytes.
+#
+# Redaction runs in two stages:
+#   1. Here, synchronously, by regex. Fast, offline, and fail-closed -- if it
+#      cannot run, metadata is written and no prompt text is.
+#   2. In scrub-digest.sh, detached, by Haiku. Catches what a pattern cannot:
+#      a password written in prose, an internal hostname, a client name.
+# Stage 2 is best-effort and never blocks. Anything it misses stays marked
+# `redaction: regex` in the digest frontmatter, so /accomplishments:scrub can
+# find it and finish the job later. The state is always explicit on disk.
 #
 # Design notes:
-#   - Fails OPEN, always. Every path exits 0. A journal is a convenience; it
-#     must never be able to break the end of a session.
+#   - Fails OPEN as a hook, always exiting 0: a journal is a convenience and
+#     must never break the end of a session. But it fails CLOSED on content:
+#     any doubt writes less, never more.
 #   - INERT until the journal directory exists. That is the opt-in gate:
-#     /accomplishments:init creates it, and until then this hook does nothing
-#     at all. Silent capture nobody asked for is surveillance.
-#   - SessionEnd fires on `clear` and `resume`, not only on exit, so a single
-#     session is archived repeatedly as it grows. Re-archiving replaces the
-#     earlier, shorter copy instead of accumulating duplicates.
-#   - gzip because transcripts are JSONL. Measured against 161 real
-#     transcripts the ratio is 2.9x, not the 10x that plain text suggests:
-#     these files are already dense, and the largest ones carry base64 and
-#     tool output that barely compress at all. Budget accordingly — heavy
-#     daily use archives on the order of 400 MB per year, not tens of MB.
-#   - Every file path is handed to helpers on stdin rather than as an
-#     argument. On Windows the `python` on PATH is often native Python, which
-#     cannot open a Git Bash path like /tmp/x — piping sidesteps the whole
-#     question of which path flavor the helper understands.
-#   - Stdout is discarded by Claude Code on this event; it reaches neither you
-#     nor Claude. Anything printed here is for `claude --debug` alone.
+#     /accomplishments:init creates it, and until then this does nothing.
+#   - SessionEnd fires on `clear` and `resume`, not only on exit, so a session
+#     is digested repeatedly as it grows. Re-running replaces the earlier,
+#     shorter digest rather than accumulating duplicates.
+#   - Every file reaches a helper on stdin rather than as an argument. On
+#     Windows the `python` on PATH is often native Python, which cannot open a
+#     Git Bash path like /tmp/x.
+#   - Stdout is discarded by Claude Code on this event; it reaches neither the
+#     user nor Claude. Anything printed here is for `claude --debug` alone.
 
 set -uo pipefail
 
+# --- Recursion guard --------------------------------------------------------
+# scrub-digest.sh invokes `claude -p`, which is itself a session. Its
+# SessionEnd would re-enter this hook and spawn another scrub, without end.
+# The variable is exported by the scrubber and inherited here.
+[ -n "${ACCOMPLISHMENTS_NO_CAPTURE:-}" ] && exit 0
+
 ROOT_DEFAULT="${HOME}/.claude/accomplishments"
 JOURNAL="${CLAUDE_ACCOMPLISHMENTS_DIR:-$ROOT_DEFAULT}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # --- The opt-in gate --------------------------------------------------------
-# No journal, no capture. Checked before anything is read or parsed.
 [ -d "$JOURNAL" ] || exit 0
 
 input=$(cat 2>/dev/null) || exit 0
@@ -44,7 +60,6 @@ input=$(cat 2>/dev/null) || exit 0
 
 PY=$(command -v python3 || command -v python) || PY=""
 
-# --- Extract a top-level string field --------------------------------------
 extract() {
   local field="$1"
   if command -v jq >/dev/null 2>&1; then
@@ -61,7 +76,6 @@ v = d.get(sys.argv[1])
 sys.stdout.write(v if isinstance(v, str) else "")
 ' "$field" 2>/dev/null && return 0
   fi
-  # Last resort. Escapes are left in place; adequate for the checks below.
   printf '%s' "$input" | tr -d '\n' \
     | sed -n "s/.*\"${field}\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p"
 }
@@ -79,18 +93,31 @@ case "$session_id" in
   *[!a-zA-Z0-9-]*|"") exit 0 ;;
 esac
 
-sessions="$JOURNAL/sessions"
-mkdir -p "$sessions" 2>/dev/null || exit 0
+# --- Exclusions -------------------------------------------------------------
+# One pattern per line in <journal>/exclude; blank lines and # comments
+# ignored. A pattern matches if it appears anywhere in the session's cwd, so a
+# bare repository name is enough. Checked before the transcript is opened:
+# an excluded project is never read at all, not merely not written.
+EXCLUDE="$JOURNAL/exclude"
+if [ -f "$EXCLUDE" ] && [ -n "$cwd" ]; then
+  while IFS= read -r pattern || [ -n "$pattern" ]; do
+    case "$pattern" in ''|'#'*) continue ;; esac
+    pattern="${pattern%"${pattern##*[![:space:]]}"}"
+    [ -n "$pattern" ] || continue
+    case "$cwd" in *"$pattern"*) exit 0 ;; esac
+  done < "$EXCLUDE"
+fi
+
+digests="$JOURNAL/digests"
+mkdir -p "$digests" 2>/dev/null || exit 0
 
 # --- Which day does this session belong to? ---------------------------------
-# Bucketed by the session's START timestamp, which is stable across
-# re-archives. The end time is not: a session opened at 23:50 and cleared at
-# 00:10 would land in two different buckets and archive itself twice.
-# The reader deliberately drains its whole input instead of stopping at the
-# first hit. Breaking early kills `head` with SIGPIPE, and under `pipefail`
-# that marks the whole pipeline failed and discards a timestamp that was
-# found correctly. The first dozen records are session metadata carrying no
-# timestamp at all, so the scan has to reach roughly line 16 regardless.
+# Bucketed by START timestamp, stable across re-digests. The end time is not:
+# a session opened at 23:50 and cleared at 00:10 would land in two buckets.
+#
+# The reader drains its whole input rather than stopping at the first hit.
+# Breaking early kills `head` with SIGPIPE, and under `pipefail` that marks
+# the pipeline failed and discards a timestamp that was found correctly.
 started=""
 if [ -n "$PY" ]; then
   started=$(head -c 262144 "$transcript" 2>/dev/null | "$PY" -c '
@@ -118,45 +145,51 @@ case "$day" in
 esac
 month="${day%-*}"
 
-# An earlier archive of this session may already exist, possibly under another
-# month if the start timestamp was unreadable then. Reuse its path so a
-# re-archive replaces rather than duplicates.
-existing=$(find "$sessions" -type f -name "*${session_id}.jsonl.gz" 2>/dev/null | head -1)
+existing=$(find "$digests" -type f -name "*${session_id}.md" 2>/dev/null | head -1)
 if [ -n "$existing" ]; then
   target="$existing"
 else
-  mkdir -p "$sessions/$month" 2>/dev/null || exit 0
-  target="$sessions/$month/${day}-${session_id}.jsonl.gz"
+  mkdir -p "$digests/$month" 2>/dev/null || exit 0
+  target="$digests/$month/${day}-${session_id}.md"
 fi
 
-# Skip when the archive already holds everything the transcript does. A
-# resumed session only grows, so uncompressed size is the test.
-src_bytes=$(wc -c < "$transcript" 2>/dev/null | tr -d ' ') || src_bytes=0
-if [ -f "$target" ]; then
-  have=$(gzip -dc "$target" 2>/dev/null | wc -c | tr -d ' ') || have=0
-  [ -n "$have" ] || have=0
-  if [ "${src_bytes:-0}" -le "${have:-0}" ] 2>/dev/null; then
-    exit 0
-  fi
-fi
-
-# --- Copy -------------------------------------------------------------------
-# Written to a temp file beside the destination, then moved into place, so a
-# session killed mid-write cannot leave a truncated archive behind.
-tmp="${target}.partial.$$"
-if command -v gzip >/dev/null 2>&1; then
-  gzip -c "$transcript" > "$tmp" 2>/dev/null || { rm -f "$tmp" 2>/dev/null; exit 0; }
-else
-  target="${target%.gz}"
+# --- Stage 1: extract and redact -------------------------------------------
+# No Python means no redaction, and no redaction means no prompt text. The
+# digest is skipped entirely; the index line below still records that the
+# session happened.
+wrote_digest=0
+prompts=0
+if [ -n "$PY" ] && [ -f "$HERE/digest.py" ]; then
   tmp="${target}.partial.$$"
-  cp "$transcript" "$tmp" 2>/dev/null || { rm -f "$tmp" 2>/dev/null; exit 0; }
+  if A_SID="$session_id" "$PY" "$HERE/digest.py" < "$transcript" > "$tmp" 2>/dev/null; then
+    if [ -s "$tmp" ]; then
+      # A resumed session only grows. Replace only when there is more to say.
+      new_n=$(grep -c '^\[' "$tmp" 2>/dev/null | tr -d ' ') || new_n=0
+      old_n=0
+      [ -f "$target" ] && { old_n=$(grep -c '^\[' "$target" 2>/dev/null | tr -d ' ') || old_n=0; }
+      if [ "${new_n:-0}" -ge "${old_n:-0}" ] 2>/dev/null; then
+        mv -f "$tmp" "$target" 2>/dev/null && { wrote_digest=1; prompts="${new_n:-0}"; }
+      fi
+    fi
+  fi
+  rm -f "$tmp" 2>/dev/null
 fi
-mv -f "$tmp" "$target" 2>/dev/null || { rm -f "$tmp" 2>/dev/null; exit 0; }
+
+# --- Stage 2: hand the digest to Haiku, detached ---------------------------
+# Never blocks. SessionEnd runs on a ~1.5s shared budget and a model call takes
+# seconds; waiting for it would delay every session exit. If the detached
+# process is killed, the regex-redacted digest simply keeps `redaction: regex`
+# and /accomplishments:scrub picks it up later.
+if [ "$wrote_digest" = "1" ] && [ -z "${ACCOMPLISHMENTS_NO_SCRUB:-}" ] \
+   && [ -f "$HERE/scrub-digest.sh" ] && command -v claude >/dev/null 2>&1; then
+  ACCOMPLISHMENTS_NO_CAPTURE=1 nohup bash "$HERE/scrub-digest.sh" "$target" \
+    >/dev/null 2>&1 &
+fi
 
 # --- Index ------------------------------------------------------------------
-# One JSONL line per archive, appended and never rewritten, so an interrupted
+# One JSONL line per session, appended and never rewritten, so an interrupted
 # write cannot corrupt what came before. Readers take the LAST entry for a
-# given session_id. The sweep reads this instead of opening every archive.
+# given session_id. The sweep reads this instead of opening every digest.
 branch=""; head_sha=""; commits=0; author=""
 if [ -n "$cwd" ] && [ -d "$cwd" ] && command -v git >/dev/null 2>&1; then
   branch=$(git -C "$cwd" branch --show-current 2>/dev/null) || branch=""
@@ -169,6 +202,9 @@ if [ -n "$cwd" ] && [ -d "$cwd" ] && command -v git >/dev/null 2>&1; then
 fi
 [ -n "$commits" ] || commits=0
 
+rel=""
+[ "$wrote_digest" = "1" ] && rel="${target#"$JOURNAL"/}"
+
 # Values travel through the environment so neither shell quoting nor a
 # hand-rolled escaper has to be correct for Windows paths full of backslashes.
 export A_SID="$session_id" \
@@ -180,8 +216,8 @@ export A_SID="$session_id" \
        A_BRANCH="$branch" \
        A_HEAD="$head_sha" \
        A_COMMITS="$commits" \
-       A_ARCHIVE="${target#"$JOURNAL"/}" \
-       A_BYTES="$src_bytes"
+       A_DIGEST="$rel" \
+       A_PROMPTS="$prompts"
 
 if [ -n "$PY" ]; then
   "$PY" -c '
@@ -193,7 +229,7 @@ def num(v):
         return 0
 sys.stdout.write(json.dumps({
     "session_id":          os.environ.get("A_SID", ""),
-    "archived_at":         os.environ.get("A_ARCHIVED", ""),
+    "recorded_at":         os.environ.get("A_ARCHIVED", ""),
     "started_at":          os.environ.get("A_STARTED", ""),
     "day":                 os.environ.get("A_DAY", ""),
     "cwd":                 os.environ.get("A_CWD", ""),
@@ -201,19 +237,16 @@ sys.stdout.write(json.dumps({
     "branch":              os.environ.get("A_BRANCH", ""),
     "head":                os.environ.get("A_HEAD", ""),
     "commits_since_start": num(os.environ.get("A_COMMITS", "0")),
-    "archive":             os.environ.get("A_ARCHIVE", ""),
-    "transcript_bytes":    num(os.environ.get("A_BYTES", "0")),
+    "digest":              os.environ.get("A_DIGEST", ""),
+    "prompts":             num(os.environ.get("A_PROMPTS", "0")),
 }) + "\n")
-' >> "$sessions/index.jsonl" 2>/dev/null
+' >> "$digests/index.jsonl" 2>/dev/null
 elif command -v jq >/dev/null 2>&1; then
-  jq -nc '{session_id: env.A_SID, archived_at: env.A_ARCHIVED, started_at: env.A_STARTED,
+  jq -nc '{session_id: env.A_SID, recorded_at: env.A_ARCHIVED, started_at: env.A_STARTED,
            day: env.A_DAY, cwd: env.A_CWD, project: env.A_PROJECT, branch: env.A_BRANCH,
            head: env.A_HEAD, commits_since_start: (env.A_COMMITS | tonumber? // 0),
-           archive: env.A_ARCHIVE, transcript_bytes: (env.A_BYTES | tonumber? // 0)}' \
-    >> "$sessions/index.jsonl" 2>/dev/null
+           digest: env.A_DIGEST, prompts: (env.A_PROMPTS | tonumber? // 0)}' \
+    >> "$digests/index.jsonl" 2>/dev/null
 fi
-# With neither python nor jq the archive still lands; only the index line is
-# skipped. The sweep falls back to reading filenames, which carry the date and
-# the session id. Nothing is lost that cannot be recomputed.
 
 exit 0

@@ -12,14 +12,14 @@
     {
       "name": "accomplishments",
       "source": "./plugins/accomplishments",
-      "description": "Teaches Claude to build the evidence record a performance review needs before the evidence is gone — a session hook that rescues transcripts from Claude Code's 30-day purge, a sweep that reconciles git and issue history against the journal and interviews the gaps, and authoring that turns dated entries into a review, a promotion case, or resume bullets without inventing a number",
-      "version": "0.1.0",
+      "description": "Teaches Claude to build the evidence record a performance review needs before the evidence is gone — a session hook that distils each transcript into a redacted digest of your own prompts before Claude Code's 30-day purge deletes it, keeping the decisions and discarding the tool output where the secrets live; a sweep that reconciles git, PR, and review history against the journal and interviews the gaps; and authoring that turns dated entries into a review, a promotion case, or resume bullets without inventing a number",
+      "version": "0.2.0",
       "author": {
         "name": "bobtat",
         "email": ""
       },
       "license": "MIT",
-      "keywords": ["performance-review", "accomplishments", "brag-document", "promotion", "resume", "career", "self-assessment", "work-journal", "impact", "evidence"],
+      "keywords": ["performance-review", "accomplishments", "brag-document", "promotion", "resume", "career", "self-assessment", "work-journal", "impact", "evidence", "redaction", "privacy"],
       "category": "productivity"
     },
     {

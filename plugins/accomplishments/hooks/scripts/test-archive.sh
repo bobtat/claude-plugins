@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# Test harness for archive-session.sh — run:  bash hooks/scripts/test-archive.sh
+# Test harness for archive-session.sh and digest.py.
+#   bash hooks/scripts/test-archive.sh
 # Exits non-zero if any case behaves differently than the hook promises.
-# Resolves next to this script, so it works from any checkout.
-HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/archive-session.sh"
+#
+# The Haiku pass is disabled throughout (ACCOMPLISHMENTS_NO_SCRUB=1). These
+# cases cover stage 1, which must be correct offline and on its own.
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOOK="$HERE/archive-session.sh"
 pass=0; fail=0
 
 check() { # check <description> <0 = ok>
@@ -11,100 +15,180 @@ check() { # check <description> <0 = ok>
 }
 yes_no() { if [ "$1" -eq 0 ] 2>/dev/null; then echo 0; else echo 1; fi; }
 
-fire() { # fire <transcript> <session_id> <cwd>  -> echoes exit code
+fire() { # fire <transcript> <session_id> <cwd> -> exit code
   printf '{"hook_event_name":"SessionEnd","session_id":"%s","transcript_path":"%s","cwd":"%s","permission_mode":"default"}' \
-    "$2" "$1" "$3" | CLAUDE_ACCOMPLISHMENTS_DIR="$JOURNAL" bash "$HOOK" >/dev/null 2>&1
+    "$2" "$1" "$3" \
+    | CLAUDE_ACCOMPLISHMENTS_DIR="$JOURNAL" ACCOMPLISHMENTS_NO_SCRUB=1 bash "$HOOK" >/dev/null 2>&1
   echo $?
 }
 
-mk_transcript() { # mk_transcript <path> <n-lines> [start-date]
-  local d="${3:-2026-08-20}" i=1
-  : > "$1"
-  while [ "$i" -le "$2" ]; do
-    printf '{"type":"user","timestamp":"%sT09:%02d:00.000Z","cwd":"/w","gitBranch":"main","sessionId":"s","message":{"role":"user","content":"prompt number %s"}}\n' \
-      "$d" "$((i % 60))" "$i" >> "$1"
-    i=$((i+1))
-  done
-}
-
-archives() { find "$JOURNAL/sessions" -type f -name '*.jsonl.gz' 2>/dev/null | wc -l | tr -d ' '; }
-index_lines() { wc -l < "$JOURNAL/sessions/index.jsonl" 2>/dev/null | tr -d ' '; }
+digest_file() { find "$JOURNAL/digests" -type f -name '*.md' 2>/dev/null | head -1; }
+digest_count() { find "$JOURNAL/digests" -type f -name '*.md' 2>/dev/null | wc -l | tr -d ' '; }
 
 TMP=$(mktemp -d)
 WORK="$TMP/work"; mkdir -p "$WORK"
 git -C "$WORK" init -q -b main 2>/dev/null
 git -C "$WORK" config user.email t@t.co; git -C "$WORK" config user.name t
-echo one > "$WORK/a.txt"; git -C "$WORK" add a.txt; git -C "$WORK" commit -qm "init" 2>/dev/null
+echo one > "$WORK/a.txt"; git -C "$WORK" add a.txt; git -C "$WORK" commit -qm init 2>/dev/null
+
+# A fixture shaped like a real transcript: metadata records with no timestamp
+# first, then a mix of prompts, injected context, tool traffic, assistant text,
+# and a sidechain record. Secrets are planted in each segment so the test can
+# prove which segments survive into the digest.
+python - "$TMP/transcript.jsonl" <<'PYEOF'
+import json, sys
+recs = [
+    {"type": "ai-title", "title": "x"},
+    {"type": "mode", "mode": "default"},
+    {"type": "user", "timestamp": "2026-08-20T09:00:00.000Z", "cwd": "/w",
+     "gitBranch": "main", "message": {"role": "user",
+     "content": "why is the nightly sync taking 40 minutes"}},
+    {"type": "user", "timestamp": "2026-08-20T09:01:00.000Z",
+     "message": {"role": "user", "content": [
+        {"type": "text", "text": "here is the config AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMIK7MDENGbPxRfiCY"}]}},
+    {"type": "user", "timestamp": "2026-08-20T09:02:00.000Z",
+     "message": {"role": "user", "content": [
+        {"type": "text", "text": "<system-reminder>INJECTED_TOKEN=ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</system-reminder>"}]}},
+    {"type": "assistant", "timestamp": "2026-08-20T09:03:00.000Z",
+     "message": {"role": "assistant", "content": [
+        {"type": "text", "text": "ASSISTANT_MARKER the key is sk-abcdefghijklmnopqrstuvwxyz123456"}]}},
+    {"type": "user", "timestamp": "2026-08-20T09:04:00.000Z",
+     "message": {"role": "user", "content": [
+        {"type": "tool_result", "content": "TOOLRESULT_MARKER DB_PASSWORD=hunter2supersecret"}]}},
+    {"type": "assistant", "timestamp": "2026-08-20T09:05:00.000Z",
+     "message": {"role": "assistant", "content": [
+        {"type": "tool_use", "input": {"command": "curl -H 'Authorization: Bearer TOOLUSE_MARKER_abcdef123456'"}}]}},
+    {"type": "user", "timestamp": "2026-08-20T09:06:00.000Z", "isSidechain": True,
+     "message": {"role": "user", "content": "SIDECHAIN_MARKER subagent prompt"}},
+    {"type": "user", "timestamp": "2026-08-20T09:07:00.000Z",
+     "message": {"role": "user", "content": "batch the per-row lookup, that fixed it"}},
+]
+with open(sys.argv[1], "w", encoding="utf-8", newline="\n") as fh:
+    for r in recs:
+        fh.write(json.dumps(r) + "\n")
+PYEOF
 
 T="$TMP/transcript.jsonl"
-mk_transcript "$T" 20
 SID="84fdf701-fd50-4e60-9b1a-5c9a26ec0a87"
 
 echo "== inert until the journal directory exists =="
 JOURNAL="$TMP/no-such-journal"
 rc=$(fire "$T" "$SID" "$WORK")
-check "exits 0 with no journal directory" "$(yes_no "$rc")"
-check "creates nothing at all"            "$([ ! -e "$JOURNAL" ]; yes_no $?)"
+check "exits 0 with no journal"  "$(yes_no "$rc")"
+check "creates nothing"          "$([ ! -e "$JOURNAL" ]; yes_no $?)"
 
-echo "== archives once the journal exists =="
+echo "== writes a digest, not a transcript copy =="
 JOURNAL="$TMP/journal"; mkdir -p "$JOURNAL"
 rc=$(fire "$T" "$SID" "$WORK")
-ARCHIVE=$(find "$JOURNAL/sessions" -type f -name '*.jsonl.gz' | head -1)
-check "exits 0"                             "$(yes_no "$rc")"
-check "wrote exactly one archive"           "$([ "$(archives)" -eq 1 ]; yes_no $?)"
-check "bucketed by the session START date"  "$(echo "$ARCHIVE" | grep -q '/2026-08/2026-08-20-'; yes_no $?)"
-check "archive round-trips to the original" "$(gzip -dc "$ARCHIVE" 2>/dev/null | diff -q - "$T" >/dev/null 2>&1; yes_no $?)"
-check "archive is smaller than the source"  "$([ "$(wc -c < "$ARCHIVE")" -lt "$(wc -c < "$T")" ]; yes_no $?)"
-check "left no .partial file behind"        "$([ -z "$(find "$JOURNAL" -name '*.partial.*' 2>/dev/null)" ]; yes_no $?)"
-check "wrote one index line"                "$([ "$(index_lines)" -eq 1 ]; yes_no $?)"
-check "index is valid JSON"                 "$(python -c 'import json,sys
+D=$(digest_file)
+check "exits 0"                        "$(yes_no "$rc")"
+check "wrote exactly one digest"       "$([ "$(digest_count)" -eq 1 ]; yes_no $?)"
+check "no transcript copy anywhere"    "$([ -z "$(find "$JOURNAL" \( -name '*.jsonl.gz' -o -name '*-*-*.jsonl' \) 2>/dev/null)" ]; yes_no $?)"
+check "bucketed by session START date" "$(echo "$D" | grep -q '/2026-08/2026-08-20-'; yes_no $?)"
+check "digest is under 4 KB"           "$([ "$(wc -c < "$D")" -lt 4096 ]; yes_no $?)"
+check "left no .partial behind"        "$([ -z "$(find "$JOURNAL" -name '*.partial*' 2>/dev/null)" ]; yes_no $?)"
+
+echo "== keeps the user's prompts =="
+check "keeps the opening question" "$(grep -q 'nightly sync taking 40 minutes' "$D"; yes_no $?)"
+check "keeps the later decision"   "$(grep -q 'batch the per-row lookup' "$D"; yes_no $?)"
+check "records prompt count"       "$(grep -qE '^prompts: [0-9]+$' "$D"; yes_no $?)"
+check "marks redaction state"      "$(grep -q '^redaction: regex$' "$D"; yes_no $?)"
+
+echo "== drops every other segment =="
+check "no assistant text"      "$(grep -q 'ASSISTANT_MARKER'  "$D" && echo 1 || echo 0)"
+check "no tool results"        "$(grep -q 'TOOLRESULT_MARKER' "$D" && echo 1 || echo 0)"
+check "no tool inputs"         "$(grep -q 'TOOLUSE_MARKER'    "$D" && echo 1 || echo 0)"
+check "no sidechain prompts"   "$(grep -q 'SIDECHAIN_MARKER'  "$D" && echo 1 || echo 0)"
+check "no injected context"    "$(grep -q 'system-reminder'   "$D" && echo 1 || echo 0)"
+
+echo "== redacts secrets that survive into prompts =="
+check "AWS secret value gone"      "$(grep -q 'wJalrXUtnFEMIK7MDENGbPxRfiCY' "$D" && echo 1 || echo 0)"
+check "replaced with a marker"     "$(grep -q 'REDACTED' "$D"; yes_no $?)"
+check "no ghp_ token anywhere"     "$(grep -q 'ghp_AAAA' "$D" && echo 1 || echo 0)"
+check "no sk- key anywhere"        "$(grep -q 'sk-abcdefghij' "$D" && echo 1 || echo 0)"
+check "no hunter2 password"        "$(grep -q 'hunter2' "$D" && echo 1 || echo 0)"
+check "nothing matches a key regex" \
+  "$(grep -qE '(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{20,})' "$D" && echo 1 || echo 0)"
+
+echo "== index =="
+IDX="$JOURNAL/digests/index.jsonl"
+check "wrote one index line"     "$([ "$(wc -l < "$IDX" | tr -d ' ')" -eq 1 ]; yes_no $?)"
+check "index is valid JSON"      "$(python -c '
+import json,sys
 for l in sys.stdin:
-    if l.strip(): json.loads(l)' < "$JOURNAL/sessions/index.jsonl" >/dev/null 2>&1; yes_no $?)"
-check "index records the branch"            "$(grep -q '"branch": "main"' "$JOURNAL/sessions/index.jsonl"; yes_no $?)"
-check "index records the project"           "$(grep -q '"project": "work"' "$JOURNAL/sessions/index.jsonl"; yes_no $?)"
-check "index records the start timestamp"   "$(grep -q '"started_at": "2026-08-20T' "$JOURNAL/sessions/index.jsonl"; yes_no $?)"
+    if l.strip(): json.loads(l)' < "$IDX" >/dev/null 2>&1; yes_no $?)"
+check "index records the branch"  "$(grep -q '"branch": "main"' "$IDX"; yes_no $?)"
+check "index records the project" "$(grep -q '"project": "work"' "$IDX"; yes_no $?)"
+check "index points at the digest" "$(grep -q '"digest": "digests/2026-08' "$IDX"; yes_no $?)"
+check "index carries no prompt text" "$(grep -q 'nightly sync' "$IDX" && echo 1 || echo 0)"
 
-echo "== re-firing an unchanged session is a no-op (SessionEnd fires on clear/resume) =="
-before=$(index_lines)
+echo "== re-firing an unchanged session is a no-op =="
+before=$(wc -l < "$IDX" | tr -d ' ')
 rc=$(fire "$T" "$SID" "$WORK")
-check "exits 0"                   "$(yes_no "$rc")"
-check "no duplicate archive file" "$([ "$(archives)" -eq 1 ]; yes_no $?)"
-check "no duplicate index line"   "$([ "$(index_lines)" -eq "$before" ]; yes_no $?)"
+check "exits 0"                 "$(yes_no "$rc")"
+check "still one digest file"   "$([ "$(digest_count)" -eq 1 ]; yes_no $?)"
 
-echo "== a resumed session that grew is re-archived in place =="
-mk_transcript "$T" 60
+echo "== a resumed session that grew is re-digested in place =="
+python - "$T" <<'PYEOF'
+import json, sys
+with open(sys.argv[1], "a", encoding="utf-8", newline="\n") as fh:
+    fh.write(json.dumps({"type": "user", "timestamp": "2026-08-20T10:00:00.000Z",
+        "message": {"role": "user", "content": "GROWTH_MARKER one more question"}}) + "\n")
+PYEOF
 rc=$(fire "$T" "$SID" "$WORK")
-ARCHIVE=$(find "$JOURNAL/sessions" -type f -name '*.jsonl.gz' | head -1)
-check "still exactly one archive"      "$([ "$(archives)" -eq 1 ]; yes_no $?)"
-check "archive now holds all 60 lines" "$([ "$(gzip -dc "$ARCHIVE" | wc -l | tr -d ' ')" -eq 60 ]; yes_no $?)"
-check "a second index line was added"  "$([ "$(index_lines)" -eq $((before+1)) ]; yes_no $?)"
+check "still exactly one digest"    "$([ "$(digest_count)" -eq 1 ]; yes_no $?)"
+check "digest picked up the growth" "$(grep -q 'GROWTH_MARKER' "$(digest_file)"; yes_no $?)"
 
-echo "== a session that starts in a different month gets its own bucket =="
-T2="$TMP/older.jsonl"; mk_transcript "$T2" 5 "2026-06-11"
-rc=$(fire "$T2" "11112222-3333-4444-5555-666677778888" "$WORK")
-check "bucketed under 2026-06" "$([ -n "$(find "$JOURNAL/sessions/2026-06" -name '2026-06-11-*.jsonl.gz' 2>/dev/null)" ]; yes_no $?)"
+echo "== exclusion list =="
+printf '# a comment\n\nwork\n' > "$JOURNAL/exclude"
+rc=$(fire "$T" "aaaabbbb-1111-2222-3333-444455556666" "$WORK")
+check "excluded cwd exits 0"       "$(yes_no "$rc")"
+check "excluded cwd wrote nothing" "$([ -z "$(find "$JOURNAL/digests" -name '*aaaabbbb*' 2>/dev/null)" ]; yes_no $?)"
+check "excluded cwd not indexed"   "$(grep -q 'aaaabbbb' "$IDX" && echo 1 || echo 0)"
+OTHER="$TMP/elsewhere"; mkdir -p "$OTHER"
+rc=$(fire "$T" "bbbbcccc-1111-2222-3333-444455556666" "$OTHER")
+check "non-excluded cwd still captured" \
+  "$([ -n "$(find "$JOURNAL/digests" -name '*bbbbcccc*' 2>/dev/null)" ]; yes_no $?)"
+rm -f "$JOURNAL/exclude"
+
+echo "== recursion guard =="
+out=$(printf '{"hook_event_name":"SessionEnd","session_id":"ccccdddd-1111-2222-3333-444455556666","transcript_path":"%s","cwd":"%s"}' "$T" "$WORK" \
+      | CLAUDE_ACCOMPLISHMENTS_DIR="$JOURNAL" ACCOMPLISHMENTS_NO_CAPTURE=1 bash "$HOOK" 2>&1; echo "rc=$?")
+check "no-capture sentinel exits 0"      "$(echo "$out" | grep -q 'rc=0'; yes_no $?)"
+check "no-capture sentinel wrote nothing" "$([ -z "$(find "$JOURNAL/digests" -name '*ccccdddd*' 2>/dev/null)" ]; yes_no $?)"
 
 echo "== refuses malformed input and fails open =="
-n_before=$(archives)
+n=$(digest_count)
 rc=$(fire "$T" "../../../etc/passwd" "$WORK")
-check "path-traversal session_id refused"  "$([ "$rc" -eq 0 ] && [ "$(archives)" -eq "$n_before" ]; yes_no $?)"
+check "path-traversal id refused" "$([ "$rc" -eq 0 ] && [ "$(digest_count)" -eq "$n" ]; yes_no $?)"
 rc=$(fire "$T" 'a;rm -rf x' "$WORK")
-check "shell-metacharacter id refused"     "$([ "$rc" -eq 0 ] && [ "$(archives)" -eq "$n_before" ]; yes_no $?)"
-rc=$(fire "$TMP/does-not-exist.jsonl" "aaaa-bbbb" "$WORK")
-check "missing transcript exits 0"         "$(yes_no "$rc")"
+check "metacharacter id refused"  "$([ "$rc" -eq 0 ] && [ "$(digest_count)" -eq "$n" ]; yes_no $?)"
+rc=$(fire "$TMP/nope.jsonl" "dddd-eeee" "$WORK")
+check "missing transcript exits 0" "$(yes_no "$rc")"
 : > "$TMP/empty.jsonl"
-rc=$(fire "$TMP/empty.jsonl" "cccc-dddd" "$WORK")
-check "empty transcript exits 0"           "$(yes_no "$rc")"
-printf 'not json at all' | CLAUDE_ACCOMPLISHMENTS_DIR="$JOURNAL" bash "$HOOK" >/dev/null 2>&1
-check "garbage stdin exits 0"              "$(yes_no $?)"
-printf '' | CLAUDE_ACCOMPLISHMENTS_DIR="$JOURNAL" bash "$HOOK" >/dev/null 2>&1
-check "empty stdin exits 0"                "$(yes_no $?)"
-rc=$(fire "$T" "eeeeffff-1111-2222-3333-444455556666" "$TMP/not-a-repo")
-check "non-repo cwd still archives"        "$([ "$rc" -eq 0 ] && [ -n "$(find "$JOURNAL/sessions" -name '*eeeeffff*' 2>/dev/null)" ]; yes_no $?)"
+rc=$(fire "$TMP/empty.jsonl" "eeee-ffff" "$WORK")
+check "empty transcript exits 0"   "$(yes_no "$rc")"
+printf 'not json' | CLAUDE_ACCOMPLISHMENTS_DIR="$JOURNAL" ACCOMPLISHMENTS_NO_SCRUB=1 bash "$HOOK" >/dev/null 2>&1
+check "garbage stdin exits 0"      "$(yes_no $?)"
+printf '' | CLAUDE_ACCOMPLISHMENTS_DIR="$JOURNAL" ACCOMPLISHMENTS_NO_SCRUB=1 bash "$HOOK" >/dev/null 2>&1
+check "empty stdin exits 0"        "$(yes_no $?)"
+
+echo "== a transcript with no user prompts yields no digest =="
+python - "$TMP/silent.jsonl" <<'PYEOF'
+import json, sys
+with open(sys.argv[1], "w", encoding="utf-8", newline="\n") as fh:
+    fh.write(json.dumps({"type": "assistant", "timestamp": "2026-08-21T09:00:00.000Z",
+        "message": {"role": "assistant", "content": [{"type": "text", "text": "hello"}]}}) + "\n")
+PYEOF
+rc=$(fire "$TMP/silent.jsonl" "ffff0000-1111-2222-3333-444455556666" "$WORK")
+check "exits 0"                       "$(yes_no "$rc")"
+check "no digest written"             "$([ -z "$(find "$JOURNAL/digests" -name '*ffff0000*' 2>/dev/null)" ]; yes_no $?)"
+check "but the session is indexed"    "$(grep -q 'ffff0000' "$IDX"; yes_no $?)"
+check "indexed with an empty digest"  "$(grep -q '"digest": ""' "$IDX"; yes_no $?)"
 
 echo "== stays silent on stdout =="
 out=$(printf '{"hook_event_name":"SessionEnd","session_id":"99998888-7777-6666-5555-444433332222","transcript_path":"%s","cwd":"%s"}' "$T" "$WORK" \
-      | CLAUDE_ACCOMPLISHMENTS_DIR="$JOURNAL" bash "$HOOK" 2>/dev/null)
+      | CLAUDE_ACCOMPLISHMENTS_DIR="$JOURNAL" ACCOMPLISHMENTS_NO_SCRUB=1 bash "$HOOK" 2>/dev/null)
 check "stdout is empty" "$([ -z "$out" ]; yes_no $?)"
 
 rm -rf "$TMP"
