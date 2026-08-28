@@ -6,12 +6,10 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob, Skill
 
 ## Context
 
-- Journal: !`echo "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}"`
-- Initialized: !`[ -d "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}" ] && echo YES || echo "NO — run /accomplishments:init"`
-- Entries this month: !`ls "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}/entries/$(date +%Y-%m)" 2>/dev/null | wc -l`
-- Repo: !`git rev-parse --show-toplevel 2>/dev/null || echo "not a git repository"`
-- Branch: !`git branch --show-current 2>/dev/null`
-- Your commits today: !`git log --author="$(git config user.email 2>/dev/null)" --since=midnight --pretty=format:'%h %s' 2>/dev/null | head -10`
+- Repo: !`git rev-parse --show-toplevel`
+- Branch: !`git branch --show-current`
+- Your git identity: !`git config user.email`
+- Commits today: !`git log --since=midnight --pretty=format:'%h %an %s'`
 
 ## Task
 
@@ -26,6 +24,25 @@ impact ladder. This plugin's skills and agents are addressed as
 `$ARGUMENTS`, if given, says what to log — a specific piece of work, a
 compliment someone paid, a problem you solved last week. Without it, log the
 work in this session.
+
+### Resolve the journal first
+
+Run this with the Bash tool. It is not a `!` context block because those are
+refused rather than prompted when they contain shell expansion and match no
+permission rule, and the journal path needs `$HOME` or the env override:
+
+```bash
+J="${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}"
+[ -d "$J" ] || echo "no journal — run /accomplishments:init first"
+ls "$J/entries/$(date +%Y-%m)" 2>/dev/null | wc -l   # entries already this month
+```
+
+No journal, no entry. Say so and stop rather than creating it silently —
+initialization is also what arms the session-archiving hook, and that is the
+user's decision to make knowingly.
+
+The commits-today line above is unfiltered by author. Match it against the git
+identity shown to find the user's own.
 
 ### Draft first, ask second
 

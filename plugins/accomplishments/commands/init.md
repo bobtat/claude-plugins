@@ -4,14 +4,30 @@ argument-hint: [path] (defaults to ~/.claude/accomplishments)
 allowed-tools: Bash, Read, Write, Skill
 ---
 
-## Context
-
-- Journal path: !`echo "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}"`
-- Already exists: !`[ -d "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}" ] && echo YES || echo no`
-- Transcript retention: !`grep -h cleanupPeriodDays "$HOME/.claude/settings.json" "$HOME/.claude/settings.local.json" 2>/dev/null || echo "not set — Claude Code default of 30 days applies"`
-- Transcripts currently on disk: !`find "$HOME/.claude/projects" -name '*.jsonl' 2>/dev/null | wc -l` files, oldest !`find "$HOME/.claude/projects" -name '*.jsonl' -printf '%TY-%Tm-%Td\n' 2>/dev/null | sort | head -1`
-
 ## Task
+
+### Phase 0 — Survey, with the Bash tool
+
+Gather this yourself before anything else. It is deliberately **not** in a `!`
+context block: those blocks are refused rather than prompted when they contain
+shell expansion and match no permission rule, and every path below needs
+`$HOME` or `$CLAUDE_ACCOMPLISHMENTS_DIR`.
+
+```bash
+J="${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}"
+echo "journal:  $J"
+[ -d "$J" ] && echo "exists:   YES" || echo "exists:   no"
+grep -h cleanupPeriodDays "$HOME/.claude/settings.json" \
+     "$HOME/.claude/settings.local.json" 2>/dev/null \
+  || echo "retention: not set — Claude Code default of 30 days applies"
+find "$HOME/.claude/projects" -name '*.jsonl' 2>/dev/null | wc -l
+find "$HOME/.claude/projects" -name '*.jsonl' -printf '%TY-%Tm-%Td\n' 2>/dev/null \
+  | sort | head -1
+```
+
+The last two lines are the argument for this whole plugin: how many
+transcripts exist, and how old the oldest one is. If that date is close to 30
+days ago, retention is actively deleting history right now — say so.
 
 Create the journal, and make sure the user understands what they are turning on
 before it starts running.

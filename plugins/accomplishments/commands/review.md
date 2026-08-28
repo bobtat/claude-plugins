@@ -4,15 +4,24 @@ argument-hint: [format and period] (e.g. "self-assessment for H1", "resume bulle
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, Skill, AskUserQuestion, TodoWrite
 ---
 
-## Context
-
-- Journal: !`echo "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}"`
-- Initialized: !`[ -d "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}" ] && echo YES || echo "NO — run /accomplishments:init"`
-- Entries: !`find "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}/entries" -name '*.md' 2>/dev/null | wc -l` across !`ls "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}/entries" 2>/dev/null | wc -l` months
-- Months covered: !`ls "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}/entries" 2>/dev/null | tr '\n' ' '`
-- Last sweep: !`ls "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}/sweeps" 2>/dev/null | tail -1 || echo "none"`
-
 ## Task
+
+### Phase 0 — Survey the journal, with the Bash tool
+
+Every path here needs shell expansion, and a `!` context block containing
+expansion is **refused rather than prompted** when it matches no permission
+rule. So this runs as a normal Bash call instead:
+
+```bash
+J="${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}"
+[ -d "$J" ] || echo "no journal — run /accomplishments:init first"
+find "$J/entries" -name '*.md' 2>/dev/null | wc -l    # total entries
+ls "$J/entries" 2>/dev/null | tr '\n' ' '             # months covered
+ls "$J/sweeps" 2>/dev/null | tail -1                  # last sweep
+```
+
+The months-covered line is the one that matters most. Gaps in it are gaps in
+the record, and they have to be named in Phase 2 rather than papered over.
 
 Turn journal entries into a finished document for a specific reader.
 
