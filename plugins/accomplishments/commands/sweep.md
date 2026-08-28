@@ -6,18 +6,32 @@ allowed-tools: Agent, Bash, Read, Write, Edit, Grep, Glob, Skill, TodoWrite
 
 ## Context
 
-- Journal: !`echo "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}"`
-- Initialized: !`[ -d "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}" ] && echo YES || echo "NO — run /accomplishments:init"`
-- Last sweep: !`ls "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}/sweeps" 2>/dev/null | tail -1 || echo "none"`
-- Entries so far: !`find "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}/entries" -name '*.md' 2>/dev/null | wc -l`
-- Sessions archived: !`find "${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}/sessions" -name '*.jsonl.gz' 2>/dev/null | wc -l`
-- Your git identity: !`git config user.email 2>/dev/null`
-- gh authenticated: !`gh auth status >/dev/null 2>&1 && echo yes || echo "no — PR and review mining unavailable"`
+- Repo: !`git rev-parse --show-toplevel`
+- Your git identity: !`git config user.email`
+- Every author identity in this repo: !`git shortlog -sne --all`
 
-The mined evidence is deliberately **not** in this block. Gather it in Phase 2,
-or hand it to the `accomplishments:evidence-miner` agent when the period is
-large, so a quarter of git output does not flood the conversation before any
-decision is made.
+Two things are deliberately **not** in this block.
+
+The mined evidence, because a quarter of git and PR output would flood the
+conversation before any decision is made. Gather it in Phase 2, or hand it to
+the `accomplishments:evidence-miner` agent when the period is large.
+
+The journal state and `gh` status, because resolving the journal path needs
+shell expansion, and a `!` block containing expansion is **refused rather than
+prompted** when it matches no permission rule. Gather both with the Bash tool
+in Phase 1:
+
+```bash
+J="${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}"
+[ -d "$J" ] || echo "no journal — run /accomplishments:init first"
+ls "$J/sweeps" 2>/dev/null | tail -1                        # where the last sweep ended
+find "$J/entries" -name '*.md' 2>/dev/null | wc -l          # entries so far
+find "$J/sessions" -name '*.jsonl.gz' 2>/dev/null | wc -l   # archived sessions
+gh auth status >/dev/null 2>&1 && echo "gh: ok" || echo "gh: NOT authenticated"
+```
+
+If `gh` is not authenticated, say so explicitly. A sweep missing all PR and
+review evidence must not be reported as a sweep that found none.
 
 ## Task
 
