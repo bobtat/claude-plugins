@@ -1,5 +1,5 @@
 ---
-description: Mine git, PRs, reviews, and archived sessions for a period, then log what mattered
+description: Mine git, PRs, reviews, and session digests for a period, then log what mattered
 argument-hint: [period] (e.g. "last month", "2026-01-01..2026-03-31"; defaults to since the last sweep)
 allowed-tools: Agent, Bash, Read, Write, Edit, Grep, Glob, Skill, TodoWrite
 ---
@@ -26,7 +26,8 @@ J="${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}"
 [ -d "$J" ] || echo "no journal — run /accomplishments:init first"
 ls "$J/sweeps" 2>/dev/null | tail -1                        # where the last sweep ended
 find "$J/entries" -name '*.md' 2>/dev/null | wc -l          # entries so far
-find "$J/sessions" -name '*.jsonl.gz' 2>/dev/null | wc -l   # archived sessions
+find "$J/digests" -name '*.md' 2>/dev/null | wc -l          # session digests
+grep -l '^redaction: regex$' "$J"/digests/*/*.md 2>/dev/null | wc -l  # awaiting scrub
 gh auth status >/dev/null 2>&1 && echo "gh: ok" || echo "gh: NOT authenticated"
 ```
 

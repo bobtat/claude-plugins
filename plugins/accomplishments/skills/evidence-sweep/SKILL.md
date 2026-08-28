@@ -1,6 +1,6 @@
 ---
 name: evidence-sweep
-description: Use when reconstructing a past period into journal entries — mining git, pull requests, reviews given, and archived session transcripts across every repository, reconciling what is found against entries that already exist, clustering the remainder into candidate accomplishments, and interviewing the user about the ones that look significant. Invoked by /accomplishments:sweep. Runs against a deadline: session transcripts are deleted 30 days after they are written.
+description: Use when reconstructing a past period into journal entries — mining git, pull requests, reviews given, and the plugin's own session digests across every repository, reconciling what is found against entries that already exist, clustering the remainder into candidate accomplishments, and interviewing the user about the ones that look significant. Invoked by /accomplishments:sweep. Runs against a deadline: while a session transcript still exists it can be upgraded to a written summary, and after 30 days it cannot.
 ---
 
 # Sweeping a Period for What Was Not Captured
@@ -9,16 +9,26 @@ description: Use when reconstructing a past period into journal entries — mini
 holds the mining commands and what each result can and cannot establish;
 `references/interviewing.md` holds the question set.
 
-## The deadline
+## The deadline, and the upgrade window
 
-Session transcripts are deleted after `cleanupPeriodDays`, default 30. The
-archive hook rescues them only for sessions that ended *after* the journal was
-created. For any period before that, the reasoning is already gone and only
-git, PRs, and the user's memory remain.
+Two different clocks run here, and confusing them loses material.
 
-**Say this plainly when sweeping a period with no archive coverage.** The user
-should know the difference between "nothing significant happened" and "the
-record was deleted before this plugin existed."
+**The digest is permanent.** The hook writes it at session end and it is not
+subject to retention. A period with digests is never lost.
+
+**The transcript is not.** Claude Code deletes it after `cleanupPeriodDays`,
+default 30. While it survives, a session can be *upgraded* from a prompt
+digest to a model-written summary that also captures what was tried and
+abandoned — the assistant's reasoning, which the digest deliberately does not
+keep. After 30 days that upgrade is impossible forever.
+
+So a sweep run inside 30 days produces materially better material than the
+same sweep run later. That is the reason for the monthly cadence, and it is
+worth telling the user when they have gone longer.
+
+**Say plainly which coverage a period has**: digests only, digests plus live
+transcripts, or neither. The user should know the difference between "nothing
+significant happened" and "the record was already gone."
 
 ## Phase 1 — Scope and identity
 
@@ -47,8 +57,16 @@ Run wide. Nothing here is a judgment; it is a list.
 - **Reviews given** via `gh search prs --reviewed-by=@me` — team-level evidence
   that is trivially countable and almost never counted
 - **Issues filed** — problems the user found, as opposed to work handed to them
-- **Archived sessions** from `sessions/index.jsonl`, taking the **last** entry
-  per `session_id` since the index is append-only
+- **Session digests** from `digests/index.jsonl`, taking the **last** entry
+  per `session_id` since the index is append-only. Check each digest's
+  `redaction:` field; anything still marked `regex` has not had the model pass
+  and should be run through `/accomplishments:scrub` before its contents are
+  quoted anywhere.
+- **Live transcripts still inside the 30-day window**, for sessions that look
+  substantial. This is the only chance to capture what was *tried and
+  abandoned*, which the digest does not hold. Write the result to
+  `summaries/YYYY-MM/<day>-<session_id>.md` as prose — never copy transcript
+  text into the journal.
 
 Spawn `accomplishments:evidence-miner` when the period is longer than about
 six weeks or spans more than three repositories. A quarter of raw git and PR
@@ -127,3 +145,9 @@ same work and asks the same questions, which is how the habit dies.
   the user disposes.
 - **Never overwrite or edit an existing entry's claims.** Add a new entry, or
   append to the existing one under a dated note.
+- **Never copy transcript text into the journal.** A summary written from a
+  live transcript is prose about the work. Pasting the transcript itself
+  reintroduces exactly the tool output and file contents the digest format
+  exists to keep out.
+- **Never quote a digest still marked `redaction: regex`.** It has had only the
+  pattern pass. Run `/accomplishments:scrub` first.

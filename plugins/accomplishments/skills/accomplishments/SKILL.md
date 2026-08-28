@@ -74,7 +74,7 @@ Every source is partial in a specific way. Full treatment in `references/evidenc
 | Merged PRs | Scope, review, collaborators | Impact after merge |
 | Reviews you gave | Multiplier effect, mentoring | Anything, unless you count and cite them |
 | Issue tracker | The business reason and who asked | What it actually took |
-| Session transcripts | The reasoning, the dead ends, the real problem | Anything after the session ended |
+| Session digests | The problem you brought and the decisions you made | Anything you did not type; replies and tool output are not kept |
 | Dashboards | The measured result — the strongest evidence there is | Attribution to you |
 | What people said | Impact you never saw and cannot measure | Nothing — but it decays fastest, so capture it verbatim, immediately |
 
@@ -97,7 +97,7 @@ metrics:
 people: ["data-eng (unblocked)", "on-call (2 fewer pages/week)"]
 evidence:
   - "PR #4821"
-  - "sessions/2026-03/2026-03-04-<id>.jsonl.gz"
+  - "digests/2026-03/2026-03-04-<id>.md"
   - "Grafana: nightly-sync-duration, week of Mar 2"
 confidence: measured        # measured | reported | estimated | unverified
 ---
@@ -127,8 +127,9 @@ Three properties of that format carry the weight:
 |---|---|---|
 | Something lands | `/accomplishments:log` while the detail is live | Impact facts have a half-life of about a week |
 | Praise arrives | Log it verbatim, immediately | The least recoverable evidence there is |
-| Monthly | `/accomplishments:sweep` | Inside the 30-day transcript window — after that the reasoning is gone |
+| Monthly | `/accomplishments:sweep` | Inside the 30-day transcript window — after that only the digest remains |
 | Review time | `/accomplishments:review` | Reads the journal; never invents to fill it |
+| Any time | `/accomplishments:scrub` | Finishes the model redaction pass on digests the background run missed |
 
 The monthly sweep is the one with a deadline attached. Everything else can be caught up; a transcript that was purged cannot.
 
