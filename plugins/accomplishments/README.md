@@ -12,22 +12,23 @@ The premise: three different failures ruin review material, and they happen at t
 
 **Fabrication** happens at writing time, and it is the failure specific to a model doing this work. Asked to make an accomplishment sound stronger, a model supplies the missing number, because a specific figure is better writing and inventing one is cheaper than finding it. "Improved sync performance" becomes "improved sync performance by 40%." Nobody notices until a manager repeats it upward and cannot support it.
 
-Adds an auto-triggering knowledge skill, three procedure skills, four commands, one agent, and a `SessionEnd` hook:
+Adds an auto-triggering knowledge skill, three procedure skills, five commands, one agent, and a `SessionEnd` hook:
 
 - **The impact ladder** — task, project, team, org, company, with the rule that level follows consequence rather than effort, and the argument that a truthful spread beats a stack of inflated claims
-- **The evidence table** — what git, PRs, reviews given, tickets, transcripts, dashboards, and praise can each actually prove, and the specific blind spot of each
+- **The evidence table** — what git, PRs, reviews given, tickets, session digests, dashboards, and praise can each actually prove, and the specific blind spot of each
 - **The never-invent gates** — a `source` on every metric and a `confidence` on every entry, so invention is structurally difficult rather than merely discouraged
 - **The interview** — the questions that pull impact out of a user who says "I just fixed some bugs," ordered by yield, with question 4 phrased to ask whether a number *exists* rather than what it was
 - **`/accomplishments:init`** — creates the journal and arms the hook, after telling you exactly what that turns on
 - **`/accomplishments:log`** — drafts an entry from the live session, then asks at most three questions
 - **`/accomplishments:sweep`** — mines a period across every repository, reconciles against the journal, and interviews the gaps
 - **`/accomplishments:review`** — self-assessment, promotion packet, resume bullets, or weekly rollup, with a verification pass that traces every claim back to a dated entry
+- **`/accomplishments:scrub`** — finishes the model redaction pass on any digest the background run did not reach
 
 ## The 30-Day Deadline Is the Whole Design
 
 Claude Code stores session transcripts in `~/.claude/projects/` and deletes them after `cleanupPeriodDays`, which defaults to 30.
 
-This was verified rather than assumed, on the machine this plugin was written on: 161 transcripts, the oldest exactly 30 days old, no retention override in any settings file.
+This was verified rather than assumed, on the machine this plugin was written on: the oldest transcript on disk was exactly 30 days old, with no retention override in any settings file.
 
 That single fact settles the architecture. The reasoning behind your work — the dead ends, the hypothesis that was wrong for two days, the moment you realized the problem was not where everyone was looking — exists in exactly one place, and it is on a 30-day timer. A performance review covers six to twelve months. So the capture cannot be something you remember to do; by the time you have a reason to want it, four fifths of it is already gone.
 
@@ -41,19 +42,88 @@ The judgment cannot happen in the hook. A shell script cannot tell whether a com
 
 So the hook never asks. It appends, silently, and the significance judgment happens later at sweep time with a human in the loop — which is where it belongs.
 
-`SessionEnd` turns out to enforce this rather than merely permit it: the event cannot block, and its stdout goes to the debug log rather than into the conversation. The hook is structurally incapable of interrupting you. It also fires on `/clear` and `resume`, not only on exit, so a long session is archived repeatedly as it grows; re-archiving replaces the shorter copy rather than accumulating duplicates.
+`SessionEnd` turns out to enforce this rather than merely permit it: the event cannot block, and its stdout goes to the debug log rather than into the conversation. The hook is structurally incapable of interrupting you. It also fires on `/clear` and `resume`, not only on exit, so a long session is digested repeatedly as it grows; re-running replaces the shorter digest rather than accumulating duplicates.
 
 **It is inert until you run `/accomplishments:init`.** The journal directory's existence is the opt-in gate — no directory, no capture, checked before the hook reads anything at all. Silent capture nobody asked for is surveillance, and a config flag someone has to find is not consent.
 
-## What It Costs, Honestly
+## What It Keeps, and What It Throws Away
 
-The hook archives **complete transcripts**, not summaries. Two consequences, both measured rather than estimated:
+The hook does **not** copy the transcript. It writes a small digest of the
+prompts you typed, and discards everything else.
 
-**Disk.** gzip compresses real transcripts **2.9x**, not the ~10x that plain text suggests — the large ones carry base64 and dense tool output that barely compress. Measured across 161 real transcripts: 101.5 MB raw, 35.5 MB compressed, over 30 days. At that rate, heavy daily use archives roughly **400 MB per year**.
+That split was chosen on measurement, not instinct. Across 114 real
+transcripts totalling 22.3 MB of content:
 
-**Secrets.** Transcripts are not filtered. Any credential, customer name, private file content, or internal metric that passed through a session is in the archive. This is documented rather than mitigated: scrubbing would corrupt the evidence being preserved, and a partially-scrubbed archive you trust is worse than an unscrubbed one you know to handle carefully. The journal lives under your home directory, it is never committed to a repository, and `/accomplishments:init` states this before creating anything.
+| Segment | Share of content | Credential-shaped strings |
+|---|---|---|
+| Session metadata | 40.1% | — |
+| Tool results — file contents, command output | 24.1% | 92 combined |
+| Tool inputs | 20.3% | ↑ |
+| Assistant replies | 4.7% | 4 |
+| **Your prompts** | **7.8%** | 28 |
 
-If that trade is wrong for you, the plugin still works without the hook — `/accomplishments:log` and `/accomplishments:sweep` run against git and PR history alone. You lose the reasoning, which is the part worth having.
+Tool traffic is where the secrets are and carries no career signal at all.
+Your prompts are 7.8% of the bytes and hold the part that matters: the problem
+you brought, and the decisions you made about it. Keeping only those removes
+three quarters of the credential exposure and **99.8% of the bytes** — a
+measured 564x reduction, roughly 1 MB per year instead of 260 MB.
+
+Here is a real digest, from a 4.95 MB session reduced to 3.1 KB:
+
+```
+---
+session: 0f7d3d02-…  started: 2026-08-05T10:58  project: claude-plugins
+branch: feat/testing-plugin  prompts: 25  redaction: regex+model
+---
+
+[2026-08-05T10:58] Let's build a test writer plugin. I'm envisioning a
+                   sequence of steps…
+[2026-08-05T12:29] split it — feat for the pipeline, docs for the READMEs
+[2026-08-05T12:35] Do we have a way to audit the testing coverage of a repo?
+[2026-08-05T13:13] How do you think these would perform against Cypress tests?
+```
+
+That decision trail is unrecoverable from git, and it is what a review needs.
+
+## Redaction Runs Twice, and Neither Pass Is a Guarantee
+
+Prompts are not clean — 28 of the 120 credential-shaped hits were in them,
+because people paste keys into questions. So the digest is redacted twice.
+
+**Stage 1, in the hook, by regex.** Synchronous, offline, ~100 ms. Strips the
+formats that have a shape: AWS and GitHub and Slack tokens, JWTs, PEM blocks,
+connection strings, `SECRET=`/`PASSWORD=` assignments, long entropy blobs. It
+**fails closed** — if Python is unavailable, the session is indexed and no
+prompt text is written at all.
+
+**Stage 2, detached, by Haiku.** Regex cannot catch a password written in
+prose. A model can. Run against a digest containing `the staging database
+password is hunter2plzwork`, `prod-billing-07.corp.internal`, and a client
+name, Haiku removed all three and left `batch the per-row lookup, that fixed
+it` untouched.
+
+The model **never rewrites the digest**. It returns only the literal substrings
+to remove, and the replacement happens locally by exact match. A garbled or
+hallucinated response therefore changes nothing rather than corrupting the
+record or inventing content. The worst failure mode is a missed secret, never
+a fabricated one.
+
+Stage 2 is best-effort and never blocks: `SessionEnd` runs on a ~1.5 second
+budget and a Haiku call takes about 8. It is spawned detached, so if the
+machine sleeps or the process dies, the digest simply keeps `redaction: regex`
+in its frontmatter and `/accomplishments:scrub` finishes the job later. **The
+redaction state is always written on disk**, so nothing is ever silently
+assumed clean.
+
+Set `ACCOMPLISHMENTS_NO_SCRUB=1` to skip the model pass entirely.
+
+### The honest residual
+
+Two stages are not a guarantee. A secret phrased unusually enough to defeat
+both is possible, and no amount of pattern-matching or prompting closes that
+completely. For projects where that risk is unacceptable, `<journal>/exclude`
+lists paths that are never captured — checked **before** the transcript is
+opened, so an excluded project is never read at all.
 
 ## Mining Produces Candidates, Not Accomplishments
 
@@ -81,7 +151,9 @@ Same number. The first can be defended in a room. The second cannot, because nob
 
 - **No company's actual framework is encoded.** The ladder is a generic default. Point the review command at your real one; a review mapped to the wrong ladder is worse than one mapped to none.
 - **The always-on skill fires on a description match**, which is probabilistic. When you finish something significant as step nine of an unrelated task, the match is weak and the skill may not load. The commands are the deterministic path.
-- **The hook only covers sessions after you initialize.** Everything before that is already on the 30-day timer. `/accomplishments:init` offers to backfill what is still on disk — that is a one-time chance to rescue up to 30 days.
+- **The hook only covers sessions after you initialize.** Everything before that is already on the 30-day timer. `/accomplishments:init` offers to backfill what is still on disk — a one-time chance to rescue up to 30 days.
+- **Subagent transcripts are not captured.** They live beside the session transcript and are purged with it. The hook only ever reads the path `SessionEnd` hands it.
+- **Redaction is two imperfect passes, not a guarantee.** Use `<journal>/exclude` for anything where that is not good enough.
 - **Non-GitHub forges are unsupported in the mining commands.** Git-level commands work everywhere; the PR and review queries are `gh`.
 - **No issue-tracker integration ships.** JIRA and Linear go through whatever MCP server you have, or through pasted text. The plugin deliberately does not guess at ticket contents, because that is exactly where invention enters a review.
 - **Nothing here is validated against actual promotion outcomes.** It reflects published practitioner advice and a coherent theory of what reviewers need. No claim is made that it changes review results.
@@ -102,4 +174,4 @@ Then `/accomplishments:log` when something happens, and `/accomplishments:sweep`
 bash plugins/accomplishments/hooks/scripts/test-archive.sh
 ```
 
-28 cases covering the opt-in gate, start-date bucketing, idempotent re-archiving, growth on resume, path-traversal refusal, and fail-open behavior on malformed input.
+50 cases, run offline with the model pass disabled. They cover the opt-in gate, start-date bucketing, idempotent re-digesting, growth on resume, the exclusion list, the recursion sentinel, path-traversal refusal, fail-open behavior on malformed input, and — the ones that matter most — that assistant replies, tool inputs, tool results, sidechain prompts, and injected context never appear in a digest, and that planted credentials do not survive redaction.
