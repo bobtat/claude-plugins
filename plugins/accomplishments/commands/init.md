@@ -41,24 +41,35 @@ a directory the hook will never look at.
 
 The journal directory's existence is what arms the `SessionEnd` hook. Until it
 exists the hook does nothing at all; once it exists, **every session on this
-machine gets its full transcript copied into the journal when it ends.**
+machine leaves behind a redacted digest of the prompts the user typed.**
 
-State these four things plainly and get explicit confirmation:
+State these five things plainly and get explicit confirmation:
 
-1. **What is captured** — the complete transcript: prompts, replies, file
-   contents that were read, tool output. Not a summary.
-2. **Why** — Claude Code deletes transcripts after 30 days (see the retention
-   line above). A performance review covers six to twelve months. Without this,
-   the reasoning behind the work is gone before it is needed.
-3. **The cost** — roughly 400 MB per year at heavy daily use, measured at a
-   2.9x gzip ratio against real transcripts.
-4. **The risk** — transcripts are not filtered. Any credential, customer name,
-   or private file content that passed through a session is archived in
-   plaintext-once-decompressed under the user's home directory. It is not
-   scrubbed, because scrubbing would corrupt the evidence being kept.
+1. **What is captured** — the user's own prompts, redacted, roughly 3 KB per
+   session. Nothing else: no assistant replies, no tool calls, no command
+   output, no contents of any file that was read.
+2. **What is not** — the transcript itself is never copied. Measured across
+   114 real transcripts, tool traffic is 44% of content and held 92 of the 120
+   credential-shaped strings found in them. All of that is discarded.
+3. **Why** — Claude Code deletes transcripts after 30 days (see the retention
+   line above). A review covers six to twelve months, so the reasoning behind
+   the work is gone before it is needed.
+4. **The cost** — about 1 MB per year, plus one Haiku call per session for the
+   second redaction stage. Set `ACCOMPLISHMENTS_NO_SCRUB=1` to skip the model
+   pass and keep regex-only redaction.
+5. **The residual risk** — redaction runs in two stages, regex then Haiku, and
+   neither is a guarantee. A secret the user types in an unusual form may
+   survive both. The exclusion list below is the answer for projects where
+   that is unacceptable.
 
-If they decline, create nothing and say the hook stays inert. That is a
-supported end state, and the commands still work on git and PR history.
+Then offer the exclusion list explicitly: any repository whose prompts should
+never be captured — client work, anything under NDA — goes in
+`<journal>/exclude`, one pattern per line, matched against the session's
+working directory. It is checked before the transcript is opened, so an
+excluded project is never read at all.
+
+If they decline entirely, create nothing and say the hook stays inert. That is
+a supported end state, and the commands still work on git and PR history.
 
 ### Create the structure
 
@@ -66,15 +77,19 @@ supported end state, and the commands still work on git and PR history.
 <journal>/
   README.md            what this is, what is in it, how to turn it off
   entries/             one markdown file per accomplishment, YYYY-MM/
-  sessions/            archived transcripts, written by the hook
+  digests/             redacted prompt digests, written by the hook, YYYY-MM/
+  digests/index.jsonl  one line per session; what the sweep reads first
+  summaries/           model-written session summaries, added by the sweep
   sweeps/              a record of each sweep, so the next one knows where to start
+  exclude              projects never captured, one pattern per line
 ```
 
 Write the journal's own `README.md` covering: what the directory is, that
-`sessions/` holds unfiltered transcripts, how to read one, how to disable
-capture (remove the directory, or uninstall the plugin), and how to prune old
-archives. Someone finding this directory in two years should be able to
-understand it without this plugin installed.
+`digests/` holds redacted prompts and what redaction does and does not
+guarantee, how to read the `redaction:` field in a digest's frontmatter, how
+to exclude a project, and how to disable capture entirely (remove the
+directory, or uninstall the plugin). Someone finding this directory in two
+years should be able to understand it without this plugin installed.
 
 ### Verify
 

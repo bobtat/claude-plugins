@@ -102,47 +102,53 @@ configured; if none is, ask the user to paste the ticket rather than guessing
 at its contents. **Never reconstruct a ticket's business justification from
 the code.** That is the exact point where invention enters a review.
 
-## Archived session transcripts
+## Session digests
 
-The plugin's own capture. One gzipped JSONL file per session under
-`sessions/YYYY-MM/`, indexed in `sessions/index.jsonl`.
+The plugin's own capture. One small markdown file per session under
+`digests/YYYY-MM/`, indexed in `digests/index.jsonl`.
+
+A digest holds **only the prompts the user typed**, redacted. No assistant
+replies, no tool calls, no command output, no file contents. That is a
+deliberate trade made on measurement: across 114 real transcripts, tool
+traffic was 44% of content and held 92 of the 120 credential-shaped strings
+found anywhere in them, while the user's prompts were 7.8% of content and
+carried the actual signal.
 
 ```bash
 J="${CLAUDE_ACCOMPLISHMENTS_DIR:-$HOME/.claude/accomplishments}"
 
-# What sessions exist in a period, without opening any archive
+# What sessions exist in a period, without opening any digest
 python -c '
 import json, sys
 for line in sys.stdin:
     d = json.loads(line)
-    if "2026-03" <= d["day"] <= "2026-03-31":
-        print(d["day"], d["project"], d["branch"], d["commits_since_start"], d["archive"])
-' < "$J/sessions/index.jsonl"
+    if d["day"].startswith("2026-03"):
+        print(d["day"], d["project"], d["branch"], d["commits_since_start"], d["digest"])
+' < "$J/digests/index.jsonl"
 
-# The prompts from one session: the cheapest high-signal summary of its purpose
-gzip -dc "$J/sessions/2026-03/<file>.jsonl.gz" | python -c '
-import json, sys
-for line in sys.stdin:
-    try: d = json.loads(line)
-    except Exception: continue
-    if d.get("type") != "user" or d.get("isSidechain"): continue
-    m = d.get("message", {})
-    c = m.get("content")
-    if isinstance(c, str) and c.strip() and not c.startswith("<"):
-        print(d.get("timestamp", "")[:16], c[:300].replace("\n", " "))
-'
+# Read one digest — it is already plain markdown
+cat "$J/digests/2026-03/2026-03-04-<id>.md"
+
+# Which digests have had the model redaction pass
+grep -h '^redaction:' "$J"/digests/*/*.md | sort | uniq -c
 ```
 
-**Establishes:** what the problem actually was, what you tried, what did not
-work, and how long it took to see. This is the reasoning that exists nowhere
-else — not in the commit, not in the PR, not in the ticket.
+**Establishes:** what the problem was in the user's own words, what they
+decided, and what they corrected. The opening prompt of a session is usually
+the densest statement of intent anywhere in the record — "why is the nightly
+sync taking 40 minutes" says more about the accomplishment than the diff does.
 
-**Read the prompts before the replies.** The questions a person asked are a
-denser record of intent than anything generated in response to them.
+**Does not establish:** anything the user did not type. What was *tried and
+abandoned* lived in the assistant's replies and tool calls, and those are not
+kept. If that reasoning matters for a specific session, it can be recovered
+only while the original transcript still exists — inside 30 days — which is
+what the sweep's summary step is for.
 
-**Does not establish:** anything after the session. And note that the index is
-append-only with re-archives appended, so **take the last entry per
-`session_id`**, not the first.
+**Two reading rules.** The index is append-only and a re-digested session
+appends again, so **take the last entry per `session_id`**. And check the
+`redaction:` field before quoting a digest anywhere: `regex` means only the
+pattern pass has run and a prose secret may still be present, while
+`regex+model` or `regex+model-clean` means Haiku has reviewed it.
 
 ## Dashboards, and everything outside the tools
 
