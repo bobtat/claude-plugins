@@ -100,11 +100,18 @@ esac
 # an excluded project is never read at all, not merely not written.
 EXCLUDE="$JOURNAL/exclude"
 if [ -f "$EXCLUDE" ] && [ -n "$cwd" ]; then
+  # Both sides are normalized to lowercase forward slashes before matching.
+  # On Windows `cwd` arrives with backslashes, so a user who wrote the natural
+  # `clients/acme` got no match and no error -- the plugin's only hard privacy
+  # control, failing silently.
+  cwd_norm=$(printf '%s' "$cwd" | tr 'A-Z' 'a-z' | tr '\' '/')
   while IFS= read -r pattern || [ -n "$pattern" ]; do
     case "$pattern" in ''|'#'*) continue ;; esac
+    pattern="${pattern#"${pattern%%[![:space:]]*}"}"
     pattern="${pattern%"${pattern##*[![:space:]]}"}"
     [ -n "$pattern" ] || continue
-    case "$cwd" in *"$pattern"*) exit 0 ;; esac
+    pat_norm=$(printf '%s' "$pattern" | tr 'A-Z' 'a-z' | tr '\' '/')
+    case "$cwd_norm" in *"$pat_norm"*) exit 0 ;; esac
   done < "$EXCLUDE"
 fi
 
@@ -163,11 +170,20 @@ if [ -n "$PY" ] && [ -f "$HERE/digest.py" ]; then
   tmp="${target}.partial.$$"
   if A_SID="$session_id" "$PY" "$HERE/digest.py" < "$transcript" > "$tmp" 2>/dev/null; then
     if [ -s "$tmp" ]; then
-      # A resumed session only grows. Replace only when there is more to say.
+      # A resumed session only grows, so replace only when there is strictly
+      # MORE to say. `-ge` here was a secret-resurrection bug: SessionEnd fires
+      # on /clear and resume, so an unchanged session regenerated a fresh
+      # regex-only digest over one Haiku had already scrubbed, putting removed
+      # secrets back on disk in plaintext.
       new_n=$(grep -c '^\[' "$tmp" 2>/dev/null | tr -d ' ') || new_n=0
       old_n=0
-      [ -f "$target" ] && { old_n=$(grep -c '^\[' "$target" 2>/dev/null | tr -d ' ') || old_n=0; }
-      if [ "${new_n:-0}" -ge "${old_n:-0}" ] 2>/dev/null; then
+      if [ -f "$target" ]; then
+        old_n=$(grep -c '^\[' "$target" 2>/dev/null | tr -d ' ') || old_n=0
+      fi
+      if [ ! -f "$target" ] || [ "${new_n:-0}" -gt "${old_n:-0}" ] 2>/dev/null; then
+        # New or genuinely longer. Added prompts have had only the regex pass,
+        # so the digest correctly reads `redaction: regex` and the scrub below
+        # re-reviews the whole file.
         mv -f "$tmp" "$target" 2>/dev/null && { wrote_digest=1; prompts="${new_n:-0}"; }
       fi
     fi
