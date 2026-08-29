@@ -49,81 +49,80 @@ So the hook never asks. It appends, silently, and the significance judgment happ
 ## What It Keeps, and What It Throws Away
 
 The hook does **not** copy the transcript. It writes a small digest of the
-prompts you typed, and discards everything else.
+prompts you typed and discards everything else — assistant replies, tool calls,
+tool output, file contents, and everything the harness injected while wearing
+the user role.
 
-That split was chosen on measurement, not instinct. Across 114 real
-transcripts totalling 22.3 MB of content:
+That last category is the one that bites. An adversarial review of v0.2.0 found
+two escapes, both of which put file contents into digests that promised to hold
+none:
 
-| Segment | Share of content | Credential-shaped strings |
-|---|---|---|
-| Session metadata | 40.1% | — |
-| Tool results — file contents, command output | 24.1% | 92 combined |
-| Tool inputs | 20.3% | ↑ |
-| Assistant replies | 4.7% | 4 |
-| **Your prompts** | **7.8%** | 28 |
+- **Compact summaries.** When a session compacts, the harness writes a `user`
+  record holding a ~20 KB model-written recap of the entire prior conversation
+  — file paths, quoted code, command output. It is not sidechain, not meta, and
+  opens in prose.
+- **Slash-command expansions.** These also open in prose, so the original
+  `startswith("<")` test never saw them. In this repo's own corpus, 91 of 120
+  digests contained a `/security-review` expansion carrying an inline unified
+  diff.
 
-Tool traffic is where the secrets are and carries no career signal at all.
-Your prompts are 7.8% of the bytes and hold the part that matters: the problem
-you brought, and the decisions you made about it. Keeping only those removes
-three quarters of the credential exposure and **99.8% of the bytes** — a
-measured 564x reduction, roughly 1 MB per year instead of 260 MB.
+Injected content is now identified by **record structure** (`isCompactSummary`,
+`isVisibleInTranscriptOnly`, `promptSource`, `origin.kind`) and independently by
+**content shape** (injected tags anywhere in the text, diff and patch markers).
+`origin.kind == "human"` is the positive signal for a genuinely typed prompt.
 
-Here is a real digest, from a 4.95 MB session reduced to 3.1 KB:
+Measured against this machine's 115 transcripts after the fix:
 
-```
----
-session: 0f7d3d02-…  started: 2026-08-05T10:58  project: claude-plugins
-branch: feat/testing-plugin  prompts: 25  redaction: regex+model
----
-
-[2026-08-05T10:58] Let's build a test writer plugin. I'm envisioning a
-                   sequence of steps…
-[2026-08-05T12:29] split it — feat for the pipeline, docs for the READMEs
-[2026-08-05T12:35] Do we have a way to audit the testing coverage of a repo?
-[2026-08-05T13:13] How do you think these would perform against Cypress tests?
-```
-
-That decision trail is unrecoverable from git, and it is what a review needs.
+| | |
+|---|---|
+| Transcripts on disk (30 days) | 115, 66.4 MB |
+| Digests produced | 26, 46 KB |
+| Sessions with no typed prompts | 89 — SDK and automation runs, correctly yielding nothing |
+| Typed prompts kept | 288 |
+| Injected blocks dropped | 59 |
+| Size reduction | **1476x** |
+| Projected per year | about 0.5 MB |
 
 ## Redaction Runs Twice, and Neither Pass Is a Guarantee
 
-Prompts are not clean — 28 of the 120 credential-shaped hits were in them,
-because people paste keys into questions. So the digest is redacted twice.
+Prompts are not clean — people paste keys into questions. So the digest is
+redacted twice.
 
-**Stage 1, in the hook, by regex.** Synchronous, offline, ~100 ms. Strips the
-formats that have a shape: AWS and GitHub and Slack tokens, JWTs, PEM blocks,
-connection strings, `SECRET=`/`PASSWORD=` assignments, long entropy blobs. It
-**fails closed** — if Python is unavailable, the session is indexed and no
-prompt text is written at all.
+**Stage 1, in the hook, by regex.** Synchronous, offline, fails closed: if
+Python is unavailable the session is indexed and no prompt text is written at
+all. Covers AWS, GitHub, GitLab, Stripe, npm, HuggingFace, Slack, Google,
+Twilio, JWTs, PEM blocks, credentialed URLs of any scheme, and `*_KEY=` /
+`*_PASS=` / `*_SECRET=` assignments.
 
 **Stage 2, detached, by Haiku.** Regex cannot catch a password written in
-prose. A model can. Run against a digest containing `the staging database
-password is hunter2plzwork`, `prod-billing-07.corp.internal`, and a client
-name, Haiku removed all three and left `batch the per-row lookup, that fixed
-it` untouched.
+prose. Against a digest containing `the staging database password is
+hunter2plzwork`, an internal hostname, and a client name, Haiku removed all
+three and left `batch the per-row lookup, that fixed it` untouched.
 
-The model **never rewrites the digest**. It returns only the literal substrings
-to remove, and the replacement happens locally by exact match. A garbled or
-hallucinated response therefore changes nothing rather than corrupting the
-record or inventing content. The worst failure mode is a missed secret, never
-a fabricated one.
+The model **never rewrites the digest**. It returns only literal substrings to
+remove, applied locally by exact match. That inversion was necessary but not
+sufficient: the review showed the commonest small-model failure — echoing the
+input back — passed every per-needle guard, replaced the whole body, and
+stamped the file `regex+model` so nothing would ever revisit it. So the applier
+now enforces **global budgets**: at most 15 distinct needles, at most 30% of the
+body removed, and a `.bak` written before any replacement. A breach aborts the
+whole scrub and leaves the digest at `redaction: regex` to be retried.
 
-Stage 2 is best-effort and never blocks: `SessionEnd` runs on a ~1.5 second
-budget and a Haiku call takes about 8. It is spawned detached, so if the
-machine sleeps or the process dies, the digest simply keeps `redaction: regex`
-in its frontmatter and `/accomplishments:scrub` finishes the job later. **The
-redaction state is always written on disk**, so nothing is ever silently
-assumed clean.
+Stage 2 never blocks: `SessionEnd` runs on a ~1.5 second budget and a Haiku call
+takes 6–8 seconds, so it is spawned detached. The redaction state is always on
+disk, so nothing is ever silently assumed clean, and `/accomplishments:scrub` is
+the backstop.
 
-Set `ACCOMPLISHMENTS_NO_SCRUB=1` to skip the model pass entirely.
+Set `ACCOMPLISHMENTS_NO_SCRUB=1` to skip the model pass — honoured by both the
+hook and `scrub-digest.sh`.
 
 ### The honest residual
 
-Two stages are not a guarantee. A secret phrased unusually enough to defeat
-both is possible, and no amount of pattern-matching or prompting closes that
-completely. For projects where that risk is unacceptable, `<journal>/exclude`
-lists paths that are never captured — checked **before** the transcript is
-opened, so an excluded project is never read at all.
+Two stages are not a guarantee. A secret phrased unusually enough to defeat both
+is possible. For projects where that is unacceptable, `<journal>/exclude` lists
+paths that are never captured — checked **before** the transcript is opened, and
+matched case-insensitively with `/` and `\` treated alike, so a pattern written
+either way works on Windows.
 
 ## Mining Produces Candidates, Not Accomplishments
 
@@ -171,7 +170,8 @@ Then `/accomplishments:log` when something happens, and `/accomplishments:sweep`
 ## Testing the Hook
 
 ```
-bash plugins/accomplishments/hooks/scripts/test-archive.sh
+bash plugins/accomplishments/hooks/scripts/test-archive.sh   # 69 cases
+bash plugins/accomplishments/hooks/scripts/test-scrub.sh     # 27 cases
 ```
 
 50 cases, run offline with the model pass disabled. They cover the opt-in gate, start-date bucketing, idempotent re-digesting, growth on resume, the exclusion list, the recursion sentinel, path-traversal refusal, fail-open behavior on malformed input, and — the ones that matter most — that assistant replies, tool inputs, tool results, sidechain prompts, and injected context never appear in a digest, and that planted credentials do not survive redaction.
