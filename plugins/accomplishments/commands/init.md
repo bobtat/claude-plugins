@@ -21,8 +21,10 @@ grep -h cleanupPeriodDays "$HOME/.claude/settings.json" \
      "$HOME/.claude/settings.local.json" 2>/dev/null \
   || echo "retention: not set — Claude Code default of 30 days applies"
 find "$HOME/.claude/projects" -name '*.jsonl' 2>/dev/null | wc -l
-find "$HOME/.claude/projects" -name '*.jsonl' -printf '%TY-%Tm-%Td\n' 2>/dev/null \
-  | sort | head -1
+# `find -printf` is GNU-only and prints nothing at all on macOS/BSD, blanking
+# the one line this phase exists to show. `ls` is portable.
+find "$HOME/.claude/projects" -name '*.jsonl' -exec ls -l --time-style=+%Y-%m-%d {} + 2>/dev/null \
+  | awk '{print $6}' | sort | head -1
 ```
 
 The last two lines are the argument for this whole plugin: how many
@@ -102,10 +104,27 @@ empty.
 ### Offer the backfill
 
 Transcripts already on disk are inside the retention window and will be
-deleted on their own schedule. Offer to archive them now — that is up to 30
-days of history rescued for free, and it is the only chance to get it.
+deleted on their own schedule. Offer to digest them now — up to 30 days of
+history rescued, and the only chance to get it.
 
-Do not do it without asking; it is the same privacy decision as above, applied
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/backfill-sessions.sh" --dry-run
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/backfill-sessions.sh"
+```
+
+Show the `--dry-run` output first. It replays each transcript through the same
+hook a live session uses, so exclusions and redaction apply identically, and it
+skips any session that already has a digest — safe to re-run.
+
+Backfilled digests land at `redaction: regex` because the model pass is
+suppressed for the batch; a hundred detached Haiku calls at once is not a
+reasonable thing to do to someone's account. Tell the user to run
+`/accomplishments:scrub` afterwards, and say how many are pending.
+
+Expect far fewer digests than transcripts. A session with no typed prompts —
+an SDK or automation run — is indexed but produces no digest, which is correct.
+
+Do not run it without asking; it is the same privacy decision as above, applied
 retroactively to sessions the user had no capture expectation for.
 
 ### Report
