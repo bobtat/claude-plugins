@@ -41,10 +41,15 @@ without asking.
 
 ```bash
 S="${CLAUDE_PLUGIN_ROOT}/hooks/scripts/scrub-digest.sh"
-for d in $(grep -l '^redaction: regex$' "$J"/digests/*/*.md 2>/dev/null); do
-  bash "$S" "$d"
-done
+grep -lZ '^redaction: regex$' "$J"/digests/*/*.md 2>/dev/null \
+  | while IFS= read -r -d '' d; do bash "$S" "$d"; done
 ```
+
+The `-Z` and `read -d ''` are not decoration. An unquoted `$(grep -l …)` in a
+`for` loop word-splits on spaces, and the journal lives under `$HOME` — so a
+user whose Windows profile is `C:\Users\Robert Smith` gets the path shredded
+into fragments, and `scrub-digest.sh` exits 0 on each missing file. Every
+digest would be skipped silently, with no error and no scrub.
 
 The script is idempotent and self-guarding: it skips anything not marked
 `regex`, and it exits immediately if `ACCOMPLISHMENTS_NO_CAPTURE` is set.

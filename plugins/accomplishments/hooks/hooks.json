@@ -1,5 +1,5 @@
 {
-  "description": "Copies each session transcript into the accomplishments journal before Claude Code's 30-day retention deletes it. Inert until /accomplishments:init creates the journal directory; silent, non-blocking, and fails open in every case.",
+  "description": "Distils each session transcript into a small redacted digest of the prompts you typed, before Claude Code's 30-day retention deletes the transcript. Assistant replies, tool calls, tool output, file contents, and injected context are never written. Inert until /accomplishments:init creates the journal; silent, non-blocking, and fails open.",
   "hooks": {
     "SessionEnd": [
       {
