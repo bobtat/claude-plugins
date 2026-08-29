@@ -16,16 +16,53 @@
 
 ## Measurements Taken for This Plugin
 
-These are this repository's own numbers, measured on one developer's machine in August 2026. They are not published figures, and they will differ for other people and other usage patterns.
+This repository's own numbers, measured on one developer's machine in August
+2026. Not published figures; they will differ elsewhere.
 
-- **Transcript retention is real and is 30 days.** The oldest transcript on disk was exactly 30 days old, with no `cleanupPeriodDays` override in any settings file. This is the fact the entire capture design rests on — it was verified, not assumed.
-- **Transcript content breaks down as: 40.1% session metadata, 44.4% tool traffic (results plus inputs), 7.8% user prompts, 4.7% assistant replies.** Measured across 114 session transcripts holding 22.3 MB of content. This is the measurement that decided what the hook keeps.
-- **Credential-shaped strings cluster in tool traffic.** 120 matches across nine patterns: 92 in tool results and inputs, 28 in user prompts, 4 in assistant replies. Some are certainly false positives (`password =` in documentation and sample code), so treat it as an upper bound on prevalence and a reliable signal about *distribution*.
-- **Keeping only redacted prompts is a 564x reduction.** 65.4 MB of transcripts over 30 days becomes 0.12 MB of digests — about 1 MB per year against roughly 260 MB for gzipped full transcripts.
-- **gzip compresses these transcripts 2.9x, not the ~10x plain text suggests.** Measured across all of them. Recorded because it was the basis of the abandoned full-transcript design, and because the intuition it corrects is a common one.
-- **A Haiku call through `claude -p` takes about 6-8 seconds.** Far past the ~1.5 second `SessionEnd` budget, which is why stage 2 is detached rather than synchronous.
-- **The first timestamped record in a transcript is around line 16.** The opening records are session metadata carrying no timestamp, which is why the hook scans rather than reading the first line.
-- **Subagent transcripts exist separately**, under `<session-id>/subagents/`, and are not passed to the hook. They are never captured.
+Several figures in the v0.2.0 release of this file **did not reproduce** under
+adversarial re-measurement and are corrected below. The retractions are kept
+rather than deleted, because a plugin whose central rule is *never invent a
+number* has no business quietly editing its own.
+
+- **Transcript retention is real and is 30 days.** Oldest transcript on disk 29
+  days old, no `cleanupPeriodDays` override. Reproduced.
+- **gzip compresses these transcripts 2.9x**, not the ~10x plain text suggests.
+  Reproduced exactly (110.0 MB → 37.9 MB). Retained because it corrects a
+  common intuition, though the design it justified is gone.
+- **Credential-shaped strings cluster in tool traffic.** Re-measurement over a
+  larger scan found 465 hits, 78% in tool traffic and 9.5% in prompts. The
+  v0.2.0 figures (92 of 120 = 77%; 28 = 23%) were a smaller sample. The
+  load-bearing ratio — most exposure is in tool traffic — holds.
+- **Digest reduction is 1476x.** 115 transcripts, 66.4 MB, produce 26 digests
+  totalling 46 KB; about 0.5 MB per year.
+- **Only 26 of 115 transcripts yield a digest.** The other 89 are SDK or
+  automation runs containing no typed prompt. A session with nothing typed
+  correctly produces nothing.
+- **288 typed prompts kept, 59 injected blocks dropped** by the structural
+  filters, with zero human-origin prompts lost.
+- **A Haiku call through `claude -p` takes 6-8 seconds.** Far past the ~1.5
+  second `SessionEnd` budget, which is why stage 2 is detached.
+- **Subagent transcripts** live under `<session-id>/subagents/` and are never
+  passed to the hook.
+
+### Corrections to v0.2.0
+
+- **"The first timestamped record is around line 16" — withdrawn, it was
+  false.** 38 of 40 sampled transcripts carry a timestamp on line 1. It was
+  offered as the justification for the 256 KB head-scan; the scan is still
+  correct defensive behaviour, but it never needed that justification.
+- **"Content breakdown: 40.1% metadata / 24.1% tool results / 20.3% tool inputs
+  / 7.8% prompts" — not reproducible.** Independent measurement over a larger
+  corpus gives roughly 16% metadata, 61% tool results, 6% tool inputs, 3.2%
+  prompts, 14% assistant. The bucketing method was never stated, which is the
+  underlying defect. **Prompts are ~3% of content, not 7.8%** — the earlier
+  figure overstated them by more than double.
+- **"564x reduction" and "about 1 MB per year" — superseded.** Both were
+  computed before the injected-content filters existed and over a different file
+  set.
+- **The README's "here is a real digest" sample was hand-formatted** and not in
+  a shape `digest.py` can emit. It has been replaced with measured figures. This
+  was the plugin's own fabrication failure mode, committed in its own README.
 
 ## This Plugin's Own Synthesis
 
