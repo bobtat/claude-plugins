@@ -1,0 +1,11 @@
+{
+  "name": "agentic-qa",
+  "version": "0.1.0",
+  "description": "Interactive, human-in-the-loop QA walkthroughs of finished functionality — drives a browser, an API, and a CLI against a ticket's acceptance criteria and its merged PR, with an adversarial critic pass on both the behavior spec and the step plan, live drafter/critic pairing, and a report with embedded screenshots. Not automated test-code authoring; that's what the testing plugin is for",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": ["qa", "quality-assurance", "browser-automation", "walkthrough", "acceptance-criteria", "manual-testing", "exploratory-testing", "e2e"]
+}
