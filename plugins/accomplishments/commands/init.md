@@ -57,8 +57,12 @@ State these five things plainly and get explicit confirmation:
    line above). A review covers six to twelve months, so the reasoning behind
    the work is gone before it is needed.
 4. **The cost** — about 1 MB per year, plus one Haiku call per session for the
-   second redaction stage. Set `ACCOMPLISHMENTS_NO_SCRUB=1` to skip the model
-   pass and keep regex-only redaction.
+   second redaction stage. That call runs through whatever provider Claude Code
+   is configured for — the first-party API, Amazon Bedrock, or Google Vertex —
+   so the digest never leaves the boundary the user already chose. It asks for
+   the model by the `haiku` alias; a Bedrock or Vertex user who pins model IDs
+   can point it with `ACCOMPLISHMENTS_SCRUB_MODEL`. Set `ACCOMPLISHMENTS_NO_SCRUB=1`
+   to skip the model pass entirely and keep regex-only redaction.
 5. **The residual risk** — redaction runs in two stages, regex then Haiku, and
    neither is a guarantee. A secret the user types in an unusual form may
    survive both. The exclusion list below is the answer for projects where

@@ -99,6 +99,15 @@ prose. Against a digest containing `the staging database password is
 hunter2plzwork`, an internal hostname, and a client name, Haiku removed all
 three and left `batch the per-row lookup, that fixed it` untouched.
 
+The call goes through whatever provider Claude Code is pointed at — the
+first-party API, Amazon Bedrock, or Google Vertex — so a digest that may still
+hold a missed secret never crosses a boundary the user did not already choose.
+It names the model by the `haiku` alias, which resolves on all three;
+`ACCOMPLISHMENTS_SCRUB_MODEL` overrides it for a user who pins provider-specific
+IDs. It also runs with every tool and MCP server stripped: a digest is
+untrusted text and this is a headless session nobody is watching, so it is
+confined to a plain text-in, text-out transform.
+
 The model **never rewrites the digest**. It returns only literal substrings to
 remove, applied locally by exact match. That inversion was necessary but not
 sufficient: the review showed the commonest small-model failure — echoing the
@@ -171,7 +180,7 @@ Then `/accomplishments:log` when something happens, and `/accomplishments:sweep`
 
 ```
 bash plugins/accomplishments/hooks/scripts/test-archive.sh   # 69 cases
-bash plugins/accomplishments/hooks/scripts/test-scrub.sh     # 27 cases
+bash plugins/accomplishments/hooks/scripts/test-scrub.sh     # 32 cases
 ```
 
-50 cases, run offline with the model pass disabled. They cover the opt-in gate, start-date bucketing, idempotent re-digesting, growth on resume, the exclusion list, the recursion sentinel, path-traversal refusal, fail-open behavior on malformed input, and — the ones that matter most — that assistant replies, tool inputs, tool results, sidechain prompts, and injected context never appear in a digest, and that planted credentials do not survive redaction.
+101 cases, run offline with a stub `claude` on `PATH` so no model is called. They cover the opt-in gate, start-date bucketing, idempotent re-digesting, growth on resume, the exclusion list, the recursion sentinel, path-traversal refusal, fail-open behavior on malformed input, that the model pass is confined to a tool-less text transform against the user's configured provider, and — the ones that matter most — that assistant replies, tool inputs, tool results, sidechain prompts, and injected context never appear in a digest, and that planted credentials do not survive redaction.
