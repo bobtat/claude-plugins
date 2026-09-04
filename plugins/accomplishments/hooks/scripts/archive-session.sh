@@ -19,8 +19,10 @@
 # Redaction runs in two stages:
 #   1. Here, synchronously, by regex. Fast, offline, and fail-closed -- if it
 #      cannot run, metadata is written and no prompt text is.
-#   2. In scrub-digest.sh, detached, by Haiku. Catches what a pattern cannot:
-#      a password written in prose, an internal hostname, a client name.
+#   2. In scrub-digest.sh, detached, by a Haiku-class model through whatever
+#      provider Claude Code is pointed at (first-party, Bedrock, Vertex).
+#      Catches what a pattern cannot: a password written in prose, an internal
+#      hostname, a client name.
 # Stage 2 is best-effort and never blocks. Anything it misses stays marked
 # `redaction: regex` in the digest frontmatter, so /accomplishments:scrub can
 # find it and finish the job later. The state is always explicit on disk.
