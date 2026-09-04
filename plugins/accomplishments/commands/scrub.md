@@ -61,6 +61,10 @@ the reason matters:
 
 - `claude` not on PATH — the pass cannot run at all here
 - calls timing out — raise `ACCOMPLISHMENTS_SCRUB_TIMEOUT`
+- the model call failing every time — usually a bad `ACCOMPLISHMENTS_SCRUB_MODEL`
+  for the active provider. The default is the `haiku` alias, which resolves on
+  the first-party API, Bedrock, and Vertex; a value pinned to one provider's
+  ID will be rejected by another. Unset it, or set it to that provider's ID.
 - digests with no findings — these end at `regex+model-clean`, not `regex`, so
   they are not failures
 
