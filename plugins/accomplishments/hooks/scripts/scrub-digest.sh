@@ -26,6 +26,21 @@
 #
 # Fails safe in every direction. If `claude` is missing, the call fails, or the
 # response is unusable, the regex-redacted digest is left exactly as it was.
+#
+# The model call inherits the environment, so it routes wherever the user has
+# pointed Claude Code -- the first-party API, Amazon Bedrock, Google Vertex.
+# The digest may still hold a secret the regex pass missed, so it must go to
+# the user's own provider and nowhere else. Two things follow from that:
+#   - The model is named by ALIAS (`haiku`), never a first-party model id. An
+#     id like `claude-haiku-4-5-20251001` is passed through to Bedrock/Vertex
+#     unchecked and rejected there, which silently disabled this whole stage
+#     for every third-party-provider user. The alias resolves on all three and
+#     honours ANTHROPIC_DEFAULT_HAIKU_MODEL. Override with ACCOMPLISHMENTS_SCRUB_MODEL.
+#   - The call runs with every tool removed (`--disallowedTools "*"`) and no
+#     MCP servers (`--strict-mcp-config`). A digest is untrusted text -- the
+#     user pastes error output and third-party prose into prompts -- and this
+#     is a detached, headless session whose output nobody sees. It needs to be
+#     a pure text-in/text-out transform, nothing more.
 
 set -uo pipefail
 
@@ -53,7 +68,7 @@ PY=$(command -v python3 || command -v python) || exit 0
 # anchors matter: `regex+model` must not be re-reviewed.
 grep -q '^redaction: regex$' "$DIGEST" 2>/dev/null || exit 0
 
-MODEL="${ACCOMPLISHMENTS_SCRUB_MODEL:-claude-haiku-4-5-20251001}"
+MODEL="${ACCOMPLISHMENTS_SCRUB_MODEL:-haiku}"
 
 read -r -d '' INSTRUCTIONS <<'PROMPT'
 You are a redaction reviewer. The text below is a log of prompts a developer
@@ -77,7 +92,8 @@ PROMPT
 
 FINDINGS=$(printf '%s\n%s\n' "$INSTRUCTIONS" "$(cat "$DIGEST")" \
   | timeout "${ACCOMPLISHMENTS_SCRUB_TIMEOUT:-90}" \
-    claude -p --model "$MODEL" 2>/dev/null) || exit 0
+    claude -p --model "$MODEL" --strict-mcp-config --disallowedTools "*" \
+    2>/dev/null) || exit 0
 [ -n "$FINDINGS" ] || exit 0
 
 printf '%s' "$FINDINGS" | "$PY" -c '

@@ -13,7 +13,7 @@
       "name": "accomplishments",
       "source": "./plugins/accomplishments",
       "description": "Teaches Claude to build the evidence record a performance review needs before the evidence is gone — a session hook that distils each transcript into a redacted digest of your own prompts before Claude Code's 30-day purge deletes it, keeping the decisions and discarding the tool output where the secrets live; a sweep that reconciles git, PR, and review history against the journal and interviews the gaps; and authoring that turns dated entries into a review, a promotion case, or resume bullets without inventing a number",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "author": {
         "name": "bobtat",
         "email": ""

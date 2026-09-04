@@ -16,12 +16,15 @@ TMP=$(mktemp -d)
 BIN="$TMP/bin"; mkdir -p "$BIN"
 export PATH="$BIN:$PATH"
 
-# Stub `claude`: prints whatever RESPONSE_FILE holds, ignoring its input.
+# Stub `claude`: records its argv (one arg per line) then prints whatever
+# RESPONSE_FILE holds, ignoring its input.
 cat > "$BIN/claude" <<'STUB'
 #!/usr/bin/env bash
+[ -n "${CLAUDE_ARGS_FILE:-}" ] && printf '%s\n' "$@" > "$CLAUDE_ARGS_FILE"
 cat "$RESPONSE_FILE"
 STUB
 chmod +x "$BIN/claude"
+export CLAUDE_ARGS_FILE="$TMP/claude-args"
 
 mk_digest() { # mk_digest <path> <body-line>
   cat > "$1" <<EOF
@@ -123,6 +126,28 @@ ACCOMPLISHMENTS_NO_CAPTURE=1 bash "$SCRUB" "$TMP/i.md"
 check "NO_CAPTURE sentinel is a no-op" "$([ "$(md5sum "$TMP/i.md" | cut -d' ' -f1)" = "$before" ]; yes_no $?)"
 ACCOMPLISHMENTS_NO_SCRUB=1 bash "$SCRUB" "$TMP/i.md"
 check "NO_SCRUB is a no-op"            "$([ "$(md5sum "$TMP/i.md" | cut -d' ' -f1)" = "$before" ]; yes_no $?)"
+
+echo "== the model call is confined to a text transform =="
+# A digest is untrusted text handed to a headless, unwatched session. The call
+# must name the model by an alias that resolves on Bedrock and Vertex, and must
+# carry no tools and no MCP servers.
+mk_digest "$TMP/confined.md" "the staging password is hunter2plzwork ok"
+respond "hunter2plzwork"
+rm -f "$TMP/claude-args"
+bash "$SCRUB" "$TMP/confined.md"
+check "model named by alias, not a pinned id" "$(grep -qxF -- 'haiku' "$TMP/claude-args"; yes_no $?)"
+check "no first-party model id leaks through" "$(grep -q 'claude-haiku-4-5' "$TMP/claude-args" && echo 1 || echo 0)"
+check "every tool stripped (--disallowedTools *)" \
+  "$(grep -qxF -- '--disallowedTools' "$TMP/claude-args" && grep -qxF -- '*' "$TMP/claude-args"; yes_no $?)"
+check "MCP servers stripped (--strict-mcp-config)" "$(grep -qxF -- '--strict-mcp-config' "$TMP/claude-args"; yes_no $?)"
+
+echo "== ACCOMPLISHMENTS_SCRUB_MODEL overrides the alias =="
+mk_digest "$TMP/model.md" "the staging password is hunter2plzwork ok"
+respond "hunter2plzwork"
+rm -f "$TMP/claude-args"
+ACCOMPLISHMENTS_SCRUB_MODEL="us.anthropic.claude-haiku-4-5-20251001" bash "$SCRUB" "$TMP/model.md"
+check "the pinned provider id is used" \
+  "$(grep -qxF -- 'us.anthropic.claude-haiku-4-5-20251001' "$TMP/claude-args"; yes_no $?)"
 
 echo "== no claude on PATH =="
 mk_digest "$TMP/j.md" "the staging password is hunter2plzwork ok"
