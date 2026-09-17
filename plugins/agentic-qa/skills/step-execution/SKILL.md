@@ -70,16 +70,17 @@ Either way, `step-results.md`'s `Authorization` field records how it was cleared
 
 ### Browser driver
 
-Two drivers can run a browser step, and a run picks one before its first browser step rather than per step:
+Two drivers can run a browser step. Which one this run uses was settled at Intake and is recorded in `intake.md`'s `Browser driver` field — read it, don't re-derive it. Intake sees the same tool list you do, and a run whose evidence came from one driver for some steps and the other for the rest can't be compared against itself.
 
 - **`claude-in-chrome`** — preferred when available. It drives the user's own Chrome, which is why the interactive session story below is as short as it is.
 - **`playwright`** — the fallback, shipped configured with this plugin. Nothing else about this phase changes: the same four verdicts, the same evidence rules, the same escalations.
+- **`none`** — every browser step arrived already marked `blocked — no browser driver` by `agentic-qa:step-planning`. Skip them and their cascade exactly as you would any other blocked step. You have nothing to escalate here; Intake already did.
 
 Driving Playwright, work from `browser_snapshot` and act on the element references it returns — not from screenshot coordinates. This matters for more than ergonomics: a reference that no longer resolves is an unambiguous failure attributable to the page, where a coordinate click that lands on the wrong element produces a screenshot that looks like a product bug. Screenshots are still captured for every browser step, but as evidence, not as the thing actions are aimed at.
 
 Playwright also exposes two evidence classes no other surface here can reach — `browser_console_messages` and `browser_network_requests`. Capture them alongside the screenshot when a step's Expected concerns something the rendered page can hide: a request that should have fired, a silent client-side error behind a UI that looks fine. `agentic-qa:step-planning` adds a deliberate API step next to a browser one for exactly this reason; network evidence tightens that pairing, it doesn't replace it.
 
-If neither driver is available, escalate per `agentic-qa:agentic-qa`. Never re-plan a browser step onto the API because the browser is missing — the surface was chosen deliberately, and a behavior that is only observable in the rendered UI has no API equivalent to fall back to.
+A driver recorded at Intake can still fail when it first reaches for a browser binary — that is an environment failure, so it gets the backoff below and then escalates like any other. Never re-plan a browser step onto the API because the browser is missing: the surface was chosen deliberately, and a behavior that is only observable in the rendered UI has no API equivalent to fall back to.
 
 ### Browser session and SSO
 
@@ -95,7 +96,6 @@ Agent-invoked, load the brief's `browser_session` (a pre-established storage sta
 
 ```markdown
 # Step Results: <title>
-- **Browser driver:** claude-in-chrome | playwright | n/a (no browser steps)
 
 ## S1 — <short name>
 - **Verdict:** pass | fail | blocked | skipped

@@ -46,6 +46,7 @@ A lightweight inline-SVG step-status summary is worth adding when a run has enou
 
 **Ticket:** <key/URL>   **PR:** <#, merged>
 **Environment:** staging — https://staging.example.com
+**Browser driver:** playwright  (omit this line when the run has no browser steps)
 **Status:** ⏳ In progress — 4 of 7 steps run | ⚠️ Incomplete — 2 blocked, 1 skipped | ✅ Complete
 **Summary:** 3 passed, 1 failed, 2 blocked, 1 skipped
 
