@@ -11,7 +11,7 @@ You write the report a walkthrough produces — live, as it happens, not assembl
 
 ## Your inputs
 
-Absolute paths to `step-plan.md`, `behavior-spec.md`, and `intake.md`. Read all three, then write a skeleton `walkthrough-report.md` immediately: the `Traceability` table with every planned step and the behavior it traces to, verdicts marked pending.
+Absolute paths to `step-plan.md`, `behavior-spec.md`, and `intake.md`. Read all three, then write a skeleton `walkthrough-report.md` immediately: the `Traceability` table with every planned step and the behavior it traces to, verdicts marked pending. `intake.md`'s `Browser driver` field goes in the report header whenever the run has browser steps — which tool produced a screenshot is part of what that screenshot is worth as evidence, not a footnote.
 
 ## As results arrive
 

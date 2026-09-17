@@ -63,6 +63,8 @@ Resolve `$ARGUMENTS` into a ticket **and** its merged PR — both required, cros
 3. The base URL is reachable — checked, not just accepted as a string.
 4. The environment does not resolve to production — refused outright, no confirmation path, in any invocation mode.
 
+Determine the **browser driver** before writing `intake.md`. Both drivers register their tools when the session starts, so this is something you read, not something you discover by trying: `claude-in-chrome` if its tools are present, otherwise `playwright`, which this plugin ships configured. Record the answer — including `none` — and do not defer it to Execute Steps. A driver that is present can still fail later when it first reaches for a browser binary; that is an environment failure for backoff to handle, not something this check can predict.
+
 Ask what's needed to reach the system: base URL, environment (local/staging), test-account credentials, whether it's sandboxed or shared (default shared/unknown if unanswered), optionally any docs/wiki links (skippable, and note if a given link is unreachable rather than treating that the same as none given), and optionally a report destination — a shared drive or folder path. Offer to save the environment answers and report destination to `.claude/agentic-qa.local.md` for next time.
 
 Write `intake.md`, following this template exactly:
@@ -78,6 +80,7 @@ Write `intake.md`, following this template exactly:
 **Base URL:** https://staging.example.com
 **Test account:** qa-test-1  (credentials not recorded here)
 **Isolation:** sandboxed — no real outbound side effects | shared/unknown (default)
+**Browser driver:** claude-in-chrome | playwright | none — browser steps will be planned but marked blocked
 **Report destination:** <shared drive or folder path> | none (default — working directory only)
 
 ## Ticket

@@ -24,6 +24,8 @@ Spawn `agentic-qa:step-planner` with the absolute paths to `behavior-spec.md` an
 - **Reversibility:** `reversible` | `irreversible`.
 - **Containment** (required if irreversible): `contained` (effect stays inside the target environment and test account) or `escapes` (reaches something real outside it — a real email, SMS, payment, or shared resource). Ground the call in the actual API contract, the code path, a doc, or `intake.md`'s `Isolation` claim.
 
+**No browser driver** — when `intake.md` records `Browser driver: none`, plan the browser steps exactly as you otherwise would and mark each `Status: blocked — no browser driver`, cascading to dependents as below. Do not move the behavior to the API to make it runnable: surface selection was a deliberate call, an API check would pass even if the button were broken, and a behavior about what's rendered has no API equivalent at all. A plan that is honest about what this environment can't verify is worth more than one that quietly verifies something else. The User Gate is where the person sees the count and decides whether to fix the environment, narrow the run, or proceed knowing what won't be covered.
+
 **Blocked steps** — a behavior resting on an unanswered `Unspecified` question or an unresolved `Conflict` doesn't get a guessed action. Mark its step `Status: blocked`, with the specific register/conflict number it's waiting on, and cascade that same status to any later step whose `Depends on` traces back to it — never run a step on a missing value.
 
 ## Step 2 — Spawn the critic and start the pairing
@@ -65,7 +67,7 @@ Spawn `agentic-qa:step-plan-critic` with the absolute paths to the draft `step-p
 - **Basis:** <API/code/doc citation> (required if irreversible)
 - **Depends on:** <a prior step's output, if any>
 - **Rationale:** <only for a deliberate API-bypass step alongside a browser one>
-- **Status:** ready | blocked — <Unspecified/Conflict # or "depends on step N">
+- **Status:** ready | blocked — <Unspecified/Conflict #, "no browser driver", or "depends on step N">
 
 ## Out of scope
 - <behaviors deliberately not walked through, and why>

@@ -15,7 +15,7 @@ Absolute paths to `step-plan.md` and `intake.md`. Before each step, read `step-r
 
 ## Browser driver
 
-You hold two browser toolsets and use exactly one per run. Prefer `claude-in-chrome` when its tools are available — it drives the user's own browser, so a live session is already there. Otherwise use `playwright`, which the plugin ships configured. Decide once, before the first browser step, and record which one in `step-results.md`'s header; a run that switches drivers mid-plan produces evidence that can't be compared. Neither being available is an escalation, not a reason to reclassify browser steps onto the API.
+You hold two browser toolsets and use exactly one per run. Which one is not yours to choose: `intake.md`'s `Browser driver` field records it, settled at Intake where both drivers' tools were already visible. Read it and use that one. If it says `none`, every browser step reached you already marked `blocked — no browser driver` — skip them and their cascade; there is nothing here to escalate.
 
 ## Per step
 
