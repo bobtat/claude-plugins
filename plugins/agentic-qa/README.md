@@ -19,11 +19,21 @@ Requires the **`testing`** plugin — Extract Behaviors runs `testing:behavior-e
 
 Requires `gh` for ticket/PR resolution.
 
-Any behavior planned against the browser surface needs a browser driver, and there are two. `claude-in-chrome` is preferred when it's available — it drives your own Chrome, so whatever you're already logged into is simply there. Otherwise the plugin falls back to **Playwright MCP**, which it ships configured: no setup beyond having `npx` on the machine. A run picks one driver before its first browser step and records which one in `step-results.md`.
+Any behavior planned against the browser surface needs a browser driver, and there are two. `claude-in-chrome` is preferred when it's available — it drives your own Chrome, so whatever you're already logged into is simply there. Otherwise the plugin falls back to **Playwright MCP**, which it ships configured: no setup beyond having `npx` on the machine. Intake picks the driver and records it in `intake.md`, so the choice is made once, before any planning, and travels with the run into the report.
+
+If **neither** is available, browser steps are still planned — and then marked `blocked — no browser driver`, with the count surfaced at the User Gate before you approve anything. They are never quietly re-planned onto the API: an API check would pass even if the button were broken, and a behavior about what's rendered has no API equivalent at all. You decide whether to fix the environment, narrow the run, or proceed knowing what won't be covered.
 
 The fallback is not a degraded mode. Playwright acts on element references from an accessibility snapshot rather than screenshot coordinates, which makes a failed action attributable to the page instead of to a misplaced click, and it captures console messages and network requests — evidence for a step whose expected result concerns something the rendered page can hide.
 
 What does differ is the session. Playwright launches its own browser, not yours, so the first interactive run is expected to be unauthenticated: it stops and asks you to log in live, and the profile persists from there. An agent-invoked run loads the brief's `browser_session` storage state instead and escalates if it's missing or expired.
+
+Three things about the shipped Playwright config worth knowing before you install:
+
+- **It runs in every session.** Claude Code starts a plugin's stdio MCP servers when the plugin is enabled, not on first use, so enabling `agentic-qa` means a small Node process starts each session whether or not you ever run a browser step.
+- **The version is pinned**, deliberately. A walkthrough's worth as evidence depends on knowing what produced it, and `@latest` would mean the same walkthrough run two months apart used provably different tools.
+- **`--caps=testing,storage` is required, not optional.** The verification tools and both storage-state tools sit behind non-default capability groups; without that flag the server silently doesn't expose them. Note that `--caps --help` lists only `vision, pdf, devtools` — `testing` and `storage` are real, working values the CLI's own help text omits. Don't remove the flag on the strength of that help output.
+
+The persistent Playwright profile is keyed by a hash of the working directory, so running a walkthrough from a different directory gets a different — also persistent — profile, and a fresh login.
 
 ## Before you run it
 
