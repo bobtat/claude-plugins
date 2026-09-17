@@ -42,7 +42,16 @@ A timeout, a connection reset, a 5xx gateway error, or the browser tool itself c
 
 Three retries, four attempts total. If all four fail, this is a trigger for the escalation mechanism in `agentic-qa:agentic-qa` — pause and notify, don't keep "testing" against a target that isn't answering.
 
-**Backoff is for failures that might pass on the next attempt.** A failure that is deterministic fails identically four times and wastes ninety seconds proving it. An expired browser session is one (see below). A stale element reference — the handle came from a page snapshot the page has since re-rendered past — is the other: take a fresh snapshot and re-run the *same* action against the same element. That re-snapshot is not a `Deviation`; it is re-reading a page that moved. Choosing a *different* element because the planned one wasn't there is a `Deviation`, and still is however reasonable the substitute looks.
+**Backoff is for failures that might pass on the next attempt.** A failure that is deterministic fails identically four times and wastes ninety seconds proving it. An expired browser session is one (see below). A stale element reference — the handle came from a page snapshot the page has since re-rendered past — is the other: take a fresh snapshot and re-run the same action. Re-reading a page that moved is not a `Deviation`.
+
+A fresh snapshot assigns new references, so "the same element" cannot be an identity check and must not be left to judgment. Use this test:
+
+1. **Before** re-snapshotting, write down the element's identity as the *plan* names it — its accessible role and name, e.g. `button "Place order"`. From the plan, not from the element you were about to click.
+2. Take the snapshot and look for an element with that same role and accessible name.
+3. **Found it** — act on it. Record `re-snapshot — button "Place order"` in the step's `Deviation` field. It doesn't change the verdict, but it is disclosed, and a reader can see what was matched instead of taking your word for it.
+4. **Not found** — stop. This is not a stale reference; the element the plan named is not on the page. That is an observation about the product, and the verdict follows from Expected like any other. It is never licence to look for something similar.
+
+The trap this closes: re-snapshot, fail to find the planned element, take the nearest plausible substitute, and call it a stale-reference refresh. Writing the role and name down in step 1 — before you know what the new snapshot holds — is what makes that self-deception hard. Choosing a different element remains a `Deviation` however reasonable the substitute looks.
 
 **This retry never applies to a step that completed and simply didn't match Expected.** A clean response with the wrong data is the finding, not a glitch to wait out — retrying that would reopen the false-pass door the next rule closes.
 
