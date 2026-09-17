@@ -16,6 +16,7 @@ plugins/<name>/
   commands/*.md                 # frontmatter: description, argument-hint, allowed-tools
   agents/*.md                   # frontmatter: name, description, tools, model
   hooks/hooks.json              # + hooks/scripts/*.sh, invoked via ${CLAUDE_PLUGIN_ROOT}
+  .mcp.json                     # optional: MCP servers the plugin registers, started when it is enabled
 ```
 
 **`version` and `description` are duplicated** in `.claude-plugin/marketplace.json` and `plugins/<name>/.claude-plugin/plugin.json`. Nothing enforces the match — bump both in the same commit. Adding a new plugin also means a row in the root `README.md` table.
