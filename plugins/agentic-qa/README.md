@@ -17,7 +17,13 @@ The premise: a ticket and its merged PR describe what should be true of a runnin
 
 Requires the **`testing`** plugin — Extract Behaviors runs `testing:behavior-extraction` directly and will not improvise an extraction procedure if it isn't installed.
 
-Requires `gh` for ticket/PR resolution, and a Chrome browser connected via `claude-in-chrome` for any behavior planned against the browser surface.
+Requires `gh` for ticket/PR resolution.
+
+Any behavior planned against the browser surface needs a browser driver, and there are two. `claude-in-chrome` is preferred when it's available — it drives your own Chrome, so whatever you're already logged into is simply there. Otherwise the plugin falls back to **Playwright MCP**, which it ships configured: no setup beyond having `npx` on the machine. A run picks one driver before its first browser step and records which one in `step-results.md`.
+
+The fallback is not a degraded mode. Playwright acts on element references from an accessibility snapshot rather than screenshot coordinates, which makes a failed action attributable to the page instead of to a misplaced click, and it captures console messages and network requests — evidence for a step whose expected result concerns something the rendered page can hide.
+
+What does differ is the session. Playwright launches its own browser, not yours, so the first interactive run is expected to be unauthenticated: it stops and asks you to log in live, and the profile persists from there. An agent-invoked run loads the brief's `browser_session` storage state instead and escalates if it's missing or expired.
 
 ## Before you run it
 
