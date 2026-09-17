@@ -1,6 +1,6 @@
 ---
 name: step-execution
-description: Use when running an approved step plan against a live system — spawning agentic-qa:step-executor to drive the browser, API, and CLI. Governs the four verdicts (pass/fail/blocked/skipped), which evidence is required by surface, the backoff retry policy for environment failures, the irreversible-step check, and the rule against adapting an action to force a pass. Invoked by /agentic-qa:walkthrough after the User Gate, alongside agentic-qa:qa-reporting.
+description: Use when running an approved step plan against a live system — spawning agentic-qa:step-executor to drive the browser, API, and CLI. Governs the four verdicts (pass/fail/blocked/skipped), which evidence is required by surface, the choice between the claude-in-chrome and playwright browser drivers, the backoff retry policy for environment failures, the irreversible-step check, and the rule against adapting an action to force a pass. Invoked by /agentic-qa:walkthrough after the User Gate, alongside agentic-qa:qa-reporting.
 ---
 
 ## Overview
@@ -15,7 +15,7 @@ Before each step, read `step-results.md` for any output value an earlier step pr
 
 ### Evidence, fixed by surface, not judgment
 
-- **browser** — a screenshot, every time, pass or fail, never skipped as unnecessary.
+- **browser** — a screenshot, every time, pass or fail, never skipped as unnecessary. Write it to `evidence/s<n>-<short-name>.png` explicitly; a driver that names screenshots for you drops them somewhere the report can't find them.
 - **api** — the response body as text.
 - **cli** — the command output as text.
 
@@ -42,6 +42,8 @@ A timeout, a connection reset, a 5xx gateway error, or the browser tool itself c
 
 Three retries, four attempts total. If all four fail, this is a trigger for the escalation mechanism in `agentic-qa:agentic-qa` — pause and notify, don't keep "testing" against a target that isn't answering.
 
+**Backoff is for failures that might pass on the next attempt.** A failure that is deterministic fails identically four times and wastes ninety seconds proving it. An expired browser session is one (see below). A stale element reference — the handle came from a page snapshot the page has since re-rendered past — is the other: take a fresh snapshot and re-run the *same* action against the same element. That re-snapshot is not a `Deviation`; it is re-reading a page that moved. Choosing a *different* element because the planned one wasn't there is a `Deviation`, and still is however reasonable the substitute looks.
+
 **This retry never applies to a step that completed and simply didn't match Expected.** A clean response with the wrong data is the finding, not a glitch to wait out — retrying that would reopen the false-pass door the next rule closes.
 
 ### Never adapt an action to force a pass
@@ -57,14 +59,34 @@ Before running any step tagged irreversible, check its containment:
 
 Either way, `step-results.md`'s `Authorization` field records how it was cleared — `confirmed live`, `pre-authorized (contained)`, or `n/a (reversible)` — never silent.
 
+### Browser driver
+
+Two drivers can run a browser step, and a run picks one before its first browser step rather than per step:
+
+- **`claude-in-chrome`** — preferred when available. It drives the user's own Chrome, which is why the interactive session story below is as short as it is.
+- **`playwright`** — the fallback, shipped configured with this plugin. Nothing else about this phase changes: the same four verdicts, the same evidence rules, the same escalations.
+
+Driving Playwright, work from `browser_snapshot` and act on the element references it returns — not from screenshot coordinates. This matters for more than ergonomics: a reference that no longer resolves is an unambiguous failure attributable to the page, where a coordinate click that lands on the wrong element produces a screenshot that looks like a product bug. Screenshots are still captured for every browser step, but as evidence, not as the thing actions are aimed at.
+
+Playwright also exposes two evidence classes no other surface here can reach — `browser_console_messages` and `browser_network_requests`. Capture them alongside the screenshot when a step's Expected concerns something the rendered page can hide: a request that should have fired, a silent client-side error behind a UI that looks fine. `agentic-qa:step-planning` adds a deliberate API step next to a browser one for exactly this reason; network evidence tightens that pairing, it doesn't replace it.
+
+If neither driver is available, escalate per `agentic-qa:agentic-qa`. Never re-plan a browser step onto the API because the browser is missing — the surface was chosen deliberately, and a behavior that is only observable in the rendered UI has no API equivalent to fall back to.
+
 ### Browser session and SSO
 
-Before the first browser step, verify the session is authenticated. Interactively, `claude-in-chrome` drives the user's actual, already-logged-in browser — if not authenticated, navigate to the login page and escalate, asking the person to complete SSO/MFA live; there is no credential to know, only a session to wait for. Agent-invoked, load the brief's `browser_session` (a pre-established storage state) if given; if missing or expired, this is an escalation trigger, not a retry candidate — an expired session fails identically every time, so what it needs is a human to refresh it, not four attempts at the same action.
+Before the first browser step, verify the session is authenticated.
+
+Interactively with `claude-in-chrome`, the user's browser is already logged in — if it isn't, navigate to the login page and escalate, asking the person to complete SSO/MFA live; there is no credential to know, only a session to wait for.
+
+Interactively with `playwright`, the browser is the plugin's own, not the user's, so that assumption does not carry: expect an unauthenticated first run, navigate to the login page and escalate for a live login the same way. The profile persists between runs, so this is a first-run cost rather than a per-run one. Capturing the resulting state with `browser_storage_state` and handing the path back to the user is worth doing — it is exactly what an agent-invoked run will want as its `browser_session`.
+
+Agent-invoked, load the brief's `browser_session` (a pre-established storage state) if given — with `playwright`, via `browser_set_storage_state`, at the start of the run rather than as a launch flag. If it is missing or expired, this is an escalation trigger, not a retry candidate — an expired session fails identically every time, so what it needs is a human to refresh it, not four attempts at the same action.
 
 ## `step-results.md` format
 
 ```markdown
 # Step Results: <title>
+- **Browser driver:** claude-in-chrome | playwright | n/a (no browser steps)
 
 ## S1 — <short name>
 - **Verdict:** pass | fail | blocked | skipped
