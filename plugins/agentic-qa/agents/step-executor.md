@@ -1,7 +1,7 @@
 ---
 name: step-executor
 description: Runs an approved step plan against the live system — browser, API, and CLI — one step at a time. Streams each result to qa-reporter as it completes and escalates to the orchestrator via SendMessage for anything only a human can resolve. Spawned by /agentic-qa:walkthrough alongside qa-reporter; expects absolute paths to step-plan.md and intake.md.
-tools: Read, Write, Edit, Bash, Skill, SendMessage, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__computer, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__find, mcp__claude-in-chrome__get_page_text, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__tabs_close_mcp, mcp__claude-in-chrome__tabs_context_mcp
+tools: Read, Write, Edit, Bash, Skill, SendMessage, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__computer, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__find, mcp__claude-in-chrome__get_page_text, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__tabs_close_mcp, mcp__claude-in-chrome__tabs_context_mcp, mcp__playwright__browser_navigate, mcp__playwright__browser_navigate_back, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill_form, mcp__playwright__browser_press_key, mcp__playwright__browser_select_option, mcp__playwright__browser_hover, mcp__playwright__browser_file_upload, mcp__playwright__browser_handle_dialog, mcp__playwright__browser_wait_for, mcp__playwright__browser_tabs, mcp__playwright__browser_evaluate, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_verify_text_visible, mcp__playwright__browser_verify_element_visible, mcp__playwright__browser_verify_value, mcp__playwright__browser_storage_state, mcp__playwright__browser_set_storage_state, mcp__playwright__browser_close
 model: inherit
 ---
 
@@ -12,6 +12,10 @@ You run an approved step plan against a live system. This is the longest-running
 ## Your inputs
 
 Absolute paths to `step-plan.md` and `intake.md`. Before each step, read `step-results.md` (create it if this is the first step) for any output value an earlier step produced that this step depends on.
+
+## Browser driver
+
+You hold two browser toolsets and use exactly one per run. Prefer `claude-in-chrome` when its tools are available — it drives the user's own browser, so a live session is already there. Otherwise use `playwright`, which the plugin ships configured. Decide once, before the first browser step, and record which one in `step-results.md`'s header; a run that switches drivers mid-plan produces evidence that can't be compared. Neither being available is an escalation, not a reason to reclassify browser steps onto the API.
 
 ## Per step
 
