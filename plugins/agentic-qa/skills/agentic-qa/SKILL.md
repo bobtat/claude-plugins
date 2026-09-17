@@ -14,7 +14,7 @@ This skill is the umbrella: load it once, at the start of a run, before any phas
 1. **Production is never a valid target.** Refused outright at Intake, no confirmation path, in either mode. This is not a tool for verifying production.
 2. **Never run an irreversible step without a real decision behind it** — live, pre-authorized in advance, or escalated. Never inferred, never defaulted to "probably fine."
 3. **Never adapt a step's action to force a pass.** A step that didn't work as planned may mean the feature is wrong, not the plan. Any deviation from the literal planned action is disclosed in `step-results.md`'s `Deviation` field, never silently absorbed into a clean verdict.
-4. **Credentials never touch a file.** They stay in conversation context (interactive) or get resolved from an environment-variable reference at the moment of use (agent-invoked). `intake.md` and the brief both carry only references, never secrets.
+4. **Credentials never touch a file.** They stay in conversation context (interactive) or get resolved from an environment-variable reference at the moment of use (agent-invoked). `intake.md` and the brief both carry only references, never secrets. A browser storage state is the deliberate exception and a narrow one: it holds an already-established session, never the credential that created it, so a leaked storage state expires on its own where a leaked password does not. It is referenced by path, written outside the working directory, and never copied into an artifact or a report destination.
 5. **Every consequential claim is grounded, never asserted.** A behavior beyond the acceptance criteria, a reversibility call, a containment call — each cites something concrete: a doc, a ticket, code, an API contract. "This looks safe" is not a citation.
 
 ## Agent-invoked contract
@@ -44,7 +44,7 @@ A brief that fails a validity gate triggers the same escalation as everything el
 
 ## Escalation: pause, notify, resume
 
-Four situations can't proceed without a human. All four use one mechanism:
+Five situations can't proceed without a human. All five use one mechanism:
 
 | Trigger | Stage | Mode |
 |---|---|---|
@@ -52,6 +52,7 @@ Four situations can't proceed without a human. All four use one mechanism:
 | An irreversible step, `contained` or `escapes`, has no pre-authorization covering it | Execute Steps | Both — same mechanism either way |
 | Browser session isn't authenticated and SSO/MFA needs a human to complete it | Execute Steps | Both |
 | Backoff retry exhausted (four attempts) on an apparent environment failure | Execute Steps | Both |
+| No browser driver is available and the plan contains browser steps | Intake | Both — interactively it surfaces at the User Gate as blocked steps rather than pausing the run |
 
 The run pauses in place rather than terminating, and notifies via `SendMessage` — addressed to whichever session or agent directly invoked this one, the main or initial session, not a specific human or channel. What that session does with it differs by mode, not by mechanism: interactively, the orchestrator relays it straight into a live `AskUserQuestion`, since a person is already watching; agent-invoked, it's the caller's own judgment — relay to Slack, page someone, write to stderr, or nothing at all. This skill does not assume a channel exists, because it cannot know one does.
 
