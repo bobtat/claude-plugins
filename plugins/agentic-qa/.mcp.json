@@ -2,7 +2,7 @@
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@0.0.81", "--caps=testing,storage"]
+      "args": ["-y", "@playwright/mcp@0.0.81", "--caps=testing,storage", "--output-dir", "${CLAUDE_PLUGIN_DATA}/playwright-output"]
     }
   }
 }
