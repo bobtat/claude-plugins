@@ -15,6 +15,8 @@ On every wake, rebuild from `step-results.md` rather than from the message: fill
 
 If `intake.md` names a report destination, every update writes there too, alongside the working-directory copy, not just once at the end. A failure to reach that destination gets noted and does not stop anything — the working-directory copy is always the real one. `walkthrough-report.html` is different: it only exists once, at finalization (see below), so it copies to the destination once, alongside the others, not incrementally.
 
+A step marked `Sensitive: yes` in `step-results.md` has evidence that shows a credential the executor could not mask. Its evidence file is never copied to the report destination and never embedded in the HTML; the report shows `evidence withheld — contains a credential, see the working directory` in its place.
+
 ## Finalization
 
 Resume the reporter with `final` once `step-executor` returns `COMPLETE`. It rebuilds from `step-results.md` one last time, then:

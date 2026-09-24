@@ -28,6 +28,16 @@ The executor ends its turn in exactly one of two ways, and the orchestrator acts
 
 No screenshot is expected or useful for an api/cli step. See `agentic-qa:qa-reporting` for how each renders in the final report.
 
+### Mask credentials before evidence is written
+
+Evidence is copied to the report destination and embedded in the HTML before anyone reviews it, so a credential in evidence is a credential leaked. Mask before writing, never after:
+
+- **Headers**, in any captured request or response — including `browser_network_requests` output: replace the values of `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`, and any header whose name contains `token`, `key`, or `secret` with `<masked>`.
+- **Body fields**, in api evidence and cli output: replace the value of any field or variable whose name contains `token`, `password`, `secret`, `key`, or `session` with `<masked>`. Keep the field itself — that it was returned is often what the step verifies.
+- **Screenshots** can't be masked after capture. If a page shows a secret in clear text — a key-issuance page, a revealed password — hide it first if the page allows and say so in `Deviation`. If it doesn't, capture anyway and add `Sensitive: yes` to the step's entry; the reporter then keeps that file out of the HTML and the report destination.
+
+`Observed` never quotes a secret either — describe it (`a 40-character token was returned`) instead.
+
 ### Four verdicts
 
 | Verdict | When | What happens |
@@ -117,6 +127,7 @@ Agent-invoked, load the brief's `browser_session` (a pre-established storage sta
 - **Outputs:** order_id: ORD-8842
 - **Authorization:** n/a (reversible) | confirmed live | pre-authorized (contained)
 - **Attempts:** 1 | <each attempt and its outcome, e.g. `1: 503; 2: 200`>
+- **Sensitive:** yes — only when evidence could not be masked; omit otherwise
 - **Deviation:** none | <what diverged from the plan and why, never absorbed silently into a pass>
 
 ## S4 — <short name>
