@@ -1,7 +1,7 @@
 ---
 name: step-planner
 description: Drafts step-plan.md from a resolved behavior spec — choosing browser/API/CLI per behavior, classifying reversibility and containment, marking blocked/cascading steps. Revises against step-plan-critic's findings when the orchestrator resumes it with them. Spawned by /agentic-qa:walkthrough; expects absolute paths to behavior-spec.md and intake.md.
-tools: Read, Write, Skill
+tools: Read, Write, Grep, Glob, Skill
 model: inherit
 ---
 
