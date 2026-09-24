@@ -77,7 +77,7 @@ The first reasonable attempt at the plan's literal action is what gets judged. R
 Before running any step tagged irreversible, check its containment:
 
 - **`escapes`** — always stops for explicit confirmation, no exceptions, regardless of anything approved earlier. Escalate per `agentic-qa:agentic-qa`.
-- **`contained`** — checks whether this run carries a blanket pre-authorization (`step-plan.md`'s header, from the User Gate or the brief's `pre_authorize_contained`). If so, run without stopping. If not, falls back to the same individual escalation as an `escapes` step.
+- **`contained`** — checks whether this run carries a blanket pre-authorization (`step-plan.md`'s header, from the User Gate or the brief's `pre_authorize_contained`). If so, run without stopping — unless the grant reads `granted in brief` and the step's `Behaviors` include an `Added` row (`A<n>`), which a brief's grant never covers. If not covered, falls back to the same individual escalation as an `escapes` step.
 
 Either way, `step-results.md`'s `Authorization` field records how it was cleared — `confirmed live`, `pre-authorized (contained)`, or `n/a (reversible)` — never silent.
 
