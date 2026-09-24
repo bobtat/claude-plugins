@@ -21,7 +21,7 @@ This skill is the umbrella: load it once, at the start of a run, before any phas
 
 No slash command is callable by another agent in this environment. An agent runs this pipeline one of two ways:
 
-- **Directly**, holding `Skill`, `Bash`, `Read`/`Write`, the browser tools, `Agent`, and `SendMessage` — the last two are what make the live drafter/critic pairing and the escalation mechanism possible, not optional tooling — by calling `Skill("agentic-qa:agentic-qa")` and running the pipeline itself.
+- **Directly**, holding `Skill`, `Bash`, `Read`/`Write`, the browser tools, `Agent`, and `SendMessage` — the last two are what make the drafter/critic relay and the escalation mechanism possible, not optional tooling — by calling `Skill("agentic-qa:agentic-qa")` and running the pipeline itself.
 - **Via `agentic-qa:qa-runner`**, a self-contained wrapper for a caller without that toolset.
 
 Either way, everything Intake would otherwise ask for arrives up front as a brief, and Intake validates it against the same gates `/agentic-qa:walkthrough` uses rather than asking:
@@ -54,9 +54,11 @@ Five situations can't proceed without a human. All five use one mechanism:
 | Backoff retry exhausted (four attempts) on an apparent environment failure | Execute Steps | Both |
 | No browser driver is available and the plan contains browser steps | Intake | Both — interactively it surfaces at the User Gate as blocked steps rather than pausing the run |
 
-The run pauses in place rather than terminating, and notifies via `SendMessage` — addressed to whichever session or agent directly invoked this one, the main or initial session, not a specific human or channel. What that session does with it differs by mode, not by mechanism: interactively, the orchestrator relays it straight into a live `AskUserQuestion`, since a person is already watching; agent-invoked, it's the caller's own judgment — relay to Slack, page someone, write to stderr, or nothing at all. This skill does not assume a channel exists, because it cannot know one does.
+The run pauses in place rather than terminating. Pausing means finishing: the agent that hit the trigger ends its turn with an `ESCALATION:` result stating exactly what it needs, and whoever spawned it resumes it later by agent ID with the answer (see Agent messaging, below). A resumed agent keeps its full context and continues from exactly where it stopped; nothing is re-derived or re-run.
 
-Once notified, wait — no built-in timeout. It is a blocking wait via `SendMessage`, not a poll loop, so there is no cost to waiting arbitrarily long, and `step-results.md`'s incremental writes mean nothing already completed is at risk if the surrounding environment's own timeout kills the process first. That is an external concern, outside this pipeline's scope, the same as the notification channel. Resuming continues from exactly where it paused; nothing is re-derived or re-run.
+An escalation travels up the spawn chain one hop at a time to whoever can answer it or relay it. `agentic-qa:step-executor` returns it to its orchestrator. `agentic-qa:qa-runner`, itself a spawned agent, returns the same escalation to its own caller — which must hold `SendMessage` to resume it. What the top of the chain does with it differs by mode, not by mechanism: interactively, the orchestrator relays it straight into a live `AskUserQuestion`, since a person is already watching; agent-invoked, it's the caller's own judgment — relay to Slack, page someone, write to stderr, or nothing at all. This skill does not assume a channel exists, because it cannot know one does.
+
+There is no timeout. A finished agent costs nothing while it waits to be resumed, and `step-results.md`'s incremental writes mean nothing already completed is at risk if the surrounding environment ends the session first. That is an external concern, outside this pipeline's scope, the same as the notification channel.
 
 **What deliberately does not escalate:** a `blocked` step (an unresolved Unspecified question or Conflict) skips and cascades instead of pausing — the whole run pausing over one unanswered question would sacrifice everything else the plan could still verify unattended, for a question that risks nothing by waiting until the report is reviewed. A drafter/critic disagreement still open after the two-round cap gets logged in the `Critique Exchange`, visible for review, not escalated. Neither does a failed write to a configured report destination — the working-directory copy is always the real one.
 
@@ -81,6 +83,16 @@ Every phase hands off through files — pass absolute paths to every spawned age
 
 See `agentic-qa:behavior-coverage`, `agentic-qa:step-planning`, `agentic-qa:step-execution`, and `agentic-qa:qa-reporting` for each file's exact schema and the phase that produces it.
 
+## Agent messaging
+
+Three harness facts shape every hand-off between agents in this pipeline. Each was observed, not assumed:
+
+1. **`SendMessage` addresses an agent only by the ID its spawn returned.** A type name is not an address: `SendMessage` to `agentic-qa:qa-reporter` fails with "No agent named … is reachable." An agent that must message another has to be handed that ID in its spawn prompt.
+2. **A spawned agent cannot wait for a message.** A message reaches an agent only at its next tool call, and an agent with nothing left to do ends its turn. Nothing in this pipeline "waits for a reply" — it ends its turn and is resumed.
+3. **A finished agent resumes when messaged by ID, context intact — and its result goes back to whoever resumed it.** Nobody else hears it.
+
+So the orchestrator — `/agentic-qa:walkthrough`, `agentic-qa:qa-runner`, or an agent running this skill directly — keeps every agent ID its spawns return, and does every resume whose result it needs. Agents never hold a conversation with each other directly. The one peer message in the pipeline is `agentic-qa:step-executor`'s per-step nudge to `agentic-qa:qa-reporter`, which is fire-and-forget by design: the reporter rebuilds from `step-results.md` on every wake, so a nudge it never acts on loses nothing.
+
 ## Namespacing
 
-Every component this plugin ships is addressed as `agentic-qa:<name>`. There is no bare-name fallback — `Agent("step-executor")` does not resolve; `Agent("agentic-qa:step-executor")` does. If a skill will not load, say so and continue by following the procedure as published in this file rather than improvising from memory.
+Every component this plugin ships is spawned as `agentic-qa:<name>`. There is no bare-name fallback — `Agent("step-executor")` does not resolve; `Agent("agentic-qa:step-executor")` does. That name spawns an agent; it never addresses one — see Agent messaging. If a skill will not load, say so and continue by following the procedure as published in this file rather than improvising from memory.

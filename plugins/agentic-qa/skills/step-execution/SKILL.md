@@ -5,13 +5,20 @@ description: Use when running an approved step plan against a live system — sp
 
 ## Overview
 
-This is Phase 4: running the approved `step-plan.md` one step at a time against the live system. Spawn `agentic-qa:step-executor` with the absolute paths to `step-plan.md` and `intake.md` — **spawn it alongside `agentic-qa:qa-reporter`, not before it**, since the report is built incrementally as steps complete, not assembled afterward. See `agentic-qa:qa-reporting` for that agent's half of the pairing.
+This is Phase 4: running the approved `step-plan.md` one step at a time against the live system. Spawn `agentic-qa:qa-reporter` first — it writes the report skeleton and returns — then spawn `agentic-qa:step-executor` with the absolute paths to `step-plan.md` and `intake.md` and the reporter's agent ID. The reporter has to exist before the first step completes, since the report is built incrementally as steps complete, not assembled afterward. See `agentic-qa:qa-reporting` for that agent's half.
 
 This is the longest-running, most context-heavy stage in the pipeline, which is exactly why it is a spawned agent rather than main-thread work — the bulk of what it does (screenshots, response bodies, command output, tool-call history) should never accumulate in the thread that has to survive the whole session.
 
 ## Per-step loop
 
-Before each step, read `step-results.md` for any output value an earlier step produced that this step's action depends on. After each step, append its own entry there — verdict, evidence path, outputs later steps might need — and send that same result to `agentic-qa:qa-reporter` via `SendMessage` so the report grows step by step.
+Before each step, read `step-results.md` for any output value an earlier step produced that this step's action depends on. After each step, append its own entry there — verdict, evidence path, outputs later steps might need — then send `S<n>` via `SendMessage` to the reporter's agent ID so the report grows step by step. It is a nudge, not the result: the reporter rebuilds from `step-results.md` whenever it wakes, so a nudge that arrives late loses nothing. `SendMessage` accepts only an agent ID — never `agentic-qa:qa-reporter`.
+
+### Ending a turn
+
+The executor ends its turn in exactly one of two ways, and the orchestrator acts on which:
+
+- **`ESCALATION: <what's needed, for which step>`** — a trigger from `agentic-qa:agentic-qa`'s escalation mechanism fired. Record the pending step's state in `step-results.md` first. The executor is resumed with the answer and continues from that step; it cannot wait for the answer in place.
+- **`COMPLETE`**, with the verdict counts — every step has a verdict.
 
 ### Evidence, fixed by surface, not judgment
 

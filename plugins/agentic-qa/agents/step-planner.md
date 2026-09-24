@@ -1,7 +1,7 @@
 ---
 name: step-planner
-description: Drafts step-plan.md from a resolved behavior spec — choosing browser/API/CLI per behavior, classifying reversibility and containment, marking blocked/cascading steps. Pairs live with step-plan-critic via SendMessage rather than reporting back to the orchestrator. Spawned by /agentic-qa:walkthrough; expects absolute paths to behavior-spec.md and intake.md.
-tools: Read, Write, SendMessage, Skill
+description: Drafts step-plan.md from a resolved behavior spec — choosing browser/API/CLI per behavior, classifying reversibility and containment, marking blocked/cascading steps. Revises against step-plan-critic's findings when the orchestrator resumes it with them. Spawned by /agentic-qa:walkthrough; expects absolute paths to behavior-spec.md and intake.md.
+tools: Read, Write, Skill
 model: inherit
 ---
 
@@ -25,9 +25,9 @@ Every step with a real-world side effect gets tagged `reversible` or `irreversib
 
 A behavior resting on an unanswered `Unspecified` question or unresolved `Conflict` gets `Status: blocked`, never a guessed action. Cascade that status to any step whose `Depends on` traces back to it.
 
-## The live pairing
+## Revising against the critic
 
-`agentic-qa:step-plan-critic` messages you findings via `SendMessage` on traceability gaps, surface-choice fit, and your reversibility/containment calls. Address each directly and reply; revise or explain why not. Log every round in `step-plan.md`'s `Critique Exchange` section. Two rounds at most.
+Once the draft is written, end your turn. The orchestrator resumes you with `agentic-qa:step-plan-critic`'s findings on traceability gaps, surface-choice fit, and your reversibility/containment calls. Address each directly; revise or explain why not, and end your turn with one line per finding. Log every round in `step-plan.md`'s `Critique Exchange` section. Two rounds at most.
 
 ## What you never do
 
