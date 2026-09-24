@@ -16,6 +16,13 @@ interesting half.
 mean a user installing this plugin today gets one that hangs before producing a
 report on a clean run, and whose Playwright driver cannot execute at all.
 
+**Revised 2026-09-24** after a second read against `ad19c7c`. Every line citation
+was re-checked and holds. Changes from the first version: F3 gains a second
+missing signal and a second hang site; F5 notes the two retry definitions
+disagree; F6 moves from Critical to High; the peer-addressing refutation is
+withdrawn and reopened as F21; F19 and F20 are new; the evidence-quality note
+now names F1.
+
 ## Provenance key
 
 Both are live on `main`. The labels say when a defect was introduced, not where
@@ -27,8 +34,10 @@ it is now.
 
 ## Evidence quality, stated up front
 
-Three findings rest on documentation read through a summarizing fetch rather
-than on observed behavior. That method proved unreliable *during this review*:
+F1, F2, F9 and F15 rest on documentation read through a summarizing fetch
+rather than on observed behavior. F1's core claim — that a plugin-bundled server
+is addressed under an `mcp__plugin_` prefix — is not in doubt; its exact string
+is, which is F2. That method proved unreliable *during this review*:
 three fetches of the same page produced three different renderings of the same
 example (see F2). Where a finding depends on a character-exact string or on a
 harness behavior, it is marked UNRESOLVED and says what would settle it. The
@@ -80,7 +89,10 @@ That refutation is not accepted: it used the same unreliable method, and the
 disagreement is itself the evidence.
 
 **What settles it:** install the plugin and read the actual tool list. Do not
-fix F1 from documentation alone.
+fix F1 from documentation alone. The revision pass checked whether this machine
+could settle it and it cannot: `agentic-qa` is not installed here, and the only
+`mcp__plugin_agentic…` strings in local transcripts are quotations of this
+document, not observed tool lists.
 
 ### F3 [PRE] — the report never finalizes, because nothing sends the signal it waits for
 
@@ -99,6 +111,14 @@ A clean run therefore executes every step, fills every Traceability row, and
 stops. `walkthrough.md:121` ("Once `qa-reporter` signals done…") never fires, so
 Phase 5 never runs. This is not one of the five escalation triggers, so the run
 hangs silently rather than pausing and notifying.
+
+**The chain is broken twice, not once** (added in revision). Even if the
+executor did send a final signal, nothing instructs `qa-reporter` to tell the
+orchestrator it has finished: `agents/qa-reporter.md` and
+`skills/qa-reporting/SKILL.md` both end at rendering the HTML and send no
+message to anyone. Two sites wait on that message — `walkthrough.md:121` and
+`agents/qa-runner.md:24`, which uses the same wording — so the agent-invoked
+path hangs the same way the interactive one does.
 
 The critic was specifically instructed to try to break this finding and reported
 that it survives: the only escape is `qa-reporter` inferring completion from full
@@ -128,10 +148,34 @@ to catch. A racy failure on attempt 1 that passes on attempt 2 produces a clean
 `pass`, and `Deviation` is scoped to *adapting* an action rather than repeating
 it, so the original failure leaves no trace.
 
+The two definitions of the retry already disagree on this point (added in
+revision). `skills/step-execution/SKILL.md:37` retries on "a 5xx **gateway**
+error" — which gestures at the infrastructure/application distinction — while
+`agents/step-executor.md:30` says "5xx" unqualified. Part of the fix is bringing
+the agent file in line with the skill.
+
 The critic was asked whether F4 and F5 are one mechanism double-counted and
 concluded they are not: same rule, two independent harms — repeated physical
 side effects versus destroyed evidence integrity. One fix (attempt tracking plus
 idempotency-aware classification, disclosed per attempt) closes both.
+
+### F7 [PRE] — the production gate specifies no mechanism
+
+`walkthrough.md:63-64` places two gates side by side. The reachability gate says
+the base URL is "checked, not just accepted as a string." The production gate —
+the plugin's most load-bearing safety claim, stated as absolute in three
+documents — names no check at all: no hostname pattern, no denylist, nothing.
+It rests entirely on model judgment about a self-reported string.
+
+A secondary, lower-urgency half: `.claude/agentic-qa.local.md` is trusted on
+later runs with no re-validation language and no `.gitignore` guidance. The
+critic's correction is that this does not introduce a new bypass — cached values
+face the same unstructured gate a fresh run does — it just means an unattended
+re-run skips re-asking.
+
+---
+
+## High
 
 ### F6 [PRE] — agent-invoked runs drop the only scope-creep backstop
 
@@ -152,23 +196,25 @@ amplifier, not a causal link** — the outcome follows from the missing strike p
 blanket pre-authorization alone — and "attacker-influenceable ticket text" is a
 threat-model assumption about deployment, not a fact about the repo.
 
-### F7 [PRE] — the production gate specifies no mechanism
+*Moved from Critical in revision.* The premise the critic flagged is an
+assumption, and a fabricated step must also be classified `contained` by
+`step-plan-critic`, which grounds that call against the code. F1, F3 and F4 fail
+on an ordinary run with no adversary; this one needs both an adversary and a
+misclassification.
 
-`walkthrough.md:63-64` places two gates side by side. The reachability gate says
-the base URL is "checked, not just accepted as a string." The production gate —
-the plugin's most load-bearing safety claim, stated as absolute in three
-documents — names no check at all: no hostname pattern, no denylist, nothing.
-It rests entirely on model judgment about a self-reported string.
+### F19 [NEW] — a registered tool is not a connected driver
 
-A secondary, lower-urgency half: `.claude/agentic-qa.local.md` is trusted on
-later runs with no re-validation language and no `.gitignore` guidance. The
-critic's correction is that this does not introduce a new bypass — cached values
-face the same unstructured gate a fresh run does — it just means an unattended
-re-run skips re-asking.
+`walkthrough.md:66` selects `claude-in-chrome` "if its tools are present." That
+MCP server registers its tools whether or not a browser extension is connected,
+so a session with no Chrome attached still records `Browser driver:
+claude-in-chrome`. The executor's first browser call then fails, is classed as an
+environment failure, backs off four times over roughly ninety seconds, and
+escalates — and Playwright, which would have worked, is never tried.
 
----
-
-## High
+Line 66 routes "present but fails later" to backoff deliberately, so this is the
+design working as written; the flaw is the premise that presence implies
+availability, which holds for Playwright and not for `claude-in-chrome`. Sits
+with F8/F9 — all three are about how the driver gets chosen.
 
 ### F8 [NEW] — the agent-invoked path cannot produce the driver field three documents require
 
@@ -215,7 +261,11 @@ orchestrator to relay it.
 
 F3 and F10 are the same authoring pattern twice: the reporter's spec presupposes
 a message type the executor's complete spec never produces. One fix — an explicit
-end-to-end messaging contract for the executor — closes both.
+end-to-end messaging contract — closes both, but it has to cover three messages,
+not the executor's two: executor → reporter "final", executor → reporter
+"paused", and reporter → orchestrator "done" (see F3's revision). It also
+depends on F21 — the contract names a sibling the sender may not be able to
+address.
 
 ---
 
@@ -280,6 +330,34 @@ practice. The plugin's entire drafter/critic architecture depends on it and stat
 no prerequisite. **What settles it:** spawn two of these agents on a real install
 and see whether the tool is offered.
 
+### F20 [PRE] — the executor may be unable to load deferred browser tools — UNRESOLVED
+
+The harness can defer MCP tools: listed by name, with schemas loaded through
+`ToolSearch` before first use. `agents/step-executor.md:4` does not grant
+`ToolSearch`. If a subagent with an explicit `tools` list inherits that
+deferral, neither driver is callable regardless of how F1 resolves. Estimated at
+roughly 30% likely to be real. **What settles it:** the same live install that
+settles F2 — spawn the executor and see whether a browser tool call succeeds
+without a `ToolSearch` first.
+
+### F21 [PRE] — sibling agents may have no way to address each other — UNRESOLVED
+
+Reopened in revision; originally listed under Refuted. Every pairing in the
+plugin is between siblings: `behavior-extractor`/`behavior-coverage-critic`,
+`step-planner`/`step-plan-critic`, and `step-executor`/`qa-reporter` are each
+spawned by the orchestrator, then told to `SendMessage` one another. The
+refutation held that addressing is by the ID returned at spawn time — but only
+the spawner receives that ID, and neither `walkthrough.md` nor `qa-runner.md`
+instructs the orchestrator to pass one sibling's ID to the other.
+
+It works only if `SendMessage` resolves an agent by name. Harnesses where names
+are the address exist, so this may be fine, but that is a different ground from
+the one the refutation gave. The executor → reporter stream, which all of
+Phase 4 depends on, rests on it. The text is also inconsistent about the
+drafter/critic pairs: `walkthrough.md:96` calls the orchestrator's role "relay",
+while both agents' descriptions say they message each other directly.
+**What settles it:** check alongside F15 on a real install.
+
 ### F16 [PRE] — the planner is offered a citation source it cannot read
 
 `skills/step-planning/SKILL.md:25` offers "the code path" as grounding, but
@@ -302,10 +380,6 @@ enforced only by a runtime check and a README line.
 
 ## Refuted — recorded so they are not re-raised
 
-- **Peer addressing in the drafter/critic pairing.** Claimed to depend on whether
-  the harness addresses a spawned agent by its namespaced type or its bare
-  frontmatter `name:`. Refuted: addressing is by the ID returned at spawn time,
-  so the prose label never has to resolve as a string.
 - **The interactive driver check.** See F9 — refuted for the interactive path,
   which is the one the plugin's text is written around.
 
@@ -327,12 +401,17 @@ Recorded because a guarantee that survives an adversarial pass is a result.
 ## Suggested order, if these get fixed
 
 1. **F1** with **F2** settled first by observation — the execution phase is inert
-   until this is right, and it cannot be fixed from documentation.
-2. **F3 + F10** — one messaging contract for the executor closes both.
+   until this is right, and it cannot be fixed from documentation. Settle F20,
+   F21 and F15 on the same install; they all need a live session and nothing
+   else.
+2. **F3 + F10** — one three-message contract, written against however F21
+   resolves.
 3. **F4 + F5** — attempt tracking and idempotency-aware retry.
-4. **F6** — agent-invoked authorization, restated without the `Bash` link doing
+4. **F8 + F9 + F19** — `browser_driver` as a brief field, not a detection step,
+   and a connectivity check rather than a presence check where Intake does
+   detect.
+5. **F6** — agent-invoked authorization, restated without the `Bash` link doing
    causal work.
-5. **F8 + F9** — `browser_driver` as a brief field, not a detection step.
 6. **F7**, then **F13**, then the rest opportunistically.
 
 F15 is worth a README line whichever way it resolves.
