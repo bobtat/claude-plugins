@@ -12,9 +12,11 @@ where the critic overturned or narrowed a reviewer, the original claim and the
 correction are both recorded, because the correction is usually the more
 interesting half.
 
-**Nothing here is fixed.** This is the findings record. Two of the criticals
-mean a user installing this plugin today gets one that hangs before producing a
-report on a clean run, and whose Playwright driver cannot execute at all.
+**Resolved in 0.3.0** — see [Resolution](#resolution--030) at the end. The
+findings below are kept as written, as the record of what 0.2.0 shipped with.
+As of 0.2.0, two of the criticals meant a user installing this plugin got one
+that hung before producing a report on a clean run, and whose Playwright driver
+could not execute at all.
 
 **Revised 2026-09-24** after a second read against `ad19c7c`. Every line citation
 was re-checked and holds. Changes from the first version: F3 gains a second
@@ -415,3 +417,60 @@ Recorded because a guarantee that survives an adversarial pass is a result.
 6. **F7**, then **F13**, then the rest opportunistically.
 
 F15 is worth a README line whichever way it resolves.
+
+## Resolution — 0.3.0
+
+The open questions were settled by observation, not documentation. Each check
+ran a headless session loading the plugin from the working tree
+(`claude -p --plugin-dir plugins/agentic-qa`, Claude Code 2.1.281), where needed
+spawning the plugin's own agents with probe prompts.
+
+### What the probes established
+
+| Question | Observed |
+|---|---|
+| F2 — tool name form | `mcp__plugin_agentic-qa_playwright__*`, hyphen preserved. All 23 names the executor grants exist under that prefix. |
+| F20 — deferred tools in a subagent | **Refuted.** A subagent with an explicit `tools` list gets those tools fully loaded; the executor navigated with no `ToolSearch`. |
+| F15 — agent-teams flag | **Refuted.** Subagents were offered `SendMessage` with no agent-teams setting present. |
+| F21 — sibling addressing | **Confirmed, worse than stated.** `SendMessage` to `agentic-qa:qa-reporter` fails: "No agent named … is reachable." Only the ID a spawn returns works. |
+| Nested spawning | A subagent (`qa-runner`) can spawn agents. |
+
+### New findings from the probes
+
+- **F22 [PRE] — a spawned agent cannot wait for a message.** A message is
+  delivered only at the recipient's next tool call; an agent with nothing left
+  to do ends its turn. The plugin's "blocking wait via `SendMessage`" did not
+  exist. A finished agent *does* resume when messaged by ID, context intact —
+  but its result returns only to whoever resumed it. With F21, this meant no
+  pairing, stream or escalation in the plugin could work as written.
+- **F23 [NEW] — Playwright could not write evidence.** The server confines file
+  access to its output directory and the session's working root. The run's
+  working directory is neither, so every screenshot to `evidence/` was refused
+  ("outside allowed roots"), and the server's auto-named files landed in the
+  user's repository.
+
+### Fixes
+
+| Finding | Commit | Resolution |
+|---|---|---|
+| F1, F2 | `a6a4d55` | Tools granted under the observed plugin-scoped prefix. |
+| F3, F10, F14, F21, F22 | `7837f2a` | Agents end their turn instead of waiting; the orchestrator keeps every spawned ID and does each resume whose result it needs — drafter/critic rounds, the reporter's `paused`/`resumed`/`final`, and receiving `done`. The executor's per-step message to the reporter is a fire-and-forget nudge; the reporter rebuilds from `step-results.md` on every wake. Escalation is a returned `ESCALATION:` result passed up the spawn chain. |
+| F23 | `cdce88c` | `--output-dir` set to the plugin data directory; screenshots and storage states taken without a filename and copied into `evidence/`. Unrestricted file access rejected: it also opens `file://` URLs. |
+| F4, F5 | `fde5eab` | Only connection failures and 502/503/504 retry; an irreversible step whose request may have landed escalates instead; every attempt recorded, and a pass after a failure reported as intermittent. |
+| F8, F9, F11, F19 | `87099c8` | `browser_driver` in the brief (default `playwright`); interactive Intake confirms a browser is connected and searches for deferred Playwright tools; a missing driver is no longer described as an escalation. |
+| F6 | `668a7c1` | A grant from the brief never covers a step traced to an `Added` row; ticket, PR, diff, doc and page content stated as data, not instructions. |
+| F7 | `d36fd30` | Host allowlist in `.claude/agentic-qa.local.md`, checked after redirects, grown only by a person; the brief cannot carry one. |
+| F13 | `f590823` | Credential headers and fields masked before evidence is written; unmaskable screenshots marked sensitive and kept out of the HTML and report destination. |
+| F12 | `16c48b1` | Live values excluded from name matching; verification targets re-found by role and name or containing landmark, never by expected text. |
+| F17 | `3052cbe` | Direct invokers no longer told to hold browser tools. |
+| F16 | `799c96e` | `step-planner` granted `Grep` and `Glob`. |
+| F18 | `9314d5d` | `testing` declared in the manifest's `dependencies`. |
+| F15 | `aa4850f` | README records the 2.1.281 observation. |
+| F20 | — | Refuted; no change. |
+
+### Not yet observed end to end
+
+Every mechanism the fixes rely on was observed in isolation. A full walkthrough
+against a live ticket, merged PR and staging target has not been run on 0.3.0,
+and is the remaining check. How the manifest's bare `testing` dependency
+resolves at install time was validated against the schema only.
