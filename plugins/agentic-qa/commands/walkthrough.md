@@ -93,11 +93,11 @@ If any gate fails, ask again live — this is the one place a validity failure i
 
 ## Phase 1 — Extract Behaviors
 
-Spawn `agentic-qa:behavior-extractor` with `intake.md`'s absolute path — its entire input is that file's `Ticket` and `Docs` fields, nothing else. It drafts `behavior-spec.md` following `testing:behavior-extraction`, then pairs live with `agentic-qa:behavior-coverage-critic` via `SendMessage`, arguing findings out directly rather than reporting back to you. Your job here is relay and cap enforcement, not editing: keep the exchange going for at most two rounds, and let "no material findings" end it early. Load `agentic-qa:behavior-coverage` for the full procedure and the grounding rules before spawning either agent.
+Spawn `agentic-qa:behavior-extractor` with `intake.md`'s absolute path — its entire input is that file's `Ticket` and `Docs` fields, nothing else. It drafts `behavior-spec.md` following `testing:behavior-extraction` and returns. Keep the agent ID its spawn returned. Spawn `agentic-qa:behavior-coverage-critic` on the draft; it returns its findings. Relay them by resuming the extractor with `SendMessage` to its ID, so the agent that wrote the draft is the one that revises it; it returns with the round logged. If the spec changed, resume the critic by its ID for a second round. Your job here is relay and cap enforcement, not editing: two rounds at most, and "no material findings" ends it early. The two agents never message each other — see `agentic-qa:agentic-qa`'s Agent messaging for why. Load `agentic-qa:behavior-coverage` for the full procedure and the grounding rules before spawning either agent.
 
 ## Phase 2 — Plan Steps
 
-Spawn `agentic-qa:step-planner` with the resolved `behavior-spec.md` and `intake.md`'s target facts. It drafts `step-plan.md` and pairs live with `agentic-qa:step-plan-critic` the same way — you relay and cap at two rounds. Load `agentic-qa:step-planning` for surface selection, the reversibility/containment classification, and the blocked/cascade rules before spawning either agent.
+Spawn `agentic-qa:step-planner` with the resolved `behavior-spec.md` and `intake.md`'s target facts. It drafts `step-plan.md` and is reviewed by `agentic-qa:step-plan-critic` the same way — you relay by resuming each by agent ID, capped at two rounds. Load `agentic-qa:step-planning` for surface selection, the reversibility/containment classification, and the blocked/cascade rules before spawning either agent.
 
 ## Phase 3 — User Gate
 
@@ -112,13 +112,18 @@ Fold every answer back into `step-plan.md` before moving on — a blocked step's
 
 ## Phase 4 — Execute Steps & Write Report
 
-Spawn `agentic-qa:step-executor` and `agentic-qa:qa-reporter` **together, not sequentially** — `qa-reporter` writes the report skeleton before a single step runs. Load `agentic-qa:step-execution` and `agentic-qa:qa-reporting` for the full procedure: the four verdicts, the surface-driven evidence rule, the backoff policy, the never-adapt-to-force-a-pass rule, and the report template, before spawning either agent.
+Load `agentic-qa:step-execution` and `agentic-qa:qa-reporting` for the full procedure — the four verdicts, the surface-driven evidence rule, the backoff policy, the never-adapt-to-force-a-pass rule, and the report template — before spawning either agent.
 
-Whatever needs a human — an unauthorized irreversible step, an unauthenticated browser session, an exhausted backoff retry — arrives at you via `SendMessage`. Relay it into a live question immediately; a person is already here. This is the same mechanism an agent-invoked run uses unattended, just answered faster.
+Spawn `agentic-qa:qa-reporter` **first**: it writes the report skeleton before a single step runs, and returns. Keep its agent ID. Then spawn `agentic-qa:step-executor`, passing that ID in its prompt — the executor nudges the reporter after every step, and only an ID is an address `SendMessage` accepts.
+
+The executor returns one of two results:
+
+- **`ESCALATION: …`** — something needs a human: an unauthorized irreversible step, an unauthenticated browser session, an exhausted backoff retry. Resume the reporter with `paused: <reason>` so the report shows it, and relay the question into a live `AskUserQuestion` immediately; a person is already here. Then resume the reporter with `resumed`, and the executor by its ID with the answer. It continues from the step it stopped on. This is the same mechanism an agent-invoked run uses unattended, just answered faster.
+- **`COMPLETE`** — every step has a verdict. Resume the reporter with `final`. It finalizes the report and returns `done: <path to walkthrough-report.html>`.
 
 ## Phase 5 — Wrap-up
 
-Once `qa-reporter` signals done, tell the user: where the working directory is, where the report destination copy landed if one was configured, and the `walkthrough-report.html` path — that's the deliverable, open it directly.
+Once the reporter returns `done`, tell the user: where the working directory is, where the report destination copy landed if one was configured, and the `walkthrough-report.html` path — that's the deliverable, open it directly.
 
 ---
 

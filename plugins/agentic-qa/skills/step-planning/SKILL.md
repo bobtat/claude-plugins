@@ -7,11 +7,11 @@ description: Use when turning a resolved behavior spec into an ordered, executab
 
 This is Phase 2: turning the resolved `behavior-spec.md` into `step-plan.md` — one step per behavior from the acceptance criteria, and one per `Added` row still marked `included`. This is mechanical, not a judgment call this phase makes; whether an `Added` row survives is the User Gate's decision, made later.
 
-**Orchestrator-owned steps:** spawning both agents and enforcing the round cap, same division as `agentic-qa:behavior-coverage`.
+**Orchestrator-owned steps:** spawning both agents, relaying every round between them, and enforcing the round cap, same division as `agentic-qa:behavior-coverage`.
 
 ## Step 1 — Spawn the drafter
 
-Spawn `agentic-qa:step-planner` with the absolute paths to `behavior-spec.md` and `intake.md`. It writes real actions against the real target host from `intake.md`'s facts, not abstract ones.
+Spawn `agentic-qa:step-planner` with the absolute paths to `behavior-spec.md` and `intake.md`. It writes real actions against the real target host from `intake.md`'s facts, not abstract ones, and returns once the draft is written; keep the agent ID its spawn returned.
 
 **Surface selection** — the point of a live walkthrough is confirming the real user-facing path works, not proving logic correctness cheaply, so this inverts the usual "cheapest scope" instinct:
 
@@ -28,7 +28,7 @@ Spawn `agentic-qa:step-planner` with the absolute paths to `behavior-spec.md` an
 
 **Blocked steps** — a behavior resting on an unanswered `Unspecified` question or an unresolved `Conflict` doesn't get a guessed action. Mark its step `Status: blocked`, with the specific register/conflict number it's waiting on, and cascade that same status to any later step whose `Depends on` traces back to it — never run a step on a missing value.
 
-## Step 2 — Spawn the critic and start the pairing
+## Step 2 — Spawn the critic and relay the rounds
 
 Spawn `agentic-qa:step-plan-critic` with the absolute paths to the draft `step-plan.md` and `behavior-spec.md`. Its charter:
 
@@ -37,7 +37,7 @@ Spawn `agentic-qa:step-plan-critic` with the absolute paths to the draft `step-p
 3. **Surface-choice fit** — a browser step for something purely backend (inflation), or an API-only step for something only observable in the rendered UI (deficit).
 4. **Two grounded calls on every irreversible step** — whether it's irreversible at all, and whether it's `contained` or `escapes`. Both must cite something concrete; "this looks safe" is never sufficient. A hardcoded production mail relay is `escapes` even if `intake.md`'s isolation claim said sandboxed.
 
-**Live pairing, same as Phase 1:** relay findings via `SendMessage` to `agentic-qa:step-planner` rather than editing `step-plan.md` yourself. Log every round in `step-plan.md`'s own `Critique Exchange` section. Round cap: two, same early-exit rule — "no material findings" is valid and expected.
+**Same relay as Phase 1:** the critic returns its findings; resume `agentic-qa:step-planner` by its agent ID with them rather than editing `step-plan.md` yourself, and resume the critic by its ID for a second round if the plan changed. The planner logs every round in `step-plan.md`'s own `Critique Exchange` section. Round cap: two, same early-exit rule — "no material findings" is valid and expected.
 
 ## `step-plan.md` format
 

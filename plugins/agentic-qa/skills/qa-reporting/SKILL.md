@@ -1,21 +1,23 @@
 ---
 name: qa-reporting
-description: Use when building the walkthrough report — spawning agentic-qa:qa-reporter alongside agentic-qa:step-executor to write a live, incrementally-updated report and render the finished, self-contained HTML deliverable at finalization. Governs the report template, the Traceability table, the report-destination sync, the finalization self-check, and screenshot embedding. Invoked by /agentic-qa:walkthrough alongside agentic-qa:step-execution.
+description: Use when building the walkthrough report — spawning agentic-qa:qa-reporter just before agentic-qa:step-executor to write a live, incrementally-updated report and render the finished, self-contained HTML deliverable at finalization. Governs the report template, the Traceability table, the report-destination sync, the finalization self-check, and screenshot embedding. Invoked by /agentic-qa:walkthrough alongside agentic-qa:step-execution.
 ---
 
 ## Overview
 
-This is Phase 4's other half: `agentic-qa:qa-reporter` is spawned **alongside** `agentic-qa:step-executor`, not after it finishes. Give it the absolute paths to `step-plan.md`, `behavior-spec.md`, and `intake.md` up front. It writes a skeleton `walkthrough-report.md` before a single step has run — the `Traceability` table with every planned step and its behavior, verdicts marked pending — then fills it in live as `step-executor` streams each completed step's result via `SendMessage`.
+This is Phase 4's other half: `agentic-qa:qa-reporter` is spawned **just before** `agentic-qa:step-executor`, not after it finishes. Give it the absolute paths to `step-plan.md`, `behavior-spec.md`, and `intake.md` up front. It writes a skeleton `walkthrough-report.md` before a single step has run — the `Traceability` table with every planned step and its behavior, verdicts marked pending — and returns. Keep its agent ID: the executor needs it, and so do you.
+
+From then on the reporter is resumed by message, never left waiting — a spawned agent can't wait (see `agentic-qa:agentic-qa`'s Agent messaging). The executor nudges it with `S<n>` after each step; you send `paused: <reason>`, `resumed`, and `final`.
 
 ## Incremental updates
 
-As each result arrives: fill in that step's `Traceability` row and append its detail section, evidence linked by relative path rather than described in prose. If `step-executor` pauses for an escalation, note that too — `⏸ paused, waiting on SSO login` — so a report checked mid-wait shows a real status, not silence.
+On every wake, rebuild from `step-results.md` rather than from the message: fill in every `Traceability` row and detail section that has a result the report doesn't show yet, evidence linked by relative path rather than described in prose. A late nudge costs nothing this way. On `paused: <reason>`, note it too — `⏸ paused, waiting on SSO login` — so a report checked mid-wait shows a real status, not silence; `resumed` clears it.
 
 If `intake.md` names a report destination, every update writes there too, alongside the working-directory copy, not just once at the end. A failure to reach that destination gets noted and does not stop anything — the working-directory copy is always the real one. `walkthrough-report.html` is different: it only exists once, at finalization (see below), so it copies to the destination once, alongside the others, not incrementally.
 
 ## Finalization
 
-On the final signal from `step-executor`:
+Resume the reporter with `final` once `step-executor` returns `COMPLETE`. It rebuilds from `step-results.md` one last time, then:
 
 1. Write `Status` and `Summary`.
 2. Write the `Findings` section — anything worth flagging that isn't a strict pass/fail: a confusing-but-correct error message, an ambiguity resolved mid-run, a UX rough edge.
@@ -25,6 +27,7 @@ On the final signal from `step-executor`:
    - The `Summary` counts match the actual entries.
    - Every `Evidence` path points to a file that actually exists.
 5. Render `walkthrough-report.html` from the finished `walkthrough-report.md`.
+6. Return `done: <absolute path to walkthrough-report.html>`. That result reaches the orchestrator because the orchestrator is the one that resumed it, and it is the only signal that the report is finished — Phase 5 waits on it.
 
 A run with any `blocked` or `skipped` step states that in the `Status` line itself, not just as a nonzero count buried in `Summary` — `⚠️ Incomplete — 2 blocked, 1 skipped`, not a report that reads as done when it isn't.
 
