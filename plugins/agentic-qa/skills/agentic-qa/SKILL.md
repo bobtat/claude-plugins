@@ -22,7 +22,7 @@ This skill is the umbrella: load it once, at the start of a run, before any phas
 
 No slash command is callable by another agent in this environment. An agent runs this pipeline one of two ways:
 
-- **Directly**, holding `Skill`, `Bash`, `Read`/`Write`, the browser tools, `Agent`, and `SendMessage` — the last two are what make the drafter/critic relay and the escalation mechanism possible, not optional tooling — by calling `Skill("agentic-qa:agentic-qa")` and running the pipeline itself.
+- **Directly**, holding `Skill`, `Bash`, `Read`/`Write`, `Agent`, and `SendMessage` — the last two are what make the drafter/critic relay and the escalation mechanism possible, not optional tooling — by calling `Skill("agentic-qa:agentic-qa")` and running the pipeline itself. No browser tools are needed at this level: browsing is always delegated to `agentic-qa:step-executor`, which holds its own.
 - **Via `agentic-qa:qa-runner`**, a self-contained wrapper for a caller without that toolset.
 
 Either way, everything Intake would otherwise ask for arrives up front as a brief, and Intake validates it against the same gates `/agentic-qa:walkthrough` uses rather than asking:
@@ -42,7 +42,7 @@ pre_authorize_contained: true
 report_destination: /shared/qa-reports/ABC-123
 ```
 
-`browser_driver` is stated, not detected. `agentic-qa:qa-runner` holds no browser tools, so it cannot see which drivers the session has — the caller, which can, says which one to record. Omitted, it is `playwright`, the driver this plugin ships; if Playwright then can't start, that surfaces as an environment failure on the first browser step. An agent running this skill directly, holding the browser tools itself, may instead detect the driver exactly as `/agentic-qa:walkthrough`'s Intake does.
+`browser_driver` is stated, not detected. `agentic-qa:qa-runner` holds no browser tools, so it cannot see which drivers the session has — the caller, which can, says which one to record. Omitted, it is `playwright`, the driver this plugin ships; if Playwright then can't start, that surfaces as an environment failure on the first browser step. An agent running this skill directly that can see its session's tools and call `mcp__claude-in-chrome__tabs_context_mcp` may instead detect the driver exactly as `/agentic-qa:walkthrough`'s Intake does.
 
 A brief that fails a validity gate triggers the same escalation as everything else that needs a human — see below — rather than erroring out and forcing the caller to reconstruct a new brief from scratch.
 
