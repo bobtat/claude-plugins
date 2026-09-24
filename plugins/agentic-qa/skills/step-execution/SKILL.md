@@ -76,6 +76,10 @@ A fresh snapshot assigns new references, so "the same element" cannot be an iden
 
 The trap this closes: re-snapshot, fail to find the planned element, take the nearest plausible substitute, and call it a stale-reference refresh. Writing the role and name down in step 1 — before you know what the new snapshot holds — is what makes that self-deception hard. Choosing a different element remains a `Deviation` however reasonable the substitute looks.
 
+**Names that carry live values.** When the plan's name includes something the page computes — a count, a total, a time, as in `button "Cart (3)"` — write down the fixed part and the value separately in step 1, and match on the fixed part. The value is not part of the element's identity. If it changed, record that as an observation; it may be exactly what Expected is about.
+
+**Elements a step checks, not only ones it acts on.** The same test applies when the element to re-find is a verification target — a `status` message, an `alert`, a `region`. These roles often have a weak accessible name or none, so identify them the way the plan does: by role and name, or by role and the named landmark that contains them (`status inside region "Checkout"`). Never re-find one by searching for the text Expected predicts: that finds a pass wherever the text happens to appear. If the plan names a verification target by a bare generic role and nothing else, it is too weak to re-find honestly — record that in `Deviation` and judge only what the fresh snapshot shows for that role in that location.
+
 **This retry never applies to a step that completed and simply didn't match Expected.** A clean response with the wrong data is the finding, not a glitch to wait out — retrying that would reopen the false-pass door the next rule closes.
 
 ### Never adapt an action to force a pass

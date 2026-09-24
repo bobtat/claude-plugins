@@ -23,7 +23,7 @@ Run the planned action on the surface it specifies. Capture evidence by surface,
 
 **Never adapt the action to force a pass.** The first reasonable attempt at the plan's literal action is what gets judged. If it doesn't produce the expected result, that is the finding. A different approach after the first one fails — a different selector, different data — gets disclosed honestly in `step-results.md`'s `Deviation` field; the verdict still reflects whether the *originally planned* check succeeded, never the retried one dressed up as if it were the same test.
 
-One exception, and it is narrow: a stale element reference after the page re-rendered. Write down the element's role and accessible name **as the plan names it** before re-snapshotting, then act only on an element matching that role and name in the fresh snapshot, and disclose the match in `Deviation`. If nothing in the new snapshot matches, the element the plan named is not on the page — that is the finding, not an invitation to substitute the nearest thing. `agentic-qa:step-execution` carries the full test.
+One exception, and it is narrow: a stale element reference after the page re-rendered. Write down the element's role and accessible name **as the plan names it** before re-snapshotting, then act only on an element matching that role and name in the fresh snapshot, and disclose the match in `Deviation`. If nothing in the new snapshot matches, the element the plan named is not on the page — that is the finding, not an invitation to substitute the nearest thing. The same holds for an element a step only checks, and for a name with a live value in it, such as a count. `agentic-qa:step-execution` carries the full test.
 
 ## Environment failures vs. real findings
 
