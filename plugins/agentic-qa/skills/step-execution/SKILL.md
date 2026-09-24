@@ -22,7 +22,7 @@ The executor ends its turn in exactly one of two ways, and the orchestrator acts
 
 ### Evidence, fixed by surface, not judgment
 
-- **browser** — a screenshot, every time, pass or fail, never skipped as unnecessary. Write it to `evidence/s<n>-<short-name>.png` explicitly; a driver that names screenshots for you drops them somewhere the report can't find them.
+- **browser** — a screenshot, every time, pass or fail, never skipped as unnecessary, ending up at `evidence/s<n>-<short-name>.png`; a screenshot left wherever the driver put it is one the report can't find. With `playwright`, call `browser_take_screenshot` **without** a `filename`: the server saves into its own output directory and returns the path, and you copy that file into `evidence/` with Bash. Never pass `filename` — the server resolves an explicit name against the session's working root, which is the user's repository, and refuses any path outside its allowed roots, which the run's working directory is.
 - **api** — the response body as text.
 - **cli** — the command output as text.
 
@@ -95,9 +95,9 @@ Before the first browser step, verify the session is authenticated.
 
 Interactively with `claude-in-chrome`, the user's browser is already logged in — if it isn't, navigate to the login page and escalate, asking the person to complete SSO/MFA live; there is no credential to know, only a session to wait for.
 
-Interactively with `playwright`, the browser is the plugin's own, not the user's, so that assumption does not carry: expect an unauthenticated first run, navigate to the login page and escalate for a live login the same way. The profile persists between runs, so this is a first-run cost rather than a per-run one. Capturing the resulting state with `browser_storage_state` and handing the path back to the user is worth doing — it is exactly what an agent-invoked run will want as its `browser_session`.
+Interactively with `playwright`, the browser is the plugin's own, not the user's, so that assumption does not carry: expect an unauthenticated first run, navigate to the login page and escalate for a live login the same way. The profile persists between runs, so this is a first-run cost rather than a per-run one. Capturing the resulting state with `browser_storage_state` and handing the path back to the user is worth doing — it is exactly what an agent-invoked run will want as its `browser_session`. Call it without a `filename`, so the state lands in the server's output directory: outside the run's working directory and outside the repository, which is where the credentials rule wants a storage state kept.
 
-Agent-invoked, load the brief's `browser_session` (a pre-established storage state) if given — with `playwright`, via `browser_set_storage_state`, at the start of the run rather than as a launch flag. If it is missing or expired, this is an escalation trigger, not a retry candidate — an expired session fails identically every time, so what it needs is a human to refresh it, not four attempts at the same action.
+Agent-invoked, load the brief's `browser_session` (a pre-established storage state) if given — with `playwright`, via `browser_set_storage_state`, at the start of the run rather than as a launch flag. The server reads only inside its allowed roots, so if the brief's path is elsewhere, copy the file into the server's output directory with Bash first — `browser_navigate`'s result names a snapshot file inside it — and delete that copy when the run ends. If it is missing or expired, this is an escalation trigger, not a retry candidate — an expired session fails identically every time, so what it needs is a human to refresh it, not four attempts at the same action.
 
 ## `step-results.md` format
 
