@@ -44,7 +44,7 @@ A brief that fails a validity gate triggers the same escalation as everything el
 
 ## Escalation: pause, notify, resume
 
-Five situations can't proceed without a human. All five use one mechanism:
+These situations can't proceed without a human. All of them use one mechanism:
 
 | Trigger | Stage | Mode |
 |---|---|---|
@@ -52,6 +52,7 @@ Five situations can't proceed without a human. All five use one mechanism:
 | An irreversible step, `contained` or `escapes`, has no pre-authorization covering it | Execute Steps | Both — same mechanism either way |
 | Browser session isn't authenticated and SSO/MFA needs a human to complete it | Execute Steps | Both |
 | Backoff retry exhausted (four attempts) on an apparent environment failure | Execute Steps | Both |
+| An irreversible step's request may have landed but no answer came back — its outcome is unknown, so it is never retried | Execute Steps | Both |
 | No browser driver is available and the plan contains browser steps | Intake | Both — interactively it surfaces at the User Gate as blocked steps rather than pausing the run |
 
 The run pauses in place rather than terminating. Pausing means finishing: the agent that hit the trigger ends its turn with an `ESCALATION:` result stating exactly what it needs, and whoever spawned it resumes it later by agent ID with the answer (see Agent messaging, below). A resumed agent keeps its full context and continues from exactly where it stopped; nothing is re-derived or re-run.

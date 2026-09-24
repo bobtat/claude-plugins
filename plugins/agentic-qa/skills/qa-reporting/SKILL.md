@@ -20,7 +20,7 @@ If `intake.md` names a report destination, every update writes there too, alongs
 Resume the reporter with `final` once `step-executor` returns `COMPLETE`. It rebuilds from `step-results.md` one last time, then:
 
 1. Write `Status` and `Summary`.
-2. Write the `Findings` section — anything worth flagging that isn't a strict pass/fail: a confusing-but-correct error message, an ambiguity resolved mid-run, a UX rough edge.
+2. Write the `Findings` section — anything worth flagging that isn't a strict pass/fail: a confusing-but-correct error message, an ambiguity resolved mid-run, a UX rough edge. Every step whose `Attempts` field shows a failed attempt before its verdict goes here as intermittent, with the attempt history — a pass on the second try is not the same evidence as a pass on the first.
 3. Write the `Blocked` and `Not walked through` sections — distinct from each other. `Blocked` needs an actual answer; `Not walked through` (behaviors deliberately excluded) needs nothing further. Don't conflate them.
 4. Run the **three-part self-check** before calling the report done:
    - Every step from `step-plan.md` is present in the report.
