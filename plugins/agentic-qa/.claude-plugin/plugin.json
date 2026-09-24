@@ -7,5 +7,6 @@
     "email": ""
   },
   "license": "MIT",
+  "dependencies": ["testing"],
   "keywords": ["qa", "quality-assurance", "browser-automation", "walkthrough", "acceptance-criteria", "manual-testing", "exploratory-testing", "e2e"]
 }
