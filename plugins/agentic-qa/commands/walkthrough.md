@@ -61,7 +61,9 @@ Resolve `$ARGUMENTS` into a ticket **and** its merged PR — both required, cros
 1. The ticket states real acceptance criteria — a bare title is rejected, not extracted from on a guess.
 2. The PR's state is `MERGED` — `OPEN` (review could still change the functionality) and `CLOSED` (nothing to test) are both rejected.
 3. The base URL is reachable — checked, not just accepted as a string.
-4. The environment does not resolve to production — refused outright, no confirmation path, in any invocation mode.
+4. **The target host is on the non-production allowlist** — `allowed_hosts` in `.claude/agentic-qa.local.md`. Entries are exact hostnames, or `*.`-prefixed patterns matching subdomains; `localhost`, `127.0.0.1` and `::1` are always allowed. Check the host the reachability check actually landed on, after redirects, not only the one given: a staging URL that redirects to production is production.
+
+   A host not on the list is neither refused nor accepted — ask the person whether it is a non-production host, and on a yes, add it to `allowed_hosts` so the question isn't asked again. A host the person identifies as production, or an environment named production, is refused outright, with no confirmation path, in any invocation mode. The list only grows by a person saying a host is not production; nothing in this pipeline adds to it on its own judgment.
 
 Determine the **browser driver** before writing `intake.md`, and do not defer it to Execute Steps:
 
@@ -71,7 +73,20 @@ Determine the **browser driver** before writing `intake.md`, and do not defer it
 
 Record the answer, including `none`. A driver chosen here can still fail when it first reaches for a browser binary; that is an environment failure for backoff to handle, not something this check can predict.
 
-Ask what's needed to reach the system: base URL, environment (local/staging), test-account credentials, whether it's sandboxed or shared (default shared/unknown if unanswered), optionally any docs/wiki links (skippable, and note if a given link is unreachable rather than treating that the same as none given), and optionally a report destination — a shared drive or folder path. Offer to save the environment answers and report destination to `.claude/agentic-qa.local.md` for next time.
+Ask what's needed to reach the system: base URL, environment (local/staging), test-account credentials, whether it's sandboxed or shared (default shared/unknown if unanswered), optionally any docs/wiki links (skippable, and note if a given link is unreachable rather than treating that the same as none given), and optionally a report destination — a shared drive or folder path. Offer to save the environment answers and report destination to `.claude/agentic-qa.local.md` for next time, as YAML frontmatter alongside the allowlist:
+
+```markdown
+---
+base_url: https://staging.example.com
+environment: staging
+report_destination: /shared/qa-reports
+allowed_hosts:
+  - staging.example.com
+  - "*.preview.example.com"
+---
+```
+
+Saved values are defaults, not a pass: an allowlisted host still gets the reachability and redirect checks on every run. The file holds per-machine settings, so if the repo's `.gitignore` doesn't already cover it, suggest adding `.claude/*.local.md`.
 
 Write `intake.md`, following this template exactly:
 

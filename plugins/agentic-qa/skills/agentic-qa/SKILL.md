@@ -11,7 +11,7 @@ This skill is the umbrella: load it once, at the start of a run, before any phas
 
 ## The rules that hold everywhere
 
-1. **Production is never a valid target.** Refused outright at Intake, no confirmation path, in either mode. This is not a tool for verifying production.
+1. **Production is never a valid target.** Refused outright at Intake, no confirmation path, in either mode. This is not a tool for verifying production. It is enforced by an allowlist, not by judging a hostname: a target is valid only if its host — after redirects — is in `allowed_hosts` in `.claude/agentic-qa.local.md`, a list that grows only by a person declaring a host non-production. A brief cannot vouch for its own target; an unlisted host escalates.
 2. **Never run an irreversible step without a real decision behind it** — live, pre-authorized in advance, or escalated. Never inferred, never defaulted to "probably fine."
 3. **Never adapt a step's action to force a pass.** A step that didn't work as planned may mean the feature is wrong, not the plan. Any deviation from the literal planned action is disclosed in `step-results.md`'s `Deviation` field, never silently absorbed into a clean verdict.
 4. **Credentials never touch a file.** They stay in conversation context (interactive) or get resolved from an environment-variable reference at the moment of use (agent-invoked). `intake.md` and the brief both carry only references, never secrets. A browser storage state is the deliberate exception and a narrow one: it holds an already-established session, never the credential that created it, so a leaked storage state expires on its own where a leaked password does not. It is referenced by path, written outside the working directory, and never copied into an artifact or a report destination.
@@ -52,7 +52,7 @@ These situations can't proceed without a human. All of them use one mechanism:
 
 | Trigger | Stage | Mode |
 |---|---|---|
-| Brief fails a validity gate — thin ticket, PR not merged, target unreachable | Intake | Agent-invoked only — interactive just asks again live, Intake isn't a spawned agent |
+| Brief fails a validity gate — thin ticket, PR not merged, target unreachable, target host not on the allowlist | Intake | Agent-invoked only — interactive just asks again live, Intake isn't a spawned agent |
 | An irreversible step, `contained` or `escapes`, has no pre-authorization covering it | Execute Steps | Both — same mechanism either way |
 | Browser session isn't authenticated and SSO/MFA needs a human to complete it | Execute Steps | Both |
 | Backoff retry exhausted (four attempts) on an apparent environment failure | Execute Steps | Both |
