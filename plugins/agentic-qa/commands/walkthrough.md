@@ -1,7 +1,7 @@
 ---
 description: Walk through a finished feature or fix — a ticket and its merged PR — against a live browser, API, and CLI, with a human decision before anything irreversible runs
 argument-hint: <ticket key/URL> <PR number/URL> | <PR number/URL> | <ticket key/URL>
-allowed-tools: Agent, AskUserQuestion, Read, Write, Edit, Grep, Glob, Bash, SendMessage, Skill
+allowed-tools: Agent, AskUserQuestion, Read, Write, Edit, Grep, Glob, Bash, SendMessage, Skill, ToolSearch, mcp__claude-in-chrome__tabs_context_mcp
 ---
 
 ## Context
@@ -63,7 +63,13 @@ Resolve `$ARGUMENTS` into a ticket **and** its merged PR — both required, cros
 3. The base URL is reachable — checked, not just accepted as a string.
 4. The environment does not resolve to production — refused outright, no confirmation path, in any invocation mode.
 
-Determine the **browser driver** before writing `intake.md`. Both drivers register their tools when the session starts, so this is something you read, not something you discover by trying: `claude-in-chrome` if its tools are present, otherwise `playwright`, which this plugin ships configured. Record the answer — including `none` — and do not defer it to Execute Steps. A driver that is present can still fail later when it first reaches for a browser binary; that is an environment failure for backoff to handle, not something this check can predict.
+Determine the **browser driver** before writing `intake.md`, and do not defer it to Execute Steps:
+
+1. **`claude-in-chrome`**, if its tools are present **and a browser is connected**. Presence alone is not enough: the server registers its tools whether or not an extension is attached. Call `tabs_context_mcp` — an error means no browser is connected, and recording `claude-in-chrome` anyway would send every browser step through backoff into an escalation while Playwright sat unused.
+2. Otherwise **`playwright`**, which this plugin ships configured. Its server can still be starting when the session begins, and its tools may be deferred — listed by name only — so if none appear, search for `playwright` with `ToolSearch` before concluding it is absent.
+3. Otherwise **`none`**.
+
+Record the answer, including `none`. A driver chosen here can still fail when it first reaches for a browser binary; that is an environment failure for backoff to handle, not something this check can predict.
 
 Ask what's needed to reach the system: base URL, environment (local/staging), test-account credentials, whether it's sandboxed or shared (default shared/unknown if unanswered), optionally any docs/wiki links (skippable, and note if a given link is unreachable rather than treating that the same as none given), and optionally a report destination — a shared drive or folder path. Offer to save the environment answers and report destination to `.claude/agentic-qa.local.md` for next time.
 

@@ -83,11 +83,11 @@ Either way, `step-results.md`'s `Authorization` field records how it was cleared
 
 ### Browser driver
 
-Two drivers can run a browser step. Which one this run uses was settled at Intake and is recorded in `intake.md`'s `Browser driver` field — read it, don't re-derive it. Intake sees the same tool list you do, and a run whose evidence came from one driver for some steps and the other for the rest can't be compared against itself.
+Two drivers can run a browser step. Which one this run uses was settled at Intake and is recorded in `intake.md`'s `Browser driver` field — read it, don't re-derive it. Intake checked what this session can actually drive, or was told by the brief's `browser_driver`, and a run whose evidence came from one driver for some steps and the other for the rest can't be compared against itself.
 
 - **`claude-in-chrome`** — preferred when available. It drives the user's own Chrome, which is why the interactive session story below is as short as it is.
 - **`playwright`** — the fallback, shipped configured with this plugin. Nothing else about this phase changes: the same four verdicts, the same evidence rules, the same escalations.
-- **`none`** — every browser step arrived already marked `blocked — no browser driver` by `agentic-qa:step-planning`. Skip them and their cascade exactly as you would any other blocked step. You have nothing to escalate here; Intake already did.
+- **`none`** — every browser step arrived already marked `blocked — no browser driver` by `agentic-qa:step-planning`. Skip them and their cascade exactly as you would any other blocked step. Nothing escalates for it — the User Gate showed the count interactively, and the report carries it in `Status` and `Blocked`.
 
 Driving Playwright, work from `browser_snapshot` and act on the element references it returns — not from screenshot coordinates. This matters for more than ergonomics: a reference that no longer resolves is an unambiguous failure attributable to the page, where a coordinate click that lands on the wrong element produces a screenshot that looks like a product bug. Screenshots are still captured for every browser step, but as evidence, not as the thing actions are aimed at.
 

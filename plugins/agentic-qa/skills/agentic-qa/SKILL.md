@@ -33,12 +33,15 @@ environment: staging
 base_url: https://staging.example.com
 test_account: qa-test-1
 credentials: env:QA_API_TOKEN
+browser_driver: playwright  # claude-in-chrome | playwright | none — omitted means playwright
 browser_session: <path to a pre-established storage state, for SSO — omitted triggers escalation for a live login>
 docs: [https://wiki.example.com/notifications]
 isolation: sandboxed
 pre_authorize_contained: true
 report_destination: /shared/qa-reports/ABC-123
 ```
+
+`browser_driver` is stated, not detected. `agentic-qa:qa-runner` holds no browser tools, so it cannot see which drivers the session has — the caller, which can, says which one to record. Omitted, it is `playwright`, the driver this plugin ships; if Playwright then can't start, that surfaces as an environment failure on the first browser step. An agent running this skill directly, holding the browser tools itself, may instead detect the driver exactly as `/agentic-qa:walkthrough`'s Intake does.
 
 A brief that fails a validity gate triggers the same escalation as everything else that needs a human — see below — rather than erroring out and forcing the caller to reconstruct a new brief from scratch.
 
@@ -53,15 +56,13 @@ These situations can't proceed without a human. All of them use one mechanism:
 | Browser session isn't authenticated and SSO/MFA needs a human to complete it | Execute Steps | Both |
 | Backoff retry exhausted (four attempts) on an apparent environment failure | Execute Steps | Both |
 | An irreversible step's request may have landed but no answer came back — its outcome is unknown, so it is never retried | Execute Steps | Both |
-| No browser driver is available and the plan contains browser steps | Intake | Both — interactively it surfaces at the User Gate as blocked steps rather than pausing the run |
-
 The run pauses in place rather than terminating. Pausing means finishing: the agent that hit the trigger ends its turn with an `ESCALATION:` result stating exactly what it needs, and whoever spawned it resumes it later by agent ID with the answer (see Agent messaging, below). A resumed agent keeps its full context and continues from exactly where it stopped; nothing is re-derived or re-run.
 
 An escalation travels up the spawn chain one hop at a time to whoever can answer it or relay it. `agentic-qa:step-executor` returns it to its orchestrator. `agentic-qa:qa-runner`, itself a spawned agent, returns the same escalation to its own caller — which must hold `SendMessage` to resume it. What the top of the chain does with it differs by mode, not by mechanism: interactively, the orchestrator relays it straight into a live `AskUserQuestion`, since a person is already watching; agent-invoked, it's the caller's own judgment — relay to Slack, page someone, write to stderr, or nothing at all. This skill does not assume a channel exists, because it cannot know one does.
 
 There is no timeout. A finished agent costs nothing while it waits to be resumed, and `step-results.md`'s incremental writes mean nothing already completed is at risk if the surrounding environment ends the session first. That is an external concern, outside this pipeline's scope, the same as the notification channel.
 
-**What deliberately does not escalate:** a `blocked` step (an unresolved Unspecified question or Conflict) skips and cascades instead of pausing — the whole run pausing over one unanswered question would sacrifice everything else the plan could still verify unattended, for a question that risks nothing by waiting until the report is reviewed. A drafter/critic disagreement still open after the two-round cap gets logged in the `Critique Exchange`, visible for review, not escalated. Neither does a failed write to a configured report destination — the working-directory copy is always the real one.
+**What deliberately does not escalate:** a `blocked` step (an unresolved Unspecified question or Conflict) skips and cascades instead of pausing — the whole run pausing over one unanswered question would sacrifice everything else the plan could still verify unattended, for a question that risks nothing by waiting until the report is reviewed. A drafter/critic disagreement still open after the two-round cap gets logged in the `Critique Exchange`, visible for review, not escalated. Neither does a failed write to a configured report destination — the working-directory copy is always the real one. Nor does a missing browser driver: browser steps are still planned and marked `blocked — no browser driver`, which the User Gate shows interactively and the report's `Status` and `Blocked` section carry agent-invoked.
 
 ## Irreversible step policy
 
