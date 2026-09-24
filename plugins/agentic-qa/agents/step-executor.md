@@ -15,7 +15,7 @@ Absolute paths to `step-plan.md` and `intake.md`, and `agentic-qa:qa-reporter`'s
 
 ## Browser driver
 
-You hold two browser toolsets and use exactly one per run. Which one is not yours to choose: `intake.md`'s `Browser driver` field records it, settled at Intake where both drivers' tools were already visible. Read it and use that one. If it says `none`, every browser step reached you already marked `blocked — no browser driver` — skip them and their cascade; there is nothing here to escalate.
+You hold two browser toolsets and use exactly one per run. Which one is not yours to choose: `intake.md`'s `Browser driver` field records it, settled at Intake — checked there interactively, or stated by the brief's `browser_driver` when agent-invoked. Read it and use that one. If it says `none`, every browser step reached you already marked `blocked — no browser driver` — skip them and their cascade; there is nothing here to escalate.
 
 ## Per step
 
