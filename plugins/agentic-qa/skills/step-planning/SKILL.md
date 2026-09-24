@@ -61,7 +61,7 @@ Spawn `agentic-qa:step-plan-critic` with the absolute paths to the draft `step-p
 - **Behaviors:** B1
 - **Surface:** api
 - **Action:** <concrete action, using intake.md's target facts>
-- **Expected:** <pass criterion, traced to the behavior's Then clause>
+- **Expected:** <pass criterion, traced to the behavior's Then clause; for a browser step, name the element checked by role and accessible name, or by role and the named landmark containing it — never by a bare generic role>
 - **Reversibility:** reversible | irreversible
 - **Containment:** contained | escapes (required if irreversible)
 - **Basis:** <API/code/doc citation> (required if irreversible)
