@@ -25,8 +25,8 @@
     {
       "name": "agentic-qa",
       "source": "./plugins/agentic-qa",
-      "description": "Interactive, human-in-the-loop QA walkthroughs of finished functionality — drives a browser, an API, and a CLI against a ticket's acceptance criteria and its merged PR, with an adversarial critic pass on both the behavior spec and the step plan, live drafter/critic pairing, and a report with embedded screenshots. Not automated test-code authoring; that's what the testing plugin is for",
-      "version": "0.2.0",
+      "description": "Interactive, human-in-the-loop QA walkthroughs of finished functionality — drives a browser, an API, and a CLI against a ticket's acceptance criteria and its merged PR, with an adversarial critic pass on both the behavior spec and the step plan, drafter/critic revision rounds, and a report with embedded screenshots. Not automated test-code authoring; that's what the testing plugin is for",
+      "version": "0.3.0",
       "author": {
         "name": "bobtat",
         "email": ""
