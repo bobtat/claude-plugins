@@ -41,13 +41,19 @@ Every verdict cites the specific evidence backing it — never a bare "looks rig
 
 ### Environment failure — a fifth thing, not a verdict
 
-A timeout, a connection reset, a 5xx gateway error, or the browser tool itself crashing isn't a finding about the feature — retry the identical action, not a different approach:
+Only these count as an environment failure: a connection that never completed (refused, reset, DNS failure), a gateway status — `502`, `503`, `504` — or the browser tool itself crashing. Any other 5xx, a `500` above all, is the application under test answering, and that is a result: judge it against Expected like any other. An intermittent 500 is exactly the kind of defect a walkthrough exists to catch, and retrying it until it passes erases the evidence.
+
+An environment failure gets a retry of the identical action, not a different approach:
 
 1. Retry immediately.
 2. Retry after 30s.
 3. Retry after 1 minute.
 
-Three retries, four attempts total. If all four fail, this is a trigger for the escalation mechanism in `agentic-qa:agentic-qa` — pause and notify, don't keep "testing" against a target that isn't answering.
+Three retries, four attempts total. If all four fail, this is a trigger for the escalation mechanism in `agentic-qa:agentic-qa` — end your turn with an escalation, don't keep "testing" against a target that isn't answering.
+
+**Never retry an irreversible step whose request may have landed.** A timeout, or a connection dropped after the request was sent, leaves the outcome unknown: the server may have charged the card or sent the email and simply failed to answer. Retrying would repeat a real side effect on an approval given for one. Escalate at once instead, with what was sent and what is unknown, so a human can check whether it landed. Only a failure that provably never reached the server — refused, DNS failure — may be retried for an irreversible step, and each attempt re-checks its authorization.
+
+**Every attempt is recorded.** `step-results.md`'s `Attempts` field lists each one with what happened — `1: 503; 2: 200`. A step that passes after a failed attempt is still a `pass`, but the failed attempt is disclosed, and the report surfaces it under `Findings` as intermittent, never absorbed into a clean result.
 
 **Backoff is for failures that might pass on the next attempt.** A failure that is deterministic fails identically four times and wastes ninety seconds proving it. An expired browser session is one (see below). A stale element reference — the handle came from a page snapshot the page has since re-rendered past — is the other: take a fresh snapshot and re-run the same action. Re-reading a page that moved is not a `Deviation`.
 
@@ -110,6 +116,7 @@ Agent-invoked, load the brief's `browser_session` (a pre-established storage sta
 - **Observed:** <what happened, citing the evidence>
 - **Outputs:** order_id: ORD-8842
 - **Authorization:** n/a (reversible) | confirmed live | pre-authorized (contained)
+- **Attempts:** 1 | <each attempt and its outcome, e.g. `1: 503; 2: 200`>
 - **Deviation:** none | <what diverged from the plan and why, never absorbed silently into a pass>
 
 ## S4 — <short name>

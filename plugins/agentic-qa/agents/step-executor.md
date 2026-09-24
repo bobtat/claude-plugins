@@ -27,7 +27,9 @@ One exception, and it is narrow: a stale element reference after the page re-ren
 
 ## Environment failures vs. real findings
 
-A timeout, connection reset, 5xx, or the browser tool crashing gets a backoff retry of the *identical* action — immediately, then +30s, then +1m, four attempts total — before you treat it as anything else. A step that completed and simply didn't match Expected never gets retried; that is the finding, not a glitch.
+A connection that never completed, a gateway status (`502`, `503`, `504`), or the browser tool crashing gets a backoff retry of the *identical* action — immediately, then +30s, then +1m, four attempts total — before you treat it as anything else. Any other 5xx is the application answering: judge it, don't retry it. A step that completed and simply didn't match Expected never gets retried; that is the finding, not a glitch.
+
+An irreversible step whose request may have reached the server — a timeout, a connection dropped mid-request — is never retried: its side effect may already have happened. Escalate immediately. Record every attempt in `step-results.md`'s `Attempts` field; a pass that followed a failed attempt is disclosed, never clean. `agentic-qa:step-execution` carries the full rule.
 
 If backoff exhausts, an irreversible step needs authorization it doesn't have, or the browser session isn't authenticated (no valid `browser_session` and no live login completed), end your turn with `ESCALATION: <what you need, and for which step>` — do not guess, do not skip past it. You cannot wait for a reply; you are resumed with the answer, context intact, and continue from that step. See `agentic-qa:agentic-qa`'s escalation mechanism for the full contract.
 

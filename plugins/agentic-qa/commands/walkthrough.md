@@ -118,7 +118,7 @@ Spawn `agentic-qa:qa-reporter` **first**: it writes the report skeleton before a
 
 The executor returns one of two results:
 
-- **`ESCALATION: …`** — something needs a human: an unauthorized irreversible step, an unauthenticated browser session, an exhausted backoff retry. Resume the reporter with `paused: <reason>` so the report shows it, and relay the question into a live `AskUserQuestion` immediately; a person is already here. Then resume the reporter with `resumed`, and the executor by its ID with the answer. It continues from the step it stopped on. This is the same mechanism an agent-invoked run uses unattended, just answered faster.
+- **`ESCALATION: …`** — something needs a human: an unauthorized irreversible step, an unauthenticated browser session, an exhausted backoff retry, an irreversible step whose outcome is unknown. Resume the reporter with `paused: <reason>` so the report shows it, and relay the question into a live `AskUserQuestion` immediately; a person is already here. Then resume the reporter with `resumed`, and the executor by its ID with the answer. It continues from the step it stopped on. This is the same mechanism an agent-invoked run uses unattended, just answered faster.
 - **`COMPLETE`** — every step has a verdict. Resume the reporter with `final`. It finalizes the report and returns `done: <path to walkthrough-report.html>`.
 
 ## Phase 5 — Wrap-up
