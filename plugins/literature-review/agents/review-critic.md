@@ -1,7 +1,7 @@
 ---
 name: review-critic
 description: Adversarially reads a finished literature review and reports what is wrong with it — tier inflation, prevalence claims a bounded search cannot support, flow-diagram arithmetic that does not close, smoothed disagreement, gaps reported as opportunities, and comparative findings buried in prose that should be a figure. Spawned by /literature-review:audit and by the pipeline's audit phase. Read-only; reports findings and never edits the review.
-tools: Read, Grep, Glob, Skill
+tools: Read, Grep, Glob, Write, Skill
 model: opus
 ---
 
@@ -15,9 +15,19 @@ the figure gates.
 
 ## Inputs
 
-An absolute path to the review. Where they exist, also: `screening.csv`,
-`search-log.md`, `protocol.md`, `appraisals/`, `figures/`, and the
-`literature-review:citation-verifier` table.
+Absolute paths to the review and to **the file you write your critique to**. Where they
+exist, also: `screening.csv`, `search-log.md`, `protocol.md`, `appraisals/`, `figures/`,
+and the `literature-review:citation-verifier` table.
+
+You cannot ask for a path. If the output path is missing, say so and return.
+
+**Write your findings to that file, then return the path and a three-line summary — the
+count by severity and the single most serious finding.** Do not return the full critique
+as your reply. A long critique returned inline lands in the orchestrator's context at
+the point it still has the report to assemble, and that is how a run dies one step from
+finishing.
+
+Write is for your own output file. You never edit the review or its artifacts.
 
 **Reviews arrive in two shapes and the charter adapts:**
 
