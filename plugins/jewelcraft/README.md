@@ -49,6 +49,7 @@ Facts in the reference files are tagged:
 - **[verified]**: measured in Blender.
 - **[source]**: read in JewelCraft's source.
 - **[docs]**: from Blender's documentation.
+- **[cited]**: from a named outside source (a standard, supplier or bench reference).
 - **[guidance]** / **[untested]**: not yet confirmed.
 
 The helpers were tested against known geometry: prong grip, cutter fit, seat clearance,

@@ -14,6 +14,7 @@ reference files:
 - **[verified]**: run in Blender and the result measured.
 - **[source]**: read in the JewelCraft source, not run.
 - **[docs]**: from the Blender manual or Python API reference.
+- **[cited]**: from a named outside source (a standard, supplier or bench reference), not run.
 - **[untested]** / **[guidance]**: inference or practice, not confirmed.
 
 ## Start of every session
