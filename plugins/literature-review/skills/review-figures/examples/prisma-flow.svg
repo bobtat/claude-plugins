@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1172 538" role="img" aria-labelledby="ttl dsc">
 <title id="ttl">PRISMA 2020 flow diagram</title>
 <desc id="dsc">PRISMA 2020 flow. 142 records identified from databases and registers and 12 from other methods; 111 screened; 30 studies included.</desc>
-<style>.bx{fill:none;stroke:#44506b;stroke-width:1.2}.t{font:11.5px system-ui,-apple-system,Segoe UI,sans-serif;fill:#44506b}.hd{font:600 12px system-ui,sans-serif;fill:#44506b}.bandbx{fill:none;stroke:#6b7488;stroke-width:1}.band{font:600 11px system-ui,sans-serif;fill:#6b7488}.ar{stroke:#44506b;stroke-width:1.2;fill:none;marker-end:url(#a)}.fn{font:10px system-ui,sans-serif;fill:#6b7488}@media (prefers-color-scheme: dark){.bx{stroke:#9fb0d0}.t,.hd{fill:#9fb0d0}.bandbx{stroke:#8f9ab4}.band,.fn{fill:#8f9ab4}.ar{stroke:#9fb0d0}#ah{fill:#9fb0d0}}</style>
+<style>.bx{fill:none;stroke:#44506b;stroke-width:1.2}.t{font:11.5px system-ui,-apple-system,Segoe UI,sans-serif;fill:#44506b}.hd{font:600 12px system-ui,sans-serif;fill:#44506b}.bandbx{fill:none;stroke:#6b7488;stroke-width:1}.band{font:600 11px system-ui,sans-serif;fill:#6b7488}.ar{stroke:#44506b;stroke-width:1.2;fill:none;marker-end:url(#a)}.fn{font:11px system-ui,sans-serif;fill:#6b7488}@media (prefers-color-scheme: dark){.bx{stroke:#9fb0d0}.t,.hd{fill:#9fb0d0}.bandbx{stroke:#8f9ab4}.band,.fn{fill:#8f9ab4}.ar{stroke:#9fb0d0}#ah{fill:#9fb0d0}}</style>
 <defs><marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path id="ah" d="M0 0 L8 4 L0 8 z" fill="#44506b"/></marker></defs>
 <text class="hd" x="320" y="42" text-anchor="middle">Identification of studies via databases and registers</text>
 <text class="hd" x="894" y="42" text-anchor="middle">Identification of studies via other methods</text>
@@ -22,8 +22,8 @@
 <path class="ar" d="M878 268 L910 268"/>
 <path class="ar" d="M753 284 L753 310"/>
 <path class="ar" d="M878 326 L910 326"/>
-<path class="ar" d="M179 342 L209 418"/>
-<path class="ar" d="M753 342 L753 418"/>
+<path class="ar" d="M179 342 L179 418"/>
+<path class="ar" d="M753 342 L753 441 L364 441"/>
 <rect class="bx" x="54" y="62" width="250" height="74" rx="2"/><text class="t" x="63" y="82.5">Records identified from*:</text><text class="t" x="63" y="96.5">  PubMed (n = 84)</text><text class="t" x="63" y="110.5">  arXiv (n = 41)</text><text class="t" x="63" y="124.5">  OpenAlex (n = 17)</text>
 <rect class="bx" x="336" y="62" width="250" height="46" rx="2"/><text class="t" x="345" y="82.5">Records removed before screening:</text><text class="t" x="345" y="96.5">  Duplicate records removed (n = 31)</text>
 <rect class="bx" x="628" y="62" width="250" height="46" rx="2"/><text class="t" x="637" y="82.5">Records identified from:</text><text class="t" x="637" y="96.5">  Citation searching (n = 12)</text>

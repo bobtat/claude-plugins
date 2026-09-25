@@ -147,17 +147,17 @@ def build(d):
         el = [f"Records excluded** (n = {n(d['excluded'])})"]
     b_exc = Box(colAx_x, y, el)
     boxes += [b_scr, b_exc]
-    arrows.append((b_src.cx, b_src.bottom, b_src.cx, b_scr.y))
+    arrows.append([(b_src.cx, b_src.bottom), (b_src.cx, b_scr.y)])
     if b_rem:
-        arrows.append((b_src.right, b_src.cy, b_rem.x, b_src.cy))
-    arrows.append((b_scr.right, b_scr.cy, b_exc.x, b_scr.cy))
+        arrows.append([(b_src.right, b_src.cy), (b_rem.x, b_src.cy)])
+    arrows.append([(b_scr.right, b_scr.cy), (b_exc.x, b_scr.cy)])
     y = max(b_scr.bottom, b_exc.bottom) + 26
 
     b_sought = Box(colA_x, y, [f"Reports sought for retrieval (n = {n(d['sought'])})"])
     b_nr = Box(colAx_x, y, [f"Reports not retrieved (n = {n(d['not_retrieved'])})"])
     boxes += [b_sought, b_nr]
-    arrows += [(b_scr.cx, b_scr.bottom, b_scr.cx, b_sought.y),
-               (b_sought.right, b_sought.cy, b_nr.x, b_sought.cy)]
+    arrows += [[(b_scr.cx, b_scr.bottom), (b_scr.cx, b_sought.y)],
+               [(b_sought.right, b_sought.cy), (b_nr.x, b_sought.cy)]]
     row_sought_y = y
     y = max(b_sought.bottom, b_nr.bottom) + 26
 
@@ -166,8 +166,8 @@ def build(d):
     exl = ["Reports excluded:"] + [f"  {k} (n = {n(v)})" for k, v in exr.items()]
     b_exr = Box(colAx_x, y, exl)
     boxes += [b_ass, b_exr]
-    arrows += [(b_sought.cx, b_sought.bottom, b_sought.cx, b_ass.y),
-               (b_ass.right, b_ass.cy, b_exr.x, b_ass.cy)]
+    arrows += [[(b_sought.cx, b_sought.bottom), (b_sought.cx, b_ass.y)],
+               [(b_ass.right, b_ass.cy), (b_exr.x, b_ass.cy)]]
 
     tails = [b_ass]
     if v2:
@@ -178,10 +178,10 @@ def build(d):
         oel = ["Reports excluded:"] + [f"  {k} (n = {n(v)})" for k, v in oexr.items()]
         b_oex = Box(colBx_x, y, oel)
         boxes += [b_os, b_onr, b_oa, b_oex]
-        arrows += [(b_other.cx, b_other.bottom, b_other.cx, b_os.y),
-                   (b_os.right, b_os.cy, b_onr.x, b_os.cy),
-                   (b_os.cx, b_os.bottom, b_os.cx, b_oa.y),
-                   (b_oa.right, b_oa.cy, b_oex.x, b_oa.cy)]
+        arrows += [[(b_other.cx, b_other.bottom), (b_other.cx, b_os.y)],
+                   [(b_os.right, b_os.cy), (b_onr.x, b_os.cy)],
+                   [(b_os.cx, b_os.bottom), (b_os.cx, b_oa.y)],
+                   [(b_oa.right, b_oa.cy), (b_oex.x, b_oa.cy)]]
         tails.append(b_oa)
     screen_bottom = max(b.bottom for b in boxes) + 14
     # Clear every box drawn so far, not just the assessed ones: a tall
@@ -195,8 +195,13 @@ def build(d):
         inc.append(f"Reports of included studies (n = {n(d['included_reports'])})")
     b_inc = Box(colA_x, y, inc, w=BOX_W + 60)
     boxes.append(b_inc)
-    for tb in tails:
-        arrows.append((tb.cx, tb.bottom, b_inc.cx if tb is tails[0] else tb.cx, b_inc.y))
+    # The main column drops straight into the top of the Included box. The
+    # other-methods column is far to the right of it, so it turns a corner and
+    # enters the right-hand edge: aiming a single segment at the box's y left the
+    # arrow hanging in empty space, which no geometry check catches.
+    arrows.append([(b_ass.cx, b_ass.bottom), (b_ass.cx, b_inc.y)])
+    for tb in tails[1:]:
+        arrows.append([(tb.cx, tb.bottom), (tb.cx, b_inc.cy), (b_inc.right, b_inc.cy)])
     inc_top = y
     height = b_inc.bottom + 74
 
@@ -229,7 +234,7 @@ def render(d, layout):
          f'.bandbx{{fill:none;stroke:{MUTED};stroke-width:1}}'
          f'.band{{font:600 11px system-ui,sans-serif;fill:{MUTED}}}'
          f'.ar{{stroke:{INK};stroke-width:1.2;fill:none;marker-end:url(#a)}}'
-         f'.fn{{font:10px system-ui,sans-serif;fill:{MUTED}}}'
+         f'.fn{{font:11px system-ui,sans-serif;fill:{MUTED}}}'
          '@media (prefers-color-scheme: dark){'
          f'.bx{{stroke:{DARK["ink"]}}}.t,.hd{{fill:{DARK["ink"]}}}'
          f'.bandbx{{stroke:{DARK["muted"]}}}.band,.fn{{fill:{DARK["muted"]}}}'
@@ -245,8 +250,9 @@ def render(d, layout):
         cy = (y0 + y1) / 2
         p.append(f'<text class="band" x="23" y="{cy:.0f}" text-anchor="middle" '
                  f'transform="rotate(-90 23 {cy:.0f})">{esc(label)}</text>')
-    for x1, y1, x2, y2 in layout["arrows"]:
-        p.append(f'<path class="ar" d="M{x1:.0f} {y1:.0f} L{x2:.0f} {y2:.0f}"/>')
+    for pts in layout["arrows"]:
+        d_ = "M" + " L".join(f"{x:.0f} {y:.0f}" for x, y in pts)
+        p.append(f'<path class="ar" d="{d_}"/>')
     for b in layout["boxes"]:
         p.append(b.svg())
     fy = layout["inc_bottom"] + 26
