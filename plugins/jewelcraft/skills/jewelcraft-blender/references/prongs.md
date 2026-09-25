@@ -29,32 +29,54 @@ Prongs sit on a circle of radius `gem_dim.y/2 + radius − intersection`. On an 
 stone (Y = length) that circle is wider than the stone's sides. **On an 8 × 5.8 cushion
 the presets left all four prongs 0.49 mm clear of the girdle.** [verified]
 
-## Corner prongs on an elongated cushion [verified to ±0.004 mm]
+## Corner prongs on an elongated cushion
 
-JewelCraft's square-cushion preset makes each prong overlap the girdle by 23.5% of its
-diameter. `H["corner_prong_settings"](L, W, d)` reproduces that on an L × W cushion:
+`H["corner_prong_settings"](L, W, d)` places 4 corner prongs on an L × W cushion so each
+overlaps the girdle by `bite_frac` × d (default 0.33, inside the 30–50% bench range
+below):
 ```python
-bite  = 0.235 * d
+bite  = bite_frac * d
 theta = math.atan(W / L)                      # -> position
 R     = 0.3945 * math.hypot(L, W) + d/2 - bite
 intersection = (L/2 + d/2 - R) / d * 100
 ```
 0.3945 × √(L²+W²) is the corner's distance from the centre along the diagonal.
 
-| Stone | d | position | intersection |
-|---|---|---|---|
-| 8 × 5.8 | 0.8 | 35.94° | +36.2% |
-| 7 × 5 | 0.8 | 35.54° | +36.8% |
-| 10 × 6.5 | 1.0 | 33.02° | +53.0% |
-| 6 × 6 | 0.8 | 45° | −19.9% (= the preset) |
+| Stone | d | position | intersection (0.33) | intersection (0.235, JewelCraft's grip) |
+|---|---|---|---|---|
+| 8 × 5.8 | 0.8 | 35.94° | +45.7% | +36.2% |
+| 7 × 5 | 0.8 | 35.54° | +46.3% | +36.8% |
+| 10 × 6.5 | 1.0 | 33.02° | +62.5% | +53.0% |
+| 6 × 6 | 0.8 | 45° | −10.4% | −19.9% (= the preset) |
+
+With `bite_frac=0.235` the formula reproduced JewelCraft's square-cushion grip to
+±0.004 mm. Built on an 8 × 5.8 cushion with the 0.33 default, all four prongs measured
+33.1%. [verified]
 
 This only applies to cushions stretched with `scale.y`; other cuts have a different
 corner constant. Always confirm with `H["prong_report"]` (the `jewelcraft:check-prongs` skill).
 
 ## How much grip is enough
 
-23.5% of the diameter is JewelCraft's own square-cushion default, not an industry
-standard. A tapered 1.0 mm prong set by hand on an 8 × 5.8 cushion measured 30.5% at the
-girdle. [verified] No sourced minimum has been found yet. Report the measured grip, compare
-it with these two reference points, and let the user decide. A prong with a gap (negative
-bite) never holds the stone. [guidance]
+Stuller's bench guide for four-prong settings puts the seat (notch) depth at **30–50% of
+the prong's thickness**. [cited] `bite_pct_of_diameter` in `H["prong_report"]` measures
+the same thing: how far the prong reaches inside the girdle outline. JewelCraft's own
+square-cushion preset gives 23.5%, below that range, so treat it as a CAD default, not a
+target. `prong_report` adds a note when any prong is under 30%.
+
+**Pre-notched or setter-notched?** Decide this with the user (or their setter) before
+checking collisions:
+- **Pre-notched:** the notches are modelled. Cut the prongs with the stone's cutter as
+  well as the seat metal, and include prongs in the stone/metal collision pairs; their
+  overlap with the stone should then be 0.
+- **Setter-notched:** the prongs are cast plain and the setter cuts the notches. The
+  prongs still sit 30–50% inside the girdle, so they overlap the stone in the model.
+  Leave them out of the stone/metal collision pairs, and tell the user the overlap is the
+  material the setter will remove.
+
+A prong whose gap to the girdle is more than a few hundredths of a millimetre isn't
+touching the stone at all, and the setter would have to bend it in; report that as a
+fault. [guidance]
+
+Source: Stuller, "Step-by-step stone setting gems in four-prong mountings",
+https://www.stuller.com/benchjeweler/resources/bencharticles/view/step-by-step-stone-setting-gems-in-four-prong-mountings/
