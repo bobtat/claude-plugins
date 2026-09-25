@@ -40,7 +40,8 @@ Bracelet, necklace and earring workflows are planned for a later version.
 The skills share one helper script, `skills/jewelcraft-blender/scripts/jc_helpers.py`,
 which Claude loads into Blender once per session. All measurements use the evaluated
 model (modifiers included), in millimetres. Checks work on temporary copies and don't
-change your model; anything that would change it is proposed first. Save your file
+change your model; anything that would change it is proposed first. Creating and removing
+those copies can mark the file as modified, so Blender may ask to save on quit. Save your file
 before building or experimenting.
 
 ## How the content was verified

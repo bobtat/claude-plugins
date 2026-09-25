@@ -1,4 +1,4 @@
-# JewelCraft Toolkit helpers.
+# jewelcraft plugin helpers.
 # Run this whole file once per Blender session through the Blender MCP's
 # execute_blender_code tool. It registers the helpers in
 #     bpy.app.driver_namespace["JC"]
@@ -8,6 +8,7 @@
 
 import bpy
 import bmesh
+import json
 import math
 import sys
 import importlib
@@ -15,7 +16,8 @@ import addon_utils
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
-HELPERS_VERSION = "0.1.0"
+# The skills compare the loaded copy against this line, so bump it with every change.
+HELPERS_VERSION = "0.2.0"
 
 # Densities (g/cm3) from JewelCraft 2.18.1's default weighting list; used only
 # when the current scene's list is empty.
@@ -32,15 +34,22 @@ DEFAULT_DENSITIES = [
 # ---------------------------------------------------------------- add-on / context
 
 def addon_name():
-    for m in addon_utils.modules():
-        if "jewelcraft" in m.__name__.lower():
-            return m.__name__
-    return None
+    """Module name of JewelCraft, preferring the enabled copy when a legacy add-on and
+    an extension are both installed."""
+    def is_jc(name):
+        return name.rsplit(".", 1)[-1].lower() == "jewelcraft"
+    enabled = [k for k in bpy.context.preferences.addons.keys() if is_jc(k)]
+    if enabled:
+        return enabled[0]
+    return next((m.__name__ for m in addon_utils.modules() if is_jc(m.__name__)), None)
 
 
 def jc(sub):
     """Import a JewelCraft submodule, e.g. jc('.lib.gemlib')."""
-    return importlib.import_module(addon_name() + sub)
+    name = addon_name()
+    if not name:
+        raise RuntimeError("JewelCraft is not installed in this Blender.")
+    return importlib.import_module(name + sub)
 
 
 def jc_version():
@@ -304,7 +313,7 @@ def union_stats(obs):
 def check_setup():
     s = bpy.context.scene
     u = s.unit_settings
-    issues = []
+    issues, notes = [], []
     name = addon_name()
     ver = jc_version()
     enabled = bool(name) and addon_utils.check(name)[1]
@@ -318,8 +327,16 @@ def check_setup():
     mm_ok = (u.system == 'METRIC' and abs(u.scale_length - 0.001) < 1e-7)
     if not mm_ok:
         issues.append("Scene units are not 1 unit = 1 mm (metric, scale 0.001).")
-    if not bpy.data.is_saved or bpy.data.is_dirty:
-        issues.append("The file has unsaved changes: ask the user to save before experiments.")
+    if not bpy.data.is_saved:
+        issues.append("The file has never been saved: ask the user to save before experiments.")
+    elif bpy.data.is_dirty:
+        # Creating and removing the helpers' own temporary objects can set this too, so
+        # it can't block every check; the skills ask once per session instead.
+        notes.append("The file has unsaved changes (the helpers' temporary objects can also "
+                     "mark it modified).")
+    if bpy.context.mode != 'OBJECT':
+        issues.append(f"Blender is in {bpy.context.mode} mode: measurements read the last "
+                      "Object Mode state. Ask the user to switch to Object Mode.")
     if ctx() is None:
         issues.append("No 3D Viewport found: operators that need one will fail.")
     wm = []
@@ -337,7 +354,7 @@ def check_setup():
         "units": {"system": u.system, "length_unit": u.length_unit,
                   "scale_length": round(u.scale_length, 6), "one_unit_is_mm": mm_ok},
         "scene": s.name, "gems_in_scene": len(gems), "weighting_materials": len(wm),
-        "helpers_version": HELPERS_VERSION, "issues": issues,
+        "helpers_version": HELPERS_VERSION, "issues": issues, "notes": notes,
     }
 
 
@@ -755,3 +772,5 @@ bpy.app.driver_namespace["JC"] = {k: v for k, v in globals().items()
                                       "HELPERS_VERSION", "DEFAULT_DENSITIES")}
 result = {"registered": sorted(bpy.app.driver_namespace["JC"].keys()),
           "helpers_version": HELPERS_VERSION}
+# Some Blender MCP servers return only printed output, not a `result` variable.
+print(json.dumps(result))
