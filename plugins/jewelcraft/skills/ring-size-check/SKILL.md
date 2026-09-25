@@ -17,14 +17,17 @@ description: Measures the actual inside diameter of a ring band in Blender and r
    1. Identify the band. Use the name the user gave; otherwise list mesh objects and ask.
       The band and head may be one object or several; pass the object that contains the
       finger hole.
-   2. Run `H["ring_size"](name)`. It fits a circle to the inner surface, so a head or
-      other parts on the same mesh don't affect it.
+   2. Run `H["ring_size"](name)`. It fits a circle to the inner surface and finds the
+      ring's axis itself, so a head on the same mesh or a rotated ring doesn't affect it.
    3. Report the inner diameter and circumference, and the size in each system:
       - JP/HK `None` means no exact match.
       - US and CH sizes are shown to two decimals; state the nearest standard size and
         the difference in mm.
       - If `roundness_max_dev_mm` exceeds about 0.05 mm, say the inside isn't a true
         circle and the size is approximate.
+      - If there's a `warning`, something reaches into the finger hole. Report
+        `min_opening_diameter_mm` as well: it's what the finger has to pass, and it can
+        be a size or more smaller than the fitted diameter.
 4. If the user wants a different size, compute the target diameter with
    `size_to_diameter` and follow the band steps in the `jewelcraft:build-ring` skill. **Never set a
    ring size with `size_curve_add(size_us=...)` from a script:** it rounds to whole
