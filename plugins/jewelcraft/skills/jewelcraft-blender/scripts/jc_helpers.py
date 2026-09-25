@@ -19,15 +19,27 @@ from mathutils.bvhtree import BVHTree
 # The skills compare the loaded copy against this line, so bump it with every change.
 HELPERS_VERSION = "0.2.0"
 
-# Densities (g/cm3) from JewelCraft 2.18.1's default weighting list; used only
-# when the current scene's list is empty.
+# Densities (g/cm3) and compositions from JewelCraft 2.18.1's default weighting list;
+# used only when the current scene's list is empty. The composition matters: other
+# alloys sold under the same name differ by several percent (Pt950/Ir is 21.45).
 DEFAULT_DENSITIES = [
-    ("Yellow Gold 24K", 19.32), ("Yellow Gold 22K", 17.86), ("Yellow Gold 18K", 15.53),
-    ("Yellow Gold 14K", 13.05), ("Yellow Gold 10K", 11.47), ("White Gold 18K Pd", 15.66),
-    ("White Gold 18K Ni", 14.69), ("White Gold 14K Pd", 14.60), ("White Gold 14K Ni", 12.61),
-    ("White Gold 10K", 10.99), ("Rose Gold 18K", 15.02), ("Rose Gold 14K", 13.03),
-    ("Rose Gold 10K", 11.52), ("Platinum 950", 20.70), ("Platinum 900", 21.54),
-    ("Palladium 950", 12.16), ("Silver Sterling", 10.36),
+    ("Yellow Gold 24K", 19.32, "Au 99.9%"),
+    ("Yellow Gold 22K", 17.86, "Au 91.6%, Ag 4.9%, Cu 3.5%"),
+    ("Yellow Gold 18K", 15.53, "Au 75.3%, Ag 16.5%, Cu 6.7%, Zn 1.5%"),
+    ("Yellow Gold 14K", 13.05, "Au 58.4%, Ag 9.8%, Cu 28%, Zn 3.8%"),
+    ("Yellow Gold 10K", 11.47, "Au 41.7%, Ag 11.2%, Cu 40.5%, Zn 6.6%"),
+    ("White Gold 18K Pd", 15.66, "Au 78.7%, Cu 8.3%, Pd 13%"),
+    ("White Gold 18K Ni", 14.69, "Au 75.15%, Cu 8.75%, Ni 12%, Zn 4.1%"),
+    ("White Gold 14K Pd", 14.60, "Au 58.55%, Cu 7.2%, Ag 20%, Pd 13.5%, Zn 0.75%"),
+    ("White Gold 14K Ni", 12.61, "Au 58.43%, Cu 21%, Ni 12.73%, Zn 7.84%"),
+    ("White Gold 10K", 10.99, "Au 41.7%, Cu 35.7%, Ni 10.3%, Zn 12.3%"),
+    ("Rose Gold 18K", 15.02, "Au 75.3%, Cu 23.3%, Ag 1.2%, Zn 0.2%"),
+    ("Rose Gold 14K", 13.03, "Au 58.4%, Cu 39.2%, Ag 2%, Zn 0.4%"),
+    ("Rose Gold 10K", 11.52, "Au 41.5%, Cu 55%, Ag 3%, Zn 0.5%"),
+    ("Platinum 950", 20.70, "Pt 95%, Ru 5%"),
+    ("Platinum 900", 21.54, "Pt 90%, Ir 10%"),
+    ("Palladium 950", 12.16, "Pd 95%, Ru 5%"),
+    ("Silver Sterling", 10.36, "Ag 92.5%, Cu 7.5%"),
 ]
 
 
@@ -563,7 +575,8 @@ def densities():
     except Exception:
         coll = []
     if coll:
-        return [(m.name, m.density) for m in coll if m.enabled], "scene"
+        return [(m.name, m.density, getattr(m, "composition", ""))
+                for m in coll if m.enabled], "scene"
     return DEFAULT_DENSITIES, "built-in defaults"
 
 
@@ -583,7 +596,8 @@ def weigh(objs, union=True):
     return {"parts": parts, "sum_of_parts_mm3": round(raw, 3),
             "volume_mm3": round(vol, 3), "overlap_counted_twice_mm3": round(raw - vol, 3),
             "result_nonmanifold_edges": nm, "densities_from": src,
-            "weights_g": [(n, round(vol * d / 1000, 2)) for n, d in dens]}
+            "weights_g": [{"alloy": n, "composition": c, "g": round(vol * d / 1000, 2)}
+                          for n, d, c in dens]}
 
 
 def _fit_circle(S):
