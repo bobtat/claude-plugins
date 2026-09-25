@@ -8,7 +8,9 @@ description: Core knowledge for modeling jewelry in Blender with the JewelCraft 
 Drive Blender through a Blender MCP server that can run Python (a tool such as
 `execute_blender_code`). Examples here assign a JSON-serialisable dict to `result`. Some
 servers return that variable; others return only printed output. Unless you know the
-server returns `result`, end each call with `print(json.dumps(result, default=str))`.
+server returns `result`, end each call with
+`import json; print(json.dumps(result, default=str))`. The snippets below leave that line
+out for brevity.
 JewelCraft must be installed and enabled in that Blender.
 
 Everything here was written against **JewelCraft 2.18.1 on Blender 5.1.1**. Tags in the
@@ -23,7 +25,8 @@ reference files:
 
 1. **Load the helpers.** Read `scripts/jc_helpers.py` (in this skill's folder) and note
    its `HELPERS_VERSION` line. Check what's loaded:
-   `result = {"v": bpy.app.driver_namespace.get("JC", {}).get("HELPERS_VERSION")}`.
+   `result = {"v": bpy.app.driver_namespace.get("JC", {}).get("HELPERS_VERSION")}`
+   (plus the print line above).
    If that doesn't match the file, send the file's **entire contents** as the code of one
    `execute_blender_code` call. The helpers
    live in `bpy.app.driver_namespace["JC"]` until Blender restarts. Leave them there

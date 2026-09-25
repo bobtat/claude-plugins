@@ -11,7 +11,9 @@ description: Checks that Blender, the Blender MCP connection and the JewelCraft 
    - If the Blender MCP tool isn't available, or the call can't reach Blender, stop and
      tell the user: Blender must be open with its MCP server running and connected to this
      session.
-2. Run `result = bpy.app.driver_namespace["JC"]["check_setup"]()`.
+2. Run `result = bpy.app.driver_namespace["JC"]["check_setup"]()`, followed by
+   `import json; print(json.dumps(result, default=str))` unless the MCP server returns
+   `result` itself.
 3. Report in plain language:
    - Blender and JewelCraft versions. If JewelCraft is 3.x, say that some instructions
      differ and read `../jewelcraft-blender/references/jewelcraft-3x.md` before building.
