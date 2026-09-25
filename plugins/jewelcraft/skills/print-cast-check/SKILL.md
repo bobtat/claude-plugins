@@ -1,6 +1,6 @@
 ---
 name: print-cast-check
-description: Checks a jewelry model in Blender before 3D printing or casting (closed mesh, inward normals, minimum wall thickness, collisions between parts, applied scale, millimetre units) and optionally exports and verifies an STL. Use when the user asks "is this ready to print", "check before casting", "export STL", "wall thickness", or "is the mesh manifold".
+description: Checks a jewelry model (ring, pendant, setting) in Blender before 3D printing or casting (closed mesh, inward normals, minimum wall thickness, stone/metal collisions, millimetre units, casting shrinkage) and optionally exports and verifies an STL. Use when the user asks "is this ring ready to print", "check the ring before casting", "export the piece as STL for my caster", or "are the prongs thick enough to cast". For non-jewelry models, use the general Blender modeling skill instead.
 ---
 
 # Print / cast check
