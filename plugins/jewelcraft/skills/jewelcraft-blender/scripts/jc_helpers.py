@@ -445,9 +445,14 @@ def stone_report(check_overlaps=True):
     return result
 
 
-def corner_prong_settings(L, W, d, bite_frac=0.235):
+# Notch (seat) depth as a fraction of prong thickness. Bench guidance is 30-50%
+# (Stuller); JewelCraft's own square-cushion preset gives 23.5%, below that range.
+MIN_BITE_FRAC = 0.30
+
+
+def corner_prong_settings(L, W, d, bite_frac=0.33):
     """position/intersection for 4 corner prongs (number=2, use_symmetry=True) on a
-    cushion stretched to L (Y) x W (X), matching JewelCraft's square-cushion bite."""
+    cushion stretched to L (Y) x W (X), giving each prong a notch of bite_frac x d."""
     bite = bite_frac * d
     theta = math.atan(W / L)
     R = 0.3945 * math.hypot(L, W) + d / 2 - bite
@@ -455,10 +460,11 @@ def corner_prong_settings(L, W, d, bite_frac=0.235):
             "intersection": round((L / 2 + d / 2 - R) / d * 100, 2), "bite_mm": round(bite, 3)}
 
 
-def prong_report(gem, prongs):
+def prong_report(gem, prongs, prong_diameter=None):
     """How each prong meets the stone's girdle. bite > 0 = prong overlaps the girdle
-    (holds the stone); bite < 0 = gap. JewelCraft's square-cushion preset gives
-    about 23.5% of the prong diameter."""
+    (the notch depth); bite < 0 = gap. Bench guidance is 30-50% of the prong's
+    thickness. `prong_diameter` (the prong setting) is used for the suggested corner
+    settings; tapered prongs are thicker at the girdle than their setting."""
     gem, prongs = (get(gem) if isinstance(gem, str) else gem), (get(prongs) if isinstance(prongs, str) else prongs)
     frame = gem_frame(gem)
     hull = girdle_hull(gem)
@@ -481,9 +487,12 @@ def prong_report(gem, prongs):
         out["note"] = "No prong crosses the girdle plane."
     elif any(r["bite_mm"] <= 0 for r in rows):
         out["note"] = "At least one prong does not touch the girdle."
+    elif any(r["bite_pct_of_diameter"] < MIN_BITE_FRAC * 100 for r in rows):
+        out["note"] = ("At least one prong grips less than 30% of its thickness, under the "
+                       "30-50% bench range.")
     L, W = gem.dimensions.y, gem.dimensions.x
     if gem["gem"]["cut"] == "CUSHION" and rows:
-        d = sum(r["diameter_mm"] for r in rows) / len(rows)
+        d = prong_diameter or sum(r["diameter_mm"] for r in rows) / len(rows)
         out["suggested_corner_settings"] = corner_prong_settings(L, W, d)
     return out
 

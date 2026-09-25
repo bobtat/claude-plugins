@@ -16,13 +16,16 @@ description: Measures how each prong grips a stone's girdle in a Blender/JewelCr
 4. Report per prong: position (angle), diameter at the girdle, and grip (`bite_mm`,
    `bite_pct_of_diameter`).
    - **Negative bite = gap: that prong doesn't touch the stone.** Say this plainly.
-   - For reference points on grip, see `../jewelcraft-blender/references/prongs.md` ("How much grip is
-     enough"). There's no sourced minimum, so present the numbers and let the user judge.
+   - Bench guidance is a notch of 30–50% of the prong's thickness; the report adds a
+     `note` for any prong under 30%. See `../jewelcraft-blender/references/prongs.md`
+     ("How much grip is enough"), including whether the prongs will be pre-notched or
+     notched by the setter.
    - Uneven grip between prongs usually means the stone or prongs are off-centre or
      rotated.
-5. For cushions, the report includes `suggested_corner_settings` (position, intersection)
-   that reproduce JewelCraft's square-cushion grip on an elongated stone. Explain what
-   would change. **Rebuild the prongs only if the user agrees.** Use the builder recipe in
+5. For cushions, the report includes `suggested_corner_settings` (position,
+   intersection) for corner prongs with a 33% notch. For tapered prongs, pass the prong's
+   `diameter` setting as `prong_diameter=`, since the prong is thicker at the girdle than
+   its setting. Explain what would change. **Rebuild the prongs only if the user agrees.** Use the builder recipe in
    `../jewelcraft-blender/references/operators.md` with those overrides, name the new object clearly, and
    leave the old prongs untouched (hidden or kept) until the user confirms.
 6. After any rebuild, run `prong_report` again and report the new numbers.
