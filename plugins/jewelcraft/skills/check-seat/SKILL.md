@@ -22,7 +22,9 @@ description: Verifies a stone seat in a Blender/JewelCraft design, checking that
    - Gaps up to ~0.45 mm at the corners are JewelCraft's cutter design, not a fault.
    - **With metal:**
      - `stone_metal_overlap_mm3` should be 0; any overlap means the stone collides with
-       the metal.
+       the metal. The exception is setter-notched prongs: if `metal` includes them, they
+       overlap the stone by design (`../jewelcraft-blender/references/prongs.md`). Check
+       the band or head without the prongs instead.
      - `control_overlap_without_seat_mm3` (the metal with every modifier except the seat
        Boolean) should be > 0. If it's 0, the stone isn't
        actually positioned in the metal, and the check proves nothing.

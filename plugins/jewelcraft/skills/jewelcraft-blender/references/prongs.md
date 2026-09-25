@@ -75,7 +75,9 @@ target. `prong_report` adds a note when any prong is under 30%.
 checking collisions:
 - **Pre-notched:** the notches are modelled. Cut the prongs with the stone's cutter as
   well as the seat metal, and include prongs in the stone/metal collision pairs; their
-  overlap with the stone should then be 0.
+  overlap with the stone should then be 0. `prong_report` still measures the grip as
+  designed (it leaves the notch Booleans out). The notch leaves slivers that `min_wall`
+  reads as walls of about 0.002 mm; they are the notch rim, not a thin wall. [verified]
 - **Setter-notched:** the prongs are cast plain and the setter cuts the notches. The
   prongs still sit 30–50% inside the girdle, so they overlap the stone in the model.
   Leave them out of the stone/metal collision pairs, and tell the user the overlap is the

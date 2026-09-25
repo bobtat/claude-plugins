@@ -10,7 +10,9 @@ description: Checks a jewelry model (ring, pendant, setting) in Blender before 3
    run `H["check_setup"]()`.
 2. Identify the parts to check (the metal parts that will be printed or cast; not gems or
    cutters), and pairs of parts that must not intersect (e.g. stone and metal). Ask if
-   unclear.
+   unclear. Ask whether the prongs are pre-notched or will be notched by the setter
+   (`../jewelcraft-blender/references/prongs.md`, "How much grip is enough"). If the
+   setter notches them, leave stone/prong pairs out: they overlap by design.
 3. **Ask the user, or their printer or caster**, for what depends on their process. This
    plugin has no sourced values for these:
    - **Minimum wall thickness.** If they don't know, run without it and report the
@@ -33,9 +35,10 @@ description: Checks a jewelry model (ring, pendant, setting) in Blender before 3
    non-manifold edges, inside-out, thinnest wall and where, scale.
    - **Thinnest wall:** the location matters. Knife edges and seat rims read as very thin
      walls (a seat rim measured 0.117 mm on a test plate). Say where it is and whether it
-     looks like a rim or a real thin wall. It samples face centres only, so on a
-     low-poly part say the true minimum may be thinner, and offer to check a subdivided
-     copy.
+     looks like a rim or a real thin wall. Pre-notched prongs leave slivers at the notch
+     edges that read as walls of a few thousandths of a millimetre (0.002 mm on the test
+     ring); they are the notch rim. It samples face centres only, so on a low-poly part
+     say the true minimum may be thinner, and offer to check a subdivided copy.
    - **More than one piece** (`pieces` > 1) means a part floats: prongs that don't reach
      the band, a head that doesn't touch the shank. It would cast as loose pieces. Say
      which parts, and that they need joining (usually a head or gallery).
