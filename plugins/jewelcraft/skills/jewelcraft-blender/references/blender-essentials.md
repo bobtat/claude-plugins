@@ -6,7 +6,9 @@ General Blender rules that the jewelry workflows depend on. Written for Blender 
 
 The MCP runs code in the Blender the user has open; their work lives in memory.
 1. Check first: `H["check_setup"]()` reports `file.saved` / `file.dirty`. [verified]
-2. **If it's unsaved or dirty, ask the user to save** before experiments. Never run
+2. **If it has never been saved (`file.saved` false), ask the user to save** before
+   experiments. `file.dirty` alone isn't a reason to ask again: the helpers' temporary
+   objects can set it (SKILL.md, "Start of every session"). Never run
    `wm.read_homefile`, `wm.open_mainfile` or anything else that replaces the open file.
 3. **Experiment in a temporary scene**, then delete it: [verified]
    ```python
@@ -17,7 +19,7 @@ The MCP runs code in the Blender the user has open; their work lives in memory.
    # copy the alloy list so weights work in the new scene
    for m in home.jewelcraft.weighting_materials.coll:
        it = test.jewelcraft.weighting_materials.coll.add()
-       it.name, it.density, it.enabled = m.name, m.density, m.enabled
+       it.name, it.density, it.enabled, it.composition = m.name, m.density, m.enabled, m.composition
    # ... build with a "TMP_" prefix ...
    # cleanup:
    win.scene = home

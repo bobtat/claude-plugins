@@ -10,7 +10,7 @@
   103.172 mm³ = 1.60 g of 18K yellow gold either way. [verified]
 - Weight = `volume_mm3 × density / 1000` grams.
 - **The alloy list is per scene** (`scene.jewelcraft.weighting_materials.coll`; items
-  have `.name`, `.density`, `.enabled`). A scene created from a script starts empty.
+  have `.name`, `.density`, `.enabled`, `.composition`). A scene created from a script starts empty.
   Copy the items over (blender-essentials.md §1). `H["weigh"]` falls back to the defaults
   below. [verified]
 - JewelCraft 2.18.1 default list (g/cm³): 24K 19.32, 22K 17.86, 18K yellow 15.53,

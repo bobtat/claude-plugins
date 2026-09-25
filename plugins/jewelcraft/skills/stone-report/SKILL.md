@@ -9,8 +9,9 @@ description: Lists every stone in the open Blender/JewelCraft design with cut, s
    `../jewelcraft-blender/scripts/jc_helpers.py`, relative to this skill's folder), then
    run `H["check_setup"]()`. Stop and explain any blocking issue (no JewelCraft, no
    connection).
-2. Run `result = bpy.app.driver_namespace["JC"]["stone_report"]()`. It reads the whole
-   visible view layer and creates nothing permanent.
+2. Run `result = bpy.app.driver_namespace["JC"]["stone_report"]()` (with the JSON print
+   line from the `jewelcraft:jewelcraft-blender` skill). It reads the whole visible view
+   layer and creates nothing permanent.
 3. Report:
    - A table of stones: stone, cut, size (length × width, or diameter), ct each, qty,
      ct total.
