@@ -1,0 +1,29 @@
+record_id,stage,screener_1,screener_1_criterion,screener_2,screener_2_criterion,agreed,adjudication,final,final_criterion,decided_by,full_text_retrieved,study_id
+R01,title_abstract,exclude,E4: Not an agent system,exclude,E4: Not an agent system,yes,,exclude,E4: Not an agent system,automation,,
+R02,title_abstract,exclude,E4: Not an agent system,exclude,E4: Not an agent system,yes,,exclude,E4: Not an agent system,automation,,
+R03,title_abstract,include,,include,,yes,,include,,automation,,
+R04,title_abstract,exclude,E4: Not an agent system,exclude,E4: Not an agent system,yes,,exclude,E4: Not an agent system,automation,,
+R05,title_abstract,include,,unsure,,no,,include,,automation,,
+R06,title_abstract,exclude,E3: Not primary research,unsure,,no,user excluded at gate,exclude,E3: Not primary research,human,,
+R07,title_abstract,include,,include,,yes,,include,,automation,,
+R08,title_abstract,unsure,,include,,no,,include,,automation,,
+R09,title_abstract,include,,include,,yes,,include,,automation,,
+R10,title_abstract,include,,include,,yes,,include,,automation,,
+R11,title_abstract,include,,exclude,E3: Not primary research,no,,include,,automation,,
+R12,title_abstract,unsure,,unsure,,yes,,include,,automation,,
+R15,title_abstract,exclude,E4: Not an agent system,exclude,E4: Not an agent system,yes,,exclude,E4: Not an agent system,automation,,
+R16,title_abstract,exclude,E4: Not an agent system,exclude,E4: Not an agent system,yes,,exclude,E4: Not an agent system,automation,,
+R17,title_abstract,include,,include,,yes,,include,,automation,,
+R18,title_abstract,include,,unsure,,no,,include,,automation,,
+R19,title_abstract,include,,include,,yes,,include,,automation,,
+R03,full_text,include,,include,,yes,,include,,automation,yes,R03
+R05,full_text,exclude,E2: Not adults,exclude,E2: Not adults,yes,,exclude,E2: Not adults,automation,yes,
+R07,full_text,include,,include,,yes,,include,,automation,yes,R07
+R08,full_text,exclude,E2: Not adults,include,,no,adjudicator: neonates are not adults (E2),exclude,E2: Not adults,automation,yes,
+R09,full_text,include,,include,,yes,,include,,automation,yes,S10
+R10,full_text,include,,include,,yes,,include,,automation,yes,S10
+R11,full_text,exclude,E3: Not primary research,exclude,E3: Not primary research,yes,,exclude,E3: Not primary research,automation,yes,
+R12,full_text,unsure,,unsure,,yes,,exclude,,automation,no,
+R17,full_text,include,,include,,yes,,include,,automation,yes,R17
+R18,full_text,exclude,E1: Not a language model,exclude,E1: Not a language model,yes,,exclude,E1: Not a language model,automation,yes,
+R19,full_text,unsure,,unsure,,yes,,exclude,,automation,no,
