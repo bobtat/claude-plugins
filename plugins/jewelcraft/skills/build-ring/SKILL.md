@@ -67,7 +67,7 @@ workflow yet.** See `../jewelcraft-blender/references/heads.md`, and tell the us
 2. **Check:** run the `jewelcraft:check-prongs` skill (`H["prong_report"]`). Every prong
    should grip 30–50% of its thickness and reach at least halfway up the crown.
 
-## 4. Head [not yet tested]
+## 4. Head [untested]
 
 Model the head (gallery rails, basket or cathedral arches) with ordinary Blender modeling,
 using `../jewelcraft-blender/references/heads.md` for anatomy and starting proportions. Say it's unverified.

@@ -6,7 +6,7 @@ modeling. This file gives the vocabulary, bench proportions and sources to build
 the user when a head you model is unverified, and measure it with the helpers (prong
 grip, seat clearance, wall thickness).
 
-## Anatomy
+## Anatomy [cited]
 
 - **Head:** the whole structure holding the stone: prongs plus the supports that join
   them.
@@ -16,13 +16,13 @@ grip, seat clearance, wall thickness).
 - **Basket setting:** the stone sits in a low cradle of prongs and gallery rails.
 - **Cathedral setting:** "curved metal arch[es] … that sweep upward from the ring's shank
   and meet the stone head at an elevated position". This raises the stone, but it snags
-  more easily and needs a contoured wedding band. (CaratYes)
+  more easily and often needs a contoured wedding band beside it. (CaratYes)
 - **Crown setting:** Brepohl describes one made from "a cone of such a size that the stone
   fits part way into it", filed to symmetry, with 4, 6 or 8 prongs. The lower tips are
   "soldered onto a ring made of flattened wire", and prong seats are filed at an angle to
   fit the pavilion. Use tough alloys for diamond prongs. (Brepohl via Ganoksin)
 
-## Starting proportions (one experienced jeweler's advice, not a standard)
+## Starting proportions (one experienced jeweler's advice, not a standard) [cited] [untested]
 
 David Phelps on the Ganoksin Orchid forum, for basket settings:
 - Upper gallery: flat wire about 1.5–3 mm wide × 1 mm thick.
@@ -36,7 +36,7 @@ Jo Haemer (same thread): scale commercial settings for standard stone sizes.
 
 Firmer numbers by stone size (supplier head specifications) have not been gathered yet.
 
-## Construction approaches seen in the sources
+## Construction approaches seen in the sources [cited] [untested]
 
 - **Jewelry CAD (Rhino/RhinoArtisan):** build the shank, then place the gem and build the
   basket from adjustable height, diameter and rail profiles. The detailed steps are in
