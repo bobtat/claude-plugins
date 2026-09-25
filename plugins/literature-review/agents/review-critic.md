@@ -17,7 +17,7 @@ the figure gates.
 
 An absolute path to the review. Where they exist, also: `screening.csv`,
 `search-log.md`, `protocol.md`, `appraisals/`, `figures/`, and the
-`citation-verifier` table.
+`literature-review:citation-verifier` table.
 
 **Reviews arrive in two shapes and the charter adapts:**
 
@@ -32,7 +32,7 @@ An absolute path to the review. Where they exist, also: `screening.csv`,
 
 ### 1. Unverified and misattributed citations
 
-Highest severity. If a `citation-verifier` table exists, read it first and escalate
+Highest severity. If a `literature-review:citation-verifier` table exists, read it first and escalate
 every mismatch — a title mismatch means prose is describing one paper while citing
 another, and that is a fabrication-class defect regardless of how it arose.
 

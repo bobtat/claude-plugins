@@ -27,7 +27,7 @@ rather than composed.
 ### The data files are real CSVs
 
 `records.csv` and `screening.csv` are machine-readable because three things depend on
-it: the figures are generated from them, `review-critic` recomputes the flow
+it: the figures are generated from them, `literature-review:review-critic` recomputes the flow
 arithmetic from them, and a human reviewer can open them in a spreadsheet and check.
 
 ```csv

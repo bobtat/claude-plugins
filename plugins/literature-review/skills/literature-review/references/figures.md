@@ -62,7 +62,7 @@ the R dependency is not taken.
 
 ### When a figure is required and absent
 
-`review-critic` raises a finding when prose does the work of a table or a chart. The
+`literature-review:review-critic` raises a finding when prose does the work of a table or a chart. The
 trigger: **more than four studies compared on more than two dimensions**, rendered as
 paragraphs. Also flagged — a section reporting per-study judgments with no
 traffic-light figure, and any flow narrative without `figures/prisma-flow.svg`.
@@ -93,7 +93,7 @@ Included         [Studies included (n=22)          ]
 ```
 
 **The arithmetic must close.** Screened − excluded = sought; sought − not retrieved =
-assessed; assessed − excluded = included. `review-critic` recomputes it from
+assessed; assessed − excluded = included. `literature-review:review-critic` recomputes it from
 `screening.csv`. A flow diagram whose numbers do not sum is the most visible defect a
 systematic review can ship.
 

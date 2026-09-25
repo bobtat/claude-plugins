@@ -103,9 +103,9 @@ Deliberately not covered:
 - **Non-English literature.** Every search string here is English. A review that
   searches only English says so in its limitations; this plugin cannot fix the
   underlying restriction.
-- **Living reviews.** `/literature-review:update` re-runs a search and extends a
-  review. It does not implement living-review methodology with its surveillance
-  intervals and update triggers.
+- **Living reviews.** Re-running a search and extending an existing review is
+  supported. Living-review methodology — surveillance intervals, update triggers,
+  continuous incorporation — is not.
 - **Qualitative evidence synthesis** — meta-ethnography, thematic synthesis,
   framework synthesis — as methods in their own right. CASP is named; the methods are
   not implemented.
