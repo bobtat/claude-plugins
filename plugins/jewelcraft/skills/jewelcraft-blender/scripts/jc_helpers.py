@@ -382,7 +382,10 @@ def _gems():
             ob = instancer = dup.object.original
         if "gem" not in ob or ob.type != 'MESH' or not instancer.visible_get():
             continue
-        label = ob.name if not dup.is_instance else f"{ob.name} [{instancer.name} #{dup.persistent_id[0]}]"
+        # Geometry-nodes instances all share persistent_id[0]; the index is further in,
+        # followed by 0x7fffffff padding.
+        pid = ".".join(str(i) for i in dup.persistent_id if i != 2147483647)
+        label = ob.name if not dup.is_instance else f"{ob.name} [{instancer.name} #{pid}]"
         out.append((label, ob, dup.matrix_world.copy()))
     return out
 
@@ -406,28 +409,63 @@ def gems_in_scene():
     return out
 
 
+def _inside(bm, tree):
+    """Whether bm's first vertex is inside the closed convex mesh behind `tree`."""
+    co = next(iter(bm.verts)).co
+    loc, normal, _, _ = tree.find_nearest(co)
+    return loc is not None and (co - loc).dot(normal) < 0
+
+
+def _clip_volume(bm_a, bm_b):
+    """Volume of a ∩ b by clipping a with every face plane of b. Exact when b is convex,
+    as JewelCraft's gems are apart from the heart's notch. Done in bmesh because a
+    Boolean on temporary objects costs a full scene re-evaluation per pair: about 1 s
+    each in a ring whose seat Boolean holds 150 cutters."""
+    c = bm_a.copy()
+    for f in bm_b.faces:
+        if not c.verts:
+            break
+        res = bmesh.ops.bisect_plane(c, geom=c.verts[:] + c.edges[:] + c.faces[:],
+                                     plane_co=f.calc_center_median(), plane_no=f.normal,
+                                     clear_outer=True)
+        cut = [e for e in res["geom_cut"] if isinstance(e, bmesh.types.BMEdge)]
+        if cut:
+            bmesh.ops.holes_fill(c, edges=cut, sides=0)
+    v = 0.0
+    if c.faces:
+        bmesh.ops.recalc_face_normals(c, faces=c.faces[:])
+        v = c.calc_volume(signed=False)
+    c.free()
+    return v
+
+
 def stone_overlaps(threshold=0.1):
     """Pairs of stones that overlap or are closer than `threshold` mm, measured on the
     meshes. JewelCraft's own check treats each stone as a circle of half its larger
     side, which misses the corners of square and emerald cuts, and it only compares
     stones whose centres are within 4 mm."""
+    from mathutils.kdtree import KDTree
     gems = _gems()
     trees, bms, rads = [], [], []
-    for _, o, M in gems:
+    kd = KDTree(len(gems))
+    for i, (_, o, M) in enumerate(gems):
         bm = eval_bm(o, M)
         trees.append(BVHTree.FromBMesh(bm))
         bms.append(bm)
         rads.append(_gem_dims(o, M).length / 2)
+        kd.insert(M.translation, i)
+    kd.balance()
     flagged = []
     for i in range(len(gems)):
-        for j in range(i + 1, len(gems)):
-            dist = (gems[i][2].translation - gems[j][2].translation).length
-            if dist > rads[i] + rads[j] + threshold:
+        reach = rads[i] + (max(rads) if rads else 0) + threshold
+        for _, j, dist in sorted(kd.find_range(gems[i][2].translation, reach), key=lambda x: x[1]):
+            if j <= i or dist > rads[i] + rads[j] + threshold:
                 continue
             row = {"a": gems[i][0], "b": gems[j][0], "centre_distance_mm": round(dist, 3)}
-            if trees[i].overlap(trees[j]):
-                row["overlap_mm3"] = round(overlap_volume(gems[i][1], gems[j][1],
-                                                          gems[i][2], gems[j][2]), 4)
+            if trees[i].overlap(trees[j]) or _inside(bms[i], trees[j]) or _inside(bms[j], trees[i]):
+                v = _clip_volume(bms[i], bms[j])
+                # Faces that only touch register as intersecting triangles.
+                row["overlap_mm3" if v > 1e-6 else "gap_mm"] = round(v, 4) if v > 1e-6 else 0.0
                 flagged.append(row)
                 continue
             gap = min(min(t.find_nearest(v.co)[3] for v in bm.verts)
