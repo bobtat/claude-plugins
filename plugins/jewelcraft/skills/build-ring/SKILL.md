@@ -20,10 +20,12 @@ workflow yet.** See `../jewelcraft-blender/references/heads.md`, and tell the us
    - stone cut, stone, and size (L × W for non-round stones)
    - prong count, prong diameter and heights (`z1`, `z2`). JewelCraft's preset is 0.8 mm
      for every stone of 2.5 mm or more, which is light for a large centre stone; ask
-     rather than accept it.
+     rather than accept it. `z1` must let the tip reach at least halfway up the crown.
    - whether the prongs will be pre-notched in the model or notched by the setter
      (`../jewelcraft-blender/references/prongs.md`, "How much grip is enough")
    - metal
+   - whether the caster compensates for shrinkage, or wants the model sized up. The band
+     is sized in step 1, so settle this first (`jewelcraft:print-cast-check`, step 3).
 3. Build in the user's scene only if they want it there; otherwise use a new scene
    (`../jewelcraft-blender/references/blender-essentials.md` §1). Prefix object names ("R1 Band", "R1 Gem", …)
    so parts are easy to find.
@@ -46,8 +48,12 @@ workflow yet.** See `../jewelcraft-blender/references/heads.md`, and tell the us
 
 ## 2. Stone [verified]
 
-1. Set the 3D cursor where the stone sits, then with the override:
-   `bpy.ops.object.jewelcraft_gem_add(cut=..., stone=..., size=...)`.
+1. Set the 3D cursor where the stone's girdle sits, then with the override:
+   `bpy.ops.object.jewelcraft_gem_add(cut=..., stone=..., size=...)`. The girdle has to
+   sit high enough that the pavilion clears the finger: the stone reaches below its
+   girdle by roughly 0.4–0.55 × its width (a cushion's culet is 0.52 × size down). A girdle 1 mm
+   above a 1.8 mm band put the culet of a 5.8 mm cushion 0.2 mm into the finger hole.
+   [verified]
    - `size` is the length (Y) for oval, pear, marquise, emerald, baguette and triangle,
      and the width (X) for heart, trillion and trilliant
      (`../jewelcraft-blender/references/gems.md`).
@@ -55,7 +61,8 @@ workflow yet.** See `../jewelcraft-blender/references/heads.md`, and tell the us
      `gem.scale.y *= L / W`.
 2. **Check:** `H["gems_in_scene"]()` for size and carats, and
    `H["finger_clearance"](gem, bar)`: `clearance_mm` must be positive, or the culet will
-   touch the finger. Agree a margin with the user.
+   touch the finger. Agree a margin with the user. If it's short, move the gem out along
+   the ring's radius by the shortfall plus the margin, and check again.
 
 ## 3. Prongs [verified]
 
@@ -71,7 +78,10 @@ workflow yet.** See `../jewelcraft-blender/references/heads.md`, and tell the us
 
 Model the head (gallery rails, basket or cathedral arches) with ordinary Blender modeling,
 using `../jewelcraft-blender/references/heads.md` for anatomy and starting proportions. Say it's unverified.
-Measure it: prong grip, collisions with the stone, wall thickness.
+Something has to join the prongs to the band: corner prongs on an elongated stone sit
+beyond a narrow band's edges and otherwise float, which `print_check` reports as more
+than one piece. Measure the head: prong grip, collisions with the stone, wall thickness,
+and `H["finger_clearance"](head, bar)` for anything under the stone.
 
 ## 5. Seat [verified]
 

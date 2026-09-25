@@ -30,4 +30,7 @@ description: Verifies a stone seat in a Blender/JewelCraft design, checking that
        actually positioned in the metal, and the check proves nothing.
      - `metal_nonmanifold_edges` should be 0; anything else means the Boolean left holes
        or bad geometry.
-5. Suggest next steps only from what the numbers show.
+5. If the metal is a ring band, also run `H["finger_clearance"](gem, band)`:
+   `clearance_mm` must be positive, or the culet will touch the finger. A seat can be
+   clean while the stone still pokes through the band.
+6. Suggest next steps only from what the numbers show.
