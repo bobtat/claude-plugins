@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1172 538" role="img" aria-labelledby="ttl dsc">
 <title id="ttl">PRISMA 2020 flow diagram</title>
-<desc id="dsc">PRISMA 2020 flow. 142 records identified from databases and registers and 12 from other methods; 111 screened; 30 studies included.</desc>
+<desc id="dsc">PRISMA 2020 flow. 142 records identified from databases and registers and 12 from other methods; 111 screened; 27 studies included.</desc>
 <style>.bx{fill:none;stroke:#44506b;stroke-width:1.2}.t{font:11.5px system-ui,-apple-system,Segoe UI,sans-serif;fill:#44506b}.hd{font:600 12px system-ui,sans-serif;fill:#44506b}.bandbx{fill:none;stroke:#6b7488;stroke-width:1}.band{font:600 11px system-ui,sans-serif;fill:#6b7488}.ar{stroke:#44506b;stroke-width:1.2;fill:none;marker-end:url(#a)}.fn{font:11px system-ui,sans-serif;fill:#6b7488}@media (prefers-color-scheme: dark){.bx{stroke:#9fb0d0}.t,.hd{fill:#9fb0d0}.bandbx{stroke:#8f9ab4}.band,.fn{fill:#8f9ab4}.ar{stroke:#9fb0d0}#ah{fill:#9fb0d0}}</style>
 <defs><marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path id="ah" d="M0 0 L8 4 L0 8 z" fill="#44506b"/></marker></defs>
 <text class="hd" x="320" y="42" text-anchor="middle">Identification of studies via databases and registers</text>
@@ -37,7 +37,7 @@
 <rect class="bx" x="910" y="252" width="250" height="32" rx="2"/><text class="t" x="919" y="272.5">Reports not retrieved (n = 1)</text>
 <rect class="bx" x="628" y="310" width="250" height="32" rx="2"/><text class="t" x="637" y="330.5">Reports assessed for eligibility (n = 11)</text>
 <rect class="bx" x="910" y="310" width="250" height="60" rx="2"/><text class="t" x="919" y="330.5">Reports excluded:</text><text class="t" x="919" y="344.5">  Wrong population (n = 2)</text><text class="t" x="919" y="358.5">  Duplicate of included report (n = 1)</text>
-<rect class="bx" x="54" y="418" width="310" height="46" rx="2"/><text class="t" x="63" y="438.5">Studies included in review (n = 30)</text><text class="t" x="63" y="452.5">Reports of included studies (n = 33)</text>
+<rect class="bx" x="54" y="418" width="310" height="46" rx="2"/><text class="t" x="63" y="438.5">Studies included in review (n = 27)</text><text class="t" x="63" y="452.5">Reports of included studies (n = 30)</text>
 <text class="fn" x="54" y="490">* Consider, if feasible, reporting the number of records identified from each database or register searched,</text>
 <text class="fn" x="54" y="503">rather than the total across all of them.</text>
 <text class="fn" x="54" y="516">** If automation tools were used, indicate how many records were excluded by a human and how many were</text>

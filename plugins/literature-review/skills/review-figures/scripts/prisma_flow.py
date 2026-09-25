@@ -97,10 +97,19 @@ def check_arithmetic(d):
             f"but 'assessed' totals {tot_assessed}")
     reasons = sum(d.get("excluded_with_reasons", {}).values())
     reasons += sum(d.get("other_excluded_with_reasons", {}).values())
-    if tot_assessed - reasons != d["included_studies"]:
+    # The flow counts reports, not studies: assessed - excluded = reports of the
+    # included studies. One study can have several reports (a preprint and its
+    # published version), so studies <= reports, and the subtraction closes
+    # against the report count.
+    reports = d.get("included_reports", d["included_studies"])
+    if tot_assessed - reasons != reports:
         errs.append(
             f"assessed ({tot_assessed}) - excluded with reasons ({reasons}) = "
-            f"{tot_assessed - reasons}, but 'included_studies' is {d['included_studies']}")
+            f"{tot_assessed - reasons}, but reports of included studies is {reports}")
+    if d["included_studies"] > reports:
+        errs.append(
+            f"included_studies ({d['included_studies']}) exceeds reports of included "
+            f"studies ({reports}); every study has at least one report")
     if other and "other_sought" not in d:
         errs.append("other_methods supplied without other_sought / other_assessed chain")
     return errs
