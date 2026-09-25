@@ -1,4 +1,6 @@
-# JewelCraft 3.x differences [source: v3.0.1; nothing here has been run]
+# JewelCraft 3.x differences [source]
+
+Read in the v3.0.1 source; nothing here has been run.
 
 - Requires Blender 4.5+. Adds headless support. Gem, prong, cutter, distribute and
   microprong tools no longer need the 3D view, **but that doesn't make them work from a

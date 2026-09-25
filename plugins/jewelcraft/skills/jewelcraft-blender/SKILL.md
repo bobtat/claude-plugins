@@ -76,7 +76,7 @@ reference files:
 | `references/prongs.md` | What each prong setting does, presets, corner-prong formula for elongated cushions |
 | `references/cutters-and-seats.md` | Cutter anatomy, square-cutter fix, cutting and checking a seat |
 | `references/weight-and-reports.md` | Weight tool, per-scene alloy list, densities, design report, overlap blind spot |
-| `references/heads.md` | Head, basket and cathedral anatomy, bench proportions, sources (no tested workflow yet) |
+| `references/heads.md` | Head, basket and cathedral anatomy, bench proportions, sources [untested] |
 | `references/jewelcraft-3x.md` | What changes in JewelCraft 3.x |
 | `references/helpers.md` | The helper functions: arguments, outputs, how to read them |
 
