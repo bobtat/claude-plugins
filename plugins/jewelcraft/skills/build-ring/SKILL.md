@@ -47,7 +47,9 @@ workflow yet.** See `../jewelcraft-blender/references/heads.md`, and tell the us
      for heart and triangle cuts (`../jewelcraft-blender/references/gems.md`).
    - For an elongated cushion or other square-shaped cut: add at the width, then
      `gem.scale.y *= L / W`.
-2. **Check:** `H["gems_in_scene"]()` for size and carats.
+2. **Check:** `H["gems_in_scene"]()` for size and carats, and
+   `H["finger_clearance"](gem, bar)`: `clearance_mm` must be positive, or the culet will
+   touch the finger. Agree a margin with the user.
 
 ## 3. Prongs [verified]
 

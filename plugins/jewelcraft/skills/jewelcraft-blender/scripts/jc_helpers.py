@@ -483,13 +483,33 @@ def prong_report(gem, prongs, prong_diameter=None):
     rows.sort(key=lambda x: x["angle_from_+Y_deg"])
     out = {"gem": gem.name, "gem_dims_xyz": tuple(round(x, 3) for x in gem.dimensions),
            "prongs_at_girdle": rows}
+    notes = []
     if not rows:
-        out["note"] = "No prong crosses the girdle plane."
+        notes.append("No prong crosses the girdle plane.")
     elif any(r["bite_mm"] <= 0 for r in rows):
-        out["note"] = "At least one prong does not touch the girdle."
+        notes.append("At least one prong does not touch the girdle.")
     elif any(r["bite_pct_of_diameter"] < MIN_BITE_FRAC * 100 for r in rows):
-        out["note"] = ("At least one prong grips less than 30% of its thickness, under the "
-                       "30-50% bench range.")
+        notes.append("At least one prong grips less than 30% of its thickness, under the "
+                     "30-50% bench range.")
+    if rows:
+        bm = eval_bm(gem, frame.inverted() @ gem.matrix_world)
+        crown = max(v.co.z for v in bm.verts)
+        bm.free()
+        bm = eval_bm(prongs, frame.inverted() @ prongs.matrix_world)
+        for r in rows:
+            r["tip_above_girdle_mm"] = 0.0
+        for v in bm.verts:
+            if v.co.z > 0:
+                r = min(rows, key=lambda r: math.hypot(v.co.x - r["centre"][0],
+                                                       v.co.y - r["centre"][1]))
+                r["tip_above_girdle_mm"] = max(r["tip_above_girdle_mm"], round(v.co.z, 3))
+        bm.free()
+        out["crown_height_mm"] = round(crown, 3)
+        if any(r["tip_above_girdle_mm"] < crown / 2 for r in rows):
+            notes.append("At least one prong tip is below halfway up the crown, too short to "
+                         "fold over the stone.")
+    if notes:
+        out["note"] = " ".join(notes)
     L, W = gem.dimensions.y, gem.dimensions.x
     if gem["gem"]["cut"] == "CUSHION" and rows:
         d = prong_diameter or sum(r["diameter_mm"] for r in rows) / len(rows)
@@ -633,6 +653,23 @@ def _ring_fit(band):
                     "max_dev": float(np.max(np.abs(np.hypot(*(S[keep] - c).T) - r))),
                     "rejected": int((~keep).sum()), "min_opening_r": float(rad_all.min())}
     return best
+
+
+def finger_clearance(ob, band):
+    """How far `ob` (a stone's culet, a gallery) stays outside the finger hole of `band`.
+    Negative = it reaches into the hole and will touch the finger."""
+    import numpy as np
+    ob, band = (get(x) if isinstance(x, str) else x for x in (ob, band))
+    f = _ring_fit(band)
+    bm = eval_bm(ob)
+    P = np.array([v.co[:] for v in bm.verts])
+    bm.free()
+    d = P - f["centre"]
+    radial = np.linalg.norm(d - np.outer(d @ f["axis"], f["axis"]), axis=1)
+    i = int(radial.argmin())
+    return {"object": ob.name, "band": band.name,
+            "clearance_mm": round(float(radial[i]) - f["r"], 3),
+            "closest_point": tuple(round(float(x), 3) for x in P[i])}
 
 
 # Japanese sizes (JCS): 1 = 13.00 mm inside diameter, +1/3 mm per size. JewelCraft 2.18's
