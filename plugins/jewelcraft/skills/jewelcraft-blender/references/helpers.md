@@ -29,7 +29,7 @@ geometry. [verified]
 | `overlap_volume(a, b)` | Volume of a ∩ b (mm³). 0 = no collision. |
 | `union_stats(objects)` | (volume, non-manifold edges) of the union. |
 | `volume_nm(ob)` | (volume, signed volume, non-manifold edges). Negative signed volume = normals inward. |
-| `min_wall(ob)` | (thinnest wall mm, location). Casts a ray from each face centre inward. **Knife edges and rims read as thin walls:** a seat rim meeting the top surface read 0.117 mm on a test plate. Look at the location before calling it a defect. |
+| `min_wall(ob)` | (thinnest wall mm, location). Casts a ray from each face centre inward, so on a coarse mesh the thinnest point can fall between samples; subdivide a copy (or add a Subdivision/Remesh modifier to it) before trusting a low-poly result. **Knife edges and rims read as thin walls:** a seat rim meeting the top surface read 0.117 mm on a test plate. Look at the location before calling it a defect. |
 | `print_check(objects, min_wall_mm=None, parts_that_must_not_touch=(), stl_path=None)` | Per object: volume, non-manifold edges, inside-out, thinnest wall and where, scale. Also collisions for the listed pairs (names or objects), units, and (with `stl_path`) STL export checked against the model's size and triangle count. `problems` is the list to report; `warnings` (unapplied scale) don't block printing. Parts hidden in the viewport block the export instead of being silently left out. Export works with or without a 3D Viewport. [verified] |
 | `stl_info(path)`, `stl_bbox(path)` | Size and triangle count of a binary STL (to confirm it's in mm and complete). |
 | `select_only(*obs)`, `ctx()`, `get(name)`, `jc(".lib.gemlib")`, `addon_name()`, `jc_version()` | Utilities. `ctx()` returns the override dict for `temp_override`. |

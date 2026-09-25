@@ -33,7 +33,9 @@ description: Checks a jewelry model (ring, pendant, setting) in Blender before 3
    non-manifold edges, inside-out, thinnest wall and where, scale.
    - **Thinnest wall:** the location matters. Knife edges and seat rims read as very thin
      walls (a seat rim measured 0.117 mm on a test plate). Say where it is and whether it
-     looks like a rim or a real thin wall.
+     looks like a rim or a real thin wall. It samples face centres only, so on a
+     low-poly part say the true minimum may be thinner, and offer to check a subdivided
+     copy.
    - Non-manifold or inside-out parts aren't printable as they are. Suggest fixes (Boolean
      union with Exact, voxel Remesh, recalculate normals) and apply them only with the
      user's agreement, on a copy.
