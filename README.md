@@ -35,3 +35,4 @@ Then install a plugin:
 
 - `.claude-plugin/marketplace.json` — the marketplace manifest
 - `plugins/<name>/` — one directory per plugin, each with its own `.claude-plugin/plugin.json`
+- `tests/jewelcraft-tests/` — Blender tests for the `jewelcraft` plugin's helper script (not shipped with the plugin)
