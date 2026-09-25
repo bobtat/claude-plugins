@@ -80,11 +80,21 @@ def get(name):
 # ---------------------------------------------------------------- geometry basics
 
 def eval_bm(ob, matrix=None):
-    """BMesh of the evaluated object, transformed by `matrix` (default: world)."""
+    """BMesh of the evaluated object (mesh, curve, text or metaball), transformed by
+    `matrix` (default: world)."""
     dg = bpy.context.evaluated_depsgraph_get()
+    ob_eval = ob.evaluated_get(dg)
     bm = bmesh.new()
-    bm.from_object(ob, dg)
-    bm.transform(matrix if matrix is not None else ob.matrix_world)
+    me = ob_eval.to_mesh()
+    if me is not None:
+        bm.from_mesh(me)
+    ob_eval.to_mesh_clear()
+    m = matrix if matrix is not None else ob.matrix_world
+    bm.transform(m)
+    # A mirroring matrix turns the faces inside out; flip them back so normals and
+    # signed volume describe the shape, not the transform.
+    if m.to_3x3().determinant() < 0:
+        bmesh.ops.reverse_faces(bm, faces=bm.faces[:])
     return bm
 
 
@@ -200,17 +210,26 @@ class TempObjects:
     def __enter__(self):
         self.coll = bpy.data.collections.new("JC_TMP")
         bpy.context.scene.collection.children.link(self.coll)
-        self.obs = []
+        self.obs, self.colls = [], []
         return self
 
-    def copy_eval(self, ob, name="JC_TMP"):
-        dg = bpy.context.evaluated_depsgraph_get()
-        me = bpy.data.meshes.new_from_object(ob.evaluated_get(dg))
+    def copy_eval(self, ob, name="JC_TMP", matrix=None, coll=None):
+        """Mesh copy of the evaluated object with its world transform baked in, so
+        shear from parents and mirroring survive the copy."""
+        bm = eval_bm(ob, matrix)
+        me = bpy.data.meshes.new(name)
+        bm.to_mesh(me)
+        bm.free()
         c = bpy.data.objects.new(name, me)
-        self.coll.objects.link(c)
-        c.matrix_world = ob.matrix_world.copy()
+        (coll or self.coll).objects.link(c)
         self.obs.append(c)
         return c
+
+    def sub_collection(self, name="JC_TMP_OPERANDS"):
+        coll = bpy.data.collections.new(name)
+        self.coll.children.link(coll)
+        self.colls.append(coll)
+        return coll
 
     def copy_original(self, ob, name="JC_TMP"):
         """Copy of the object's own mesh with no modifiers."""
@@ -221,44 +240,53 @@ class TempObjects:
         return c
 
     def __exit__(self, *exc):
+        datas = [o.data for o in self.obs if o.data is not None]
         for o in self.obs:
-            me = o.data
             bpy.data.objects.remove(o, do_unlink=True)
-            if me is not None and me.users == 0:
-                bpy.data.meshes.remove(me)
+        bpy.data.batch_remove([d for d in datas if d.users == 0])
+        for coll in self.colls:
+            bpy.data.collections.remove(coll)
         bpy.data.collections.remove(self.coll)
         # Without this, view_layer.objects can briefly yield None entries.
         bpy.context.view_layer.update()
         return False
 
 
-def _boolean(target, other, op):
+def _boolean(target, op, other=None, collection=None):
     md = target.modifiers.new("JC_" + op, 'BOOLEAN')
     md.operation = op
     md.solver = 'EXACT'
-    md.object = other
+    # Without self-intersection handling, a part that overlaps itself (a head joined
+    # into the band) is counted twice or gives an undefined result.
+    md.use_self = True
+    if collection is not None:
+        md.operand_type = 'COLLECTION'
+        md.collection = collection
+    else:
+        md.object = other
     return md
 
 
-def overlap_volume(a, b):
+def overlap_volume(a, b, matrix_a=None, matrix_b=None):
     """Volume (mm3) of a ∩ b, using evaluated copies. 0 = no collision."""
     with TempObjects() as t:
-        ca, cb = t.copy_eval(a), t.copy_eval(b)
+        ca, cb = t.copy_eval(a, matrix=matrix_a), t.copy_eval(b, matrix=matrix_b)
         cb.hide_set(True)
-        _boolean(ca, cb, 'INTERSECT')
+        _boolean(ca, 'INTERSECT', other=cb)
         bpy.context.view_layer.update()
         v, _, _ = volume_nm(ca)
     return v
 
 
 def union_stats(obs):
-    """(volume, non-manifold edges) of the union of evaluated copies of `obs`."""
+    """(volume, non-manifold edges) of the union of evaluated copies of `obs`. Also
+    resolves overlaps inside each object, including when there is only one."""
     with TempObjects() as t:
-        copies = [t.copy_eval(o) for o in obs]
-        base = copies[0]
-        for c in copies[1:]:
-            c.hide_set(True)
-            _boolean(base, c, 'UNION')
+        base = t.copy_eval(obs[0])
+        ops = t.sub_collection()
+        for o in obs[1:]:
+            t.copy_eval(o, coll=ops).hide_set(True)
+        _boolean(base, 'UNION', collection=ops)
         bpy.context.view_layer.update()
         v, _, nm = volume_nm(base)
     return v, nm
@@ -448,7 +476,7 @@ def weigh(objs, union=True):
         parts.append({"name": o.name, "volume_mm3": round(v, 3), "nonmanifold_edges": nm,
                       "inside_out": vs < 0})
     raw = sum(p["volume_mm3"] for p in parts)
-    if union and len(obs) > 1:
+    if union:
         vol, nm = union_stats(obs)
     else:
         vol, nm = raw, sum(p["nonmanifold_edges"] for p in parts)
