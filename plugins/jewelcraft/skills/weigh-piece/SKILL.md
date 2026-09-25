@@ -16,7 +16,12 @@ description: Calculates the metal volume and weight of a jewelry piece in Blende
    once, and changes nothing.
 4. Report:
    - The volume in mm³, and the weight in the alloy the user cares about (ask if unknown;
-     18K yellow gold is a sensible first line). Put the full alloy list in a short table.
+     18K yellow gold is a sensible first line). Put the full alloy list in a short table
+     with each alloy's `composition`.
+   - Give weights as approximate. A density belongs to one specific alloy; the same
+     name from another supplier can differ by several percent (Pt950 with iridium vs.
+     ruthenium, white gold with nickel vs. palladium). For a quote, ask for the supplier's
+     specific gravity and recompute: grams = `volume_mm3` × density / 1000.
    - If `overlap_counted_twice_mm3` is significant, say the parts overlap and that
      JewelCraft's own weight tool would have overstated the weight by that much.
    - `densities_from`: "scene" = the file's own alloy list; "built-in defaults" = the

@@ -16,8 +16,16 @@
 - JewelCraft 2.18.1 default list (g/cm³): 24K 19.32, 22K 17.86, 18K yellow 15.53,
   14K yellow 13.05, 10K yellow 11.47, 18K white Pd 15.66, 18K white Ni 14.69,
   14K white Pd 14.60, 14K white Ni 12.61, 10K white 10.99, 18K rose 15.02,
-  14K rose 13.03, 10K rose 11.52, Pt950 20.70, Pt900 21.54, Pd950 12.16,
-  sterling 10.36. [verified]
+  14K rose 13.03, 10K rose 11.52, Pt950 (Pt/Ru) 20.70, Pt900 (Pt/Ir) 21.54,
+  Pd950 (Pd/Ru) 12.16, sterling 10.36. Each item also has a `composition`, and
+  `H["weigh"]` returns it with every weight. [verified]
+- **A density is one alloy, not every alloy with that name.** Pt950 ranges from about
+  19.8 (Pt/Pd) to 21.45 g/cm³ (Pt/Ir), so a "Pt950" weight can be several percent off,
+  and Pt900/Ir really is heavier than Pt950/Ru. White and rose golds vary with their
+  master alloy in the same way. (Plumb Club, platinum alloys:
+  https://plumbclub.com/platinum-alloys/) [cited] For a quote, use the specific gravity
+  of the user's actual alloy from their supplier, and give weights as approximate
+  (± a few percent), not to 0.01 g. [guidance]
 - This is the weight of the model as modelled. The metal a caster needs, and the
   finished piece's weight, will differ (sprues, finishing). Present it as the model's
   weight. [guidance]
