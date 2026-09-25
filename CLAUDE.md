@@ -6,6 +6,8 @@ A Claude Code plugin marketplace. See `README.md` for the repository layout.
 
 Markdown and JSON only — no package manager, no test runner, no lint step, no CI. Validation is reading the files and checking the manifests parse. Don't go looking for a build command.
 
+**One exception: `jewelcraft`'s helper script.** After any change to `plugins/jewelcraft/skills/jewelcraft-blender/scripts/jc_helpers.py`, run `python tests/jewelcraft-tests/run.py --blender <path to blender.exe>` and don't commit until every file passes. The script measures geometry, so its bugs come out as wrong-but-believable numbers rather than errors; the tests build shapes with known answers in background Blender. They need Blender with JewelCraft 2.18 enabled, so they run only on a machine that has it. Bump `HELPERS_VERSION` in the same change. See `tests/jewelcraft-tests/README.md`.
+
 ## Editing a plugin
 
 ```
