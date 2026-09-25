@@ -17,8 +17,7 @@ which calls `addon_utils.module_bl_info`. [verified]
 - These fail on a plain EXEC call because they compute required values in `invoke()`:
   `prongs_add` (`gem_dim`), `cutter_add`, `lattice_profile` (`BBox`), `lattice_project`,
   `curve_redistribute`, `microprong_cutter_add`, `resize` (`dim_orig`), and
-  `gem_recover` (modal). [verified for prongs_add and lattice_profile; source for the
-  rest]
+  `gem_recover` (modal). prongs_add and lattice_profile [verified]; the rest [source]
 - `curve_distribute` from EXEC usually **does nothing and returns FINISHED**: with an
   empty size list it exits early. It raises only if an earlier click left sizes behind.
   [source]
@@ -35,8 +34,8 @@ which calls `addon_utils.module_bl_info`. [verified]
 | `object.jewelcraft_move_over_under(position='OVER', individual=True)` | Puts each selected deformed mesh's bottom on the curve. `individual=True` needs no override. The default acts on the active object and would move a selected curve too. [verified] |
 | `object.jewelcraft_weight_display()` | Volume + weight, one `Info:` line per enabled alloy in the current scene's list. Works on meshes, curves, text and metaballs. Prefer `H["weigh"]`, which handles overlaps. [verified] |
 | `wm.jewelcraft_design_report(filepath=..., file_format='JSON', use_preview=False)` | Writes a report file **and opens it in the web browser** (unless Blender runs in background mode). Prefer `H["stone_report"]()`, which returns the same data with no file or browser. [verified] |
-| `object.jewelcraft_gem_edit(cut, stone, use_force, use_id_only)` | Always pass both `cut` and `stone`; they reset to ROUND/DIAMOND otherwise. Arguments differ in 3.x. See gems.md before using. [verified] |
-| `object.jewelcraft_gem_select_overlapping(threshold=0.1)` | Selects gems closer than `threshold` mm, **but only compares gems whose centres are within 4 mm** (two overlapping 8 mm rounds 6 mm apart were missed), and treats each stone as a circle. `H["stone_overlaps"]()` checks the meshes. [verified] |
+| `object.jewelcraft_gem_edit(cut, stone, use_force, use_id_only)` | Always pass both `cut` and `stone`; they reset to ROUND/DIAMOND otherwise [source]. Arguments differ in 3.x. See gems.md before using. `use_id_only` [verified] |
+| `object.jewelcraft_gem_select_overlapping(threshold=0.1)` | Selects gems closer than `threshold` mm, **but only compares gems whose centres are within 4 mm** (two overlapping 8 mm rounds 6 mm apart were missed) [verified], and treats each stone as a circle [source]. `H["stone_overlaps"]()` checks the meshes. |
 | `scene.jewelcraft_scene_units_set()` | Sets 1 unit = 1 mm and the grid scale. Needs the viewport override. [verified] |
 
 ## Prongs and cutters: builder recipe (2.18.1 only)

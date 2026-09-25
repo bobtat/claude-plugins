@@ -43,9 +43,10 @@
   - `stone_overlaps`
   [verified]
 - **JewelCraft's overlap check only compares stones whose centres are within 4 mm.** Two
-  8 mm rounds 6 mm apart (5.7 mm³ of overlap) produced no warning. It also treats each
-  stone as a circle of half its larger side, so two 8 mm princesses touching corner to
-  corner 10.5 mm apart are never compared. `stone_overlaps` checks the meshes and caught
-  both, plus stones under 0.1 mm apart (JewelCraft's own warning distance). [verified]
+  8 mm rounds 6 mm apart (5.7 mm³ of overlap) produced no warning. [verified] It also
+  treats each stone as a circle of half its larger side, so square corners are missed
+  even within 4 mm. [source] `stone_overlaps` checks the meshes: it caught the 8 mm
+  rounds, 8 mm princesses corner to corner 10.5 mm apart, and stones under 0.1 mm apart
+  (JewelCraft's own warning distance). [verified]
 - The file-based operator (`wm.jewelcraft_design_report`) opens the report in the web
   browser. Only use it if the user wants the HTML/JSON file.

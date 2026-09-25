@@ -53,18 +53,18 @@ Facts in the reference files are tagged:
 - **[cited]**: from a named outside source (a standard, supplier or bench reference).
 - **[guidance]** / **[untested]**: not yet confirmed.
 
-The helpers were tested against known geometry: prong grip, cutter fit, seat clearance,
-union weights, ring size with and without a head, stone overlaps, and STL size.
+The helpers were tested against known geometry: prong grip and tip height, cutter fit,
+seat clearance, union weights, ring size (rotated, coarse, open, comfort-fit, with heads
+and bezels), culet clearance, stone overlaps, loose pieces, and STL size.
 
 ## Known limits
 
 - The head, gallery and cathedral workflow is not tested yet;
   `skills/jewelcraft-blender/references/heads.md` gives anatomy, starting proportions and
   sources.
-- Prong grip is checked against a 30–50% notch depth (Stuller's bench guidance). No
-  sourced minimum for casting wall thickness, shrinkage or finishing allowance is
-  included; `jewelcraft:print-cast-check` asks for them, since they depend on your caster or
-  printer.
+- Prong grip is checked against a 30–50% notch depth (Stuller's bench guidance). Casting
+  wall thickness, shrinkage and finishing allowance depend on your caster or printer, so
+  `jewelcraft:print-cast-check` asks for them rather than assuming values.
 - JewelCraft's own overlap check skips stones whose centres are ≥ 4 mm apart and treats
   each stone as a circle, missing square corners; `jewelcraft:stone-report` checks the
   meshes instead.

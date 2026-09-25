@@ -13,7 +13,7 @@ description: Measures the actual inside diameter of a ring band in Blender and r
    `H["size_to_diameter"](size, "US")`. Formats: US, UK (letter index: A = 0, so N = 13),
    CH, JP, HK. US, UK, CH and HK come from JewelCraft's own size table (US 8 =
    56.965 mm / 18.1324 mm). JP is the JCS scale (号: 1 = 13.00 mm inside diameter,
-   +1/3 mm per size). JewelCraft's own JP table drifts up to 0.5 mm from it above size 16,
+   +1/3 mm per size). JewelCraft's own JP table drifts up to about 0.55 mm from it (JP 1, and JP 17–27),
    so don't use JewelCraft's JP conversion. JIS S 4700 is a different, circumference-based
    scale; if the user means that one, ask. (JCS table: https://okuraya.jp/column/ring-size/)
 3. **Model → size:**

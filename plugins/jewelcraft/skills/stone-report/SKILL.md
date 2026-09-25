@@ -13,8 +13,9 @@ description: Lists every stone in the open Blender/JewelCraft design with cut, s
    line from the `jewelcraft:jewelcraft-blender` skill). It reads the whole visible view
    layer and creates nothing permanent.
 3. Report:
-   - A table of stones: stone, cut, size (length × width, or diameter), ct each, qty,
-     ct total.
+   - A table of stones: stone, cut, size (length × width, width × length for heart,
+     trillion and trilliant, or a single number for round and square-symmetric cuts),
+     ct each, qty, ct total.
    - Total carats (`total_ct`). Say these are JewelCraft's volume-based estimates, not
      graded weights.
    - JewelCraft's `warnings`, explained.
