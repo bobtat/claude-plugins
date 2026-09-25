@@ -71,31 +71,37 @@ traffic-light figure, and any flow narrative without `figures/prisma-flow.svg`.
 
 ### PRISMA flow diagram
 
-Four bands, top to bottom, with exclusion boxes branching right. Grey boxes are
-**removed when not applicable**, not left at zero — a published rule of the standard.
+Follow the official template labels verbatim — `prisma.md` carries them, extracted from
+the CC BY 4.0 `.docx` templates. Two structural decisions come first:
+
+1. **v1 or v2.** A review that used citation searching, websites or organisations needs
+   **v2**, which adds a second column, "Identification of studies via other methods",
+   with its own sought / not-retrieved / assessed / excluded chain merging into the
+   shared Included box. **Snowballing is citation searching**, so v2 is this plugin's
+   normal case.
+2. **The automation split.** The template footnote requires a review using automation
+   tools to report how many records a human excluded and how many the tools did. Agent
+   screening is an automation tool, so `Records excluded**` carries both numbers here,
+   always.
+
+Layout: phase rails down the left (**Identification**, **Screening**, **Included**),
+main chain in a column, exclusion boxes branching right, arrows between. Grey boxes are
+**removed when not applicable**, never left at zero. Reproduce both template footnotes
+beneath the diagram.
+
+**The arithmetic must close**, and `figure-author` recomputes it from the source file
+before drawing rather than transcribing numbers it was handed:
 
 ```
-Identification   [Records identified from:        ] → [Records removed before
-                 [  PubMed (n=84)                 ]    screening:
-                 [  arXiv  (n=41)                 ]      Duplicates (n=31)
-                 [  OpenAlex (n=17)               ]      Ineligible by automation (n=0)
-                            ↓
-Screening        [Records screened (n=111)        ] → [Records excluded (n=78)]
-                            ↓
-                 [Reports sought for retrieval (33)] → [Reports not retrieved (n=2)]
-                            ↓
-                 [Reports assessed for eligibility ] → [Reports excluded, with reasons:
-                 [  (n=31)                         ]      Wrong population (n=5)
-                            ↓                            Not primary research (n=3)
-                                                         No extractable outcome (n=1)
-Included         [Studies included (n=22)          ]
-                 [Reports of included studies (n=24)]
+identified (+ other methods) − removed before screening = screened
+screened − excluded                                     = sought for retrieval
+sought − not retrieved                                  = assessed for eligibility
+assessed − excluded with reasons                        = included
 ```
 
-**The arithmetic must close.** Screened − excluded = sought; sought − not retrieved =
-assessed; assessed − excluded = included. `literature-review:review-critic` recomputes it from
-`screening.csv`. A flow diagram whose numbers do not sum is the most visible defect a
-systematic review can ship.
+If it does not close, **the figure is not drawn**. Report the discrepancy instead — a
+diagram whose numbers do not sum is the most visible defect a systematic review can
+ship, and drawing it anyway launders a data error into a graphic.
 
 Exclusion reasons need a count each. A single "excluded (n=9)" box is non-compliant.
 
