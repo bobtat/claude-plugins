@@ -49,9 +49,12 @@ reference files:
 - **Adding an object changes the selection.** A new gem or size curve becomes the only
   selected and active object. Re-select before the next step. [verified]
 - **Some JewelCraft tools only work from a click in 2.18.1:** `prongs_add`,
-  `cutter_add`, `lattice_profile`, `lattice_project`, `curve_distribute`,
-  `curve_redistribute`, `microprong_cutter_add`. Build prongs and cutters with the builder
-  recipe in `references/operators.md`. [verified for prongs_add, lattice_profile]
+  `cutter_add`, `lattice_profile`, `lattice_project`, `curve_distribute` (does nothing,
+  without an error), `curve_redistribute`, `microprong_cutter_add`, `resize`. Build
+  prongs and cutters with the builder recipe in `references/operators.md`. [verified for
+  prongs_add, lattice_profile]
+- **`gem_edit` resets whatever you don't pass:** always give both `cut` and `stone`
+  (`references/gems.md`).
 - **Ring sizes:** always pass `diameter` to `size_curve_add` (from
   `H["size_to_diameter"](8, "US")`). `size_us=8` from a script gives an 18.00 mm curve
   instead of 18.13 mm. [verified]

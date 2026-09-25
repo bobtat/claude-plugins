@@ -33,8 +33,11 @@
 ## Stone report
 
 - `H["stone_report"]()` returns JewelCraft's design-report data with no file or browser:
-  - `gems`: stone, cut, color, size, ct, qty, ct_sum. Identical stones are grouped. Size
-    is [length, width], or a single number for symmetric cuts.
+  - `gems`: stone, cut, color, size, ct, qty, ct_sum. Identical stones are grouped.
+    `stone` and `cut` are display names ("Diamond", "Round"), not ids. Size is a single
+    number (the length) for round, square, asscher, flanders and octagon; `[width,
+    length]` for heart, trillion and trilliant; and `[length, width]` for every other
+    cut, including square cushions, princesses and radiants. [source]
   - `warnings`
   - `total_ct`
   - `stone_overlaps`
