@@ -315,6 +315,26 @@ def overlap_volume(a, b, matrix_a=None, matrix_b=None):
 def union_stats(obs):
     """(volume, non-manifold edges) of the union of evaluated copies of `obs`. Also
     resolves overlaps inside each object, including when there is only one."""
+    v, nm, _ = _union(obs)
+    return v, nm
+
+
+def _shell_count(bm):
+    bm.verts.index_update()
+    parent = list(range(len(bm.verts)))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+    for e in bm.edges:
+        parent[find(e.verts[0].index)] = find(e.verts[1].index)
+    return len({find(v.index) for v in bm.verts if v.link_faces})
+
+
+def _union(obs):
+    """(volume, non-manifold edges, separate pieces) of the union of `obs`."""
     with TempObjects() as t:
         base = t.copy_eval(obs[0])
         ops = t.sub_collection()
@@ -323,7 +343,10 @@ def union_stats(obs):
         _boolean(base, 'UNION', collection=ops)
         bpy.context.view_layer.update()
         v, _, nm = volume_nm(base)
-    return v, nm
+        bm = eval_bm(base)
+        shells = _shell_count(bm)
+        bm.free()
+    return v, nm, shells
 
 
 # ---------------------------------------------------------------- actions
@@ -973,7 +996,12 @@ def print_check(objs, min_wall_mm=None, parts_that_must_not_touch=(), stl_path=N
         collisions.append({"a": a.name, "b": b.name, "overlap_mm3": round(v, 4)})
         if v > 1e-6:
             problems.append(f"{a.name} and {b.name} overlap by {v:.4f} mm3.")
-    out = {"objects": rows, "collisions": collisions,
+    _, _, shells = _union(obs)
+    if shells > 1:
+        problems.append(f"The parts form {shells} separate pieces once joined: something "
+                        "floats (for example prongs that don't reach the band or a head). "
+                        "It would cast as loose pieces.")
+    out = {"objects": rows, "collisions": collisions, "pieces": shells,
            "units_mm": u.system == 'METRIC' and abs(u.scale_length - 0.001) < 1e-7}
     if not out["units_mm"]:
         problems.append("Scene is not 1 unit = 1 mm; STL numbers will not be millimetres.")
