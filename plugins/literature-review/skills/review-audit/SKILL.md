@@ -111,15 +111,24 @@ A finding that says "this needs a figure" without saying which is not actionable
 
 ### 7. Critique
 
-Spawn `literature-review:review-critic` with the document, the verification table, and
-whatever artifacts exist. It covers smoothed disagreement, gap inflation, structure and
-checklist overclaim, and it re-checks the ground the earlier steps covered — the
-overlap is deliberate, because the steps above are mechanical and the critic reads.
+Spawn `literature-review:review-critic` with the document, the verification table,
+whatever artifacts exist, **and the absolute path it must write `critique.md` to**. It
+returns that path and a short summary, not the critique itself — then read the file.
+A long critique returned inline lands in your context at the point you still have the
+report to assemble.
+
+It covers smoothed disagreement, gap inflation, structure and checklist overclaim, and
+it re-checks the ground the earlier steps covered — the overlap is deliberate, because
+the steps above are mechanical and the critic reads.
 
 Merge its findings with yours. Where you disagree with it, say so in the report rather
 than silently dropping either.
 
 ## The Report
+
+**Write this file incrementally**, from intake onward — header and coverage first, then
+each step's findings as that step finishes. An interrupted run should leave a partial
+report that says how far it got, not an empty directory.
 
 ```markdown
 # Audit — <document>

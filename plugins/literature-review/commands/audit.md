@@ -64,13 +64,25 @@ mismatch changes how every surrounding claim reads, and the critic should have t
 table in hand.
 
 Create a working directory for the run — your scratchpad directory if you have one,
-otherwise a temp directory — and write:
+otherwise a temp directory — holding:
 
 - `citation-verification.md` — the verifier's table
-- `audit.md` — the final report
+- `critique.md` — written by the critic agent itself
+- `audit.md` — the report
 
-Pass **absolute paths** to every subagent. They cannot see your context and cannot ask
-you for a path. Tell the user where the directory is in your final message.
+**Write `audit.md` incrementally, not at the end.** Create it at intake with the
+header, the mode, and the coverage statement. Append each step's findings to it as that
+step completes. A run that is interrupted then leaves a usable partial report saying
+how far it got, instead of nothing at all.
+
+This is not hypothetical. A run that assembles the whole report in a final step, while
+holding every intermediate result in context, is at its most loaded exactly when it has
+the least work left — and what gets lost is the entire deliverable. `agentic-qa`'s
+reporter is built the same way, writing its report live rather than after.
+
+Pass **absolute paths** to every subagent, including the path each one writes to. They
+cannot see your context and cannot ask you for a path. Tell the user where the
+directory is in your final message.
 
 For a reference list beyond roughly thirty works, spawn several
 `literature-review:citation-verifier` agents over disjoint slices and merge their tables. The work is independent per
