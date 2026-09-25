@@ -41,7 +41,8 @@ Read in the v3.0.1 source; nothing here has been run.
   `get(self, gem_size)`. Check the installed version's source before using the builder.
 - The cutter has a new `seat_depth` setting. Stones and cuts are unchanged.
 - The helpers use only modules that exist in both versions (`gemlib`, `ringsizelib`,
-  `design_report`), but they have only been run on 2.18.1. The skills also call
+  `gettext`, `design_report`; the builder recipe also uses `var`), but they have only been
+  run on 2.18.1. The skills also call
   operators (`gem_edit`, `cutter_add`, the builder recipe) whose arguments changed as
   above. Re-check results against known geometry before relying on them with 3.x.
 

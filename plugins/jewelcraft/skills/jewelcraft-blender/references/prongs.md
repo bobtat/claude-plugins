@@ -32,7 +32,7 @@ Blender modeling (see heads.md). [source]
 
 ## Elongated stones: presets float
 
-Prongs sit on a circle of radius `gem_dim.y/2 + radius − intersection`. On an elongated
+Prongs sit on a circle of radius `gem_dim.y/2 + d/2 − d × intersection/100` (d = prong diameter). On an elongated
 stone (Y = length) that circle is wider than the stone's sides. **On an 8 × 5.8 cushion
 the presets left all four prongs 0.49 mm clear of the girdle.** [verified]
 
@@ -72,7 +72,7 @@ square-cushion preset gives 23.5%, below that range, so treat it as a CAD defaul
 target. `prong_report` adds a note when any prong is under 30%.
 
 **Pre-notched or setter-notched?** Decide this with the user (or their setter) before
-checking collisions:
+checking collisions: [guidance]
 - **Pre-notched:** the notches are modelled. Cut the prongs with the stone's cutter as
   well as the seat metal, and include prongs in the stone/metal collision pairs; their
   overlap with the stone should then be 0. `prong_report` still measures the grip as

@@ -56,6 +56,7 @@ See jewelcraft-3x.md.
   3.53 g/cm³ × 5 ct/g → 1.397 ct) all agree. [verified]
 - Densities are in `gemlib.STONES` (diamond 3.53, corundum 4.1, beryl 2.76, quartz 2.65,
   …). [source] Coloured-stone estimates are rougher than diamond's: some of these
-  densities run high (corundum is usually given as 4.00, spinel about 3.60, tourmaline
-  about 3.06), garnet covers species from about 3.6 to 4.3, and coloured stones are cut
-  to less standard proportions. [cited: GIA, Gem-A]
+  densities run high against Gem-A's ranges (ruby and sapphire 3.80–4.05, spinel
+  3.58–3.61, red tourmaline 3.0–3.1), garnet varies by species (red almandine alone is
+  3.80–4.2), and coloured stones are cut to less standard proportions. [cited] (Gem-A,
+  specific gravity: https://gem-a.com/gem-hub/gem-knowledge/specific-gravity-gemstones-gemmology)

@@ -893,7 +893,8 @@ def finger_clearance(ob, band):
 
 
 # Japanese sizes (JCS): 1 = 13.00 mm inside diameter, +1/3 mm per size. JewelCraft 2.18's
-# JP table goes through US sizes and drifts up to 0.5 mm from this above size 16.
+# JP table goes through US sizes and drifts up to about 0.55 mm from this (JP 1, and
+# JP 17-27 by 0.16-0.53 mm).
 def _jp_from_diameter(dia):
     n = 3 * (dia - 13.0) + 1
     return round(n, 2) if n >= 1 else None

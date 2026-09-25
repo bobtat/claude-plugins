@@ -13,8 +13,8 @@ description: Checks a jewelry model (ring, pendant, setting) in Blender before 3
    unclear. Ask whether the prongs are pre-notched or will be notched by the setter
    (`../jewelcraft-blender/references/prongs.md`, "How much grip is enough"). If the
    setter notches them, leave stone/prong pairs out: they overlap by design.
-3. **Ask the user, or their printer or caster**, for what depends on their process. This
-   plugin has no sourced values for these:
+3. **Ask the user, or their printer or caster**, for what depends on their process. There
+   are no caster-independent values for these:
    - **Minimum wall thickness.** If they don't know, run without it and report the
      thinnest wall found.
    - **Shrinkage.** Castings come out smaller than the model. Figures quoted by bench
@@ -22,7 +22,7 @@ description: Checks a jewelry model (ring, pendant, setting) in Blender before 3
      percent through rubber moulds, so a ring modelled at its exact size can come back a
      size small. Ask whether the caster compensates or wants the model scaled, and
      their sizing tolerance. Don't scale the model yourself without that answer.
-     (Ganoksin Orchid, "Casting shrinkage": https://orchid.ganoksin.com/t/casting-shrinkage/48368)
+     [cited] (Ganoksin Orchid, "Casting shrinkage": https://orchid.ganoksin.com/t/casting-shrinkage/48368)
    - **Finishing allowance:** how much metal polishing and cleanup will remove,
      especially inside the band (it enlarges the size) and on prong tips.
 4. Run `H["print_check"](parts, min_wall_mm=..., parts_that_must_not_touch=[(a, b), ...])`.
