@@ -74,6 +74,11 @@ checking collisions:
   Leave them out of the stone/metal collision pairs, and tell the user the overlap is the
   material the setter will remove.
 
+**Tip height.** Stuller trims each prong to reach halfway up the crown (halfway from the
+girdle to the table) before it's pushed over. [cited] `prong_report` gives each prong's
+`tip_above_girdle_mm` and the stone's `crown_height_mm`, and flags tips below half of it.
+Heights set with `z1` also have to leave that much metal after finishing.
+
 A prong whose gap to the girdle is more than a few hundredths of a millimetre isn't
 touching the stone at all, and the setter would have to bend it in; report that as a
 fault. [guidance]

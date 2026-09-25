@@ -22,6 +22,8 @@ description: Measures how each prong grips a stone's girdle in a Blender/JewelCr
      notched by the setter.
    - Uneven grip between prongs usually means the stone or prongs are off-centre or
      rotated.
+   - Tip height: `tip_above_girdle_mm` against `crown_height_mm`. A tip below halfway up
+     the crown is too short to fold over the stone.
 5. For cushions, the report includes `suggested_corner_settings` (position,
    intersection) for corner prongs with a 33% notch. For tapered prongs, pass the prong's
    `diameter` setting as `prong_diameter=`, since the prong is thicker at the girdle than
