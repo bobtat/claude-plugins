@@ -23,7 +23,8 @@ description: Verifies a stone seat in a Blender/JewelCraft design, checking that
    - **With metal:**
      - `stone_metal_overlap_mm3` should be 0; any overlap means the stone collides with
        the metal.
-     - `control_overlap_without_modifiers_mm3` should be > 0. If it's 0, the stone isn't
+     - `control_overlap_without_seat_mm3` (the metal with every modifier except the seat
+       Boolean) should be > 0. If it's 0, the stone isn't
        actually positioned in the metal, and the check proves nothing.
      - `metal_nonmanifold_edges` should be 0; anything else means the Boolean left holes
        or bad geometry.

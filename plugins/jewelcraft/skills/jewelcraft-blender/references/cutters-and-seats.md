@@ -32,6 +32,6 @@ md.operation = 'DIFFERENCE'; md.solver = 'EXACT'; md.object = cutter
 - **The stone's overlap with the metal went from 63.9 mm³ to 0.**
 - Check every seat with `H["seat_report"](gem, cutter, metal)` (the `jewelcraft:check-seat` skill):
   - `stone_metal_overlap_mm3` should be 0.
-  - The control (overlap with the metal's modifiers off) should be > 0.
+  - The control (overlap with the metal minus only its seat Boolean) should be > 0.
   - `metal_nonmanifold_edges` should be 0.
 - Keep the Boolean live while designing; the helpers measure it correctly.
