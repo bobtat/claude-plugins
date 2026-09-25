@@ -15,11 +15,12 @@ description: Checks that Blender, the Blender MCP connection and the JewelCraft 
 3. Report in plain language:
    - Blender and JewelCraft versions. If JewelCraft is 3.x, say that some instructions
      differ and read `../jewelcraft-blender/references/jewelcraft-3x.md` before building.
-   - Whether the file is saved. If not, ask the user to save before any building or
-     experiments.
+   - Whether the file has been saved. If never, ask the user to save before any
+     building or experiments. Unsaved changes after that are a note, not a blocker:
+     the helpers' temporary objects can mark the file modified too.
    - Units: whether 1 unit = 1 mm. If not, offer to fix it with
      `scene.unit_settings` (metric, millimetres, scale 0.001) and wait for a yes.
    - How many gems are in the scene and how many alloys are in its weighting list.
-   - Each item in `issues`, with what to do about it. If `issues` is empty, say
-     everything is ready.
+   - Each item in `issues`, with what to do about it, then `notes`. If `issues` is
+     empty, say everything is ready.
 4. Don't change anything in the scene during this check.

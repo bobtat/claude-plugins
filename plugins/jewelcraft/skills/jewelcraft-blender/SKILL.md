@@ -6,7 +6,9 @@ description: Core knowledge for modeling jewelry in Blender with the JewelCraft 
 # JewelCraft in Blender, driven from Python
 
 Drive Blender through a Blender MCP server that can run Python (a tool such as
-`execute_blender_code`, where the code assigns a JSON-serialisable dict to `result`).
+`execute_blender_code`). Examples here assign a JSON-serialisable dict to `result`. Some
+servers return that variable; others return only printed output. Unless you know the
+server returns `result`, end each call with `print(json.dumps(result, default=str))`.
 JewelCraft must be installed and enabled in that Blender.
 
 Everything here was written against **JewelCraft 2.18.1 on Blender 5.1.1**. Tags in the
@@ -19,16 +21,22 @@ reference files:
 
 ## Start of every session
 
-1. **Load the helpers.** Check whether they're loaded:
+1. **Load the helpers.** Read `scripts/jc_helpers.py` (in this skill's folder) and note
+   its `HELPERS_VERSION` line. Check what's loaded:
    `result = {"v": bpy.app.driver_namespace.get("JC", {}).get("HELPERS_VERSION")}`.
-   If that isn't `"0.1.0"`, read `scripts/jc_helpers.py` (in this skill's folder) and send
-   its **entire contents** as the code of one `execute_blender_code` call. The helpers
+   If that doesn't match the file, send the file's **entire contents** as the code of one
+   `execute_blender_code` call. The helpers
    live in `bpy.app.driver_namespace["JC"]` until Blender restarts. Use them as
    `H = bpy.app.driver_namespace["JC"]`. The API is described in `references/helpers.md`.
 2. **Run `H["check_setup"]()`** (or the `jewelcraft:check-setup` skill) and act on its `issues`:
-   - Unsaved file: ask the user to save before building or experimenting.
+   - Never saved: ask the user to save before building or experimenting.
    - JewelCraft 3.x: read `references/jewelcraft-3x.md` first.
-   - Units not 1 unit = 1 mm: fix them, or ask the user.
+   - Units not 1 unit = 1 mm: offer to fix them and wait for a yes.
+   - Not in Object Mode: ask the user to switch.
+
+   `notes` are information. "Unsaved changes" appears after any helper call, because
+   the helpers' temporary objects can mark the file modified. Ask the user to save once at
+   the start of a session, not before every check.
 3. **Protect the user's work.** Never open a new file over unsaved work. Build experiments
    in a temporary scene and delete it afterwards (`references/blender-essentials.md` §1).
    Don't change the user's objects without saying what will change.

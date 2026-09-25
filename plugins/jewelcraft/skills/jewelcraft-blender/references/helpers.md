@@ -1,4 +1,4 @@
-# Helper functions (`scripts/jc_helpers.py`, version 0.1.0)
+# Helper functions (`scripts/jc_helpers.py`)
 
 Load once per Blender session (see SKILL.md), then `H = bpy.app.driver_namespace["JC"]`.
 Object arguments accept a name or an object. All measurements are in mm, on the
@@ -6,7 +6,8 @@ Object arguments accept a name or an object. All measurements are in mm, on the
 
 Helpers that need temporary geometry (overlaps, unions, seat checks) create copies in a
 temporary `JC_TMP` collection and delete it before returning. They never modify the
-user's objects. The only helper with side effects outside Blender is `print_check` when
+user's objects, but creating and removing that collection can mark the file as modified, so
+Blender may ask to save on quit. The only helper with side effects outside Blender is `print_check` when
 given `stl_path` (it writes a file; the user's selection is restored afterwards).
 
 Every result below was checked in Blender 5.1.1 + JewelCraft 2.18.1 against known
@@ -14,7 +15,7 @@ geometry. [verified]
 
 | Helper | Returns / use |
 |---|---|
-| `check_setup()` | Blender and JewelCraft versions, file state, units, gem count, weighting-list size, `issues` (list of problems to act on). |
+| `check_setup()` | Blender and JewelCraft versions, file state, units, gem count, weighting-list size, `issues` (problems to act on: not installed, never saved, wrong units, not in Object Mode...) and `notes` (information, such as unsaved changes). |
 | `size_to_diameter(size, fmt="US")` | Circumference and diameter. US 8 → 56.965 / 18.1324 mm. Formats: US, UK (letter index A = 0), CH and HK from JewelCraft's own size table; JP from the JCS scale (1 = 13.00 mm, +1/3 mm per size), because JewelCraft's JP table is up to 0.5 mm off from size 17 up. [cited] |
 | `ring_size(band)` | Fits a circle to the band's inner surface and returns `inner_diameter_mm`, `inner_circumference_mm`, `sizes` per format, `roundness_max_dev_mm`, `points_rejected`, `min_opening_diameter_mm`, `axis` and `centre`. The axis is chosen from the object's local axes and the principal axes of its vertices, whichever fits a circle best, so rotated rings and heads wider than the band are handled. Head and prong points that fall into the fit are rejected repeatedly until none remain. `min_opening_diameter_mm` is the narrowest point of the whole mesh around the axis. When it is more than 0.05 mm under the fitted diameter, a `warning` says something (a sizing bead, a sunk head, a culet) reaches into the finger hole. Checked on a synthetic US 8 band (18.132 mm): plain, with a head on top, with a head wider than the band, rotated 30° and 45°, and rotated off-origin with a head all read 18.132 mm; two 1 mm beads and a sunk head were flagged. [verified] Fitting through vertices overstates a coarse inner surface slightly (the finger touches the flats): about 0.02 mm in diameter at 64 segments, 0.09 mm at 32. JP is the JCS size to two decimals; HK returns `None` unless within ~0.1 mm of a listed size. |
 | `gems_in_scene()` | Each visible gem, including instanced ones (named `gem [instancer #n]`): name, cut, stone, dims (x, y, z), ct from JewelCraft's formula, location. Hidden gems are left out, as in JewelCraft's report. |
