@@ -11,8 +11,11 @@ description: Measures the actual inside diameter of a ring band in Blender and r
    trusted until that's fixed.
 2. **Size → diameter** (no model needed):
    `H["size_to_diameter"](size, "US")`. Formats: US, UK (letter index: A = 0, so N = 13),
-   CH, JP, HK. These come from JewelCraft's own size table (US 8 = 56.965 mm /
-   18.1324 mm).
+   CH, JP, HK. US, UK, CH and HK come from JewelCraft's own size table (US 8 =
+   56.965 mm / 18.1324 mm). JP is the JCS scale (号: 1 = 13.00 mm inside diameter,
+   +1/3 mm per size). JewelCraft's own JP table drifts up to 0.5 mm from it above size 16,
+   so don't use JewelCraft's JP conversion. JIS S 4700 is a different, circumference-based
+   scale; if the user means that one, ask. (JCS table: https://okuraya.jp/column/ring-size/)
 3. **Model → size:**
    1. Identify the band. Use the name the user gave; otherwise list mesh objects and ask.
       The band and head may be one object or several; pass the object that contains the
@@ -20,7 +23,7 @@ description: Measures the actual inside diameter of a ring band in Blender and r
    2. Run `H["ring_size"](name)`. It fits a circle to the inner surface and finds the
       ring's axis itself, so a head on the same mesh or a rotated ring doesn't affect it.
    3. Report the inner diameter and circumference, and the size in each system:
-      - JP/HK `None` means no exact match.
+      - JP is given to two decimals, like US. HK `None` means no exact match.
       - US and CH sizes are shown to two decimals; state the nearest standard size and
         the difference in mm.
       - If `roundness_max_dev_mm` exceeds about 0.05 mm, say the inside isn't a true

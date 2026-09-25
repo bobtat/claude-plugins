@@ -563,6 +563,17 @@ def _ring_fit(band):
     return best
 
 
+# Japanese sizes (JCS): 1 = 13.00 mm inside diameter, +1/3 mm per size. JewelCraft 2.18's
+# JP table goes through US sizes and drifts up to 0.5 mm from this above size 16.
+def _jp_from_diameter(dia):
+    n = 3 * (dia - 13.0) + 1
+    return round(n, 2) if n >= 1 else None
+
+
+def _diameter_from_jp(n):
+    return 13.0 + (n - 1) / 3
+
+
 def ring_size(band, formats=("US", "UK", "CH", "JP", "HK")):
     """Inner diameter of a band, fitted to its inner surface, and the matching sizes."""
     rs = jc(".lib.ringsizelib")
@@ -570,14 +581,16 @@ def ring_size(band, formats=("US", "UK", "CH", "JP", "HK")):
     f = _ring_fit(band)
     dia = 2 * f["r"]
     cir = math.pi * dia
-    sizes = {k: rs.to_size_fmt(cir, k) for k in formats}
+    sizes = {k: _jp_from_diameter(dia) if k == "JP" else rs.to_size_fmt(cir, k)
+             for k in formats}
     out = {"band": band.name, "axis": tuple(round(float(x), 4) for x in f["axis"]),
            "centre": tuple(round(float(x), 3) for x in f["centre"]),
            "inner_diameter_mm": round(dia, 3), "inner_circumference_mm": round(cir, 3),
            "sizes": sizes, "roundness_max_dev_mm": round(f["max_dev"], 4),
            "points_rejected": f["rejected"],
            "min_opening_diameter_mm": round(2 * f["min_opening_r"], 3),
-           "note": "JP/HK return None unless within ~0.1 mm of a listed size."}
+           "note": "JP is the JCS scale, to two decimals. HK returns None unless within "
+                   "~0.1 mm of a listed size."}
     if dia - 2 * f["min_opening_r"] > 0.05:
         out["warning"] = ("Something reaches into the finger hole: the smallest opening is "
                           f"{2 * f['min_opening_r']:.3f} mm, not the fitted {dia:.3f} mm.")
@@ -585,8 +598,10 @@ def ring_size(band, formats=("US", "UK", "CH", "JP", "HK")):
 
 
 def size_to_diameter(size, fmt="US"):
-    rs = jc(".lib.ringsizelib")
-    cir = rs.to_cir(size, fmt)
+    if fmt == "JP":
+        cir = math.pi * _diameter_from_jp(size)
+    else:
+        cir = jc(".lib.ringsizelib").to_cir(size, fmt)
     return {"size": size, "format": fmt, "circumference_mm": round(cir, 3),
             "diameter_mm": round(cir / math.pi, 4)}
 
