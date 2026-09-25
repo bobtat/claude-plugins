@@ -610,19 +610,34 @@ def _fit_circle(S):
 
 def _inner_circle(Q, nb=180):
     """Circle through the innermost point of each angular bin of the 2D points Q.
-    Bins the band leaves empty get filled by head or prong points, so outliers are
-    rejected repeatedly, not once: after one pass the centre is still pulled toward
-    the head and the head points survive."""
+    Bins the band leaves empty get filled by head, bezel or prong points. On a coarse
+    band there are enough of them to drag a least-squares fit, and then dropping
+    outliers never removes them. So the fit starts from the circle through three points
+    that the most points agree with (the band's vertices lie exactly on one), and
+    only then keeps every point within 3x the median residual. That start is used only
+    if its points reach round as far as the band does; on an oval band it would lock
+    onto one arc."""
     import numpy as np
     c = (Q.max(0) + Q.min(0)) / 2
     for _ in range(10):
         d = Q - c
-        ang = np.arctan2(d[:, 1], d[:, 0])
         rad = np.hypot(d[:, 0], d[:, 1])
-        bins = ((ang + np.pi) / (2 * np.pi) * nb).astype(int) % nb
-        S = np.array([Q[m[np.argmin(rad[m])]]
-                      for m in (np.where(bins == b)[0] for b in range(nb)) if len(m)])
+        bins = ((np.arctan2(d[:, 1], d[:, 0]) + np.pi) / (2 * np.pi) * nb).astype(int) % nb
+        order = np.lexsort((rad, bins))
+        b = bins[order]
+        idx = order[np.r_[True, b[1:] != b[:-1]]]
+        S = Q[idx]
         keep = np.ones(len(S), bool)
+        rng = np.random.RandomState(0)
+        for _ in range(300 if len(S) >= 12 else 0):
+            c3, r3 = _fit_circle(S[rng.choice(len(S), 3, replace=False)])
+            inl = np.abs(np.hypot(*(S - c3).T) - r3) < 0.05
+            if inl.sum() >= max(12, keep.sum() if keep.sum() < len(S) else 0) and \
+                    RING_RADIUS_MM[0] <= r3 <= RING_RADIUS_MM[1]:
+                keep = inl
+        sector = ((np.arctan2(*(S - c).T[::-1]) + np.pi) / (2 * np.pi) * 24).astype(int)
+        if len(set(sector[keep].tolist())) < 0.8 * len(set(sector.tolist())):
+            keep = np.ones(len(S), bool)
         for _ in range(30):
             cf, r = _fit_circle(S[keep])
             res = np.abs(np.hypot(*(S - cf).T) - r)
@@ -635,55 +650,143 @@ def _inner_circle(Q, nb=180):
         if moved < 1e-6:
             break
     res = np.abs(np.hypot(*(S[keep] - c).T) - r)
-    return c, r, S, keep, float(np.median(res))
+    return c, r, S, keep, float(np.median(res)), idx
+
+
+def _mesh_arrays(ob):
+    """World-space vertices, edge index pairs and triangle index triples."""
+    import numpy as np
+    bm = eval_bm(ob)
+    bm.verts.index_update()
+    P = np.array([v.co[:] for v in bm.verts]).reshape(-1, 3)
+    E = np.array([[e.verts[0].index, e.verts[1].index] for e in bm.edges], int).reshape(-1, 2)
+    T = np.array([[l.vert.index for l in t] for t in bm.calc_loop_triangles()], int).reshape(-1, 3)
+    bm.free()
+    return P, E, T
+
+
+def _axis_basis(n):
+    import numpy as np
+    u = np.cross(n, [1.0, 0, 0] if abs(n[0]) < 0.9 else [0, 1.0, 0])
+    u /= np.linalg.norm(u)
+    return u, np.cross(n, u)
+
+
+def _radial_min(P, E, T, centre, n):
+    """Smallest distance from the axis line (centre, n) to the mesh, over its edges
+    (not just vertices, so a flat bar dipping between its corners is caught), and the
+    closest point. 0 when a face crosses the axis."""
+    import numpy as np
+    u, w = _axis_basis(n)
+    Q = np.c_[(P - centre) @ u, (P - centre) @ w]
+    if not len(E):
+        rad = np.hypot(*Q.T)
+        i = int(rad.argmin())
+        return float(rad[i]), P[i]
+    a, b = Q[E[:, 0]], Q[E[:, 1]]
+    ab = b - a
+    t = np.clip(-(a * ab).sum(1) / np.maximum((ab * ab).sum(1), 1e-18), 0.0, 1.0)
+    p = a + t[:, None] * ab
+    dist = np.hypot(p[:, 0], p[:, 1])
+    i = int(dist.argmin())
+    best, pt = float(dist[i]), P[E[i, 0]] + t[i] * (P[E[i, 1]] - P[E[i, 0]])
+    if len(T):
+        A, B, C = Q[T[:, 0]], Q[T[:, 1]], Q[T[:, 2]]
+
+        def cross(p1, p2):
+            return p1[:, 0] * p2[:, 1] - p1[:, 1] * p2[:, 0]
+        s1, s2, s3 = cross(B - A, -A), cross(C - B, -B), cross(A - C, -C)
+        hit = ((s1 >= 0) & (s2 >= 0) & (s3 >= 0)) | ((s1 <= 0) & (s2 <= 0) & (s3 <= 0))
+        if hit.any():
+            best, pt = 0.0, P[T[hit][0]].mean(0)
+    return best, pt
+
+
+# Plausible inside radius of a ring (8-40 mm diameter). Circles outside this range are
+# other features seen end-on: a bezel tube, a gallery rail, the pole of a round head.
+RING_RADIUS_MM = (4.0, 20.0)
+
+
+def _fit_along(P, n):
+    """Inner-circle fit looking along `n`, plus the share of 5-degree sectors that have
+    points deep inside the circle (under 70% of its radius). Along the true axis the
+    hole is empty; an edge-on view puts band points right across the centre. The depth
+    keeps an oval band or a sizing bead, which reach only slightly inside, from
+    counting."""
+    import numpy as np
+    u, w = _axis_basis(n)
+    Q = P @ np.c_[u, w]
+    c, r, S, keep, med, idx = _inner_circle(Q)
+    d = Q - c
+    deep = np.hypot(*d.T) < 0.7 * r
+    sectors = ((np.arctan2(d[deep, 1], d[deep, 0]) + np.pi) / (2 * np.pi) * 72).astype(int)
+    return {"axis": n, "u": u, "w": w, "c": c, "r": r, "S": S, "keep": keep,
+            "inner_idx": idx[keep],
+            "median_residual": med, "inside_frac": len(set(sectors.tolist())) / 72,
+            "plausible": RING_RADIUS_MM[0] <= r <= RING_RADIUS_MM[1]}
 
 
 def _ring_fit(band):
-    """Best inner-circle fit over candidate ring axes (the object's local axes and
-    the principal axes of its vertices). A wrong axis projects the band edge-on and
-    fits badly, so the candidate with the smallest median residual wins."""
+    """Inner-circle fit of a ring band: its axis, centre and inner radius.
+
+    Candidate axes are the object's local axes and the principal axes of its
+    vertices. A candidate is rejected if its circle isn't ring-sized, and ranked by
+    how much of the band it sees inside its own circle: along the true axis the hole is
+    empty, while an edge-on view puts band vertices all around the centre. Comparing
+    residuals alone picks whichever part is a perfect circle end-on (a bezel tube).
+    The winner's direction is then refined, because when rotation has been applied
+    and the head is off to one side, the principal axes tilt toward the head. Every vertex near the fitted inner radius (both edges of the inner surface,
+    not the head) lies on a cylinder around the true axis, which is their direction of
+    least spread. Taking only the innermost point per angle would pick one edge per
+    side and follow the tilt; nudging the axis to shrink the residual can make an oval
+    band look round."""
     import numpy as np
-    bm = eval_bm(band)
-    P = np.array([v.co[:] for v in bm.verts])
-    bm.free()
+    P, E, T = _mesh_arrays(band)
     M = band.matrix_world.to_3x3()
     cands = [np.array(M.col[k].normalized()) for k in range(3) if M.col[k].length > 1e-9]
     _, V = np.linalg.eigh(np.cov((P - P.mean(0)).T))
     for k in range(3):
-        v = V[:, k]
-        if all(abs(v @ w) < 0.9999 for w in cands):
-            cands.append(v)
-    best = None
-    for n in cands:
-        u = np.cross(n, [1.0, 0, 0] if abs(n[0]) < 0.9 else [0, 1.0, 0])
-        u /= np.linalg.norm(u)
-        w = np.cross(n, u)
-        Q = P @ np.c_[u, w]
-        c, r, S, keep, med = _inner_circle(Q)
-        if best is None or med < best["median_residual"] - 1e-9:
-            rad_all = np.hypot(*(Q - c).T)
-            centre = u * c[0] + w * c[1] + n * float(np.median(P @ n))
-            best = {"axis": n, "centre": centre, "r": r, "median_residual": med,
-                    "max_dev": float(np.max(np.abs(np.hypot(*(S[keep] - c).T) - r))),
-                    "rejected": int((~keep).sum()), "min_opening_r": float(rad_all.min())}
-    return best
+        if all(abs(V[:, k] @ w) < 0.9999 for w in cands):
+            cands.append(V[:, k])
+    fits = [f for f in (_fit_along(P, n) for n in cands) if f["plausible"]]
+    if not fits:
+        raise ValueError(f"{band.name}: no axis gives a ring-sized inner circle "
+                         "(8-40 mm diameter). Is this the object with the finger hole?")
+    best = min(fits, key=lambda f: (round(f["inside_frac"], 2), f["median_residual"]))
+    for tol in (0.3, 0.2, 0.1, 0.1, 0.05):
+        rad = np.hypot(*(P @ np.c_[best["u"], best["w"]] - best["c"]).T) - best["r"]
+        # Points inside the circle are something reaching into the hole, not the band.
+        inner = P[(rad > -0.02) & (rad < tol)]
+        if len(inner) < 12:
+            break
+        n = np.linalg.eigh(np.cov((inner - inner.mean(0)).T))[1][:, 0]
+        n = n if n @ best["axis"] > 0 else -n
+        f = _fit_along(P, n)
+        if f["plausible"] and f["inside_frac"] <= best["inside_frac"] and \
+                f["median_residual"] <= best["median_residual"] + 0.005:
+            best = f
+    n, c, u, w = best["axis"], best["c"], best["u"], best["w"]
+    centre = u * c[0] + w * c[1] + n * float(np.median(P @ n))
+    S, keep, r = best["S"], best["keep"], best["r"]
+    opening, opening_at = _radial_min(P, E, T, centre, n)
+    # The fit goes through vertices; the finger meets the flat faces between them, which
+    # sit r*cos(pi/k) from the axis on a k-segment band.
+    flats_r = r * math.cos(math.pi / max(int(keep.sum()), 12))
+    return {"axis": n, "centre": centre, "r": r, "flats_r": flats_r,
+            "max_dev": float(np.max(np.abs(np.hypot(*(S[keep] - c).T) - r))),
+            "rejected": int((~keep).sum()), "min_opening_r": opening,
+            "min_opening_at": opening_at}
 
 
 def finger_clearance(ob, band):
     """How far `ob` (a stone's culet, a gallery) stays outside the finger hole of `band`.
     Negative = it reaches into the hole and will touch the finger."""
-    import numpy as np
     ob, band = (get(x) if isinstance(x, str) else x for x in (ob, band))
     f = _ring_fit(band)
-    bm = eval_bm(ob)
-    P = np.array([v.co[:] for v in bm.verts])
-    bm.free()
-    d = P - f["centre"]
-    radial = np.linalg.norm(d - np.outer(d @ f["axis"], f["axis"]), axis=1)
-    i = int(radial.argmin())
+    dist, at = _radial_min(*_mesh_arrays(ob), f["centre"], f["axis"])
     return {"object": ob.name, "band": band.name,
-            "clearance_mm": round(float(radial[i]) - f["r"], 3),
-            "closest_point": tuple(round(float(x), 3) for x in P[i])}
+            "clearance_mm": round(dist - f["r"], 3),
+            "closest_point": tuple(round(float(x), 3) for x in at)}
 
 
 # Japanese sizes (JCS): 1 = 13.00 mm inside diameter, +1/3 mm per size. JewelCraft 2.18's
@@ -714,7 +817,7 @@ def ring_size(band, formats=("US", "UK", "CH", "JP", "HK")):
            "min_opening_diameter_mm": round(2 * f["min_opening_r"], 3),
            "note": "JP is the JCS scale, to two decimals. HK returns None unless within "
                    "~0.1 mm of a listed size."}
-    if dia - 2 * f["min_opening_r"] > 0.05:
+    if 2 * (f["flats_r"] - f["min_opening_r"]) > 0.05:
         out["warning"] = ("Something reaches into the finger hole: the smallest opening is "
                           f"{2 * f['min_opening_r']:.3f} mm, not the fitted {dia:.3f} mm.")
     return out
