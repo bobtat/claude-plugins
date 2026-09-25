@@ -71,7 +71,8 @@ are the evidence that it was conducted rather than composed.
 | **2 Discovery** | `search-log.md`, `records.csv` | `references/search-strategy.md` |
 | **3 Screening** | `screening.csv` with two independent passes and κ | `references/prisma.md` |
 | **4 Appraisal** | `appraisals/<key>.md` per included study | `references/appraisal.md` |
-| **5 Synthesis** | `review.md`, `figures/*.svg` | `references/synthesis.md`, `references/figures.md` |
+| **5 Synthesis** | `review.md` | `references/synthesis.md` |
+| **5b Figures** | `figures/*.svg` | `literature-review:review-figures`, `references/figures.md` |
 | **6 Audit** | Verification table, `prisma-checklist.md`, `conduct-disclosure.md` | `literature-review:review-audit`, `references/provenance.md` |
 
 Two of these are gates where the user decides and the review stops until they do:
@@ -164,6 +165,8 @@ choose.
 
 ### Procedure Skills
 
+- **`literature-review:review-figures`** — turns the data files into SVG figures, with
+  the validation checks and the refusal cases. Ships a PRISMA flow generator.
 - **`literature-review:review-audit`** — the seven-step audit: inventory, verify, tier
   audit, flow arithmetic, prevalence sweep, figure audit, critique. Runs against a
   review this plugin produced and against one it did not.
@@ -178,6 +181,8 @@ choose.
 - **`literature-review:citation-verifier`** — resolves every identifier and
   title-matches it, per reference. Emits BibTeX from resolved metadata. Verifies
   citations, never claims.
+- **`literature-review:figure-author`** — builds one figure from one data file, every
+  mark traceable to a row, and refuses when the data does not support it.
 - **`literature-review:review-critic`** — reads a finished review cold and reports
   tier inflation, prevalence claims, broken flow arithmetic, smoothed disagreement and
   missing figures.
