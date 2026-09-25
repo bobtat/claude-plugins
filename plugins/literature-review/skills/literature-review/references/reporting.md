@@ -13,7 +13,9 @@ others are what make item 27 (availability of data and materials) answerable.
 ├── records.csv              every record retrieved, before screening
 ├── screening.csv            per record: both screeners, criterion, adjudication
 ├── prisma-flow.json         flow counts and κ, derived from the two CSVs by script
-├── appraisals/<key>.md      one per included study
+├── appraisals/<study_id>.md one per included study
+├── rob.csv                  risk-of-bias judgments, one row per study per domain
+├── extraction.csv           study characteristics and data items, one row per study
 ├── figures/*.svg            one per figure in the budget
 ├── review.md                the synthesis — the document people read
 ├── references.bib           verified BibTeX
