@@ -40,9 +40,9 @@ not in the budget that the data now clearly warrants is proposed, not silently a
 | Figure | Source |
 |---|---|
 | PRISMA flow | `prisma-flow.json`, derived from `records.csv` and `screening.csv` by the screening phase |
-| RoB traffic light, RoB summary | `appraisals/*.md` |
+| RoB traffic light, RoB summary | `rob.csv`, merged from the appraisal phase |
 | Database contribution | `records.csv` |
-| Evidence map | the extraction table |
+| Evidence map | `extraction.csv` |
 | Timeline | `records.csv` |
 
 If a figure needs two files, derive one intermediate file first and bind the figure to

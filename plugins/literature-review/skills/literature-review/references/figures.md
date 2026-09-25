@@ -45,10 +45,10 @@ tier and say which.
 | Figure | Source file | When |
 |---|---|---|
 | **PRISMA 2020 flow** | `prisma-flow.json` (derived from `records.csv` + `screening.csv`) | **Always** |
-| **RoB traffic light** | `appraisals/*.md` | **Always, when RoB was assessed** |
-| **RoB summary barplot** | `appraisals/*.md` | With the traffic light |
+| **RoB traffic light** | `rob.csv` | **Always, when RoB was assessed** |
+| **RoB summary barplot** | `rob.csv` | With the traffic light |
 | **Database contribution** | `records.csv` | More than one source searched |
-| **Evidence map** | extraction table | Two categorical axes in the extraction |
+| **Evidence map** | `extraction.csv` | Two categorical axes in the extraction |
 | **Literature timeline** | `records.csv` | Optional |
 | **Citation lineage** | citation-graph tools | Optional, and gated — see above |
 | **Concept taxonomy** | the synthesis | Optional |
