@@ -23,6 +23,6 @@ description: Lists every stone in the open Blender/JewelCraft design with cut, s
      corners, which is why this mesh-based check exists.
 4. If there are no gems, say so. Gems are objects with JewelCraft's gem identity; a mesh
    that only looks like a stone won't be listed (see `../jewelcraft-blender/references/gems.md` on
-   `gem_edit(use_id_only=True)`).
+   `gem_edit`, which can tag a mesh as a gem; its arguments differ in JewelCraft 3.x).
 5. Only use JewelCraft's file-based design report if the user asks for the HTML/JSON
    file. It opens a browser window on their computer, so say so first.

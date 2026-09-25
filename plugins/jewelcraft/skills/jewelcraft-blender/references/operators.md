@@ -16,8 +16,12 @@ which calls `addon_utils.module_bl_info`. [verified]
   pass `diameter`. [verified]
 - These fail on a plain EXEC call because they compute required values in `invoke()`:
   `prongs_add` (`gem_dim`), `cutter_add`, `lattice_profile` (`BBox`), `lattice_project`,
-  `curve_distribute`, `curve_redistribute`, `microprong_cutter_add`. [verified for
-  prongs_add and lattice_profile; source for the rest]
+  `curve_redistribute`, `microprong_cutter_add`, `resize` (`dim_orig`), and
+  `gem_recover` (modal). [verified for prongs_add and lattice_profile; source for the
+  rest]
+- `curve_distribute` from EXEC usually **does nothing and returns FINISHED**: with an
+  empty size list it exits early. It raises only if an earlier click left sizes behind.
+  [source]
 - To check another operator, read its `invoke()`. If it assigns `self.x` that
   `execute()` reads, EXEC will fail.
 
@@ -25,13 +29,13 @@ which calls `addon_utils.module_bl_info`. [verified]
 
 | Operator | Notes |
 |---|---|
-| `object.jewelcraft_gem_add(cut, stone, size)` | Gem at the 3D cursor; becomes the only selected and active object. `size` depends on the cut (gems.md). Needs `temp_override(**H["ctx"]())`. [verified] |
-| `curve.jewelcraft_size_curve_add(diameter=...)` | Ring-size Bezier circle in the XZ plane, named "Size". Adds a Curve modifier to every object selected *before* the call, then leaves only the curve selected and active. Only `diameter` is used from a script. [verified] |
+| `object.jewelcraft_gem_add(cut, stone, size)` | Gem at the 3D cursor; becomes the only selected and active object. `size` depends on the cut (gems.md). Needs no viewport: it ran in background Blender with no override. [verified] |
+| `curve.jewelcraft_size_curve_add(diameter=...)` | Ring-size Bezier circle in the XZ plane, named "Size". Adds a Curve modifier to every object selected *before* the call, then leaves only the curve selected and active. From a script, pass `diameter` and `curve_start_pos` (`TOP`, the default, rotates the curve 180° about Z). [verified] |
 | `object.jewelcraft_stretch_along_curve()` | Scales selected curve-deformed meshes on X to span the curve. Skips non-meshes. No override needed. [verified] |
 | `object.jewelcraft_move_over_under(position='OVER', individual=True)` | Puts each selected deformed mesh's bottom on the curve. `individual=True` needs no override. The default acts on the active object and would move a selected curve too. [verified] |
 | `object.jewelcraft_weight_display()` | Volume + weight, one `Info:` line per enabled alloy in the current scene's list. Works on meshes, curves, text and metaballs. Prefer `H["weigh"]`, which handles overlaps. [verified] |
 | `wm.jewelcraft_design_report(filepath=..., file_format='JSON', use_preview=False)` | Writes a report file **and opens it in the web browser** (unless Blender runs in background mode). Prefer `H["stone_report"]()`, which returns the same data with no file or browser. [verified] |
-| `object.jewelcraft_gem_edit(cut, stone, use_force, use_id_only)` | See gems.md before using. [verified] |
+| `object.jewelcraft_gem_edit(cut, stone, use_force, use_id_only)` | Always pass both `cut` and `stone`; they reset to ROUND/DIAMOND otherwise. Arguments differ in 3.x. See gems.md before using. [verified] |
 | `object.jewelcraft_gem_select_overlapping(threshold=0.1)` | Selects gems closer than `threshold` mm, **but only compares gems whose centres are within 4 mm** (two overlapping 8 mm rounds 6 mm apart were missed), and treats each stone as a circle. `H["stone_overlaps"]()` checks the meshes. [verified] |
 | `scene.jewelcraft_scene_units_set()` | Sets 1 unit = 1 mm and the grid scale. Needs the viewport override. [verified] |
 

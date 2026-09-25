@@ -14,14 +14,21 @@ Blender modeling (see heads.md). [source]
   prong diameter** (negative = further out).
 - `position` = angle, clockwise from +Y, of the first prong. `number` = copies spread over
   360°. `use_symmetry` mirrors every prong's Y coordinate (a mirror across the XZ plane),
-  so `number=2` + symmetry = 4 prongs. `symmetry_pivot` rotates the whole set.
+  so `number=2` + symmetry = 4 prongs. `symmetry_pivot` rotates the whole set, but only
+  when `use_symmetry` is on.
 - `alignment` = tilt. **Positive tilts the tips outward and pulls the bases in**
   (basket/cathedral look); negative does the opposite. At +10°, a 4 mm prong shifts
   4 × sin 10° ≈ 0.7 mm between top and base. [verified]
-- Presets: cushion/square → 2 + symmetry at 45°, intersection −20% (octagon 0%).
-  Rectangle → 2 + symmetry at 36° (baguette 29°). Round → 1 + symmetry at 60° (**2
-  prongs**; set `number`/`use_symmetry` yourself for 4 or 6). Triangle and heart → 3,
-  no symmetry. Diameter 0.8 mm for gems ≥ 2.5 mm; fantasy cuts use 0.28 × width. [source]
+- Presets (`prongs_presets.py`): [source]
+  - Cushion/square → 2 + symmetry at 45°, intersection −20% (octagon 0%).
+  - Rectangle → 2 + symmetry at 36°, −20%; baguette 29°, −10%.
+  - Round → 1 + symmetry at 60° (**2 prongs**; set `number`/`use_symmetry` yourself for
+    4 or 6).
+  - Triangle and heart → 3, no symmetry, alignment 10°.
+  - Oval → 30°, +40%. Pear → 1 prong at 50°, +40%, symmetry pivot −90°. Marquise → 16°,
+    +70%. These three use diameter 0.28 × width and heights from the width.
+  - Every other cut: diameter 0.8 mm for gems with Y ≥ 2.5 mm (smaller below). Heart
+    keeps this size-table diameter.
 
 ## Elongated stones: presets float
 
