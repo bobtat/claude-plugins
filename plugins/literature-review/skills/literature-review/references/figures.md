@@ -44,7 +44,7 @@ tier and say which.
 
 | Figure | Source file | When |
 |---|---|---|
-| **PRISMA 2020 flow** | `screening.csv` + `search-log.md` | **Always** |
+| **PRISMA 2020 flow** | `prisma-flow.json` (derived from `records.csv` + `screening.csv`) | **Always** |
 | **RoB traffic light** | `appraisals/*.md` | **Always, when RoB was assessed** |
 | **RoB summary barplot** | `appraisals/*.md` | With the traffic light |
 | **Database contribution** | `records.csv` | More than one source searched |

@@ -12,7 +12,7 @@ others are what make item 27 (availability of data and materials) answerable.
 ├── search-log.md            per source: string, date, limits, counts, caps
 ├── records.csv              every record retrieved, before screening
 ├── screening.csv            per record: both screeners, criterion, adjudication
-├── prisma-flow.md           the flow numbers in text, for the diagram to consume
+├── prisma-flow.json         flow counts and κ, derived from the two CSVs by script
 ├── appraisals/<key>.md      one per included study
 ├── figures/*.svg            one per figure in the budget
 ├── review.md                the synthesis — the document people read
@@ -41,11 +41,18 @@ which column of the flow diagram a record belongs to. Field meanings are in the
 `literature-review:source-discovery` skill.
 
 ```csv
-record_id,screener_1,screener_1_criterion,screener_2,screener_2_criterion,agreed,adjudication,final,stage
+record_id,stage,screener_1,screener_1_criterion,screener_2,screener_2_criterion,agreed,adjudication,final,final_criterion,decided_by,full_text_retrieved,study_id
 ```
 
 `stage` is `title_abstract` or `full_text`, because PRISMA counts exclusions at each
-separately. `screener_*` values are `include` / `exclude` / `unsure`.
+separately. `screener_*` values are `include` / `exclude` / `unsure`. `decided_by` is
+`automation` or `human` — the split the PRISMA template's footnote requires of any
+review using automation tools. `full_text_retrieved` feeds "Reports not retrieved", and
+`study_id` groups several reports of one study. Field rules are in the
+`literature-review:record-screening` skill.
+
+The flow counts are never assembled by hand. `screening_stats.py` derives
+`prisma-flow.json` from the two CSVs and refuses when they are inconsistent.
 
 ## The Conduct Disclosure
 

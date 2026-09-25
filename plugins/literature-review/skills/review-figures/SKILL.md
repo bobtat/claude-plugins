@@ -39,7 +39,7 @@ not in the budget that the data now clearly warrants is proposed, not silently a
 
 | Figure | Source |
 |---|---|
-| PRISMA flow | `screening.csv` + `search-log.md` |
+| PRISMA flow | `prisma-flow.json`, derived from `records.csv` and `screening.csv` by the screening phase |
 | RoB traffic light, RoB summary | `appraisals/*.md` |
 | Database contribution | `records.csv` |
 | Evidence map | the extraction table |
@@ -58,8 +58,10 @@ by hand:
 python3 <plugin>/skills/review-figures/scripts/prisma_flow.py counts.json --out figures/prisma-flow.svg
 ```
 
-The counts JSON is derived from `screening.csv` — see
-`examples/prisma-flow-example.json` for the shape. Supplying `other_methods` selects
+Its input is `prisma-flow.json`, which the screening phase derives from `records.csv`
+and `screening.csv` with `screening_stats.py` — see the `literature-review:record-screening`
+skill. Never assemble the counts by hand. `examples/prisma-flow-example.json` shows the
+shape. Supplying `other_methods` selects
 the two-column v2 template, which **citation searching requires**, so a review that
 snowballed uses it.
 
