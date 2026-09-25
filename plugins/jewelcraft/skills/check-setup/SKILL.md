@@ -1,6 +1,6 @@
 ---
 name: check-setup
-description: Checks that Blender, the Blender MCP connection and the JewelCraft add-on are ready for jewelry work. Use when the user says "check my setup", "is Blender connected", "is JewelCraft working", or at the start of a JewelCraft session before building or measuring anything.
+description: Checks that Blender, the Blender MCP connection and the JewelCraft add-on are ready for jewelry work. Use when the user says "is JewelCraft working", "is Blender ready for JewelCraft", "check my jewelry setup", or at the start of a JewelCraft session before building or measuring anything.
 ---
 
 # Check setup

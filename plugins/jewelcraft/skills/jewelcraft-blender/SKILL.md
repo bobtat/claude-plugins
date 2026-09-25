@@ -1,6 +1,6 @@
 ---
 name: jewelcraft-blender
-description: Core knowledge for modeling jewelry in Blender with the JewelCraft add-on through Python or a Blender MCP connection. Use when adding gems, prongs or cutters, sizing ring shanks, reading carat weights or metal weights, or scripting any JewelCraft tool. The other skills in this plugin (jewelcraft:check-setup, jewelcraft:check-prongs, jewelcraft:check-seat, jewelcraft:weigh-piece, jewelcraft:stone-report, jewelcraft:ring-size-check, jewelcraft:print-cast-check, jewelcraft:build-ring) build on it.
+description: Core knowledge for modeling jewelry in Blender with the JewelCraft add-on through Python or a Blender MCP connection. Use when adding gems, prongs or cutters, sizing ring shanks, reading carat weights or metal weights, or scripting any JewelCraft tool. Other skills in the jewelcraft plugin build on it. General Blender modeling that isn't jewelry belongs to the Blender modeling skill.
 ---
 
 # JewelCraft in Blender, driven from Python
