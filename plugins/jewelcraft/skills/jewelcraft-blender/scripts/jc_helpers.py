@@ -494,52 +494,94 @@ def weigh(objs, union=True):
             "weights_g": [(n, round(vol * d / 1000, 2)) for n, d in dens]}
 
 
-def ring_size(band, formats=("US", "UK", "CH", "JP", "HK")):
-    """Inner diameter of a band, fitted to its inner surface, and the matching sizes."""
+def _fit_circle(S):
     import numpy as np
-    rs = jc(".lib.ringsizelib")
-    band = get(band) if isinstance(band, str) else band
-    bm = eval_bm(band)
-    P = np.array([v.co[:] for v in bm.verts])
-    bm.free()
-    ext = P.max(0) - P.min(0)
-    axis = int(np.argmin(ext))                 # ring axis = thinnest direction
-    ij = [k for k in range(3) if k != axis]
-    Q = P[:, ij]
+    A = np.c_[2 * S, np.ones(len(S))]
+    sol, *_ = np.linalg.lstsq(A, (S ** 2).sum(1), rcond=None)
+    c = sol[:2]
+    return c, math.sqrt(max(sol[2] + c @ c, 0.0))
+
+
+def _inner_circle(Q, nb=180):
+    """Circle through the innermost point of each angular bin of the 2D points Q.
+    Bins the band leaves empty get filled by head or prong points, so outliers are
+    rejected repeatedly, not once: after one pass the centre is still pulled toward
+    the head and the head points survive."""
+    import numpy as np
     c = (Q.max(0) + Q.min(0)) / 2
-    nb = 180
-    for _ in range(6):
+    for _ in range(10):
         d = Q - c
         ang = np.arctan2(d[:, 1], d[:, 0])
         rad = np.hypot(d[:, 0], d[:, 1])
         bins = ((ang + np.pi) / (2 * np.pi) * nb).astype(int) % nb
-        inner = []
-        for b in range(nb):
-            m = np.where(bins == b)[0]
-            if len(m):
-                inner.append(Q[m[np.argmin(rad[m])]])
-        S = np.array(inner)
-        A = np.c_[2 * S, np.ones(len(S))]
-        y = (S ** 2).sum(1)
-        sol, *_ = np.linalg.lstsq(A, y, rcond=None)
-        c = sol[:2]
-        r = math.sqrt(sol[2] + c @ c)
-        res = np.abs(np.hypot(*(S - c).T) - r)
-        keep = res < max(3 * np.median(res), 1e-4)
-        if keep.sum() >= 12 and keep.sum() < len(S):
-            S = S[keep]
-            A = np.c_[2 * S, np.ones(len(S))]
-            y = (S ** 2).sum(1)
-            sol, *_ = np.linalg.lstsq(A, y, rcond=None)
-            c = sol[:2]
-            r = math.sqrt(sol[2] + c @ c)
-    dia = 2 * r
+        S = np.array([Q[m[np.argmin(rad[m])]]
+                      for m in (np.where(bins == b)[0] for b in range(nb)) if len(m)])
+        keep = np.ones(len(S), bool)
+        for _ in range(30):
+            cf, r = _fit_circle(S[keep])
+            res = np.abs(np.hypot(*(S - cf).T) - r)
+            new = res < max(3 * float(np.median(res[keep])), 0.02)
+            if new.sum() < 12 or (new == keep).all():
+                break
+            keep = new
+        moved = float(np.hypot(*(cf - c)))
+        c = cf
+        if moved < 1e-6:
+            break
+    res = np.abs(np.hypot(*(S[keep] - c).T) - r)
+    return c, r, S, keep, float(np.median(res))
+
+
+def _ring_fit(band):
+    """Best inner-circle fit over candidate ring axes (the object's local axes and
+    the principal axes of its vertices). A wrong axis projects the band edge-on and
+    fits badly, so the candidate with the smallest median residual wins."""
+    import numpy as np
+    bm = eval_bm(band)
+    P = np.array([v.co[:] for v in bm.verts])
+    bm.free()
+    M = band.matrix_world.to_3x3()
+    cands = [np.array(M.col[k].normalized()) for k in range(3) if M.col[k].length > 1e-9]
+    _, V = np.linalg.eigh(np.cov((P - P.mean(0)).T))
+    for k in range(3):
+        v = V[:, k]
+        if all(abs(v @ w) < 0.9999 for w in cands):
+            cands.append(v)
+    best = None
+    for n in cands:
+        u = np.cross(n, [1.0, 0, 0] if abs(n[0]) < 0.9 else [0, 1.0, 0])
+        u /= np.linalg.norm(u)
+        w = np.cross(n, u)
+        Q = P @ np.c_[u, w]
+        c, r, S, keep, med = _inner_circle(Q)
+        if best is None or med < best["median_residual"] - 1e-9:
+            rad_all = np.hypot(*(Q - c).T)
+            centre = u * c[0] + w * c[1] + n * float(np.median(P @ n))
+            best = {"axis": n, "centre": centre, "r": r, "median_residual": med,
+                    "max_dev": float(np.max(np.abs(np.hypot(*(S[keep] - c).T) - r))),
+                    "rejected": int((~keep).sum()), "min_opening_r": float(rad_all.min())}
+    return best
+
+
+def ring_size(band, formats=("US", "UK", "CH", "JP", "HK")):
+    """Inner diameter of a band, fitted to its inner surface, and the matching sizes."""
+    rs = jc(".lib.ringsizelib")
+    band = get(band) if isinstance(band, str) else band
+    f = _ring_fit(band)
+    dia = 2 * f["r"]
     cir = math.pi * dia
-    sizes = {f: rs.to_size_fmt(cir, f) for f in formats}
-    return {"band": band.name, "axis": "XYZ"[axis], "inner_diameter_mm": round(dia, 3),
-            "inner_circumference_mm": round(cir, 3), "sizes": sizes,
-            "roundness_max_dev_mm": round(float(np.max(np.abs(np.hypot(*(S - c).T) - r))), 4),
-            "note": "JP/HK return None unless within ~0.1 mm of a listed size."}
+    sizes = {k: rs.to_size_fmt(cir, k) for k in formats}
+    out = {"band": band.name, "axis": tuple(round(float(x), 4) for x in f["axis"]),
+           "centre": tuple(round(float(x), 3) for x in f["centre"]),
+           "inner_diameter_mm": round(dia, 3), "inner_circumference_mm": round(cir, 3),
+           "sizes": sizes, "roundness_max_dev_mm": round(f["max_dev"], 4),
+           "points_rejected": f["rejected"],
+           "min_opening_diameter_mm": round(2 * f["min_opening_r"], 3),
+           "note": "JP/HK return None unless within ~0.1 mm of a listed size."}
+    if dia - 2 * f["min_opening_r"] > 0.05:
+        out["warning"] = ("Something reaches into the finger hole: the smallest opening is "
+                          f"{2 * f['min_opening_r']:.3f} mm, not the fitted {dia:.3f} mm.")
+    return out
 
 
 def size_to_diameter(size, fmt="US"):
