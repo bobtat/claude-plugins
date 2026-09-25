@@ -11,7 +11,7 @@ Checked 2026-09-20 during the build of this plugin.
 | Source | Cited for | Tier | Check |
 |---|---|---|---|
 | **PRISMA 2020** — Page MJ, McKenzie JE, Bossuyt PM, et al. BMJ 2021;372:n71. DOI [10.1136/bmj.n71](https://doi.org/10.1136/bmj.n71) | All 42 checklist rows in `prisma.md`, quoted | **A** | Full checklist retrieved from [PMC8005924](https://pmc.ncbi.nlm.nih.gov/articles/PMC8005924/) and transcribed item by item |
-| PRISMA 2020 **flow diagram** box labels | The diagram spec in `prisma.md` | **B/D** | ⚠ The four phases and the grey-box removal rule are from the retrieved article. **The individual box labels are partly reconstructed and were not read off Figure 1.** Verify against the published figure before relying on exact wording |
+| PRISMA 2020 **flow diagram** templates (v1 and v2, new reviews) | The diagram spec in `prisma.md` | **A** | Both official `.docx` templates downloaded from prisma-statement.org and their text extracted; box labels, phase rails, column headers and both footnotes are verbatim. CC BY 4.0, citing Page et al. 2021. Corrected an earlier reconstruction — see below |
 | **PRISMA-S** — Rethlefsen ML, Kirtley S, Waffenschmidt S, et al. Syst Rev 2021;10:39. DOI [10.1186/s13643-020-01542-z](https://doi.org/10.1186/s13643-020-01542-z) | Search reporting requirements | **C** | Title, venue, DOI and the 16-item count confirmed by search. Item text not read |
 | **Cochrane Handbook for Systematic Reviews of Interventions**, v6.5 (2024) | Screening, RoB, the two RoB figure conventions | **C** | Current version confirmed as 6.5 (2024); 6.4 was August 2023. Chapters not read |
 | **RoB 2** — Sterne JAC, et al. BMJ 2019;366:l4898 | Randomized-trial appraisal; five domains | **C** | Citation confirmed. **Domains independently confirmed by a second search** |
@@ -28,7 +28,14 @@ Checked 2026-09-20 during the build of this plugin.
 **What this table does not do.** It confirms that these works exist and are titled and
 numbered as cited. It does not confirm that this skill represents their content
 correctly — that would require reading them, which for every tier-C row was not done.
-The one place it is most likely to matter is the flow diagram row, flagged above.
+
+**One correction already made.** The flow diagram row shipped at tier B/D, flagged as
+reconstructed. Reading the official templates then found three things the
+reconstruction had wrong or missing: there are **two** templates for a new review and
+snowballing forces the two-column one; the middle of the flow says *Reports*, not
+*Studies*; and a template footnote requires a review using automation tools to split
+its exclusion count into human and automation. That last one binds directly on this
+plugin and was not in the reconstruction at all. The flag was worth carrying.
 
 ## Where the Conventions Come From
 
@@ -119,12 +126,11 @@ Deliberately not covered:
 
 The three things most likely to be wrong, in order:
 
-1. **The flow diagram box labels**, per the verification table. This is a known,
-   specific, checkable defect and it is the first thing to fix.
-2. **The MCP server pins.** Both servers are pinned, and `paper-search-mcp` is a 0.1.x
+1. **The MCP server pins.** Both servers are pinned, and `paper-search-mcp` is a 0.1.x
    package that went 14 months between releases. A pin that stops resolving breaks
    discovery, and the fallback is a tier-C web search.
-3. **The rasterizer chain on Windows.** The `svglib` fallback is the least-exercised
+2. **The rasterizer chain on Windows.** The `svglib` fallback is the least-exercised
    path and the one Windows users will land on.
+3. **The GRADE rate-down and rate-up lists**, which remain tier D.
 
 The methodology sources are stable on a decade timescale. The tooling is not.

@@ -114,35 +114,93 @@ Item 27 is nearly free here and usually hard for human reviewers: the artifact s
 
 ## The Flow Diagram
 
-Item 16a. Four phases, and **the grey boxes are removed when not applicable rather
-than left at zero** — a published rule that a generator will otherwise violate.
+Item 16a. Labels below are **verbatim from the official templates** at
+prisma-statement.org, which are CC BY 4.0 and cite Page et al. 2021.
+
+### There are two templates for a new review, and snowballing decides which
+
+| Template | Use when |
+|---|---|
+| **v1 — databases and registers only** | Every record came from a database or register search |
+| **v2 — adds "Identification of studies via other methods"** | Anything came from websites, organisations, or **citation searching** |
+
+**Snowballing is citation searching, so a review that snowballs needs v2.** This
+plugin treats backward and forward chaining as a first-class method
+(`search-strategy.md`), which means **v2 is the common case here, not the exception.**
+Its second column runs its own `Records identified from` → `Reports sought for
+retrieval` → `Reports not retrieved` → `Reports assessed for eligibility` →
+`Reports excluded` chain, and both columns feed the single Included box.
+
+There are separate v1/v2 templates for **updated** reviews. Use those when extending
+an existing review rather than redrawing a new-review diagram.
+
+### Boxes, verbatim
+
+Left rail, top to bottom: **Identification**, **Screening**, **Included**.
+Column header: **Identification of studies via databases and registers** (and, in v2,
+**Identification of studies via other methods**).
 
 ```
-IDENTIFICATION   Records identified from each database/register, per source
-                 Records removed before screening: duplicates, ineligible by
-                 automation tool, other reasons
-                        ↓
-SCREENING        Records screened  →  Records excluded
-                 Reports sought for retrieval  →  Reports not retrieved
-                 Reports assessed for eligibility  →  Reports excluded, with a
-                                                       reason and a count per reason
-                        ↓
-INCLUDED         Studies included in review
-                 Reports of included studies
+Records identified from*:            →  Records removed before screening:
+  Databases (n = )                        Duplicate records removed (n = )
+  Registers (n = )                        Records marked as ineligible by
+                                            automation tools (n = )
+                                          Records removed for other reasons (n = )
+            ↓
+Records screened (n = )              →  Records excluded** (n = )
+            ↓
+Reports sought for retrieval (n = )  →  Reports not retrieved (n = )
+            ↓
+Reports assessed for eligibility     →  Reports excluded:
+  (n = )                                  Reason 1 (n = )
+            ↓                             Reason 2 (n = )
+                                          Reason 3 (n = )  etc.
+Studies included in review (n = )
+Reports of included studies (n = )
 ```
 
-Every number reconciles against `screening.csv`. The arithmetic must close: screened
-minus excluded equals sought, and so on down. **`literature-review:review-critic` checks the
-arithmetic** — a flow diagram whose numbers do not sum is the most visible possible
-defect in a systematic review.
+Note **"Reports"**, not "Studies", through the middle of the flow: a study can have
+several reports, and the final box distinguishes them. Getting this wrong is a common
+error in hand-drawn diagrams.
+
+Grey boxes are **removed when not applicable**, not left at zero.
+
+### The two footnotes are part of the template
+
+Reproduce both:
+
+> **\*** Consider, if feasible to do so, reporting the number of records identified
+> from each database or register searched (rather than the total number across all
+> databases/registers).
+>
+> **\*\*** If automation tools were used, indicate how many records were excluded by
+> a human and how many were excluded by automation tools.
+
+**The second footnote binds hard on this plugin.** Screening here is performed by
+agents, which are automation tools. The `Records excluded**` box must therefore split
+the count: how many by automation, how many by a human. A machine-conducted review
+that reports one undifferentiated exclusion count is not following the template, and
+it hides exactly the fact the conduct disclosure exists to surface.
+
+### The arithmetic must close
+
+```
+identified (+ other methods) − removed before screening = screened
+screened − excluded                                     = sought for retrieval
+sought − not retrieved                                  = assessed for eligibility
+assessed − excluded with reasons                        = included
+```
+
+`literature-review:review-critic` recomputes it from `screening.csv`. A flow diagram
+whose numbers do not sum is the most visible defect a systematic review can ship.
 
 Two honesty requirements specific to a machine-run search:
 
 - **"Records identified" means the number the query matched**, which the discovery
-  tooling may not report. When only the retrieved count is available, label the box
-  as retrieved-under-cap and state the cap. Never present a capped retrieval as an
+  tooling may not report. When only the retrieved count is available, label the box as
+  retrieved-under-cap and state the cap. Never present a capped retrieval as an
   identified total.
-- **Exclusions at the "reports excluded" step need a reason and a count per reason.**
+- **Exclusions at the "Reports excluded" step need a reason and a count per reason.**
   "Excluded: 11" is not compliant. `screening.csv` carries the criterion per record
   precisely so this box can be filled.
 
