@@ -17,9 +17,10 @@ description: Lists every stone in the open Blender/JewelCraft design with cut, s
    - Total carats (`total_ct`). Say these are JewelCraft's volume-based estimates, not
      graded weights.
    - JewelCraft's `warnings`, explained.
-   - `large_stone_overlaps`: any pair listed there overlaps. Explain that JewelCraft's
-     own check skips stones whose centres are 4 mm or more apart, which is why this extra
-     check exists.
+   - `stone_overlaps`: each pair listed either overlaps (`overlap_mm3`) or sits closer
+     than 0.1 mm (`gap_mm`). Explain that JewelCraft's own check skips stones whose
+     centres are 4 mm or more apart and treats stones as circles, missing square
+     corners, which is why this mesh-based check exists.
 4. If there are no gems, say so. Gems are objects with JewelCraft's gem identity; a mesh
    that only looks like a stone won't be listed (see `../jewelcraft-blender/references/gems.md` on
    `gem_edit(use_id_only=True)`).

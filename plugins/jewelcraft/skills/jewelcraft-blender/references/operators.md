@@ -32,7 +32,7 @@ which calls `addon_utils.module_bl_info`. [verified]
 | `object.jewelcraft_weight_display()` | Volume + weight, one `Info:` line per enabled alloy in the current scene's list. Works on meshes, curves, text and metaballs. Prefer `H["weigh"]`, which handles overlaps. [verified] |
 | `wm.jewelcraft_design_report(filepath=..., file_format='JSON', use_preview=False)` | Writes a report file **and opens it in the web browser** (unless Blender runs in background mode). Prefer `H["stone_report"]()`, which returns the same data with no file or browser. [verified] |
 | `object.jewelcraft_gem_edit(cut, stone, use_force, use_id_only)` | See gems.md before using. [verified] |
-| `object.jewelcraft_gem_select_overlapping(threshold=0.1)` | Selects gems closer than `threshold` mm, **but only compares gems whose centres are within 4 mm** (two overlapping 8 mm rounds 6 mm apart were missed). `H["stone_report"]` covers the gap. [verified] |
+| `object.jewelcraft_gem_select_overlapping(threshold=0.1)` | Selects gems closer than `threshold` mm, **but only compares gems whose centres are within 4 mm** (two overlapping 8 mm rounds 6 mm apart were missed), and treats each stone as a circle. `H["stone_overlaps"]()` checks the meshes. [verified] |
 | `scene.jewelcraft_scene_units_set()` | Sets 1 unit = 1 mm and the grid scale. Needs the viewport override. [verified] |
 
 ## Prongs and cutters: builder recipe (2.18.1 only)

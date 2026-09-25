@@ -341,23 +341,79 @@ def check_setup():
     }
 
 
-def gems_in_scene():
-    gemlib = jc(".lib.gemlib")
+def _gems():
+    """(label, gem object, world matrix) for every visible gem, including gems placed
+    by collection, particle or geometry-node instancing. Mirrors JewelCraft's own
+    iter_gems, so both see the same stones."""
     out = []
-    for o in bpy.context.view_layer.objects:
-        if "gem" not in o or o.type != 'MESH':
+    for dup in bpy.context.evaluated_depsgraph_get().object_instances:
+        if dup.is_instance:
+            ob, instancer = dup.instance_object.original, dup.parent.original
+        else:
+            ob = instancer = dup.object.original
+        if "gem" not in ob or ob.type != 'MESH' or not instancer.visible_get():
             continue
-        cut, stone = o["gem"]["cut"], o["gem"]["stone"]
-        d = tuple(round(x, 2) for x in o.dimensions)
-        out.append({"name": o.name, "cut": cut, "stone": stone, "dims_xyz": d,
-                    "ct": gemlib.ct_calc(stone, cut, d),
-                    "location": tuple(round(x, 3) for x in o.matrix_world.translation)})
+        label = ob.name if not dup.is_instance else f"{ob.name} [{instancer.name} #{dup.persistent_id[0]}]"
+        out.append((label, ob, dup.matrix_world.copy()))
     return out
 
 
-def stone_report(check_large_overlaps=True):
+def _gem_dims(ob, M):
+    bb = ob.bound_box
+    s = M.to_scale()
+    return Vector(((bb[4][0] - bb[0][0]) * abs(s.x), (bb[3][1] - bb[0][1]) * abs(s.y),
+                   (bb[1][2] - bb[0][2]) * abs(s.z)))
+
+
+def gems_in_scene():
+    gemlib = jc(".lib.gemlib")
+    out = []
+    for label, o, M in _gems():
+        cut, stone = o["gem"]["cut"], o["gem"]["stone"]
+        d = tuple(round(x, 2) for x in _gem_dims(o, M))
+        out.append({"name": label, "cut": cut, "stone": stone, "dims_xyz": d,
+                    "ct": gemlib.ct_calc(stone, cut, d),
+                    "location": tuple(round(x, 3) for x in M.translation)})
+    return out
+
+
+def stone_overlaps(threshold=0.1):
+    """Pairs of stones that overlap or are closer than `threshold` mm, measured on the
+    meshes. JewelCraft's own check treats each stone as a circle of half its larger
+    side, which misses the corners of square and emerald cuts, and it only compares
+    stones whose centres are within 4 mm."""
+    gems = _gems()
+    trees, bms, rads = [], [], []
+    for _, o, M in gems:
+        bm = eval_bm(o, M)
+        trees.append(BVHTree.FromBMesh(bm))
+        bms.append(bm)
+        rads.append(_gem_dims(o, M).length / 2)
+    flagged = []
+    for i in range(len(gems)):
+        for j in range(i + 1, len(gems)):
+            dist = (gems[i][2].translation - gems[j][2].translation).length
+            if dist > rads[i] + rads[j] + threshold:
+                continue
+            row = {"a": gems[i][0], "b": gems[j][0], "centre_distance_mm": round(dist, 3)}
+            if trees[i].overlap(trees[j]):
+                row["overlap_mm3"] = round(overlap_volume(gems[i][1], gems[j][1],
+                                                          gems[i][2], gems[j][2]), 4)
+                flagged.append(row)
+                continue
+            gap = min(min(t.find_nearest(v.co)[3] for v in bm.verts)
+                      for t, bm in ((trees[j], bms[i]), (trees[i], bms[j])))
+            if gap < threshold:
+                row["gap_mm"] = round(gap, 4)
+                flagged.append(row)
+    for bm in bms:
+        bm.free()
+    return flagged
+
+
+def stone_report(check_overlaps=True):
     """JewelCraft's design-report data without writing a file or opening a browser,
-    plus an overlap check for large stones that JewelCraft's 4 mm search misses."""
+    plus a mesh-based overlap check that covers what JewelCraft's own check misses."""
     rg = jc(".operators.design_report.report_get")
     rf = jc(".operators.design_report.report_fmt")
     gt = jc(".lib.gettext")
@@ -367,18 +423,8 @@ def stone_report(check_large_overlaps=True):
     result = {"warnings": list(data.get("warnings", [])),
               "gems": data.get("gems", []),
               "total_ct": round(sum(g["ct_sum"] for g in data.get("gems", [])), 3)}
-    if check_large_overlaps:
-        obs = [o for o in bpy.context.view_layer.objects if "gem" in o and o.type == 'MESH']
-        flagged = []
-        for i, a in enumerate(obs):
-            for b in obs[i + 1:]:
-                ra, rb = max(a.dimensions.xy) / 2, max(b.dimensions.xy) / 2
-                dist = (a.matrix_world.translation - b.matrix_world.translation).length
-                if dist >= 4.0 and dist < ra + rb + 0.1:
-                    v = overlap_volume(a, b)
-                    if v > 1e-6:
-                        flagged.append({"a": a.name, "b": b.name, "overlap_mm3": round(v, 4)})
-        result["large_stone_overlaps"] = flagged
+    if check_overlaps:
+        result["stone_overlaps"] = stone_overlaps()
     return result
 
 
