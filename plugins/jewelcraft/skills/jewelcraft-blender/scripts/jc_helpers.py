@@ -231,11 +231,18 @@ class TempObjects:
         self.colls.append(coll)
         return coll
 
-    def copy_original(self, ob, name="JC_TMP"):
-        """Copy of the object's own mesh with no modifiers."""
-        c = bpy.data.objects.new(name, ob.data.copy())
+    def copy_without_cutter(self, ob, cutter, name="JC_TMP"):
+        """Copy of `ob` that keeps its modifiers (curve wrap, Solidify, Mirror...) except
+        the Booleans that cut with `cutter`."""
+        c = ob.copy()
+        c.data = ob.data.copy()
+        c.name = name
+        for md in list(c.modifiers):
+            if md.type == 'BOOLEAN' and (md.object == cutter or (
+                    md.operand_type == 'COLLECTION' and md.collection is not None
+                    and cutter.name in md.collection.all_objects)):
+                c.modifiers.remove(md)
         self.coll.objects.link(c)
-        c.matrix_world = ob.matrix_world.copy()
         self.obs.append(c)
         return c
 
@@ -451,10 +458,10 @@ def seat_report(gem, cutter, metal=None):
         out["metal_nonmanifold_edges"] = nm
         out["stone_metal_overlap_mm3"] = round(overlap_volume(gem, metal), 4)
         with TempObjects() as t:
-            raw = t.copy_original(metal)
+            raw = t.copy_without_cutter(metal, cutter)
             raw.hide_set(True)
             bpy.context.view_layer.update()
-            out["control_overlap_without_modifiers_mm3"] = round(overlap_volume(gem, raw), 4)
+            out["control_overlap_without_seat_mm3"] = round(overlap_volume(gem, raw), 4)
     return out
 
 
