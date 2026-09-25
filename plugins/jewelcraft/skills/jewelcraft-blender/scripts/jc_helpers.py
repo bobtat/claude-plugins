@@ -252,20 +252,26 @@ class TempObjects:
         self.colls.append(coll)
         return coll
 
-    def copy_without_cutter(self, ob, cutter, name="JC_TMP"):
+    def copy_without(self, ob, drop, name="JC_TMP"):
         """Copy of `ob` that keeps its modifiers (curve wrap, Solidify, Mirror...) except
-        the Booleans that cut with `cutter`."""
+        those for which drop(modifier) is true. Returns (copy, dropped names)."""
         c = ob.copy()
         c.data = ob.data.copy()
         c.name = name
+        dropped = []
         for md in list(c.modifiers):
-            if md.type == 'BOOLEAN' and (md.object == cutter or (
-                    md.operand_type == 'COLLECTION' and md.collection is not None
-                    and cutter.name in md.collection.all_objects)):
+            if drop(md):
+                dropped.append(md.name)
                 c.modifiers.remove(md)
         self.coll.objects.link(c)
         self.obs.append(c)
-        return c
+        return c, dropped
+
+    def copy_without_cutter(self, ob, cutter, name="JC_TMP"):
+        """Copy of `ob` without the Booleans that cut with `cutter`."""
+        return self.copy_without(ob, lambda md: md.type == 'BOOLEAN' and (
+            md.object == cutter or (md.operand_type == 'COLLECTION' and md.collection is not None
+                                    and cutter.name in md.collection.all_objects)), name)[0]
 
     def __exit__(self, *exc):
         datas = [o.data for o in self.obs if o.data is not None]
@@ -514,8 +520,24 @@ def prong_report(gem, prongs, prong_diameter=None):
     """How each prong meets the stone's girdle. bite > 0 = prong overlaps the girdle
     (the notch depth); bite < 0 = gap. Bench guidance is 30-50% of the prong's
     thickness. `prong_diameter` (the prong setting) is used for the suggested corner
-    settings; tapered prongs are thicker at the girdle than their setting."""
+    settings; tapered prongs are thicker at the girdle than their setting.
+
+    Pre-notched prongs are measured without their Difference Booleans: with the notch
+    cut, the girdle section stops short of the stone and would read as a gap."""
     gem, prongs = (get(gem) if isinstance(gem, str) else gem), (get(prongs) if isinstance(prongs, str) else prongs)
+    with TempObjects() as t:
+        plain, dropped = t.copy_without(
+            prongs, lambda md: md.type == 'BOOLEAN' and md.operation == 'DIFFERENCE')
+        plain.hide_set(True)
+        bpy.context.view_layer.update()
+        out = _prong_rows(gem, plain, prong_diameter)
+    if dropped:
+        out["measured_without_notches"] = dropped
+    out["prongs"] = prongs.name
+    return out
+
+
+def _prong_rows(gem, prongs, prong_diameter):
     frame = gem_frame(gem)
     hull = girdle_hull(gem)
     rows = []
@@ -536,9 +558,9 @@ def prong_report(gem, prongs, prong_diameter=None):
     notes = []
     if not rows:
         notes.append("No prong crosses the girdle plane.")
-    elif any(r["bite_mm"] <= 0 for r in rows):
+    if any(r["bite_mm"] <= 0 for r in rows):
         notes.append("At least one prong does not touch the girdle.")
-    elif any(r["bite_pct_of_diameter"] < MIN_BITE_FRAC * 100 for r in rows):
+    if any(0 < r["bite_pct_of_diameter"] < MIN_BITE_FRAC * 100 for r in rows):
         notes.append("At least one prong grips less than 30% of its thickness, under the "
                      "30-50% bench range.")
     if rows:
@@ -546,13 +568,27 @@ def prong_report(gem, prongs, prong_diameter=None):
         crown = max(v.co.z for v in bm.verts)
         bm.free()
         bm = eval_bm(prongs, frame.inverted() @ prongs.matrix_world)
-        for r in rows:
-            r["tip_above_girdle_mm"] = 0.0
+        # Each prong's tip is the highest point of the connected piece of mesh that
+        # crosses the girdle at that prong, so other geometry joined into the same object
+        # (a halo rim, a gallery) doesn't count as a tip.
+        bm.verts.index_update()
+        parent = list(range(len(bm.verts)))
+
+        def find(i):
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+        for e in bm.edges:
+            parent[find(e.verts[0].index)] = find(e.verts[1].index)
+        top = {}
         for v in bm.verts:
-            if v.co.z > 0:
-                r = min(rows, key=lambda r: math.hypot(v.co.x - r["centre"][0],
-                                                       v.co.y - r["centre"][1]))
-                r["tip_above_girdle_mm"] = max(r["tip_above_girdle_mm"], round(v.co.z, 3))
+            k = find(v.index)
+            top[k] = max(top.get(k, v.co.z), v.co.z)
+        for r in rows:
+            near = min(bm.verts, key=lambda v: math.hypot(v.co.x - r["centre"][0],
+                                                          v.co.y - r["centre"][1]) + abs(v.co.z))
+            r["tip_above_girdle_mm"] = round(max(top[find(near.index)], 0.0), 3)
         bm.free()
         out["crown_height_mm"] = round(crown, 3)
         if any(r["tip_above_girdle_mm"] < crown / 2 for r in rows):
@@ -561,7 +597,7 @@ def prong_report(gem, prongs, prong_diameter=None):
     if notes:
         out["note"] = " ".join(notes)
     L, W = gem.dimensions.y, gem.dimensions.x
-    if gem["gem"]["cut"] == "CUSHION" and rows:
+    if (gem.get("gem") or {}).get("cut") == "CUSHION" and rows:
         d = prong_diameter or sum(r["diameter_mm"] for r in rows) / len(rows)
         out["suggested_corner_settings"] = corner_prong_settings(L, W, d)
     return out

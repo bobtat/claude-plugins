@@ -12,7 +12,10 @@ description: Measures how each prong grips a stone's girdle in a Blender/JewelCr
    check each gem's children for prong objects first. Otherwise use the names the user
    gave, or ask.
 3. For each pair, run `H["prong_report"](gem, prongs)`. It slices the prongs at the
-   girdle plane and changes nothing.
+   girdle plane and changes nothing. Pass `prong_diameter=` if the prong setting is known
+   (from the build or the user); for tapered prongs, ask for it. If the prongs are
+   already notched (a Difference Boolean with the cutter), the report measures them
+   without the notch and lists it in `measured_without_notches`.
 4. Report per prong: position (angle), diameter at the girdle, and grip (`bite_mm`,
    `bite_pct_of_diameter`).
    - **Negative bite = gap: that prong doesn't touch the stone.** Say this plainly.
@@ -25,9 +28,10 @@ description: Measures how each prong grips a stone's girdle in a Blender/JewelCr
    - Tip height: `tip_above_girdle_mm` against `crown_height_mm`. A tip below halfway up
      the crown is too short to fold over the stone.
 5. For cushions, the report includes `suggested_corner_settings` (position,
-   intersection) for corner prongs with a 33% notch. For tapered prongs, pass the prong's
-   `diameter` setting as `prong_diameter=`, since the prong is thicker at the girdle than
-   its setting. Explain what would change. **Rebuild the prongs only if the user agrees.** Use the builder recipe in
-   `../jewelcraft-blender/references/operators.md` with those overrides, name the new object clearly, and
+   intersection) for corner prongs with a 33% notch, computed from `prong_diameter` (or
+   the measured diameter at the girdle, which overstates a tapered prong). Explain what
+   would change. **Rebuild the prongs only if the user agrees.** Use the builder recipe in
+   `../jewelcraft-blender/references/operators.md` with `position=s["position_rad"]` and
+   `intersection=s["intersection"]` (where `s` is the suggestion), name the new object clearly, and
    leave the old prongs untouched (hidden or kept) until the user confirms.
 6. After any rebuild, run `prong_report` again and report the new numbers.
