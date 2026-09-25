@@ -74,24 +74,39 @@ while computing is how a mark stops matching its row.
 
 ### 4. Validate
 
-Run these against every figure, generated or hand-authored. They are cheap and they
-catch real defects — the collision check below found a genuine overlap in this plugin's
-own generator.
+**Run the checker. Do not eyeball it.**
 
-| Check | How |
+```
+python3 <plugin>/skills/review-figures/scripts/check_figure.py figures/*.svg
+```
+
+It exits non-zero on any failure and reports what and where:
+
+| Check | Catches |
 |---|---|
-| **Well-formed XML** | Parses with an XML parser |
-| **No box overlaps** | Pairwise rectangle intersection over the content boxes |
-| **Nothing clipped** | Every rect and every text `y` inside the `viewBox` |
-| **Text inside its box** | Each label's anchor within the rect it belongs to |
-| **Accessible** | `role="img"`, `<title>`, `<desc>` carrying the figure's numbers in prose, wired by `aria-labelledby` |
-| **Real text** | `<text>` elements, not outlined paths |
-| **Theme-independent** | No `fill="white"`, `"black"`, `#fff` or `#000` on any mark; a `prefers-color-scheme` block present as the enhancement |
-| **Numbers reconcile** | Recompute from the source file and compare to what is drawn |
+| Well-formed XML, `viewBox` present | A file that will not render or will not scale |
+| No overlapping content boxes | Two boxes drawn on top of each other |
+| **Arrow endpoints land on a box edge** | An arrow pointing at empty space |
+| Nothing outside the `viewBox` | Clipped boxes and clipped text |
+| Real `<text>` elements exist | Text outlined into paths |
+| `role="img"`, non-empty `<title>` and `<desc>` | A figure a screen reader cannot read |
+| `<desc>` contains digits | A description that omits the figure's numbers |
+| No `white`/`black`/`#fff`/`#000` fills on marks | Marks that vanish on one background |
+| Font size at or above 11px | Text that rasterizes to mush at 96 DPI |
 
-A figure failing any of these is fixed before it ships. "It probably renders" is not a
-check — a structurally valid SVG can still be visually garbled, which is exactly what
-the overlap check exists to catch.
+**The arrow check exists because the other checks are not enough.** An earlier version
+of the shipped flow generator produced an SVG that passed every structural and geometric
+test — well-formed, no overlaps, nothing clipped, fully accessible — while the
+other-methods column's arrow dropped into empty space and never reached the Included
+box. It took a human looking at the render to see it. The check now catches it, and it
+is the reason "it parses and nothing overlaps" is not a sufficient standard.
+
+What the checker still cannot judge: whether the figure **reads well** — crowding,
+label collisions inside a box, a layout that is technically correct and hard to follow.
+When a figure is new or its layout changed, render it and look, or ask someone to.
+
+Separately, and not the checker's job: **recompute the figure's numbers from the source
+file** and compare them to what is drawn.
 
 ### 5. Place it
 
@@ -138,6 +153,8 @@ a data gap into a graphic, and the graphic is what people cite.
 
 ## Resources
 
+- **`scripts/check_figure.py`** — the validator. Run it on every figure, generated or
+  hand-authored.
 - **`scripts/prisma_flow.py`** — the flow diagram generator. Standard library only,
   validates the arithmetic, supports v1 and v2, emits both template footnotes.
   `--help` for the interface.
