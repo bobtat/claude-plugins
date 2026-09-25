@@ -62,5 +62,6 @@ union weights, ring size with and without a head, stone overlaps, and STL size.
   sources.
 - No sourced minimums for prong grip or casting wall thickness are included; get these
   from your caster or printer.
-- JewelCraft's own overlap check skips stones whose centres are ≥ 4 mm apart;
-  `jewelcraft:stone-report` covers that gap.
+- JewelCraft's own overlap check skips stones whose centres are ≥ 4 mm apart and treats
+  each stone as a circle, missing square corners; `jewelcraft:stone-report` checks the
+  meshes instead.
