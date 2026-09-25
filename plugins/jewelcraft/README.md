@@ -62,7 +62,8 @@ union weights, ring size with and without a head, stone overlaps, and STL size.
   `skills/jewelcraft-blender/references/heads.md` gives anatomy, starting proportions and
   sources.
 - Prong grip is checked against a 30–50% notch depth (Stuller's bench guidance). No
-  sourced minimum for casting wall thickness is included; get it from your caster or
+  sourced minimum for casting wall thickness, shrinkage or finishing allowance is
+  included; `jewelcraft:print-cast-check` asks for them, since they depend on your caster or
   printer.
 - JewelCraft's own overlap check skips stones whose centres are ≥ 4 mm apart and treats
   each stone as a circle, missing square corners; `jewelcraft:stone-report` checks the

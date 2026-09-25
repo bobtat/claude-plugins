@@ -86,6 +86,7 @@ Measure it: prong grip, collisions with the stone, wall thickness.
 ## 6. Finish
 
 - Run the `jewelcraft:weigh-piece` skill for metal weight, and the `jewelcraft:stone-report` skill for carats.
-- Before printing or casting, run the `jewelcraft:print-cast-check` skill.
+- Before printing or casting, run the `jewelcraft:print-cast-check` skill. It asks about
+  casting shrinkage: a ring modelled at its exact size can come back small.
 - Report measured numbers (size, carats, weight, clearances), not impressions from a
   screenshot.
