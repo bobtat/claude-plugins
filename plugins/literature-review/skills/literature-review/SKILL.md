@@ -64,21 +64,25 @@ retrieval latency dominates". Full rules in `references/provenance.md`.
 Six phases. Each hands off through files, because the work is long and the artifacts
 are the evidence that it was conducted rather than composed.
 
-| Phase | Produces | Governed by |
+| Phase | Produces | Procedure |
 |---|---|---|
-| **0 Intake** | A question, an output directory, a citation style, a toolchain probe | Below |
-| **1 Protocol** | `protocol.md` — question, sources, search strings, criteria, RoB instrument, figure budget | `references/search-strategy.md`, `references/appraisal.md` |
-| **2 Discovery** | `search-log.md`, `records.csv` | `references/search-strategy.md` |
-| **3 Screening** | `screening.csv` with two independent passes and κ | `references/prisma.md` |
-| **4 Appraisal** | `appraisals/<key>.md` per included study | `references/appraisal.md` |
-| **5 Synthesis** | `review.md` | `references/synthesis.md` |
-| **5b Figures** | `figures/*.svg` | `literature-review:review-figures`, `references/figures.md` |
-| **6 Audit** | Verification table, `prisma-checklist.md`, `conduct-disclosure.md` | `literature-review:review-audit`, `references/provenance.md` |
+| **0 Intake** | A question, an output directory, a citation style, a toolchain probe | `literature-review:review-protocol` |
+| **1 Protocol** | `protocol.md` — question, criteria, sources, strings, snowballing caps, RoB instrument, figure budget, pilot counts | `literature-review:review-protocol` |
+| **2 Discovery** | `search-log.md`, `records.csv` | `literature-review:source-discovery` |
+| **3 Screening** | `screening.csv`, `prisma-flow.json` with κ per stage | `literature-review:record-screening` |
+| **4 Appraisal** | `appraisals/<study_id>.md`, `rob.csv`, `extraction.csv` | `literature-review:source-appraisal` |
+| **5a Figures** | `figures/*.svg`, drawn from the data files before any prose | `literature-review:review-figures` |
+| **5b Synthesis** | `review.md`, `references.bib`, `prisma-checklist.md`, `conduct-disclosure.md` | `literature-review:review-synthesis` |
+| **6 Audit** | `audit.md`, and the fixes it prompts | `literature-review:review-audit` |
+
+`/literature-review:review` runs the whole sequence.
 
 Two of these are gates where the user decides and the review stops until they do:
 **after Phase 1**, because the protocol determines everything the review can conclude
 and is the cheapest point to change direction; and **after Phase 3**, because the
-inclusion set is the evidence base.
+inclusion set is the evidence base. When the protocol plans citation searching, Phases 2
+and 3 alternate — snowball from the included set, screen what it finds — until a pass
+adds nothing.
 
 ### A question, not a topic
 
@@ -165,6 +169,16 @@ choose.
 
 ### Procedure Skills
 
+- **`literature-review:review-protocol`** — intake, the toolchain probe, the protocol
+  template, pilot counts, and the first gate.
+- **`literature-review:source-discovery`** — one hunter per source, true totals kept
+  apart from retrieved counts, deduplication, and the snowballing passes.
+- **`literature-review:record-screening`** — dual independent screening at both stages,
+  calibration, adjudication, the human/automation split, and the flow-count script.
+- **`literature-review:source-appraisal`** — retrieval-first tiering, extraction, risk of
+  bias, and the data files the figures are built from.
+- **`literature-review:review-synthesis`** — threads, `review.md` written section by
+  section from files, certainty, the checklist and the conduct disclosure.
 - **`literature-review:review-figures`** — turns the data files into SVG figures, with
   the validation checks and the refusal cases. Ships a PRISMA flow generator.
 - **`literature-review:review-audit`** — the seven-step audit: inventory, verify, tier
@@ -173,11 +187,23 @@ choose.
 
 ### Commands
 
+- **`/literature-review:review`** — conducts a systematic review end to end, with two
+  approval gates, and resumes an interrupted run from its last completed phase.
 - **`/literature-review:audit`** — audits a review and reports findings. Changes
   nothing. Takes a file, a directory, or a URL.
 
 ### Agents
 
+- **`literature-review:protocol-critic`** — attacks the protocol before any searching,
+  criteria first.
+- **`literature-review:source-hunter`** — runs one string against one source and records
+  the true total apart from what it retrieved.
+- **`literature-review:screener`** — screens a batch against the criteria; spawned twice
+  with no shared context.
+- **`literature-review:screening-adjudicator`** — decides full-text disagreements from the
+  paper's text, and reports criteria the disagreements cluster on.
+- **`literature-review:paper-reader`** — appraises one study, recording what it read
+  before extracting anything.
 - **`literature-review:citation-verifier`** — resolves every identifier and
   title-matches it, per reference. Emits BibTeX from resolved metadata. Verifies
   citations, never claims.
