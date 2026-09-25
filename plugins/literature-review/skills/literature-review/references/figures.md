@@ -17,7 +17,7 @@ These bind as hard as the never-invent rules in `provenance.md`.
 A figure is built from a named file in the output directory, and **every mark traces
 to a row in it**. No data file, no figure.
 
-The `figure-author` agent is given exactly one data file and the figure spec. It
+The `literature-review:figure-author` agent is given exactly one data file and the figure spec. It
 cannot consult the synthesis, the papers, or its own impression of the field, because
 a figure assembled from impression is a drawing of what the author expected to find.
 
@@ -89,7 +89,7 @@ main chain in a column, exclusion boxes branching right, arrows between. Grey bo
 **removed when not applicable**, never left at zero. Reproduce both template footnotes
 beneath the diagram.
 
-**The arithmetic must close**, and `figure-author` recomputes it from the source file
+**The arithmetic must close**, and `literature-review:figure-author` recomputes it from the source file
 before drawing rather than transcribing numbers it was handed:
 
 ```

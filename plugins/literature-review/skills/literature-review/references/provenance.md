@@ -30,7 +30,7 @@ findings rest on D has not been conducted; it has been recalled.
 These are mechanical. Do not deliberate.
 
 1. **Tier is assigned at the moment of reading, by the reader, and never revised
-   upward.** The `paper-reader` agent records what it actually retrieved. A later
+   upward.** The `literature-review:paper-reader` agent records what it actually retrieved. A later
    pass cannot promote C to A because the claim "seems solid."
 2. **An abstract is tier C, not tier B.** Reading the abstract is not reading a
    summary of the paper; it is reading the authors' summary of what they want you to
@@ -138,7 +138,7 @@ The revision log at the head of the document records each one with a date.
 
 ## Worked Examples
 
-**Tier inflation.** A `paper-reader` returns: *"Tier A. The paper reports 34% lower
+**Tier inflation.** A `literature-review:paper-reader` returns: *"Tier A. The paper reports 34% lower
 retrieval latency."* Its retrieval log shows it fetched the abstract page. → Tier C.
 The claim survives only as "the abstract reports 34% lower retrieval latency" and is
 flagged for a full-text read before it can be relied on.
