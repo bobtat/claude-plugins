@@ -653,18 +653,49 @@ def size_to_diameter(size, fmt="US"):
 
 
 def stl_bbox(path):
+    return stl_info(path)["bbox"]
+
+
+def stl_info(path):
+    """Bounding-box size and triangle count of a binary STL."""
     import struct
     data = open(path, "rb").read()
     n = struct.unpack("<I", data[80:84])[0]
     pts = [struct.unpack("<3f", data[84 + i * 50 + 12 + k * 12: 84 + i * 50 + 24 + k * 12])
            for i in range(n) for k in range(3)]
-    return [round(max(p[a] for p in pts) - min(p[a] for p in pts), 4) for a in range(3)]
+    return {"bbox": [round(max(p[a] for p in pts) - min(p[a] for p in pts), 4) for a in range(3)],
+            "triangles": n}
+
+
+def _export_stl(obs, path):
+    """Export exactly `obs`, restoring the user's selection and active object even if
+    selecting or exporting fails."""
+    vl = bpy.context.view_layer
+    prev_sel = [o for o in vl.objects if o.select_get()]
+    prev_act = vl.objects.active
+    try:
+        select_only(*obs)
+        missing = [o.name for o in obs if not o.select_get()]
+        if missing:
+            raise RuntimeError(f"Could not select {missing} for export (hidden or excluded).")
+        c = ctx()
+        kw = dict(filepath=path, export_selected_objects=True, ascii_format=False,
+                  apply_modifiers=True)
+        if c:
+            with bpy.context.temp_override(**c):
+                bpy.ops.wm.stl_export(**kw)
+        else:
+            bpy.ops.wm.stl_export(**kw)
+    finally:
+        for o in vl.objects:
+            o.select_set(o in prev_sel)
+        vl.objects.active = prev_act
 
 
 def print_check(objs, min_wall_mm=None, parts_that_must_not_touch=(), stl_path=None):
     obs = [get(o) if isinstance(o, str) else o for o in objs]
     u = bpy.context.scene.unit_settings
-    rows, problems = [], []
+    rows, problems, warnings = [], [], []
     for o in obs:
         v, vs, nm = volume_nm(o)
         t, where = min_wall(o)
@@ -679,42 +710,43 @@ def print_check(objs, min_wall_mm=None, parts_that_must_not_touch=(), stl_path=N
         if min_wall_mm and t and t < min_wall_mm:
             problems.append(f"{o.name}: thinnest wall {t:.3f} mm < {min_wall_mm} mm near {where}.")
         if any(abs(s - 1) > 1e-6 for s in o.scale):
-            problems.append(f"{o.name}: scale not applied {row['scale']}.")
+            warnings.append(f"{o.name}: scale not applied {row['scale']}. Harmless for the "
+                            "export; it only makes Solidify and similar thicknesses uneven.")
     collisions = []
     for a, b in parts_that_must_not_touch:
-        v = overlap_volume(get(a), get(b))
-        collisions.append({"a": a, "b": b, "overlap_mm3": round(v, 4)})
+        a, b = (get(x) if isinstance(x, str) else x for x in (a, b))
+        v = overlap_volume(a, b)
+        collisions.append({"a": a.name, "b": b.name, "overlap_mm3": round(v, 4)})
         if v > 1e-6:
-            problems.append(f"{a} and {b} overlap by {v:.4f} mm3.")
+            problems.append(f"{a.name} and {b.name} overlap by {v:.4f} mm3.")
     out = {"objects": rows, "collisions": collisions,
            "units_mm": u.system == 'METRIC' and abs(u.scale_length - 0.001) < 1e-7}
     if not out["units_mm"]:
         problems.append("Scene is not 1 unit = 1 mm; STL numbers will not be millimetres.")
     if stl_path:
-        vl = bpy.context.view_layer
-        prev_sel = [o for o in vl.objects if o.select_get()]
-        prev_act = vl.objects.active
-        select_only(*obs)
-        try:
-            bpy.ops.wm.stl_export(filepath=stl_path, export_selected_objects=True,
-                                  ascii_format=False, apply_modifiers=True)
-        finally:
-            for o in vl.objects:
-                o.select_set(o in prev_sel)
-            vl.objects.active = prev_act
-        bb = stl_bbox(stl_path)
-        dg = bpy.context.evaluated_depsgraph_get()
-        pts = []
-        for o in obs:
-            bm = eval_bm(o)
-            pts += [v.co.copy() for v in bm.verts]
-            bm.free()
-        exp = [round(max(p[k] for p in pts) - min(p[k] for p in pts), 4) for k in range(3)]
-        out["stl"] = {"path": stl_path, "stl_bbox": bb, "model_bbox_mm": exp,
-                      "matches": all(abs(a - b) < 0.01 for a, b in zip(bb, exp))}
-        if not out["stl"]["matches"]:
-            problems.append("STL size does not match the model; check export scale settings.")
+        hidden = [o.name for o in obs if not o.visible_get()]
+        if hidden:
+            problems.append(f"Not exported: {hidden} hidden in the viewport would be left out "
+                            "of the STL. Unhide them, or leave them out on purpose.")
+        else:
+            _export_stl(obs, stl_path)
+            info = stl_info(stl_path)
+            pts, tris = [], 0
+            for o in obs:
+                bm = eval_bm(o)
+                pts += [v.co.copy() for v in bm.verts]
+                tris += len(bm.calc_loop_triangles())
+                bm.free()
+            exp = [round(max(p[k] for p in pts) - min(p[k] for p in pts), 4) for k in range(3)]
+            out["stl"] = {"path": stl_path, "stl_bbox": info["bbox"], "model_bbox_mm": exp,
+                          "stl_triangles": info["triangles"], "model_triangles": tris,
+                          "matches": all(abs(a - b) < 0.01 for a, b in zip(info["bbox"], exp))
+                          and info["triangles"] == tris}
+            if not out["stl"]["matches"]:
+                problems.append("STL does not match the model (size or triangle count): a part "
+                                "is missing or the export scale is wrong.")
     out["problems"] = problems
+    out["warnings"] = warnings
     return out
 
 
