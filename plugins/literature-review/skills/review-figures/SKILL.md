@@ -55,7 +55,7 @@ its arithmetic must close, which makes it a job for code rather than for placing
 by hand:
 
 ```
-python3 <plugin>/skills/review-figures/scripts/prisma_flow.py counts.json --out figures/prisma-flow.svg
+python3 ${CLAUDE_SKILL_DIR}/scripts/prisma_flow.py prisma-flow.json --out figures/prisma-flow.svg
 ```
 
 Its input is `prisma-flow.json`, which the screening phase derives from `records.csv`
@@ -79,7 +79,7 @@ while computing is how a mark stops matching its row.
 **Run the checker. Do not eyeball it.**
 
 ```
-python3 <plugin>/skills/review-figures/scripts/check_figure.py figures/*.svg
+python3 ${CLAUDE_SKILL_DIR}/scripts/check_figure.py figures/*.svg
 ```
 
 It exits non-zero on any failure and reports what and where:
