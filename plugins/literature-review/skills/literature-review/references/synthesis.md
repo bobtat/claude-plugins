@@ -125,7 +125,7 @@ to overstate.
 
 ## The Failure Modes
 
-Checked by `review-critic`, listed here so they can be avoided while drafting:
+Checked by `literature-review:review-critic`, listed here so they can be avoided while drafting:
 
 | Failure | Looks like |
 |---|---|

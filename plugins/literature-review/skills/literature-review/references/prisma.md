@@ -132,7 +132,7 @@ INCLUDED         Studies included in review
 ```
 
 Every number reconciles against `screening.csv`. The arithmetic must close: screened
-minus excluded equals sought, and so on down. **`review-critic` checks the
+minus excluded equals sought, and so on down. **`literature-review:review-critic` checks the
 arithmetic** — a flow diagram whose numbers do not sum is the most visible possible
 defect in a systematic review.
 

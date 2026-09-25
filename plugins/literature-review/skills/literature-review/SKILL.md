@@ -72,7 +72,7 @@ are the evidence that it was conducted rather than composed.
 | **3 Screening** | `screening.csv` with two independent passes and κ | `references/prisma.md` |
 | **4 Appraisal** | `appraisals/<key>.md` per included study | `references/appraisal.md` |
 | **5 Synthesis** | `review.md`, `figures/*.svg` | `references/synthesis.md`, `references/figures.md` |
-| **6 Audit** | Verification table, `prisma-checklist.md`, `conduct-disclosure.md` | `references/provenance.md`, `references/reporting.md` |
+| **6 Audit** | Verification table, `prisma-checklist.md`, `conduct-disclosure.md` | `literature-review:review-audit`, `references/provenance.md` |
 
 Two of these are gates where the user decides and the review stops until they do:
 **after Phase 1**, because the protocol determines everything the review can conclude
@@ -161,3 +161,30 @@ choose.
   CSL, the pandoc export chain and its rasterizer problem.
 - **`references/sources.md`** — where each convention comes from, with the tier system
   applied to this skill's own sources, including what did not verify.
+
+### Procedure Skills
+
+- **`literature-review:review-audit`** — the seven-step audit: inventory, verify, tier
+  audit, flow arithmetic, prevalence sweep, figure audit, critique. Runs against a
+  review this plugin produced and against one it did not.
+
+### Commands
+
+- **`/literature-review:audit`** — audits a review and reports findings. Changes
+  nothing. Takes a file, a directory, or a URL.
+
+### Agents
+
+- **`literature-review:citation-verifier`** — resolves every identifier and
+  title-matches it, per reference. Emits BibTeX from resolved metadata. Verifies
+  citations, never claims.
+- **`literature-review:review-critic`** — reads a finished review cold and reports
+  tier inflation, prevalence claims, broken flow arithmetic, smoothed disagreement and
+  missing figures.
+
+### Namespacing
+
+Everything this plugin ships is addressed as `literature-review:<name>`, and **there is
+no bare-name fallback** — `Skill("review-audit")` resolves to nothing. Commands are
+namespaced the same way: `/literature-review:audit` is always valid; the bare `/audit`
+is only what the `/` menu offers when nothing else claims the name.
