@@ -31,8 +31,14 @@ it: the figures are generated from them, `literature-review:review-critic` recom
 arithmetic from them, and a human reviewer can open them in a spreadsheet and check.
 
 ```csv
-record_id,source_db,doi,arxiv_id,pmid,title,authors,year,venue,retrieved_date
+record_id,source_type,source_db,query_id,iteration,doi,arxiv_id,pmid,openalex_id,title,authors,year,venue,retrieved_date,pre_screen,duplicate_of
 ```
+
+Every retrieved record is a row, duplicates included — `pre_screen` marks them rather
+than deleting them, because the identification count is computed from this file.
+`source_type` is `database`, `register` or `other` (citation searching), and decides
+which column of the flow diagram a record belongs to. Field meanings are in the
+`literature-review:source-discovery` skill.
 
 ```csv
 record_id,screener_1,screener_1_criterion,screener_2,screener_2_criterion,agreed,adjudication,final,stage
