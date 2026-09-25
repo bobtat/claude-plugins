@@ -26,7 +26,9 @@ reference files:
    `result = {"v": bpy.app.driver_namespace.get("JC", {}).get("HELPERS_VERSION")}`.
    If that doesn't match the file, send the file's **entire contents** as the code of one
    `execute_blender_code` call. The helpers
-   live in `bpy.app.driver_namespace["JC"]` until Blender restarts. Use them as
+   live in `bpy.app.driver_namespace["JC"]` until Blender restarts. Leave them there
+   between calls. That's deliberate, unlike one-off helpers, which should be deleted when
+   done: every skill in this plugin reuses them. Use them as
    `H = bpy.app.driver_namespace["JC"]`. The API is described in `references/helpers.md`.
 2. **Run `H["check_setup"]()`** (or the `jewelcraft:check-setup` skill) and act on its `issues`:
    - Never saved: ask the user to save before building or experimenting.
