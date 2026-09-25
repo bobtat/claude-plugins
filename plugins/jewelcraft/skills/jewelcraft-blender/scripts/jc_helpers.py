@@ -17,7 +17,7 @@ from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 # The skills compare the loaded copy against this line, so bump it with every change.
-HELPERS_VERSION = "0.2.0"
+HELPERS_VERSION = "0.3.0"
 
 # Densities (g/cm3) and compositions from JewelCraft 2.18.1's default weighting list;
 # used only when the current scene's list is empty. The composition matters: other
@@ -48,8 +48,9 @@ DEFAULT_DENSITIES = [
 def addon_name():
     """Module name of JewelCraft, preferring the enabled copy when a legacy add-on and
     an extension are both installed."""
+    # A legacy install can sit in a folder such as "jewelcraft-master".
     def is_jc(name):
-        return name.rsplit(".", 1)[-1].lower() == "jewelcraft"
+        return "jewelcraft" in name.rsplit(".", 1)[-1].lower()
     enabled = [k for k in bpy.context.preferences.addons.keys() if is_jc(k)]
     if enabled:
         return enabled[0]
@@ -103,6 +104,9 @@ def get(name):
 def eval_bm(ob, matrix=None):
     """BMesh of the evaluated object (mesh, curve, text or metaball), transformed by
     `matrix` (default: world)."""
+    if ob.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
+        raise ValueError(f"{ob.name} is a {ob.type.lower()}, with no geometry to measure. "
+                         "Pass the mesh objects themselves.")
     dg = bpy.context.evaluated_depsgraph_get()
     ob_eval = ob.evaluated_get(dg)
     bm = bmesh.new()
@@ -386,8 +390,8 @@ def check_setup():
     except Exception:
         pass
     if name and not wm:
-        issues.append("This scene has no weighting materials; weights will use built-in defaults.")
-    gems = [o for o in s.objects if "gem" in o]
+        notes.append("This scene has no weighting materials; weights will use built-in defaults.")
+    gems = _gems() if name else []
     return {
         "blender": bpy.app.version_string,
         "jewelcraft": {"module": name, "version": ver, "enabled": enabled},
@@ -671,9 +675,11 @@ def densities():
         coll = list(bpy.context.scene.jewelcraft.weighting_materials.coll)
     except Exception:
         coll = []
+    enabled = [(m.name, m.density, getattr(m, "composition", "")) for m in coll if m.enabled]
+    if enabled:
+        return enabled, "scene"
     if coll:
-        return [(m.name, m.density, getattr(m, "composition", ""))
-                for m in coll if m.enabled], "scene"
+        return DEFAULT_DENSITIES, "built-in defaults (the scene's list has none enabled)"
     return DEFAULT_DENSITIES, "built-in defaults"
 
 
@@ -954,7 +960,10 @@ def _export_stl(obs, path):
         select_only(*obs)
         missing = [o.name for o in obs if not o.select_get()]
         if missing:
-            raise RuntimeError(f"Could not select {missing} for export (hidden or excluded).")
+            locked = [o.name for o in obs if o.hide_select]
+            raise RuntimeError(f"Could not select {missing} for export"
+                               + (f": {locked} can't be selected (hide_select is on)." if locked
+                                  else " (hidden or in an excluded collection)."))
         c = ctx()
         kw = dict(filepath=path, export_selected_objects=True, ascii_format=False,
                   apply_modifiers=True)
