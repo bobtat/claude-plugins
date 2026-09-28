@@ -96,5 +96,9 @@ stl_path=...)` exports and verifies the size. [verified]
       bpy.ops.render.opengl(view_context=True)
   bpy.data.images['Render Result'].save_render(path)
   ```
-- For design review, use Cycles with a metallic material and an HDRI or studio lights
-  (not yet scripted or tested here).
+- For design review, use the `jewelcraft:scene-setup` skill: Cycles, 18K yellow gold and
+  diamond materials, a neutral studio HDRI plus area lights, and fixed cameras, in a
+  separate scene. [verified]
+- The MCP's area screenshot only sees the main window; `jewelcraft:scene-setup`'s `show_image()`
+  borrows the 3D Viewport to display a render, and `close_image()` gives it back.
+  [verified]
