@@ -25,4 +25,7 @@ description: Checks that Blender, the Blender MCP connection and the JewelCraft 
    - How many gems are in the scene and how many alloys are in its weighting list.
    - Each item in `issues`, with what to do about it, then `notes`. If `issues` is
      empty, say everything is ready.
+   - Whether a review studio exists: `result = {"studio": "JC Studio" in bpy.data.scenes}`.
+     If not, mention that the `jewelcraft:scene-setup` skill sets up cameras, gold and
+     diamond materials and lighting for renders. It's optional, not an issue.
 4. Don't change anything in the scene during this check.

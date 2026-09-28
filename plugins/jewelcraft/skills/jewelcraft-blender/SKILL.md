@@ -96,6 +96,8 @@ reference files:
 - **`jewelcraft:weigh-piece`**: volume and weight per alloy.
 - **`jewelcraft:print-cast-check`**: closed mesh, wall thickness, collisions, STL scale.
 - **`jewelcraft:build-ring`**: the tested ring workflow.
+- **`jewelcraft:scene-setup`**: a separate studio scene with fixed cameras, gold and
+  diamond preview materials and lighting; renders every view and a contact sheet.
 
 Bracelet, necklace and earring workflows are not included yet. They'll be added once
 they've been researched and tested.
