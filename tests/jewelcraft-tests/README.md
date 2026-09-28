@@ -1,6 +1,7 @@
 # jewelcraft helper tests
 
-Tests for `plugins/jewelcraft/skills/jewelcraft-blender/scripts/jc_helpers.py`. Each one
+Tests for `plugins/jewelcraft/skills/jewelcraft-blender/scripts/jc_helpers.py` and
+`plugins/jewelcraft/skills/scene-setup/scripts/scene_setup.py`. Each one
 builds geometry with a known answer in background Blender and checks what the helpers
 measure. Their failures are wrong-but-believable numbers rather than crashes, so reading
 a change is not enough; run these after any edit to the script.
@@ -39,6 +40,7 @@ whole suite takes about 20 seconds.
 | `test_print.py` | `print_check`: STL readback, loose pieces, scale warnings, hidden and unselectable parts, selection restore |
 | `test_weights_and_setup.py` | Alloy compositions, the temp-scene alloy copy, default fallbacks, `check_setup` |
 | `test_build_ring.py` | The `build-ring` skill end to end: wrapped band, elongated cushion, stone height, notched corner prongs, seat, and every check |
+| `test_scene_setup.py` | `scene-setup`'s script: the source scene left alone, preview materials per object, finger axis fitted on a band turned 90°, camera orientation and framing, hidden/excluded parts, a small render, re-running setup, and teardown restoring every material slot. `show_image` needs a window, so it isn't covered |
 
 `jc_test.py` holds the shared setup: loading the helpers, band and head builders, and the
 prong/cutter builder recipe. A test prints `PASS`/`FAIL` lines and ends with a `RESULT`
