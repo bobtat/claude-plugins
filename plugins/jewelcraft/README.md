@@ -24,6 +24,7 @@ MCP connection.
 | `jewelcraft:weigh-piece` | Metal volume and weight per alloy, with overlaps counted once |
 | `jewelcraft:print-cast-check` | Closed mesh, wall thickness, collisions, units; export and verify an STL |
 | `jewelcraft:build-ring` | Step-by-step ring workflow with a check after each stage |
+| `jewelcraft:scene-setup` | Studio scene for review renders: fixed cameras, 18K gold and diamond materials, lighting, contact sheet |
 
 Bracelet, necklace and earring workflows are planned for a later version.
 
@@ -34,11 +35,14 @@ Bracelet, necklace and earring workflows are planned for a later version.
 - A **Blender MCP server** connected to Claude that can run Python in the open Blender (a
   tool such as `execute_blender_code`).
 - Scene units of 1 unit = 1 mm (`jewelcraft:check-setup` will tell you if not).
+- For `jewelcraft:scene-setup` renders: Cycles (bundled with Blender). A GPU is optional;
+  it made renders about 5 s per view on a GTX 970.
 
 ## How it works
 
 The skills share one helper script, `skills/jewelcraft-blender/scripts/jc_helpers.py`,
-which Claude loads into Blender once per session. All measurements use the evaluated
+which Claude loads into Blender once per session (`jewelcraft:scene-setup` adds its own,
+`skills/scene-setup/scripts/scene_setup.py`). All measurements use the evaluated
 model (modifiers included), in millimetres. Checks work on temporary copies and don't
 change your model; anything that would change it is proposed first. Creating and removing
 those copies can mark the file as modified, so Blender may ask to save on quit. Save your file
