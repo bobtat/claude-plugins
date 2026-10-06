@@ -5,16 +5,19 @@ import type { Breakdown, Context, RateLimit, ToolUse, Totals } from '../types'
 import {
   addStepToTurn,
   addToolResult,
+  budgetReachDay,
   chargesAsUse,
   chargeStep,
   emptyLoop,
   estimateTokens,
   finishTurn,
+  monthPace,
   startTurn,
   toolLabel,
   topTools,
   turnsIn,
   turnUsd,
+  weekOverWeek,
 } from './insights'
 import {
   addSpend,
@@ -739,6 +742,9 @@ export const register: Register = (on, options) => {
       .filter(p => p.usd > 0 || p.cacheWriteUsd > 0)
       .sort((a, b) => b.usd - a.usd)
     const ttl = await cacheTtl($, settings)
+    const pace = monthPace(t.month, now)
+    const reachDay = budgetReachDay(t.month, settings.budgets.month, now)
+    const wow = weekOverWeek(t.days, now)
     const monthFrom = `${shown.key}-01`
     const monthTo = `${shown.key}-31`
     const expensive = turnsIn(t.turns, monthFrom, monthTo).slice(0, SHOWN_TURNS)
@@ -788,8 +794,20 @@ export const register: Register = (on, options) => {
         {isSubscription && <Text dimColor>Figures are API-equivalent, not billed amounts.</Text>}
         {row('Session', t.session)}
         {row('Today', t.today, '', settings.budgets.day)}
-        {row('This week', t.week, `  since ${t.weekStart}`, settings.budgets.week)}
-        {row('This month', t.month, '', settings.budgets.month)}
+        {row(
+          'This week',
+          t.week,
+          wow.change === null
+            ? `  since ${t.weekStart}`
+            : `  ${wow.change >= 0 ? '+' : ''}${Math.round(wow.change * 100)}% vs this point last week`,
+          settings.budgets.week,
+        )}
+        {row(
+          'This month',
+          t.month,
+          `  on pace for ${formatUsd(pace)}${reachDay ? `, budget reached ~${reachDay}` : ''}`,
+          settings.budgets.month,
+        )}
         {isSubscription && t.rateLimits.length > 0 && <Text>Rate limits: {rateLimitText(t.rateLimits)}</Text>}
         <Text> </Text>
         <Box flexDirection="row">
