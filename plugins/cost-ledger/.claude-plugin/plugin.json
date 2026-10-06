@@ -1,0 +1,92 @@
+{
+  "name": "cost-ledger",
+  "version": "0.4.0",
+  "description": "Tracks what Claude Code costs — session, calendar-week and calendar-month totals in the status line, a band and a /costs pane with a spend calendar, plus prompt-cache awareness: a cache warm/cold countdown, warnings before a prompt, model switch or large write re-caches the context, a per-category breakdown priced at list or your own (e.g. AWS) rates, per-project and subagent splits, budget alerts and CSV export",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": [
+    "cost",
+    "spend",
+    "usage",
+    "prompt-caching",
+    "budget",
+    "bedrock",
+    "status-line",
+    "mod"
+  ],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "billing": {
+      "type": "string",
+      "title": "Billing",
+      "description": "api: figures are actual spend. subscription: figures are labelled API-equivalent and rate-limit usage is shown.",
+      "default": "api",
+      "options": [
+        "api",
+        "subscription"
+      ]
+    },
+    "statusLine": {
+      "type": "boolean",
+      "title": "Status line",
+      "description": "Show the totals as a status line entry",
+      "default": true
+    },
+    "band": {
+      "type": "boolean",
+      "title": "Band above prompt",
+      "description": "Show the totals in a band above the prompt",
+      "default": true
+    },
+    "rates": {
+      "type": "string",
+      "title": "Rate overrides",
+      "description": "JSON of USD per million tokens by model family, overriding list prices, e.g. {\"opus-5-5\": {\"input\": 4, \"output\": 20, \"cacheRead\": 0.2, \"cacheWrite5m\": 5, \"cacheWrite1h\": 8}}",
+      "default": ""
+    },
+    "cacheTtl": {
+      "type": "string",
+      "title": "Prompt cache lifetime",
+      "description": "auto: learned from Claude Code when it reports it, else 5m",
+      "default": "auto",
+      "options": [
+        "auto",
+        "5m",
+        "1h"
+      ]
+    },
+    "largeWriteTokens": {
+      "type": "number",
+      "title": "Large cache write alert",
+      "description": "Toast when one request writes at least this many tokens to the prompt cache (0 turns it off)",
+      "default": 50000
+    },
+    "contextNudgeTokens": {
+      "type": "number",
+      "title": "Context size nudge",
+      "description": "Suggest /compact once the context reaches this many tokens (0 turns it off)",
+      "default": 150000
+    },
+    "dailyBudget": {
+      "type": "number",
+      "title": "Daily budget (USD)",
+      "description": "Toast at 80% and 100% of this amount (0 turns it off)",
+      "default": 0
+    },
+    "weeklyBudget": {
+      "type": "number",
+      "title": "Weekly budget (USD)",
+      "description": "Toast at 80% and 100% of this amount (0 turns it off)",
+      "default": 0
+    },
+    "monthlyBudget": {
+      "type": "number",
+      "title": "Monthly budget (USD)",
+      "description": "Toast at 80% and 100% of this amount (0 turns it off)",
+      "default": 0
+    }
+  }
+}

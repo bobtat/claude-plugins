@@ -36,6 +36,19 @@
       "category": "code-quality"
     },
     {
+      "name": "cost-ledger",
+      "source": "./plugins/cost-ledger",
+      "description": "Tracks what Claude Code costs — session, calendar-week and calendar-month totals in the status line, a band and a /costs pane with a spend calendar, plus prompt-cache awareness: a cache warm/cold countdown, warnings before a prompt, model switch or large write re-caches the context, a per-category breakdown priced at list or your own (e.g. AWS) rates, per-project and subagent splits, budget alerts and CSV export",
+      "version": "0.4.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["cost", "spend", "usage", "prompt-caching", "budget", "bedrock", "status-line", "mod"],
+      "category": "productivity"
+    },
+    {
       "name": "ddd",
       "source": "./plugins/ddd",
       "description": "Domain-driven design guidance for C# applications — aggregates, value objects, domain events, bounded contexts, and module structure",
