@@ -1,6 +1,6 @@
-import { keepTopTurns } from './insights'
+import { keepTopTurns, mergeToolMaps } from './insights'
 import { addBreakdown, CATEGORIES, emptyBreakdown } from './pricing'
-import type { Breakdown, ProjectDay, Totals, TurnRecord } from '../types'
+import type { Breakdown, ProjectDay, ToolUse, Totals, TurnRecord } from '../types'
 
 export type SessionEntry = {
   project?: string
@@ -8,6 +8,7 @@ export type SessionEntry = {
   cache?: Record<string, Breakdown>
   subagentCache?: Record<string, Breakdown>
   turns?: TurnRecord[]
+  tools?: Record<string, Record<string, ToolUse>>
   updatedAt: number
 }
 
@@ -21,6 +22,7 @@ export type Summary = {
   subagentDays: Record<string, Breakdown>
   projectDays: Record<string, Record<string, ProjectDay>>
   turns: TurnRecord[]
+  toolDays: Record<string, Record<string, ToolUse>>
 }
 
 export type MonthView = { key: string; name: string; weeks: (number | null)[][] }
@@ -88,6 +90,13 @@ export function addTurn(entry: SessionEntry | undefined, now: number, turn: Turn
   return { days: {}, ...entry, turns: keepTopTurns([...(entry?.turns ?? []), turn]), updatedAt: now }
 }
 
+export function addTools(entry: SessionEntry | undefined, now: number, tools: Record<string, ToolUse>): SessionEntry {
+  const day = dayKey(now)
+  const all = { ...entry?.tools }
+  all[day] = mergeToolMaps(all[day], tools)
+  return { days: {}, ...entry, tools: all, updatedAt: now }
+}
+
 export function shouldArchive(entry: SessionEntry, now: number): boolean {
   return now - entry.updatedAt > ARCHIVE_AFTER_MS
 }
@@ -110,6 +119,7 @@ export function mergeEntries(archive: SessionEntry | undefined, entry: SessionEn
     cache: mergeDays(archive?.cache, entry.cache, addBreakdown),
     subagentCache: mergeDays(archive?.subagentCache, entry.subagentCache, addBreakdown),
     turns: keepTopTurns([...(archive?.turns ?? []), ...(entry.turns ?? [])]),
+    tools: mergeDays(archive?.tools, entry.tools, mergeToolMaps),
     updatedAt: Math.max(archive?.updatedAt ?? 0, entry.updatedAt),
   }
 }
@@ -124,10 +134,11 @@ export function pruneDays(entry: SessionEntry, now: number): SessionEntry | unde
     days: keep(entry.days),
     cache: keep(entry.cache),
     subagentCache: keep(entry.subagentCache),
+    tools: keep(entry.tools),
     turns: (entry.turns ?? []).filter(turn => dayKey(turn.at) >= cutoff),
   }
   const isEmpty =
-    [pruned.days, pruned.cache, pruned.subagentCache].every(d => Object.keys(d).length === 0) &&
+    [pruned.days, pruned.cache, pruned.subagentCache, pruned.tools].every(d => Object.keys(d).length === 0) &&
     pruned.turns.length === 0
   return isEmpty ? undefined : pruned
 }
@@ -151,6 +162,11 @@ export function applyTurn(t: Totals, turn: TurnRecord): Totals {
   return { ...t, turns: keepTopTurns([...t.turns, turn]) }
 }
 
+export function applyTools(t: Totals, now: number, tools: Record<string, ToolUse>): Totals {
+  const day = dayKey(now)
+  return { ...t, toolDays: { ...t.toolDays, [day]: mergeToolMaps(t.toolDays[day], tools) } }
+}
+
 export function summarize(entries: readonly SessionEntry[], now: number): Summary {
   const today = dayKey(now)
   const weekStart = weekStartKey(now)
@@ -165,6 +181,7 @@ export function summarize(entries: readonly SessionEntry[], now: number): Summar
     subagentDays: {},
     projectDays: {},
     turns: [],
+    toolDays: {},
   }
   const turns: TurnRecord[] = []
 
@@ -185,6 +202,9 @@ export function summarize(entries: readonly SessionEntry[], now: number): Summar
     }
     for (const [day, usage] of Object.entries(entry.subagentCache ?? {})) {
       summary.subagentDays[day] = addBreakdown(summary.subagentDays[day], usage)
+    }
+    for (const [day, tools] of Object.entries(entry.tools ?? {})) {
+      summary.toolDays[day] = mergeToolMaps(summary.toolDays[day], tools)
     }
     turns.push(...(entry.turns ?? []))
   }
