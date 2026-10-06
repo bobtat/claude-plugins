@@ -1,6 +1,7 @@
 import { addBreakdown, emptyBreakdown, totalUsd } from './pricing'
 import type { ActiveTurn, Breakdown, LoopContext, ToolUse, TurnRecord } from '../types'
 
+const DAY_MS = 24 * 60 * 60 * 1000
 const PROMPT_CHARS = 80
 export const TURNS_PER_MONTH = 10
 
@@ -146,4 +147,48 @@ export function topTools(
     if (day >= fromDay && day <= toDay) merged = mergeToolMaps(merged, tools)
   }
   return Object.entries(merged).sort(([, a], [, b]) => b.writeUsd + b.rereadUsd - (a.writeUsd + a.rereadUsd))
+}
+
+// ---- Pace and week over week ------------------------------------------------
+
+export function monthBounds(now: number): { start: number; end: number; days: number } {
+  const d = new Date(now)
+  const start = new Date(d.getFullYear(), d.getMonth(), 1).getTime()
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime()
+  return { start, end, days: Math.round((end - start) / DAY_MS) }
+}
+
+// Month-to-date spend extrapolated at its average daily rate; at least one
+// day has elapsed so a busy first morning does not project a fortune.
+export function monthPace(monthUsd: number, now: number): number {
+  const { start, days } = monthBounds(now)
+  const elapsed = Math.max(1, (now - start) / DAY_MS)
+  return (monthUsd / elapsed) * days
+}
+
+// The local day on which spend at the month's average daily rate reaches the
+// budget, or null when it is already reached or will not be this month.
+export function budgetReachDay(monthUsd: number, budget: number, now: number): string | null {
+  if (budget <= 0 || monthUsd >= budget || monthUsd <= 0) return null
+  const { start, end } = monthBounds(now)
+  const rate = monthUsd / Math.max(1, (now - start) / DAY_MS)
+  const reachAt = now + ((budget - monthUsd) / rate) * DAY_MS
+  return reachAt < end ? localDay(reachAt) : null
+}
+
+// This week so far against last week up to the same weekday, by local day.
+export function weekOverWeek(
+  days: Record<string, number>,
+  now: number,
+): { thisWeek: number; lastWeek: number; change: number | null } {
+  const d = new Date(now)
+  const sinceMonday = (d.getDay() + 6) % 7
+  const dayAt = (offset: number) => localDay(new Date(d.getFullYear(), d.getMonth(), d.getDate() + offset).getTime())
+  let thisWeek = 0
+  let lastWeek = 0
+  for (let i = -sinceMonday; i <= 0; i++) {
+    thisWeek += days[dayAt(i)] ?? 0
+    lastWeek += days[dayAt(i - 7)] ?? 0
+  }
+  return { thisWeek, lastWeek, change: lastWeek > 0 ? (thisWeek - lastWeek) / lastWeek : null }
 }
