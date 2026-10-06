@@ -3,8 +3,17 @@ import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 
 import type { Breakdown, Context, RateLimit, Totals } from '../types'
 import {
+  addStepToTurn,
+  finishTurn,
+  startTurn,
+  turnsIn,
+  turnUsd,
+} from './insights'
+import {
   addSpend,
+  addTurn,
   addUsage,
+  applyTurn,
   applyUsage,
   budgetAlert,
   cacheMinutesLeft,
@@ -47,6 +56,7 @@ const LEARNED_PRICING_KEY = 'learnedPricing'
 const UNPRICED_MODELS_KEY = 'unpricedModels'
 const PROBE_KEY = 'doctorProbe'
 const STORE_LIMIT_BYTES = 4 * 1024 * 1024
+const SHOWN_TURNS = 10
 const BUDGET_PREFIX = 'budget:'
 const TICK_MS = 30_000
 const SHOWN_PROJECTS = 8
@@ -62,6 +72,8 @@ const monthOffset = atom({ plugin: 'cost-ledger', key: 'monthOffset' } as const,
 const context = atom({ plugin: 'cost-ledger', key: 'context' } as const, null)
 const shadeBy = atom({ plugin: 'cost-ledger', key: 'shadeBy' } as const, 'total')
 const tick = atom({ plugin: 'cost-ledger', key: 'tick' } as const, 0)
+const activeTurn = atom({ plugin: 'cost-ledger', key: 'activeTurn' } as const, null)
+const turnPrompts = atom({ plugin: 'cost-ledger', key: 'turnPrompts' } as const, {})
 
 type Settings = {
   isSubscription: boolean
@@ -72,6 +84,7 @@ type Settings = {
   largeWriteTokens: number
   contextNudgeTokens: number
   budgets: { day: number; week: number; month: number }
+  expensiveTurnUsd: number
 }
 
 function readSettings(options: PluginOptions): Settings {
@@ -89,6 +102,7 @@ function readSettings(options: PluginOptions): Settings {
       week: typeof options.weeklyBudget === 'number' ? options.weeklyBudget : 0,
       month: typeof options.monthlyBudget === 'number' ? options.monthlyBudget : 0,
     },
+    expensiveTurnUsd: typeof options.expensiveTurnUsd === 'number' ? options.expensiveTurnUsd : 0,
   }
 }
 
@@ -270,13 +284,10 @@ async function recordSpend($: EngineInterface, usd: number) {
   await update($, lastUsd, () => usd)
 }
 
-async function recordStep(
-  $: EngineInterface,
-  settings: Settings,
-  usage: Usage & { model: string },
-  startedAt: number,
-  isMainThread: boolean,
-) {
+type Step = { turnId: string; agentId?: string; startedAt: number }
+
+async function recordStep($: EngineInterface, settings: Settings, usage: Usage & { model: string }, step: Step) {
+  const isMainThread = step.agentId === undefined
   const ttl = await cacheTtl($, settings)
   const rates = ratesFor(settings.table, usage.model)
   const priced = priceUsage(usage, rates, ttl)
@@ -287,12 +298,13 @@ async function recordStep(
   const key = SESSION_PREFIX + (await $.session.id())
   const entry = (await $.store.get(key)) as SessionEntry | undefined
   await saveEntry($, key, addUsage(entry, now, priced, project, !isMainThread))
+  await addToActiveTurn($, step, priced, isMainThread, now)
   await update($, totals, t => (t === null ? t : applyUsage(t, now, priced, project, !isMainThread)))
 
   if (isMainThread) {
     const tokens =
       usage.input_tokens + usage.cache_read_input_tokens + usage.cache_creation_input_tokens + usage.output_tokens
-    await update($, context, () => ({ tokens, model: usage.model, at: startedAt }))
+    await update($, context, () => ({ tokens, model: usage.model, at: step.startedAt }))
   }
 
   const written = usage.cache_creation_input_tokens
@@ -309,6 +321,49 @@ async function recordStep(
 async function noteUnpricedModel($: EngineInterface, model: string) {
   const seen = ((await $.store.get(UNPRICED_MODELS_KEY)) as string[] | undefined) ?? []
   if (!seen.includes(model)) await $.store.set(UNPRICED_MODELS_KEY, [...seen, model].slice(-20))
+}
+
+// A turn becomes the prompt's record at its first main-thread request, since
+// turn.start does not say which loop it belongs to. Subagent requests made
+// while it runs are charged to it.
+async function addToActiveTurn(
+  $: EngineInterface,
+  step: Step,
+  priced: Breakdown,
+  isMainThread: boolean,
+  now: number,
+) {
+  const current = await read($, activeTurn)
+  if (isMainThread && current?.turnId !== step.turnId) {
+    const prompt = (await read($, turnPrompts))[step.turnId]
+    const started = startTurn(step.turnId, prompt?.text || '(continuation)', prompt?.at ?? now)
+    await update($, activeTurn, () => addStepToTurn(started, priced, false))
+    return
+  }
+  if (current !== null) await update($, activeTurn, turn => (turn === null ? turn : addStepToTurn(turn, priced, !isMainThread)))
+}
+
+async function finishActiveTurn($: EngineInterface, settings: Settings, turnId: string) {
+  const turn = await read($, activeTurn)
+  await update($, turnPrompts, prompts => {
+    const { [turnId]: _done, ...rest } = prompts
+    return rest
+  })
+  if (turn === null || turn.turnId !== turnId) return
+  await update($, activeTurn, () => null)
+
+  const now = await $.clock.now()
+  const record = finishTurn(turn, await $.session.root())
+  const key = SESSION_PREFIX + (await $.session.id())
+  const entry = (await $.store.get(key)) as SessionEntry | undefined
+  await saveEntry($, key, addTurn(entry, now, record))
+  await update($, totals, t => (t === null ? t : applyTurn(t, record)))
+
+  const usd = turnUsd(record)
+  if (settings.expensiveTurnUsd > 0 && usd >= settings.expensiveTurnUsd) {
+    const detail = `${record.steps} requests${record.subagentSteps > 0 ? ` + ${record.subagentSteps} by subagents` : ''}`
+    $.ui.toast(`That prompt cost ≈ ${formatUsd(usd)} (${detail}): “${record.prompt}”`, { timeoutMs: 10_000 })
+  }
 }
 
 const localStamp = (ms: number) => {
@@ -498,6 +553,10 @@ export const register: Register = (on, options) => {
     // whatever it carries, and none of that is new spend.
     if (e.source === 'clear' || e.source === 'resume' || e.source === 'fork') await serially(() => rebaseline($))
     if (e.source === 'clear' || e.source === 'compact') await update($, context, () => null)
+    if (e.source === 'clear') {
+      await update($, activeTurn, () => null)
+      await update($, turnPrompts, () => ({}))
+    }
 
     // A resumed transcript's cache is as old as its last response, so the
     // idle warning on the first prompt covers resumes too.
@@ -546,11 +605,23 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
+  on('turn.start', async ($, e, next) => {
+    const at = await $.clock.now()
+    await update($, turnPrompts, prompts => ({ ...prompts, [e.turnId]: { text: e.text, at } }))
+    return next(e)
+  })
+
   on('turn.step', async function* ($, e, next) {
-    const startedAt = await $.clock.now()
+    const step = { turnId: e.turnId, agentId: e.agentId, startedAt: await $.clock.now() }
     const result = yield* next(e)
     const usage = result.usage
-    if (usage) await serially(() => recordStep($, settings, usage, startedAt, e.agentId === undefined))
+    if (usage) await serially(() => recordStep($, settings, usage, step))
+    return result
+  })
+
+  on('turn.complete', async ($, e, next) => {
+    const result = await next(e)
+    if (e.agentId === undefined) await serially(() => finishActiveTurn($, settings, e.turnId))
     return result
   })
 
@@ -615,6 +686,9 @@ export const register: Register = (on, options) => {
       .filter(p => p.usd > 0 || p.cacheWriteUsd > 0)
       .sort((a, b) => b.usd - a.usd)
     const ttl = await cacheTtl($, settings)
+    const monthFrom = `${shown.key}-01`
+    const monthTo = `${shown.key}-31`
+    const expensive = turnsIn(t.turns, monthFrom, monthTo).slice(0, SHOWN_TURNS)
 
     const shadeValue = (day: string) =>
       shading === 'cacheWrite' ? (t.cacheDays[day]?.usd.cacheWrite ?? 0) : (t.days[day] ?? 0)
@@ -747,6 +821,19 @@ export const register: Register = (on, options) => {
             {nudgeText(ctx, settings)}
           </Text>
         )}
+        <Text> </Text>
+        <Text bold>
+          Most expensive prompts, {shown.name}
+          <Text dimColor> (estimated, subagents included)</Text>
+        </Text>
+        {expensive.length === 0 && <Text dimColor>None recorded.</Text>}
+        {expensive.map(turn => (
+          <Text>
+            {formatUsd(turnUsd(turn)).padStart(9)}{' '}
+            <Text dimColor>{`${turn.steps}${turn.subagentSteps > 0 ? `+${turn.subagentSteps}` : ''} req `.padStart(10)}</Text>
+            {turn.prompt.slice(0, Math.max(10, (e.props.bodyColumns ?? 60) - 22))}
+          </Text>
+        ))}
         <Text> </Text>
         <Text bold>By project, {shown.name}</Text>
         {projects.length === 0 && <Text dimColor>No spend recorded.</Text>}

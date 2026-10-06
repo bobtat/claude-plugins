@@ -11,6 +11,19 @@ export type Breakdown = {
 
 export type ProjectDay = { usd: number; cacheWriteUsd: number }
 
+// One prompt's cost, its subagents included, estimated from its requests.
+export type TurnRecord = {
+  at: number
+  prompt: string
+  project: string
+  steps: number
+  subagentSteps: number
+  usage: Breakdown
+  subagentUsage: Breakdown
+}
+
+export type ActiveTurn = Omit<TurnRecord, 'project'> & { turnId: string }
+
 export type Totals = {
   session: number
   today: number
@@ -21,6 +34,7 @@ export type Totals = {
   cacheDays: Record<string, Breakdown>
   subagentDays: Record<string, Breakdown>
   projectDays: Record<string, Record<string, ProjectDay>>
+  turns: TurnRecord[]
   rateLimits: RateLimit[]
 }
 
@@ -37,6 +51,8 @@ declare module 'claude-code' {
       context: Context | null
       shadeBy: Shading
       tick: number
+      activeTurn: ActiveTurn | null
+      turnPrompts: Record<string, { text: string; at: number }>
     }
   }
 }

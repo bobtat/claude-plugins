@@ -87,6 +87,12 @@
       "title": "Monthly budget (USD)",
       "description": "Toast at 80% and 100% of this amount (0 turns it off)",
       "default": 0
+    },
+    "expensiveTurnUsd": {
+      "type": "number",
+      "title": "Expensive prompt alert (USD)",
+      "description": "Toast when one prompt, its subagents included, costs at least this much (estimated); 0 turns it off",
+      "default": 2
     }
   }
 }
