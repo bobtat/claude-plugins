@@ -43,6 +43,10 @@ const PANE = 'cost-ledger'
 const SESSION_PREFIX = 'session:'
 const ARCHIVE_PREFIX = 'archive:'
 const LEARNED_TTL_KEY = 'learnedCacheTtl'
+const LEARNED_PRICING_KEY = 'learnedPricing'
+const UNPRICED_MODELS_KEY = 'unpricedModels'
+const PROBE_KEY = 'doctorProbe'
+const STORE_LIMIT_BYTES = 4 * 1024 * 1024
 const BUDGET_PREFIX = 'budget:'
 const TICK_MS = 30_000
 const SHOWN_PROJECTS = 8
@@ -276,6 +280,7 @@ async function recordStep(
   const ttl = await cacheTtl($, settings)
   const rates = ratesFor(settings.table, usage.model)
   const priced = priceUsage(usage, rates, ttl)
+  if (rates === undefined) await noteUnpricedModel($, usage.model)
 
   const now = await $.clock.now()
   const project = await $.session.root()
@@ -299,6 +304,139 @@ async function recordStep(
   }
 
   await updateStatus($, settings)
+}
+
+async function noteUnpricedModel($: EngineInterface, model: string) {
+  const seen = ((await $.store.get(UNPRICED_MODELS_KEY)) as string[] | undefined) ?? []
+  if (!seen.includes(model)) await $.store.set(UNPRICED_MODELS_KEY, [...seen, model].slice(-20))
+}
+
+const localStamp = (ms: number) => {
+  const d = new Date(ms)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const offset = -d.getTimezoneOffset()
+  const sign = offset >= 0 ? '+' : '-'
+  const hhmm = `${pad(Math.floor(Math.abs(offset) / 60))}:${pad(Math.abs(offset) % 60)}`
+  return `${dayKey(ms)} ${pad(d.getHours())}:${pad(d.getMinutes())} ${sign}${hhmm}`
+}
+
+async function hostLocalTime($: EngineInterface): Promise<string | undefined> {
+  const isWindows = (await $.env.get('OS')) === 'Windows_NT'
+  const argv = isWindows
+    ? ['powershell', '-NoProfile', '-Command', "Get-Date -Format 'yyyy-MM-dd HH:mm zzz'"]
+    : ['date', '+%Y-%m-%d %H:%M %z']
+  try {
+    const { exitCode, stdout } = await $.process.run(argv, { timeoutMs: 10_000 })
+    return exitCode === 0 ? stdout.trim().replace(/([+-]\d{2})(\d{2})$/, '$1:$2') : undefined
+  } catch {
+    return undefined
+  }
+}
+
+async function readOwnStoreFiles($: EngineInterface): Promise<{ path: string; text: string }[] | undefined> {
+  const home = (await $.env.get('USERPROFILE')) ?? (await $.env.get('HOME'))
+  const configDir = (await $.env.get('CLAUDE_CONFIG_DIR')) ?? (home && `${home}/.claude`)
+  if (!configDir) return undefined
+  const dir = `${configDir}/plugins/store`
+  try {
+    const files = (await $.fs.list(dir)).filter(f => f.kind === 'file' && f.name.startsWith(`${$.plugin.name}_`))
+    return Promise.all(files.map(async f => ({ path: `${dir}/${f.name}`, text: (await $.fs.read(`${dir}/${f.name}`)) as string })))
+  } catch {
+    return undefined
+  }
+}
+
+function storeKeysOf(text: string): string[] | undefined {
+  try {
+    const parsed: unknown = JSON.parse(text)
+    return typeof parsed === 'object' && parsed !== null ? Object.keys(parsed).sort() : undefined
+  } catch {
+    return undefined
+  }
+}
+
+// Each check reports what it saw; nothing here changes the ledger except the
+// probe key, which is removed again.
+async function runDoctor($: EngineInterface, settings: Settings): Promise<string> {
+  const lines = ['cost-ledger self-check', '']
+  const say = (isOk: boolean | null, label: string, detail: string) =>
+    lines.push(`${isOk === null ? 'ℹ' : isOk ? '✓' : '⚠'} ${label}: ${detail}`)
+  const now = await $.clock.now()
+
+  const mine = localStamp(now)
+  const host = await hostLocalTime($)
+  if (host === undefined) say(null, 'Time zone', `the mod sees ${mine}; the host's clock could not be read to compare`)
+  else {
+    const isSame = host.slice(0, 13) === mine.slice(0, 13) && host.slice(-6) === mine.slice(-6)
+    say(isSame, 'Time zone', isSame ? `day boundaries follow local time (${mine})` : `the mod sees ${mine} but the host says ${host}, so days are split at the wrong hour`)
+  }
+
+  const probe = `${now}-${Math.random().toString(36).slice(2)}`
+  await $.store.set(PROBE_KEY, probe)
+  try {
+    const files = await readOwnStoreFiles($)
+    const own = files?.find(f => f.text.includes(probe))
+    const ownKeys = own && storeKeysOf(own.text)
+    if (own === undefined || ownKeys === undefined) {
+      say(false, 'Store file', 'a write could not be found on disk, so the checks that compare the file were skipped')
+    } else {
+      say(true, 'Store file', `writes reach disk at once (${own.path})`)
+      const inView = [...(await $.store.keys())].sort()
+      const isSameView = ownKeys.join('\n') === inView.join('\n')
+      say(
+        isSameView,
+        'Other sessions',
+        isSameView
+          ? 'this session sees exactly what is on disk, so writes from other sessions are not being overwritten'
+          : `this session sees ${inView.length} keys and the file has ${ownKeys.length}; another session's writes may be lost`,
+      )
+      const percent = Math.round((own.text.length / STORE_LIMIT_BYTES) * 100)
+      say(percent < 75, 'Store size', `${Math.round(own.text.length / 1024)} KiB, ${percent}% of the 4 MiB limit`)
+    }
+    for (const other of files?.filter(f => f !== own) ?? []) {
+      const sessions = storeKeysOf(other.text)?.filter(k => k.startsWith(SESSION_PREFIX)).length
+      say(
+        null,
+        'Another install',
+        sessions === undefined
+          ? `${other.path} could not be read`
+          : `${other.path} holds ${sessions} sessions recorded by a differently installed copy; they are not in these totals`,
+      )
+    }
+  } finally {
+    await $.store.delete(PROBE_KEY)
+  }
+
+  const pricing = await $.store.get(LEARNED_PRICING_KEY)
+  say(
+    null,
+    'Claude Code pricing',
+    pricing === 'configured'
+      ? "your organisation's managed modelPricing, so the totals follow your rates"
+      : pricing === 'catalog'
+        ? 'Anthropic list prices; on Bedrock the totals may differ from your bill'
+        : 'not reported yet; Claude Code reports it when you switch models with /model',
+  )
+
+  const learnedTtl = await $.store.get(LEARNED_TTL_KEY)
+  say(
+    null,
+    'Cache lifetime',
+    `using ${await cacheTtl($, settings)} (setting: ${settings.ttlSetting}; reported by Claude Code: ${typeof learnedTtl === 'string' ? learnedTtl : 'not yet'})`,
+  )
+
+  const usd = (await $.session.usage()).cost?.usd ?? 0
+  const recorded = await read($, lastUsd)
+  if (recorded === null) say(false, 'Baseline', 'not set; spend is recorded from the next measurement')
+  else if (recorded > usd + 0.005) say(false, 'Baseline', `recorded up to ${formatUsd(recorded)}, above the session's ${formatUsd(usd)}`)
+  else say(true, 'Baseline', `session at ${formatUsd(usd)}, recorded up to ${formatUsd(recorded)}${usd - recorded >= 0.005 ? '; the rest is recorded after the next turn' : ''}`)
+
+  if (settings.table.error) say(false, 'Rates', settings.table.error)
+  const unpriced = ((await $.store.get(UNPRICED_MODELS_KEY)) as string[] | undefined) ?? []
+  say(unpriced.length === 0, 'Models', unpriced.length === 0 ? 'every model seen has a rate' : `no rate for ${unpriced.join(', ')}; add them to the rates setting`)
+
+  say(null, 'Resume', 'cannot be checked from here: compare /costs before and after a /resume of a session with known spend')
+  return lines.join('\n')
 }
 
 async function warnIfCacheExpired($: EngineInterface, settings: Settings) {
@@ -334,8 +472,8 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'costs',
-      description: 'Show session, weekly and monthly Claude Code costs; "export" writes a CSV',
-      argumentHint: '[export]',
+      description: 'Show session, weekly and monthly Claude Code costs; "export" writes a CSV, "doctor" checks the setup',
+      argumentHint: '[export|doctor]',
     })
     if (settings.table.error) $.ui.toast(`cost-ledger: ${settings.table.error}`)
 
@@ -372,6 +510,7 @@ export const register: Register = (on, options) => {
 
   on('classic.PreModelSwitch', async ($, e, next) => {
     await $.store.set(LEARNED_TTL_KEY, e.cache_ttl)
+    await $.store.set(LEARNED_PRICING_KEY, e.pricing)
     if (e.prompt_cache_warm && e.context_tokens > 0) {
       const rates = ratesFor(settings.table, e.to_model)
       const usd = rates
@@ -388,6 +527,7 @@ export const register: Register = (on, options) => {
 
   on('classic.PostModelSwitch', async ($, e, next) => {
     await $.store.set(LEARNED_TTL_KEY, e.cache_ttl)
+    await $.store.set(LEARNED_PRICING_KEY, e.pricing)
     return next(e)
   })
 
@@ -423,7 +563,9 @@ export const register: Register = (on, options) => {
   })
 
   on('command.run', { command: 'costs' }, async ($, e) => {
-    if (e.args.trim() === 'export') return { text: await writeExport($) }
+    const args = e.args.trim()
+    if (args === 'export') return { text: await writeExport($) }
+    if (args === 'doctor') return { text: await runDoctor($, settings) }
 
     const usage = await $.session.usage()
     await refresh($, settings, usage.cost?.usd ?? 0, usage.rateLimits)
