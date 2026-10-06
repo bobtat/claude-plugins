@@ -38,7 +38,7 @@
     {
       "name": "cost-ledger",
       "source": "./plugins/cost-ledger",
-      "description": "Tracks what Claude Code costs — session, calendar-week and calendar-month totals in the status line, a band and a /costs pane with a spend calendar, plus prompt-cache awareness: a cache warm/cold countdown, warnings before a prompt, model switch or large write re-caches the context, a per-category breakdown priced at list or your own (e.g. AWS) rates, per-project and subagent splits, budget alerts and CSV export",
+      "description": "Tracks what Claude Code costs — session, calendar-week and calendar-month totals with the month's pace and week-over-week change, a /costs pane with a spend calendar, the most expensive prompts and what filled the context, plus prompt-cache awareness: a cache warm/cold countdown, warnings before a prompt, model switch or large write re-caches the context, a per-category breakdown priced at list or your own (e.g. AWS) rates, per-project and subagent splits, budget alerts, CSV export and a /costs doctor self-check",
       "version": "0.4.0",
       "author": {
         "name": "bobtat",
