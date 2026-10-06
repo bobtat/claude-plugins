@@ -62,6 +62,23 @@
       "category": "writing"
     },
     {
+      "name": "gemscan",
+      "source": {
+        "source": "git-subdir",
+        "url": "bobtat/gemscan",
+        "path": "claude-plugin"
+      },
+      "description": "Review diamond 360 videos: a local tool flags spots that move with the stone, and a skill makes Claude inspect every flagged crop before reporting.",
+      "version": "0.1.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["diamond", "gemstones", "jewelry", "computer-vision", "inclusions", "360-video", "opencv", "mcp"],
+      "category": "design"
+    },
+    {
       "name": "git-workflow",
       "source": "./plugins/git-workflow",
       "description": "Teaches Claude to treat version control as a deliverable — atomic conventional commits split from a working tree, branch history made legible without interactive rebase, and pull requests that describe the change rather than the diff, with hooks that route version-control requests to it and block the irreversible mistakes",
