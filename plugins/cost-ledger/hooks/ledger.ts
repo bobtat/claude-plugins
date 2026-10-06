@@ -1,11 +1,13 @@
+import { keepTopTurns } from './insights'
 import { addBreakdown, CATEGORIES, emptyBreakdown } from './pricing'
-import type { Breakdown, ProjectDay, Totals } from '../types'
+import type { Breakdown, ProjectDay, Totals, TurnRecord } from '../types'
 
 export type SessionEntry = {
   project?: string
   days: Record<string, number>
   cache?: Record<string, Breakdown>
   subagentCache?: Record<string, Breakdown>
+  turns?: TurnRecord[]
   updatedAt: number
 }
 
@@ -18,6 +20,7 @@ export type Summary = {
   cacheDays: Record<string, Breakdown>
   subagentDays: Record<string, Breakdown>
   projectDays: Record<string, Record<string, ProjectDay>>
+  turns: TurnRecord[]
 }
 
 export type MonthView = { key: string; name: string; weeks: (number | null)[][] }
@@ -81,6 +84,10 @@ export function addUsage(
   return { days: {}, ...entry, project, cache, subagentCache, updatedAt: now }
 }
 
+export function addTurn(entry: SessionEntry | undefined, now: number, turn: TurnRecord): SessionEntry {
+  return { days: {}, ...entry, turns: keepTopTurns([...(entry?.turns ?? []), turn]), updatedAt: now }
+}
+
 export function shouldArchive(entry: SessionEntry, now: number): boolean {
   return now - entry.updatedAt > ARCHIVE_AFTER_MS
 }
@@ -102,6 +109,7 @@ export function mergeEntries(archive: SessionEntry | undefined, entry: SessionEn
     days: mergeDays(archive?.days, entry.days, (x, y) => x + y),
     cache: mergeDays(archive?.cache, entry.cache, addBreakdown),
     subagentCache: mergeDays(archive?.subagentCache, entry.subagentCache, addBreakdown),
+    turns: keepTopTurns([...(archive?.turns ?? []), ...(entry.turns ?? [])]),
     updatedAt: Math.max(archive?.updatedAt ?? 0, entry.updatedAt),
   }
 }
@@ -111,8 +119,16 @@ export function pruneDays(entry: SessionEntry, now: number): SessionEntry | unde
   const cutoff = dayKey(now - RETENTION_MS)
   const keep = <T>(days: Record<string, T> | undefined) =>
     Object.fromEntries(Object.entries(days ?? {}).filter(([day]) => day >= cutoff))
-  const pruned = { ...entry, days: keep(entry.days), cache: keep(entry.cache), subagentCache: keep(entry.subagentCache) }
-  const isEmpty = [pruned.days, pruned.cache, pruned.subagentCache].every(d => Object.keys(d).length === 0)
+  const pruned = {
+    ...entry,
+    days: keep(entry.days),
+    cache: keep(entry.cache),
+    subagentCache: keep(entry.subagentCache),
+    turns: (entry.turns ?? []).filter(turn => dayKey(turn.at) >= cutoff),
+  }
+  const isEmpty =
+    [pruned.days, pruned.cache, pruned.subagentCache].every(d => Object.keys(d).length === 0) &&
+    pruned.turns.length === 0
   return isEmpty ? undefined : pruned
 }
 
@@ -131,6 +147,10 @@ export function applyUsage(t: Totals, now: number, usage: Breakdown, project: st
   }
 }
 
+export function applyTurn(t: Totals, turn: TurnRecord): Totals {
+  return { ...t, turns: keepTopTurns([...t.turns, turn]) }
+}
+
 export function summarize(entries: readonly SessionEntry[], now: number): Summary {
   const today = dayKey(now)
   const weekStart = weekStartKey(now)
@@ -144,7 +164,9 @@ export function summarize(entries: readonly SessionEntry[], now: number): Summar
     cacheDays: {},
     subagentDays: {},
     projectDays: {},
+    turns: [],
   }
+  const turns: TurnRecord[] = []
 
   for (const entry of entries) {
     const projectDays = (summary.projectDays[entry.project ?? UNKNOWN_PROJECT] ??= {})
@@ -164,7 +186,9 @@ export function summarize(entries: readonly SessionEntry[], now: number): Summar
     for (const [day, usage] of Object.entries(entry.subagentCache ?? {})) {
       summary.subagentDays[day] = addBreakdown(summary.subagentDays[day], usage)
     }
+    turns.push(...(entry.turns ?? []))
   }
+  summary.turns = keepTopTurns(turns)
   return summary
 }
 
