@@ -8,6 +8,8 @@ Markdown and JSON only — no package manager, no test runner, no lint step, no 
 
 **One exception: `jewelcraft`'s helper script.** After any change to `plugins/jewelcraft/skills/jewelcraft-blender/scripts/jc_helpers.py`, run `python tests/jewelcraft-tests/run.py --blender <path to blender.exe>` and don't commit until every file passes. The script measures geometry, so its bugs come out as wrong-but-believable numbers rather than errors; the tests build shapes with known answers in background Blender. They need Blender with JewelCraft 2.18 enabled, so they run only on a machine that has it. Bump `HELPERS_VERSION` in the same change. See `tests/jewelcraft-tests/README.md`.
 
+**A second exception: `cost-ledger` is code.** It is a TypeScript hooks module that Claude Code runs in the session, not Markdown. After any change under `plugins/cost-ledger/`, run `claude plugin validate plugins/cost-ledger` and `claude plugin test plugins/cost-ledger` and don't commit until both pass. Its money and date arithmetic fails as plausible wrong totals rather than errors, and the tests are where the `/clear`, `/resume` and store-failure paths are covered. See `plugins/cost-ledger/README.md`.
+
 ## Editing a plugin
 
 ```
