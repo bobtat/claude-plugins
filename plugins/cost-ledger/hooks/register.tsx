@@ -1,18 +1,27 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 
-import type { Breakdown, Context, RateLimit, Totals } from '../types'
+import type { Breakdown, Context, RateLimit, ToolUse, Totals } from '../types'
 import {
   addStepToTurn,
+  addToolResult,
+  chargesAsUse,
+  chargeStep,
+  emptyLoop,
+  estimateTokens,
   finishTurn,
   startTurn,
+  toolLabel,
+  topTools,
   turnsIn,
   turnUsd,
 } from './insights'
 import {
   addSpend,
+  addTools,
   addTurn,
   addUsage,
+  applyTools,
   applyTurn,
   applyUsage,
   budgetAlert,
@@ -57,6 +66,7 @@ const UNPRICED_MODELS_KEY = 'unpricedModels'
 const PROBE_KEY = 'doctorProbe'
 const STORE_LIMIT_BYTES = 4 * 1024 * 1024
 const SHOWN_TURNS = 10
+const SHOWN_TOOLS = 8
 const BUDGET_PREFIX = 'budget:'
 const TICK_MS = 30_000
 const SHOWN_PROJECTS = 8
@@ -74,6 +84,7 @@ const shadeBy = atom({ plugin: 'cost-ledger', key: 'shadeBy' } as const, 'total'
 const tick = atom({ plugin: 'cost-ledger', key: 'tick' } as const, 0)
 const activeTurn = atom({ plugin: 'cost-ledger', key: 'activeTurn' } as const, null)
 const turnPrompts = atom({ plugin: 'cost-ledger', key: 'turnPrompts' } as const, {})
+const loops = atom({ plugin: 'cost-ledger', key: 'loops' } as const, {})
 
 type Settings = {
   isSubscription: boolean
@@ -293,11 +304,22 @@ async function recordStep($: EngineInterface, settings: Settings, usage: Usage &
   const priced = priceUsage(usage, rates, ttl)
   if (rates === undefined) await noteUnpricedModel($, usage.model)
 
+  const loopId = step.agentId ?? 'main'
+  const loopsNow = await read($, loops)
+  const charged = chargeStep(
+    loopsNow[loopId] ?? emptyLoop(),
+    (rates?.cacheRead ?? 0) / 1_000_000,
+    (rates ? writeRate(rates, ttl) : 0) / 1_000_000,
+  )
+  await update($, loops, all => ({ ...all, [loopId]: charged.loop }))
+  const toolCosts = chargesAsUse(charged.charges)
+
   const now = await $.clock.now()
   const project = await $.session.root()
   const key = SESSION_PREFIX + (await $.session.id())
   const entry = (await $.store.get(key)) as SessionEntry | undefined
-  await saveEntry($, key, addUsage(entry, now, priced, project, !isMainThread))
+  await saveEntry($, key, addTools(addUsage(entry, now, priced, project, !isMainThread), now, toolCosts))
+  await update($, totals, t => (t === null ? t : applyTools(t, now, toolCosts)))
   await addToActiveTurn($, step, priced, isMainThread, now)
   await update($, totals, t => (t === null ? t : applyUsage(t, now, priced, project, !isMainThread)))
 
@@ -364,6 +386,19 @@ async function finishActiveTurn($: EngineInterface, settings: Settings, turnId: 
     const detail = `${record.steps} requests${record.subagentSteps > 0 ? ` + ${record.subagentSteps} by subagents` : ''}`
     $.ui.toast(`That prompt cost ≈ ${formatUsd(usd)} (${detail}): “${record.prompt}”`, { timeoutMs: 10_000 })
   }
+}
+
+async function recordToolResult($: EngineInterface, tool: string, agentId: string | undefined, text: string) {
+  const tokens = estimateTokens(text)
+  const loopId = agentId ?? 'main'
+  await update($, loops, all => ({ ...all, [loopId]: addToolResult(all[loopId], tool, tokens) }))
+
+  const now = await $.clock.now()
+  const use: Record<string, ToolUse> = { [tool]: { calls: 1, tokens, writeUsd: 0, rereadUsd: 0 } }
+  const key = SESSION_PREFIX + (await $.session.id())
+  const entry = (await $.store.get(key)) as SessionEntry | undefined
+  await saveEntry($, key, addTools(entry, now, use))
+  await update($, totals, t => (t === null ? t : applyTools(t, now, use)))
 }
 
 const localStamp = (ms: number) => {
@@ -552,7 +587,10 @@ export const register: Register = (on, options) => {
     // switch sessions inside it: the new session's running total starts from
     // whatever it carries, and none of that is new spend.
     if (e.source === 'clear' || e.source === 'resume' || e.source === 'fork') await serially(() => rebaseline($))
-    if (e.source === 'clear' || e.source === 'compact') await update($, context, () => null)
+    if (e.source === 'clear' || e.source === 'compact') {
+      await update($, context, () => null)
+      await update($, loops, () => ({}))
+    }
     if (e.source === 'clear') {
       await update($, activeTurn, () => null)
       await update($, turnPrompts, () => ({}))
@@ -621,7 +659,22 @@ export const register: Register = (on, options) => {
 
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
-    if (e.agentId === undefined) await serially(() => finishActiveTurn($, settings, e.turnId))
+    const agentId = e.agentId
+    if (agentId === undefined) await serially(() => finishActiveTurn($, settings, e.turnId))
+    else
+      await update($, loops, all => {
+        const { [agentId]: _done, ...rest } = all
+        return rest
+      })
+    return result
+  })
+
+  on('tool.call', async ($, e, next) => {
+    const result = await next(e)
+    const text = result.text
+    if (typeof text === 'string' && text.length > 0) {
+      await serially(() => recordToolResult($, String(e.tool), e.agentId, text))
+    }
     return result
   })
 
@@ -689,6 +742,7 @@ export const register: Register = (on, options) => {
     const monthFrom = `${shown.key}-01`
     const monthTo = `${shown.key}-31`
     const expensive = turnsIn(t.turns, monthFrom, monthTo).slice(0, SHOWN_TURNS)
+    const tools = topTools(t.toolDays, monthFrom, monthTo).slice(0, SHOWN_TOOLS)
 
     const shadeValue = (day: string) =>
       shading === 'cacheWrite' ? (t.cacheDays[day]?.usd.cacheWrite ?? 0) : (t.days[day] ?? 0)
@@ -832,6 +886,24 @@ export const register: Register = (on, options) => {
             {formatUsd(turnUsd(turn)).padStart(9)}{' '}
             <Text dimColor>{`${turn.steps}${turn.subagentSteps > 0 ? `+${turn.subagentSteps}` : ''} req `.padStart(10)}</Text>
             {turn.prompt.slice(0, Math.max(10, (e.props.bodyColumns ?? 60) - 22))}
+          </Text>
+        ))}
+        <Text> </Text>
+        <Text bold>
+          What filled the context, {shown.name}
+          <Text dimColor> (tool results, ≈ tokens)</Text>
+        </Text>
+        {tools.length === 0 && <Text dimColor>No tool results recorded.</Text>}
+        {tools.length > 0 && (
+          <Text dimColor>{'tool'.padEnd(22)}{'calls'.padStart(6)}{'tokens'.padStart(8)}{'write'.padStart(9)}{'re-read'.padStart(10)}</Text>
+        )}
+        {tools.map(([tool, use]) => (
+          <Text>
+            {toolLabel(tool).slice(0, 21).padEnd(22)}
+            {String(use.calls).padStart(6)}
+            {formatTokens(use.tokens).padStart(8)}
+            {formatUsd(use.writeUsd).padStart(9)}
+            {formatUsd(use.rereadUsd).padStart(10)}
           </Text>
         ))}
         <Text> </Text>

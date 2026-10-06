@@ -24,6 +24,14 @@ export type TurnRecord = {
 
 export type ActiveTurn = Omit<TurnRecord, 'project'> & { turnId: string }
 
+// What one tool's results cost while they sat in context: approximate tokens,
+// the cache write when first sent, and every cached re-read after that.
+export type ToolUse = { calls: number; tokens: number; writeUsd: number; rereadUsd: number }
+
+// A loop's tool results by tool, in approximate tokens: pending until the next
+// request sends them, resident once cached.
+export type LoopContext = { pending: Record<string, number>; resident: Record<string, number> }
+
 export type Totals = {
   session: number
   today: number
@@ -35,6 +43,7 @@ export type Totals = {
   subagentDays: Record<string, Breakdown>
   projectDays: Record<string, Record<string, ProjectDay>>
   turns: TurnRecord[]
+  toolDays: Record<string, Record<string, ToolUse>>
   rateLimits: RateLimit[]
 }
 
@@ -53,6 +62,7 @@ declare module 'claude-code' {
       tick: number
       activeTurn: ActiveTurn | null
       turnPrompts: Record<string, { text: string; at: number }>
+      loops: Record<string, LoopContext>
     }
   }
 }
