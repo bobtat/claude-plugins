@@ -21,9 +21,10 @@ Claude to read.
 | Where | What |
 |---|---|
 | Status line and a band above the prompt | `$1.84 session · $23.10 week · $96.40 month · ctx 150k ≈$0.03/step · cache warm 3m` |
-| `/costs` pane | Totals with budget progress, a heat-map calendar per month (shade by total spend or by cache writes, `p`/`n` to change month, `s` to switch shading), the month's prompt-cache breakdown, the subagent share, spend by project, and daily bars |
+| `/costs` pane | Totals with budget progress, the change against the same point last week and the month's pace (with the day a monthly budget would be reached), a heat-map calendar per month (shade by total spend or by cache writes, `p`/`n` to change month, `s` to switch shading), the month's prompt-cache breakdown, the subagent share, the most expensive prompts, what filled the context, spend by project, and daily bars |
 | `/costs export` | Writes `~/claude-costs/claude-costs-<date>.csv`: one row per day and project with the total, tokens and estimated cost per category, and subagent cost |
-| Toasts | Before a prompt is sent once the cache has likely expired; before a model switch that drops a warm cache; after one request writes a large amount to the cache; at 80% and 100% of a budget |
+| `/costs doctor` | Checks the assumptions the totals rest on (see below) |
+| Toasts | Before a prompt is sent once the cache has likely expired; before a model switch that drops a warm cache; after one request writes a large amount to the cache; after a prompt whose cost passes a threshold; at 80% and 100% of a budget |
 
 All warnings are informational: nothing is ever blocked.
 
@@ -46,8 +47,37 @@ All warnings are informational: nothing is ever blocked.
 - **The category breakdown** (input, output, cache write, cache read) is estimated by the mod
   from each request's token counts, at Anthropic list prices or at the rates you give it.
   Token counts and the cache-hit percentage are exact; the dollars are estimates.
+- **The cost of a prompt** is the estimated cost of every request made between the prompt and
+  its answer, its subagents' included, with the first 80 characters of the prompt. The month's
+  ten most expensive are kept. Prompt text stays in the local store; it is not exported.
+- **What filled the context** measures each tool result as the model reads it, at roughly four
+  characters a token, then charges it a cache write on the first request that sends it and a
+  cache read on every request after, until `/clear` or `/compact` drops it. A large file read
+  early in a long turn shows up here as the re-reads it caused. The tokens are approximate, so
+  the dollars are a guide to where the cache spend comes from rather than a bill.
+- **Pace** extrapolates the month's spend at its average daily rate so far, counting at least
+  one day. Week over week compares Monday to today with Monday to the same weekday last week.
 - Only sessions that ran with the mod enabled are counted. There is no backfill from older
   transcripts.
+
+## Checking the setup
+
+`/costs doctor` reports, each line marked ✓, ⚠ or ℹ:
+
+- **Time zone**: whether the mod's local time matches the host clock (`Get-Date` on Windows,
+  `date` elsewhere), since days, weeks and months are split by it.
+- **Store file**: whether a write reaches the store file on disk at once, whether this
+  session's view of the store matches the file (if it does not, another session's writes may
+  be getting lost), and how close the file is to the 4 MiB limit.
+- **Another install**: a store file left by a differently installed copy of the mod. Each
+  install source (marketplace, `--plugin-dir`, a session's mods folder) has its own store, so
+  history recorded by one is not in another's totals.
+- **Claude Code pricing**: whether Claude Code prices at your organisation's managed rates or
+  at list price, once it has said so, which it does when you switch models.
+- **Cache lifetime**, **baseline**, **rates** and **models without a rate**.
+
+It cannot check the `/resume` accounting: for that, compare `/costs` before and after
+resuming a session whose spend you know.
 
 ## Settings
 
@@ -62,6 +92,7 @@ Set in `/config` under `cost-ledger`.
 | `largeWriteTokens` | 50000 | Toast when one request writes at least this many tokens to the cache; 0 turns it off |
 | `contextNudgeTokens` | 150000 | Suggest `/compact` once the context reaches this size; 0 turns it off |
 | `dailyBudget`, `weeklyBudget`, `monthlyBudget` | 0 | USD; toast at 80% and 100%; 0 turns each off |
+| `expensiveTurnUsd` | 2 | Toast when one prompt, its subagents included, costs at least this much (estimated); 0 turns it off |
 
 Models with no list price in the bundled reference (Opus 4.5, Opus 4.1, Sonnet 4.5) are not
 guessed at: their tokens are reported as unpriced in the pane until `rates` names them.
@@ -81,8 +112,9 @@ guessed at: their tokens are reported as unpriced in the pane until `rates` name
 
 ## Development
 
-The module is `hooks/register.tsx`; date and summary logic is in `hooks/ledger.ts` and
-pricing in `hooks/pricing.ts`, both free of engine calls so they can be tested directly.
+The module is `hooks/register.tsx`. Date and summary logic is in `hooks/ledger.ts`, pricing
+in `hooks/pricing.ts`, and the per-prompt, context and pace arithmetic in
+`hooks/insights.ts`; all three are free of engine calls so they can be tested directly.
 
 ```
 claude plugin validate plugins/cost-ledger
