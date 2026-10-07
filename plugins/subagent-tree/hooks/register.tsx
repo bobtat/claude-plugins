@@ -36,20 +36,48 @@ async function touch(
 // Module state: a reload starts it over, and the next draw of the pane (a
 // reload redraws it) or /agents-tree restores it.
 let timer: Timer | undefined
-let isOpen = false
+let lastRenderAt = 0
 let wasLive = false
 
-async function redrawTick($: EngineInterface) {
-  if (!isOpen) return
-  const isLive = liveCount(await $.agent.list()) > 0
-  // One more redraw after the last agent finishes, so the final frame is not
-  // left showing it running.
-  if (isLive || wasLive) $.ui.invalidate('ui.render')
-  wasLive = isLive
+// A pane that is drawn is redrawn on every invalidate, so a pane not drawn for
+// this long is closed (or dropped without ui.close reaching this plugin) or
+// nothing is running; either way the timer stops and the next draw restarts it.
+const STALE_MS = 3500
+
+function stopTimer() {
+  timer?.cancel()
+  timer = undefined
+  wasLive = false
 }
 
-function ensureTimer($: EngineInterface) {
-  isOpen = true
+async function pruneUnlisted($: EngineInterface, agents: { id: string }[], now: number) {
+  const listed = new Set(agents.map(agent => agent.id))
+  const all = await read($, stats)
+  if (Object.keys(prune(all, listed, now)).length !== Object.keys(all).length) {
+    await update($, stats, current => prune(current, listed, now))
+  }
+}
+
+async function redrawTick($: EngineInterface) {
+  try {
+    const now = await $.clock.now()
+    if (now - lastRenderAt > STALE_MS) return stopTimer()
+
+    const agents = await $.agent.list()
+    const isLive = liveCount(agents) > 0
+    // One more redraw after the last agent finishes, so the final frame is not
+    // left showing it running.
+    if (isLive || wasLive) $.ui.invalidate('ui.render')
+    wasLive = isLive
+    await pruneUnlisted($, agents, now)
+  } catch {
+    // A failed period ends the interval; forget it so the next draw restarts it.
+    stopTimer()
+  }
+}
+
+async function watch($: EngineInterface) {
+  lastRenderAt = await $.clock.now()
   timer ??= $.clock.every(1000, () => redrawTick($))
 }
 
@@ -63,9 +91,15 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('command.run', { command: 'agents-tree' }, async $ => {
+  on('command.run', { command: 'agents-tree' }, async ($, e) => {
+    if (e.args.trim() === 'close') {
+      await $.ui.close({ id: PANE })
+      stopTimer()
+
+      return { text: 'Subagent tree closed.' }
+    }
     await $.ui.open({ id: PANE, title: 'Subagents' })
-    ensureTimer($)
+    await watch($)
 
     return { text: 'Subagent tree opened.' }
   })
@@ -119,17 +153,17 @@ export const register: Register = on => {
     return result
   })
 
-  on('ui.close', { id: PANE }, (_$, e, next) => {
-    isOpen = false
-    timer?.cancel()
-    timer = undefined
+  on('ui.close', { id: PANE }, async (_$, e, next) => {
+    // A hook beneath may keep the pane open; if so, its next draw restarts the timer.
+    const result = await next(e)
+    stopTimer()
 
-    return next(e)
+    return result
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
-    ensureTimer($)
+    await watch($)
     const all = await read($, stats)
     const agents = await $.agent.list()
     const now = await $.clock.now()
