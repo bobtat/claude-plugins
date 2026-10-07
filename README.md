@@ -30,7 +30,7 @@ Then install a plugin:
 | [jewelcraft](plugins/jewelcraft) | Teaches Claude to model and check jewelry in Blender with the JewelCraft add-on — prong grip, seat clearance and stone overlaps measured rather than eyeballed, ring sizes read from the band's actual inner surface, metal weight with overlapping parts counted once, and print/cast checks that confirm an STL comes out in millimetres |
 | [mediatr](plugins/mediatr) | MediatR guidance for in-process messaging in .NET — requests, notifications, pipeline behaviors, registration, and testing |
 | [refactoring](plugins/refactoring) | Teaches Claude to spot code smells (classic, architectural, and test smells) and apply disciplined, behavior-preserving refactoring |
-| [subagent-tree](plugins/subagent-tree) | A mod that shows the session's subagents as a live tree in a `/agents-tree` pane — status, elapsed time, tool calls and steps, the tool each is on and the tokens it used |
+| [subagent-tree](plugins/subagent-tree) | A mod that shows the session's subagents as a live tree in a `/agents-tree` pane — status, elapsed time, tool calls and steps, the tool each is on and the output tokens it used |
 | [testing](plugins/testing) | Teaches Claude to write, review, and audit tests worth having — behavior-focused design, disciplined test doubles, browser and component testing, a plan-gated pipeline that turns a ticket or PR into tests of the described behavior, a check on whether pushed code still matches the description that specified it, and a repo-scale map of where test protection is weakest |
 
 ## Repository layout
