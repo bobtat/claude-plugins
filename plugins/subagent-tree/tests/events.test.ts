@@ -343,7 +343,7 @@ test('/agents-tree with an unknown argument replies with the usage and opens not
   expect(opened).toBe(0)
 })
 
-test('/agents-tree close says so when a hook refuses, and leaves the timer running', async ($, on) => {
+test('/agents-tree close reports a refusal in plain words, and leaves the timer running', async ($, on) => {
   const clock = mock.clock(on, { now: T0 })
   let lists = 0
   engine(on, () => {
@@ -362,7 +362,7 @@ test('/agents-tree close says so when a hook refuses, and leaves the timer runni
   const before = lists
   await clock.advance(3_000)
 
-  expect(reply).toMatch(/^Subagent tree stays open: /)
+  expect(reply).toBe('Could not close the subagent tree: the pane is pinned')
   expect(lists).toBeGreaterThan(before)
 })
 
@@ -398,4 +398,79 @@ test('the timer starts afresh after a close: no stale extra redraw from the last
 
   // Idle now, so no redraw until the fifth second; a leftover wasLive would redraw at once.
   expect(redraws).toBe(before)
+})
+
+const OPEN_PANE = { id: 'subagent-tree', title: 'Subagents', isShown: true, isFocused: false, isPlaced: true }
+
+test('a hook that keeps the pane open without refusing keeps the timer running', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let lists = 0
+  engine(on, () => {
+    lists += 1
+    return [subagent('a')]
+  })
+  let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
+  on('ui.invalidate', async () => {
+    await pane?.redraw()
+    return { value: undefined }
+  })
+  // Answers the close without closing anything, and the engine still lists the pane.
+  on('ui.close', () => ({ value: undefined }))
+  on('ui.panes', () => ({ value: [OPEN_PANE] }))
+
+  pane = await $.ui.mount(PANE('terminal'))
+  const reply = text(await run($, 'close'))
+  const before = lists
+  await clock.advance(3_000)
+
+  expect(reply).toBe('Subagent tree stays open.')
+  expect(lists).toBeGreaterThan(before)
+})
+
+test('a close the engine carried out stops the timer even when no hook says so', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let lists = 0
+  engine(on, () => {
+    lists += 1
+    return [subagent('a')]
+  })
+  let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
+  on('ui.invalidate', async () => {
+    await pane?.redraw()
+    return { value: undefined }
+  })
+  on('ui.close', () => ({ value: undefined }))
+  on('ui.panes', () => ({ value: [] }))
+
+  pane = await $.ui.mount(PANE('terminal'))
+  await run($, 'close')
+  const before = lists
+  await clock.advance(3_000)
+
+  expect(lists).toBe(before)
+})
+
+test('a pane the engine no longer lists stops the timer at the next tick, not after the stale limit', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let lists = 0
+  engine(on, () => {
+    lists += 1
+    return [subagent('a')]
+  })
+  let panes = [OPEN_PANE]
+  let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
+  on('ui.invalidate', async () => {
+    await pane?.redraw()
+    return { value: undefined }
+  })
+  on('ui.panes', () => ({ value: panes }))
+
+  pane = await $.ui.mount(PANE('terminal'))
+  await clock.advance(2_000)
+  panes = []
+  await clock.advance(1_000)
+  const before = lists
+  await clock.advance(3_000)
+
+  expect(lists).toBe(before)
 })
