@@ -14,9 +14,9 @@ session.
 ## Using it
 
 Type `/agents-tree` (or `/agents-tree open`) to open the pane and `/agents-tree close` to close
-it; any other argument replies with the usage. If a hook refuses the close, the reply says the
-tree stays open. The pane lists every subagent the session has started, children under the
-agent that spawned them:
+it; any other argument replies with the usage. If a hook refuses the close the reply says why,
+and if a hook keeps the pane open without refusing it says the tree stays open. The pane lists
+every subagent the session has started, children under the agent that spawned them:
 
 ```
 ● Explore: scan the repo
@@ -39,11 +39,14 @@ While the pane is drawn it redraws once a second as long as an agent is pending,
 waiting, so the elapsed times keep moving, and once more when the last one finishes. With
 nothing running it redraws every fifth second, so a status that changed with no event of the
 mod's own (a pending agent starting, a teammate in a terminal pane of its own) still shows
-within five seconds. Each second the mod also asks the engine for the agent list. When the pane
-has not been drawn for about twelve seconds (it was closed, or it was dropped without the mod
-being told) the timer stops, and the pane's next draw starts it again. After a hot reload the timer restarts when the pane next draws. If a
-tick fails, the error goes to the debug log (`claude --debug`), the timer stops, and the next
-draw starts it again.
+within five seconds. Each second the mod also asks the engine for the agent list and for its
+list of the plugin's panes.
+
+The timer stops at the next tick once the engine no longer lists the pane, and also when the
+pane has not been drawn for about twelve seconds (a fallback for when the engine cannot say).
+The pane's next draw starts it again. After a hot reload the timer restarts when the pane next
+draws. If a tick fails, the error goes to the debug log (`claude --debug`), the timer stops,
+and the next draw starts it again.
 
 The list is drawn whole and the pane scrolls it. Each line is set to truncate (`wrap="truncate"`)
 at the pane's width; the mod's tests do not measure the truncation or the indent, which the
