@@ -13,8 +13,10 @@ session.
 
 ## Using it
 
-Type `/agents-tree` to open the pane and `/agents-tree close` to close it. The pane lists
-every subagent the session has started, children under the agent that spawned them:
+Type `/agents-tree` (or `/agents-tree open`) to open the pane and `/agents-tree close` to close
+it; any other argument replies with the usage. If a hook refuses the close, the reply says the
+tree stays open. The pane lists every subagent the session has started, children under the
+agent that spawned them:
 
 ```
 ● Explore: scan the repo
@@ -34,11 +36,14 @@ every subagent the session has started, children under the agent that spawned th
 | `✗` | failed or killed |
 
 While the pane is drawn it redraws once a second as long as an agent is pending, running or
-waiting, so the elapsed times keep moving, and once more when the last one finishes. Each
-second the mod also asks the engine for the agent list. When the pane has not been drawn for
-about four seconds (it was closed, it was dropped without the mod being told, or nothing is
-running) the timer stops, and the pane's next draw starts it again. After a hot reload the
-timer restarts when the pane next draws.
+waiting, so the elapsed times keep moving, and once more when the last one finishes. With
+nothing running it redraws every fifth second, so a status that changed with no event of the
+mod's own (a pending agent starting, a teammate in a terminal pane of its own) still shows
+within five seconds. Each second the mod also asks the engine for the agent list. When the pane
+has not been drawn for about twelve seconds (it was closed, or it was dropped without the mod
+being told) the timer stops, and the pane's next draw starts it again. After a hot reload the timer restarts when the pane next draws. If a
+tick fails, the error goes to the debug log (`claude --debug`), the timer stops, and the next
+draw starts it again.
 
 The list is drawn whole and the pane scrolls it. Each line is set to truncate (`wrap="truncate"`)
 at the pane's width; the mod's tests do not measure the truncation or the indent, which the
@@ -63,7 +68,7 @@ surface does.
   (`cost-ledger` does that).
 - Stats for ids the list does not show are dropped once idle for ten minutes, and past 200
   entries unlisted ones go first. This runs when an agent's turn finishes and, while the pane is
-  drawn, on the timer; with the pane closed, stats of forks and workflow agents stay until the
+  drawn, on the timer; it writes only when something is dropped. With the pane closed, stats of forks and workflow agents stay until the
   next agent turn finishes.
 - **Active** in the footer counts pending, running and waiting agents.
 
