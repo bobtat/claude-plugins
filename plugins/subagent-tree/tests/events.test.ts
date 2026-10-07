@@ -135,7 +135,26 @@ test('the pane redraws each second while an agent runs, once more when it ends, 
   const atEnd = redraws
   await clock.advance(10_000)
 
-  expect(redraws).toBe(atEnd)
+  // Idle: a heartbeat every fifth second, not one a second.
+  expect(redraws - atEnd).toBeLessThanOrEqual(2)
+})
+
+test('a status that changes with no state write still shows, within the heartbeat', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let agents = [subagent('a', 'completed')]
+  engine(on, () => agents)
+  let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
+  on('ui.invalidate', async () => {
+    await pane?.redraw()
+    return { value: undefined }
+  })
+
+  pane = await $.ui.mount(PANE('terminal'))
+  await clock.advance(20_000)
+  agents = [subagent('a', 'running')]
+  await clock.advance(6_000)
+
+  expect(await pane.find({ text: /● Explore: task a/ })).toBeDefined()
 })
 
 test('a pane that is no longer drawn stops the timer within a few seconds', async ($, on) => {
@@ -153,11 +172,11 @@ test('a pane that is no longer drawn stops the timer within a few seconds', asyn
   })
 
   await $.ui.mount(PANE('terminal'))
-  await clock.advance(10_000)
+  await clock.advance(20_000)
   const settled = { lists, redraws }
   await clock.advance(60_000)
 
-  expect(settled.redraws).toBeLessThanOrEqual(4)
+  expect(settled.redraws).toBeLessThanOrEqual(16)
   expect(lists).toBe(settled.lists)
   expect(redraws).toBe(settled.redraws)
 })

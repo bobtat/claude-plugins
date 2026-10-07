@@ -38,16 +38,20 @@ async function touch(
 let timer: Timer | undefined
 let lastRenderAt = 0
 let wasLive = false
+let idleTicks = 0
 
-// A pane that is drawn is redrawn on every invalidate, so a pane not drawn for
-// this long is closed (or dropped without ui.close reaching this plugin) or
-// nothing is running; either way the timer stops and the next draw restarts it.
-const STALE_MS = 3500
+// A pane that is drawn is redrawn on every invalidate, and at least every
+// IDLE_EVERY ticks even when nothing runs, so a pane not drawn for this long
+// is closed or was dropped without ui.close reaching this plugin; the timer
+// stops and the next draw restarts it.
+const IDLE_EVERY = 5
+const STALE_MS = 12_000
 
 function stopTimer() {
   timer?.cancel()
   timer = undefined
   wasLive = false
+  idleTicks = 0
 }
 
 async function pruneUnlisted($: EngineInterface, agents: { id: string }[], now: number) {
@@ -65,9 +69,15 @@ async function redrawTick($: EngineInterface) {
 
     const agents = await $.agent.list()
     const isLive = liveCount(agents) > 0
-    // One more redraw after the last agent finishes, so the final frame is not
-    // left showing it running.
-    if (isLive || wasLive) $.ui.invalidate('ui.render')
+    idleTicks = isLive || wasLive ? 0 : idleTicks + 1
+    // Every second while something runs, and once more after the last agent
+    // finishes so the final frame is not left showing it running. When idle, a
+    // slow heartbeat: the draw reads the agent list, so a status that changed
+    // with no state write (a pending agent starting) still shows.
+    if (isLive || wasLive || idleTicks >= IDLE_EVERY) {
+      $.ui.invalidate('ui.render')
+      idleTicks = 0
+    }
     wasLive = isLive
     await pruneUnlisted($, agents, now)
   } catch {
