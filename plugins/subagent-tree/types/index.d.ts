@@ -7,18 +7,18 @@ export type AgentStats = {
   lastTool?: string
   /** Output tokens summed over its finished turns. */
   tokensOut: number
-  /** Input tokens summed over its finished turns, cache reads and writes included. */
-  tokensIn: number
-  /** Milliseconds since the epoch of the first event seen from it. */
-  startedAt: number
-  /** When its latest turn completed; unset while a turn runs. */
-  endedAt?: number
+  /** Milliseconds its finished runs were active, idle gaps between runs left out. */
+  activeMs: number
+  /** Milliseconds since the epoch when the run in progress began; unset between runs. */
+  runStartedAt?: number
+  /** Milliseconds since the epoch of the latest event seen from it. */
+  lastEventAt: number
 }
 
 declare module 'claude-code' {
   interface PluginState {
     'subagent-tree': {
-      stats: Record<string, AgentStats>
+      stats: Shaped<Record<string, AgentStats>>
       tick: number
     }
   }

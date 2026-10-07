@@ -49,15 +49,50 @@ export const formatTokens = (tokens: number): string =>
       ? `${Math.round(tokens / 1_000)}k`
       : String(tokens)
 
+/**
+ * How long the agent has been active: its finished runs, plus the run in
+ * progress. A run left open by an agent that is no longer live stops at its
+ * last event, so a killed or failed agent's clock does not keep moving.
+ */
+export const elapsedMs = (stats: AgentStats, status: string, now: number): number => {
+  if (stats.runStartedAt === undefined) return stats.activeMs
+  const end = isLive(status) ? now : stats.lastEventAt
+
+  return stats.activeMs + Math.max(0, end - stats.runStartedAt)
+}
+
+const PRUNE_AFTER_MS = 10 * 60 * 1000
+const PRUNE_CAP = 200
+
+/**
+ * Drops the stats of ids the agent list does not show once they have been
+ * idle for ten minutes, and past 200 entries drops unlisted ones first, oldest
+ * first. A listed agent's stats are never dropped.
+ */
+export const prune = (
+  stats: Record<string, AgentStats>,
+  listed: Set<string>,
+  now: number,
+): Record<string, AgentStats> => {
+  const kept = Object.entries(stats).filter(
+    ([id, s]) => listed.has(id) || now - s.lastEventAt < PRUNE_AFTER_MS,
+  )
+  if (kept.length <= PRUNE_CAP) return Object.fromEntries(kept)
+
+  const rank = ([id, s]: [string, AgentStats]) => (listed.has(id) ? Infinity : s.lastEventAt)
+  const newest = [...kept].sort((a, b) => rank(b) - rank(a)).slice(0, PRUNE_CAP)
+
+  return Object.fromEntries(newest)
+}
+
 const truncate = (text: string, max: number): string =>
   text.length > max ? `${text.slice(0, Math.max(1, max - 1))}…` : text
 
 const detailOf = (agent: AgentLike, stats: AgentStats | undefined, now: number): string => {
   if (!stats) return agent.status
-  const end = stats.endedAt ?? now
   const parts = [
     agent.status,
-    formatElapsed(end - stats.startedAt),
+    formatElapsed(elapsedMs(stats, agent.status, now)),
     `${stats.tools} tool${stats.tools === 1 ? '' : 's'}`,
     `${stats.steps} step${stats.steps === 1 ? '' : 's'}`,
   ]
@@ -107,6 +142,8 @@ export const buildRows = (
     for (const child of children.get(agent.id) ?? []) visit(child, depth + 1)
   }
   for (const root of roots) visit(root, 0)
+  // Agents left over are in a parent cycle: show them rather than hide them.
+  for (const agent of agents) visit(agent, 0)
 
   return rows
 }
