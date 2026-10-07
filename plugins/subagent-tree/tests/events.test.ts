@@ -305,3 +305,97 @@ test('a tick that fails is logged to the debug log and the next draw restarts th
   expect(lists).toBeGreaterThan(afterFailure)
   expect(await pane.find({ text: /Explore: task a/ })).toBeDefined()
 })
+
+const run = ($: Parameters<Parameters<typeof test>[1]>[0], args: string) =>
+  $.command.run({
+    command: 'agents-tree',
+    args,
+    origin: { kind: 'composer' },
+    presentation: { isFullscreen: false, columns: 120 },
+  })
+
+const text = (result: Awaited<ReturnType<typeof run>>) => ('text' in result ? String(result.text) : '')
+
+test('/agents-tree opens the pane with no argument or "open"', async ($, on) => {
+  mock.clock(on, { now: T0 })
+  engine(on, [])
+  const opened: string[] = []
+  on('ui.open', (_$, e) => {
+    opened.push(e.id)
+    return { value: { isPlaced: true } }
+  })
+
+  expect(text(await run($, ''))).toBe('Subagent tree opened.')
+  expect(text(await run($, ' open '))).toBe('Subagent tree opened.')
+  expect(opened).toEqual(['subagent-tree', 'subagent-tree'])
+})
+
+test('/agents-tree with an unknown argument replies with the usage and opens nothing', async ($, on) => {
+  mock.clock(on, { now: T0 })
+  engine(on, [])
+  let opened = 0
+  on('ui.open', () => {
+    opened += 1
+    return { value: { isPlaced: true } }
+  })
+
+  expect(text(await run($, 'closed'))).toBe('Usage: /agents-tree [close]')
+  expect(opened).toBe(0)
+})
+
+test('/agents-tree close says so when a hook refuses, and leaves the timer running', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let lists = 0
+  engine(on, () => {
+    lists += 1
+    return [subagent('a')]
+  })
+  let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
+  on('ui.invalidate', async () => {
+    await pane?.redraw()
+    return { value: undefined }
+  })
+  on('ui.close', () => ({ deny: 'the pane is pinned' }))
+
+  pane = await $.ui.mount(PANE('terminal'))
+  const reply = text(await run($, 'close'))
+  const before = lists
+  await clock.advance(3_000)
+
+  expect(reply).toMatch(/^Subagent tree stays open: /)
+  expect(lists).toBeGreaterThan(before)
+})
+
+test('/agents-tree close with no pane open is not an error', async ($, on) => {
+  mock.clock(on, { now: T0 })
+  engine(on, [])
+  on('ui.close', () => ({ value: undefined }))
+
+  expect(text(await run($, 'close'))).toBe('Subagent tree closed.')
+})
+
+test('the timer starts afresh after a close: no stale extra redraw from the last run', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let agents = [subagent('a')]
+  engine(on, () => agents)
+  let redraws = 0
+  let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
+  on('ui.invalidate', async () => {
+    redraws += 1
+    await pane?.redraw()
+    return { value: undefined }
+  })
+  on('ui.close', () => ({ value: undefined }))
+
+  pane = await $.ui.mount(PANE('terminal'))
+  await clock.advance(2_000)
+  await run($, 'close')
+  agents = [subagent('a', 'completed')]
+  await pane.unmount()
+  pane = await $.ui.mount(PANE('terminal'))
+  const before = redraws
+  await clock.advance(3_000)
+
+  // Idle now, so no redraw until the fifth second; a leftover wasLive would redraw at once.
+  expect(redraws).toBe(before)
+})

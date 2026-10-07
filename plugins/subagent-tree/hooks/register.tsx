@@ -98,17 +98,28 @@ export const register: Register = on => {
     await $.command.register({
       name: 'agents-tree',
       description: 'Show the session\'s subagents as a live tree in a pane',
+      argumentHint: '[close]',
     })
 
     return next(e)
   })
 
   on('command.run', { command: 'agents-tree' }, async ($, e) => {
-    if (e.args.trim() === 'close') {
-      await $.ui.close({ id: PANE })
+    const argument = e.args.trim()
+
+    if (argument === 'close') {
+      try {
+        await $.ui.close({ id: PANE })
+      } catch (error) {
+        // A hook beneath refused the close.
+        return { text: `Subagent tree stays open: ${String(error)}` }
+      }
       stopTimer()
 
       return { text: 'Subagent tree closed.' }
+    }
+    if (argument !== '' && argument !== 'open') {
+      return { text: 'Usage: /agents-tree [close]' }
     }
     await $.ui.open({ id: PANE, title: 'Subagents' })
     await watch($)
@@ -170,9 +181,11 @@ export const register: Register = on => {
   })
 
   on('ui.close', { id: PANE }, async (_$, e, next) => {
-    // A hook beneath may keep the pane open; if so, its next draw restarts the timer.
     const result = await next(e)
-    stopTimer()
+    // A hook beneath may refuse the close and keep the pane open; then the
+    // timer must keep running. If one keeps it open some other way, the next
+    // draw restarts the timer.
+    if (!(result as { deny?: string } | undefined)?.deny) stopTimer()
 
     return result
   })
