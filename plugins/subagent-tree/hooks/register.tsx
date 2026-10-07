@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { AgentStats } from '../types'
 import { buildRows, formatTokens, liveCount, prune } from './tree'
@@ -10,7 +10,6 @@ const stats = atom(
   {},
   { shape: 'stats-v2' },
 )
-const tick = atom({ plugin: 'subagent-tree', key: 'tick' } as const, 0)
 
 const blank = (now: number): AgentStats => ({
   tools: 0,
@@ -34,9 +33,27 @@ async function touch(
   })
 }
 
-export const register: Register = on => {
-  let isTicking = false
+// Module state: a reload starts it over, and the next draw of the pane (a
+// reload redraws it) or /agents-tree restores it.
+let timer: Timer | undefined
+let isOpen = false
+let wasLive = false
 
+async function redrawTick($: EngineInterface) {
+  if (!isOpen) return
+  const isLive = liveCount(await $.agent.list()) > 0
+  // One more redraw after the last agent finishes, so the final frame is not
+  // left showing it running.
+  if (isLive || wasLive) $.ui.invalidate('ui.render')
+  wasLive = isLive
+}
+
+function ensureTimer($: EngineInterface) {
+  isOpen = true
+  timer ??= $.clock.every(1000, () => redrawTick($))
+}
+
+export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'agents-tree',
@@ -48,14 +65,7 @@ export const register: Register = on => {
 
   on('command.run', { command: 'agents-tree' }, async $ => {
     await $.ui.open({ id: PANE, title: 'Subagents' })
-
-    if (!isTicking) {
-      isTicking = true
-      // Redraw once a second while anything runs, so elapsed times keep moving.
-      $.clock.every(1000, async () => {
-        if (liveCount(await $.agent.list()) > 0) await update($, tick, n => n + 1)
-      })
-    }
+    ensureTimer($)
 
     return { text: 'Subagent tree opened.' }
   })
@@ -109,9 +119,17 @@ export const register: Register = on => {
     return result
   })
 
+  on('ui.close', { id: PANE }, (_$, e, next) => {
+    isOpen = false
+    timer?.cancel()
+    timer = undefined
+
+    return next(e)
+  })
+
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
-    await read($, tick)
+    ensureTimer($)
     const all = await read($, stats)
     const agents = await $.agent.list()
     const now = await $.clock.now()
