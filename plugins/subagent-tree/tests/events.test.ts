@@ -127,14 +127,17 @@ test('the pane redraws each second while an agent runs, once more when it ends, 
   let agents = [subagent('a')]
   engine(on, () => agents)
   let redraws = 0
-  on('ui.invalidate', () => {
+  // The engine redraws the pane on an invalidate; the test stands in for it.
+  let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
+  on('ui.invalidate', async () => {
     redraws += 1
+    await pane?.redraw()
     return { value: undefined }
   })
 
-  await $.ui.mount(PANE('terminal'))
-  await clock.advance(3_000)
-  expect(redraws).toBeGreaterThanOrEqual(3)
+  pane = await $.ui.mount(PANE('terminal'))
+  await clock.advance(10_000)
+  expect(redraws).toBeGreaterThanOrEqual(9)
 
   const beforeEnd = redraws
   agents = [subagent('a', 'completed')]
@@ -144,4 +147,100 @@ test('the pane redraws each second while an agent runs, once more when it ends, 
   await clock.advance(10_000)
 
   expect(redraws).toBe(atEnd)
+})
+
+test('a pane that is no longer drawn stops the timer within a few seconds', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let lists = 0
+  engine(on, () => {
+    lists += 1
+    return [subagent('a')]
+  })
+  let redraws = 0
+  // Nothing redraws the pane here, as when it was dropped without ui.close.
+  on('ui.invalidate', () => {
+    redraws += 1
+    return { value: undefined }
+  })
+
+  await $.ui.mount(PANE('terminal'))
+  await clock.advance(10_000)
+  const settled = { lists, redraws }
+  await clock.advance(60_000)
+
+  expect(settled.redraws).toBeLessThanOrEqual(4)
+  expect(lists).toBe(settled.lists)
+  expect(redraws).toBe(settled.redraws)
+})
+
+test('/agents-tree close closes the pane and stops the timer at once', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let lists = 0
+  engine(on, () => {
+    lists += 1
+    return [subagent('a')]
+  })
+  let redraws = 0
+  let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
+  on('ui.invalidate', async () => {
+    redraws += 1
+    await pane?.redraw()
+    return { value: undefined }
+  })
+  let closed = ''
+  on('ui.close', (_$, e) => {
+    closed = e.id
+    return { value: undefined }
+  })
+
+  pane = await $.ui.mount(PANE('terminal'))
+  await clock.advance(2_000)
+  const result = await $.command.run({
+    command: 'agents-tree',
+    args: 'close',
+    origin: { kind: 'composer' },
+    presentation: { isFullscreen: false, columns: 120 },
+  })
+  const before = { lists, redraws }
+  await clock.advance(2_000)
+
+  expect(closed).toBe('subagent-tree')
+  expect('text' in result ? result.text : '').toBe('Subagent tree closed.')
+  expect(lists).toBe(before.lists)
+  expect(redraws).toBe(before.redraws)
+})
+
+test('a finished turn drops the stats of stale unlisted ids, so they do not return to the footer', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let agents = [subagent('a')]
+  engine(on, () => agents)
+
+  await $.turn.complete(done('ghost', 1_000, 90_000))
+  await clock.advance(11 * 60_000)
+  await $.turn.complete(done('a', 1_000, 500))
+  agents = [subagent('a'), subagent('ghost')]
+
+  const ui = await $.ui.mount(PANE('terminal'))
+  expect(await ui.find({ text: /2 agents · .* · 500 tokens out/ })).toBeDefined()
+})
+
+test('while the pane is open, the timer drops stale stats of ids the list does not show', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let agents = [subagent('a')]
+  engine(on, () => agents)
+  let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
+  on('ui.invalidate', async () => {
+    await pane?.redraw()
+    return { value: undefined }
+  })
+
+  await $.turn.complete(done('ghost', 1_000, 90_000))
+  // Stale before the pane opens, so the timer's first ticks are the only prune.
+  await clock.advance(11 * 60_000)
+  pane = await $.ui.mount(PANE('terminal'))
+  await clock.advance(2_000)
+  agents = [subagent('a'), subagent('ghost')]
+  await pane.redraw()
+
+  expect(await pane.find({ text: /2 agents · .* · 0 tokens out/ })).toBeDefined()
 })
