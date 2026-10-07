@@ -39,7 +39,6 @@ let timer: Timer | undefined
 let lastRenderAt = 0
 let wasLive = false
 let idleTicks = 0
-
 // A pane that is drawn is redrawn on every invalidate, and at least every
 // IDLE_EVERY ticks even when nothing runs, so a pane not drawn for this long
 // is closed or was dropped without ui.close reaching this plugin; the timer
@@ -80,14 +79,17 @@ async function redrawTick($: EngineInterface) {
     }
     wasLive = isLive
     await pruneUnlisted($, agents, now)
-  } catch {
+  } catch (error) {
     // A failed period ends the interval; forget it so the next draw restarts it.
+    $.ui.log(`redraw tick failed: ${String(error)}`, { to: 'debug' })
     stopTimer()
   }
 }
 
 async function watch($: EngineInterface) {
   lastRenderAt = await $.clock.now()
+  // The timer keeps the `$` of the hook that started it, as the types' own
+  // example does; a tick that fails stops it and the next draw starts it again.
   timer ??= $.clock.every(1000, () => redrawTick($))
 }
 
