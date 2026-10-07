@@ -61,10 +61,21 @@ async function pruneUnlisted($: EngineInterface, agents: { id: string }[], now: 
   }
 }
 
+// Whether the engine still lists the pane; undefined when it cannot say.
+async function isPaneOpen($: EngineInterface): Promise<boolean | undefined> {
+  try {
+    return (await $.ui.panes()).some(pane => pane.id === PANE)
+  } catch {
+    return undefined
+  }
+}
+
 async function redrawTick($: EngineInterface) {
   try {
     const now = await $.clock.now()
     if (now - lastRenderAt > STALE_MS) return stopTimer()
+    // The engine's own record: a pane it no longer lists is gone, whatever the clock says.
+    if ((await isPaneOpen($)) === false) return stopTimer()
 
     const agents = await $.agent.list()
     const isLive = liveCount(agents) > 0
@@ -84,6 +95,13 @@ async function redrawTick($: EngineInterface) {
     $.ui.log(`redraw tick failed: ${String(error)}`, { to: 'debug' })
     stopTimer()
   }
+}
+
+// A hook's refusal arrives as 'HooksError: <plugin>: $.ui.close: <reason>'.
+function reasonOf(error: unknown): string {
+  const text = error instanceof Error ? error.message : String(error)
+
+  return text.replace(/^(?:\w+: )*(?:[\w-]+: )?\$\.ui\.close: /, '')
 }
 
 async function watch($: EngineInterface) {
@@ -112,8 +130,10 @@ export const register: Register = on => {
         await $.ui.close({ id: PANE })
       } catch (error) {
         // A hook beneath refused the close.
-        return { text: `Subagent tree stays open: ${String(error)}` }
+        return { text: `Could not close the subagent tree: ${reasonOf(error)}` }
       }
+      // A hook beneath may also keep the pane open without refusing.
+      if ((await isPaneOpen($)) === true) return { text: 'Subagent tree stays open.' }
       stopTimer()
 
       return { text: 'Subagent tree closed.' }
@@ -180,12 +200,14 @@ export const register: Register = on => {
     return result
   })
 
-  on('ui.close', { id: PANE }, async (_$, e, next) => {
+  on('ui.close', { id: PANE }, async ($, e, next) => {
     const result = await next(e)
-    // A hook beneath may refuse the close and keep the pane open; then the
-    // timer must keep running. If one keeps it open some other way, the next
-    // draw restarts the timer.
-    if (!(result as { deny?: string } | undefined)?.deny) stopTimer()
+    // A hook beneath may refuse the close ({ deny }) or keep the pane open by
+    // answering without next; the engine's list of panes says which happened.
+    // When it cannot say, only a refusal keeps the timer running.
+    const isOpen = await isPaneOpen($)
+    const isRefused = Boolean((result as { deny?: string } | undefined)?.deny)
+    if (isOpen === false || (isOpen === undefined && !isRefused)) stopTimer()
 
     return result
   })
