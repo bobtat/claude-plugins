@@ -19,7 +19,6 @@ declare module 'claude-code' {
   interface PluginState {
     'subagent-tree': {
       stats: Shaped<Record<string, AgentStats>>
-      tick: number
     }
   }
 }

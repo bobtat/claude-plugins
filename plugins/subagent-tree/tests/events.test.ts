@@ -7,8 +7,8 @@ const T0 = 1_000_000
 
 // The engine beneath the plugin: the agents it lists, and the steps and turns
 // it answers as the API would.
-function engine(on: Parameters<Parameters<typeof test>[1]>[1], agents: Listed[]) {
-  on('agent.list', () => ({ value: agents }))
+function engine(on: Parameters<Parameters<typeof test>[1]>[1], agents: Listed[] | (() => Listed[])) {
+  on('agent.list', () => ({ value: typeof agents === 'function' ? agents() : agents }))
   on('tool.call', () => ({ result: {}, text: '' }))
   on('turn.step', async function* (_$, e) {
     return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn' }
@@ -121,3 +121,27 @@ for (const surface of SURFACES) {
     expect(child).toBeDefined()
   })
 }
+
+test('the pane redraws each second while an agent runs, once more when it ends, then stops', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let agents = [subagent('a')]
+  engine(on, () => agents)
+  let redraws = 0
+  on('ui.invalidate', () => {
+    redraws += 1
+    return { value: undefined }
+  })
+
+  await $.ui.mount(PANE('terminal'))
+  await clock.advance(3_000)
+  expect(redraws).toBeGreaterThanOrEqual(3)
+
+  const beforeEnd = redraws
+  agents = [subagent('a', 'completed')]
+  await clock.advance(1_000)
+  expect(redraws).toBeGreaterThan(beforeEnd)
+  const atEnd = redraws
+  await clock.advance(10_000)
+
+  expect(redraws).toBe(atEnd)
+})
