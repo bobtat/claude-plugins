@@ -95,3 +95,29 @@ test('a turn that ended without usage adds no tokens', async ($, on) => {
   expect(await ui.find({ text: /failed · 1s/ })).toBeDefined()
   expect(await ui.find({ text: /0 tokens out/ })).toBeDefined()
 })
+
+for (const surface of SURFACES) {
+  test(`${surface}: a long list is drawn whole, for the pane to scroll`, async ($, on) => {
+    mock.clock(on, { now: T0 })
+    engine(
+      on,
+      Array.from({ length: 60 }, (_, i) => subagent(`a${i}`, 'completed')),
+    )
+
+    const ui = await $.ui.mount(PANE(surface))
+    expect(await ui.find({ text: /Explore: task a0$/ })).toBeDefined()
+    expect(await ui.find({ text: /Explore: task a59$/ })).toBeDefined()
+    expect(await ui.find({ text: /more/ })).toBeUndefined()
+  })
+
+  test(`${surface}: a child of a listed agent is drawn too`, async ($, on) => {
+    mock.clock(on, { now: T0 })
+    engine(on, [subagent('a'), subagent('b', 'running', { parentId: 'a' })])
+
+    const ui = await $.ui.mount(PANE(surface))
+    const parent = await ui.find({ text: /Explore: task a$/ })
+    const child = await ui.find({ text: /Explore: task b$/ })
+    expect(parent).toBeDefined()
+    expect(child).toBeDefined()
+  })
+}

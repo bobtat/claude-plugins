@@ -85,9 +85,6 @@ export const prune = (
   return Object.fromEntries(newest)
 }
 
-const truncate = (text: string, max: number): string =>
-  text.length > max ? `${text.slice(0, Math.max(1, max - 1))}…` : text
-
 const detailOf = (agent: AgentLike, stats: AgentStats | undefined, now: number): string => {
   if (!stats) return agent.status
   const parts = [
@@ -111,7 +108,6 @@ export const buildRows = (
   agents: AgentLike[],
   stats: Record<string, AgentStats>,
   now: number,
-  width = 60,
 ): Row[] => {
   const ids = new Set(agents.map(agent => agent.id))
   const children = new Map<string, AgentLike[]>()
@@ -135,7 +131,7 @@ export const buildRows = (
       id: agent.id,
       depth,
       glyph: GLYPHS[agent.status] ?? '?',
-      label: truncate(`${agent.type}: ${title}`, Math.max(16, width - depth * 2 - 2)),
+      label: `${agent.type}: ${title}`,
       detail: detailOf(agent, stats[agent.id], now),
       isLive: isLive(agent.status),
     })
