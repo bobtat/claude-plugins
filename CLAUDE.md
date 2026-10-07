@@ -10,6 +10,8 @@ Markdown and JSON only — no package manager, no test runner, no lint step, no 
 
 **A second exception: `cost-ledger` is code.** It is a TypeScript hooks module that Claude Code runs in the session, not Markdown. After any change under `plugins/cost-ledger/`, run `claude plugin validate plugins/cost-ledger` and `claude plugin test plugins/cost-ledger` and don't commit until both pass. Its money and date arithmetic fails as plausible wrong totals rather than errors, and the tests are where the `/clear`, `/resume` and store-failure paths are covered. See `plugins/cost-ledger/README.md`.
 
+**`subagent-tree` is code too**, and takes the same two commands: after any change under `plugins/subagent-tree/`, run `claude plugin validate plugins/subagent-tree` and `claude plugin test plugins/subagent-tree` and don't commit until both pass. Its elapsed-time and token arithmetic fails as plausible wrong figures, not errors. See `plugins/subagent-tree/README.md`.
+
 ## Editing a plugin
 
 ```

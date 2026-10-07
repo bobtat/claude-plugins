@@ -33,7 +33,12 @@ the agent that spawned them:
 | `✓` | completed |
 | `✗` | failed or killed |
 
-While anything runs the pane redraws once a second so the elapsed times keep moving.
+While the pane is open and an agent is running, it redraws once a second so the elapsed times
+keep moving, and once more when the last one finishes. A closed pane costs nothing: the timer
+is stopped and the agent list is not polled. After a hot reload the timer restarts when the
+pane next draws.
+
+The list is drawn whole and the pane scrolls it; long lines are cut to the pane's width.
 
 ## Where the numbers come from
 
@@ -42,8 +47,14 @@ While anything runs the pane redraws once a second so the elapsed times keep mov
 - **Tool calls, steps and the current tool** are counted by the mod from each agent's own
   `tool.call` and `turn.step` events, so they cover only what happened while the mod was
   loaded.
-- **Tokens out** are summed from the usage on each finished turn of the agent, so a running
-  agent's figure appears when its turn ends. The pane shows output tokens only; it does not
-  price anything (`cost-ledger` does that).
+- **Time** is the agent's active time: its finished runs plus the run in progress. A
+  teammate's idle gaps between runs are left out, and an agent that was killed or failed stops
+  at its last event.
+- **Output tokens** are summed from the usage on each finished turn of the agent, so a running
+  agent's figure appears when its turn ends. The footer total counts only the agents the tree
+  shows; the engine's own forks (compaction, memory) and workflow agents are not in the list
+  and are left out. The pane shows output tokens only; it does not price anything
+  (`cost-ledger` does that).
+- Stats for ids the list does not show are dropped after ten minutes, and past 200 entries.
 
 Nothing is blocked or rewritten: every hook passes the event on unchanged.
