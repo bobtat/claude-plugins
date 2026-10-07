@@ -157,7 +157,7 @@ test('a status that changes with no state write still shows, within the heartbea
   expect(await pane.find({ text: /● Explore: task a/ })).toBeDefined()
 })
 
-test('a pane that is no longer drawn stops the timer within a few seconds', async ($, on) => {
+test('a pane that is no longer drawn stops the timer within about thirteen seconds', async ($, on) => {
   const clock = mock.clock(on, { now: T0 })
   let lists = 0
   engine(on, () => {
@@ -274,4 +274,34 @@ test('an agent that raises no events here, such as a teammate in a terminal pane
   const ui = await $.ui.mount(PANE('terminal'))
   expect(await ui.find({ text: /○ teammate: review the PR/ })).toBeDefined()
   expect(await ui.find({ text: /^idle$/ })).toBeDefined()
+})
+
+test('a tick that fails is logged to the debug log and the next draw restarts the timer', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let fail = true
+  let lists = 0
+  engine(on, () => {
+    lists += 1
+    if (fail) throw new Error('agent list unavailable')
+    return [subagent('a')]
+  })
+  const logged: string[] = []
+  on('ui.log', (_$, e) => {
+    logged.push(e.text)
+    return { value: undefined }
+  })
+  on('ui.invalidate', () => ({ value: undefined }))
+
+  await $.ui.mount(PANE('terminal')).catch(() => undefined)
+  await clock.advance(3_000)
+  expect(logged.some(line => /^redraw tick failed: /.test(line))).toBe(true)
+  const afterFailure = lists
+  await clock.advance(5_000)
+  expect(lists).toBe(afterFailure)
+
+  fail = false
+  const pane = await $.ui.mount(PANE('terminal'))
+  await clock.advance(3_000)
+  expect(lists).toBeGreaterThan(afterFailure)
+  expect(await pane.find({ text: /Explore: task a/ })).toBeDefined()
 })
