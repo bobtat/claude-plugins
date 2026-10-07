@@ -5,15 +5,37 @@ import type { Listed } from './support'
 
 const T0 = 1_000_000
 
-// The engine beneath the plugin: the agents it lists, and the steps and turns
-// it answers as the API would.
-function engine(on: Parameters<Parameters<typeof test>[1]>[1], agents: Listed[] | (() => Listed[])) {
+const OPEN_PANE = { id: 'subagent-tree', title: 'Subagents', isShown: true, isFocused: false, isPlaced: true }
+
+// The engine beneath the plugin: the agents it lists, the plugin's panes it
+// lists (the pane is open unless a test says otherwise; null leaves the list
+// unanswered, as when the engine cannot say), and the steps and turns it
+// answers as the API would.
+function engine(
+  on: Parameters<Parameters<typeof test>[1]>[1],
+  agents: Listed[] | (() => Listed[]),
+  panes: (() => (typeof OPEN_PANE)[]) | null = () => [OPEN_PANE],
+) {
   on('agent.list', () => ({ value: typeof agents === 'function' ? agents() : agents }))
+  if (panes) on('ui.panes', () => ({ value: panes() }))
   on('tool.call', () => ({ result: {}, text: '' }))
   on('turn.step', async function* (_$, e) {
     return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn' }
   })
   on('turn.complete', (_$, e) => ({ text: e.answer, usage: e.usage }))
+}
+
+// A pane the engine lists until a close reaches it.
+function closable() {
+  const state = { isClosed: false }
+  return {
+    state,
+    panes: () => (state.isClosed ? [] : [OPEN_PANE]),
+    close: () => {
+      state.isClosed = true
+      return { value: undefined }
+    },
+  }
 }
 
 for (const surface of SURFACES) {
@@ -184,10 +206,15 @@ test('a pane that is no longer drawn stops the timer within about thirteen secon
 test('/agents-tree close closes the pane and stops the timer at once', async ($, on) => {
   const clock = mock.clock(on, { now: T0 })
   let lists = 0
-  engine(on, () => {
-    lists += 1
-    return [subagent('a')]
-  })
+  const door = closable()
+  engine(
+    on,
+    () => {
+      lists += 1
+      return [subagent('a')]
+    },
+    door.panes,
+  )
   let redraws = 0
   let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
   on('ui.invalidate', async () => {
@@ -198,7 +225,7 @@ test('/agents-tree close closes the pane and stops the timer at once', async ($,
   let closed = ''
   on('ui.close', (_$, e) => {
     closed = e.id
-    return { value: undefined }
+    return door.close()
   })
 
   pane = await $.ui.mount(PANE('terminal'))
@@ -368,7 +395,7 @@ test('/agents-tree close reports a refusal in plain words, and leaves the timer 
 
 test('/agents-tree close with no pane open is not an error', async ($, on) => {
   mock.clock(on, { now: T0 })
-  engine(on, [])
+  engine(on, [], () => [])
   on('ui.close', () => ({ value: undefined }))
 
   expect(text(await run($, 'close'))).toBe('Subagent tree closed.')
@@ -377,7 +404,8 @@ test('/agents-tree close with no pane open is not an error', async ($, on) => {
 test('the timer starts afresh after a close: no stale extra redraw from the last run', async ($, on) => {
   const clock = mock.clock(on, { now: T0 })
   let agents = [subagent('a')]
-  engine(on, () => agents)
+  const door = closable()
+  engine(on, () => agents, door.panes)
   let redraws = 0
   let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
   on('ui.invalidate', async () => {
@@ -385,13 +413,14 @@ test('the timer starts afresh after a close: no stale extra redraw from the last
     await pane?.redraw()
     return { value: undefined }
   })
-  on('ui.close', () => ({ value: undefined }))
+  on('ui.close', () => door.close())
 
   pane = await $.ui.mount(PANE('terminal'))
   await clock.advance(2_000)
   await run($, 'close')
   agents = [subagent('a', 'completed')]
   await pane.unmount()
+  door.state.isClosed = false
   pane = await $.ui.mount(PANE('terminal'))
   const before = redraws
   await clock.advance(3_000)
@@ -399,8 +428,6 @@ test('the timer starts afresh after a close: no stale extra redraw from the last
   // Idle now, so no redraw until the fifth second; a leftover wasLive would redraw at once.
   expect(redraws).toBe(before)
 })
-
-const OPEN_PANE = { id: 'subagent-tree', title: 'Subagents', isShown: true, isFocused: false, isPlaced: true }
 
 test('a hook that keeps the pane open without refusing keeps the timer running', async ($, on) => {
   const clock = mock.clock(on, { now: T0 })
@@ -416,8 +443,6 @@ test('a hook that keeps the pane open without refusing keeps the timer running',
   })
   // Answers the close without closing anything, and the engine still lists the pane.
   on('ui.close', () => ({ value: undefined }))
-  on('ui.panes', () => ({ value: [OPEN_PANE] }))
-
   pane = await $.ui.mount(PANE('terminal'))
   const reply = text(await run($, 'close'))
   const before = lists
@@ -430,17 +455,24 @@ test('a hook that keeps the pane open without refusing keeps the timer running',
 test('a close the engine carried out stops the timer even when no hook says so', async ($, on) => {
   const clock = mock.clock(on, { now: T0 })
   let lists = 0
-  engine(on, () => {
-    lists += 1
-    return [subagent('a')]
-  })
+  let isClosed = false
+  engine(
+    on,
+    () => {
+      lists += 1
+      return [subagent('a')]
+    },
+    () => (isClosed ? [] : [OPEN_PANE]),
+  )
   let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
   on('ui.invalidate', async () => {
     await pane?.redraw()
     return { value: undefined }
   })
-  on('ui.close', () => ({ value: undefined }))
-  on('ui.panes', () => ({ value: [] }))
+  on('ui.close', () => {
+    isClosed = true
+    return { value: undefined }
+  })
 
   pane = await $.ui.mount(PANE('terminal'))
   await run($, 'close')
@@ -453,22 +485,72 @@ test('a close the engine carried out stops the timer even when no hook says so',
 test('a pane the engine no longer lists stops the timer at the next tick, not after the stale limit', async ($, on) => {
   const clock = mock.clock(on, { now: T0 })
   let lists = 0
-  engine(on, () => {
-    lists += 1
-    return [subagent('a')]
-  })
-  let panes = [OPEN_PANE]
+  let panes: (typeof OPEN_PANE)[] = [OPEN_PANE]
+  engine(
+    on,
+    () => {
+      lists += 1
+      return [subagent('a')]
+    },
+    () => panes,
+  )
   let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
   on('ui.invalidate', async () => {
     await pane?.redraw()
     return { value: undefined }
   })
-  on('ui.panes', () => ({ value: panes }))
 
   pane = await $.ui.mount(PANE('terminal'))
   await clock.advance(2_000)
   panes = []
   await clock.advance(1_000)
+  const before = lists
+  await clock.advance(3_000)
+
+  expect(lists).toBe(before)
+})
+
+test('when the engine cannot list panes, the stale limit still stops a pane nothing draws', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let lists = 0
+  engine(
+    on,
+    () => {
+      lists += 1
+      return [subagent('a')]
+    },
+    null,
+  )
+  on('ui.invalidate', () => ({ value: undefined }))
+
+  await $.ui.mount(PANE('terminal'))
+  await clock.advance(20_000)
+  const settled = lists
+  await clock.advance(30_000)
+
+  expect(lists).toBe(settled)
+})
+
+test('when the engine cannot list panes, /agents-tree close still stops the timer', async ($, on) => {
+  const clock = mock.clock(on, { now: T0 })
+  let lists = 0
+  engine(
+    on,
+    () => {
+      lists += 1
+      return [subagent('a')]
+    },
+    null,
+  )
+  let pane: Awaited<ReturnType<typeof $.ui.mount>> | undefined
+  on('ui.invalidate', async () => {
+    await pane?.redraw()
+    return { value: undefined }
+  })
+  on('ui.close', () => ({ value: undefined }))
+
+  pane = await $.ui.mount(PANE('terminal'))
+  expect(text(await run($, 'close'))).toBe('Subagent tree closed.')
   const before = lists
   await clock.advance(3_000)
 
