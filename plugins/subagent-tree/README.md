@@ -13,15 +13,15 @@ session.
 
 ## Using it
 
-Type `/agents-tree`. The pane lists every subagent the session has started, children under
-the agent that spawned them:
+Type `/agents-tree` to open the pane and `/agents-tree close` to close it. The pane lists
+every subagent the session has started, children under the agent that spawned them:
 
 ```
 ● Explore: scan the repo
     running · 1m05s · 3 tools · 2 steps · on Grep · 1k out
   ✓ general-purpose: read the config
       completed · 12s · 4 tools · 3 steps · 2k out
-2 agents · 1 running · 3k tokens out
+2 agents · 1 active · 3k tokens out
 ```
 
 | Mark | Status |
@@ -33,12 +33,16 @@ the agent that spawned them:
 | `✓` | completed |
 | `✗` | failed or killed |
 
-While the pane is open and an agent is running, it redraws once a second so the elapsed times
-keep moving, and once more when the last one finishes. A closed pane costs nothing: the timer
-is stopped and the agent list is not polled. After a hot reload the timer restarts when the
-pane next draws.
+While the pane is drawn it redraws once a second as long as an agent is pending, running or
+waiting, so the elapsed times keep moving, and once more when the last one finishes. Each
+second the mod also asks the engine for the agent list. When the pane has not been drawn for
+about four seconds (it was closed, it was dropped without the mod being told, or nothing is
+running) the timer stops, and the pane's next draw starts it again. After a hot reload the
+timer restarts when the pane next draws.
 
-The list is drawn whole and the pane scrolls it; long lines are cut to the pane's width.
+The list is drawn whole and the pane scrolls it. Each line is set to truncate (`wrap="truncate"`)
+at the pane's width; the mod's tests do not measure the truncation or the indent, which the
+surface does.
 
 ## Where the numbers come from
 
@@ -46,7 +50,9 @@ The list is drawn whole and the pane scrolls it; long lines are cut to the pane'
   (`$.agent.list()`), so subagents started by other plugins and teammates appear too.
 - **Tool calls, steps and the current tool** are counted by the mod from each agent's own
   `tool.call` and `turn.step` events, so they cover only what happened while the mod was
-  loaded.
+  loaded. The current tool (`on Grep`) shows from its call until the agent's next model
+  request starts, so it is not shown while the model is thinking. A tool call that is
+  interrupted before its count is written may go uncounted.
 - **Time** is the agent's active time: its finished runs plus the run in progress. A
   teammate's idle gaps between runs are left out, and an agent that was killed or failed stops
   at its last event.
@@ -55,6 +61,10 @@ The list is drawn whole and the pane scrolls it; long lines are cut to the pane'
   shows; the engine's own forks (compaction, memory) and workflow agents are not in the list
   and are left out. The pane shows output tokens only; it does not price anything
   (`cost-ledger` does that).
-- Stats for ids the list does not show are dropped after ten minutes, and past 200 entries.
+- Stats for ids the list does not show are dropped once idle for ten minutes, and past 200
+  entries unlisted ones go first. This runs when an agent's turn finishes and, while the pane is
+  drawn, on the timer; with the pane closed, stats of forks and workflow agents stay until the
+  next agent turn finishes.
+- **Active** in the footer counts pending, running and waiting agents.
 
 Nothing is blocked or rewritten: every hook passes the event on unchanged.
