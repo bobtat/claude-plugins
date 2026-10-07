@@ -2,18 +2,22 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { AgentStats } from '../types'
-import { buildRows, formatTokens, liveCount } from './tree'
+import { buildRows, formatTokens, liveCount, prune } from './tree'
 
 const PANE = 'subagent-tree'
-const stats = atom({ plugin: 'subagent-tree', key: 'stats' } as const, {})
+const stats = atom(
+  { plugin: 'subagent-tree', key: 'stats' } as const,
+  {},
+  { shape: 'stats-v2' },
+)
 const tick = atom({ plugin: 'subagent-tree', key: 'tick' } as const, 0)
 
 const blank = (now: number): AgentStats => ({
   tools: 0,
   steps: 0,
   tokensOut: 0,
-  tokensIn: 0,
-  startedAt: now,
+  activeMs: 0,
+  lastEventAt: now,
 })
 
 async function touch(
@@ -24,7 +28,9 @@ async function touch(
   const now = await $.clock.now()
   await update($, stats, all => {
     const current = all[id] ?? blank(now)
-    return { ...all, [id]: change({ ...current, endedAt: undefined }) }
+    // A run opens at the agent's first event: subagents raise no turn.start.
+    const open = { ...current, runStartedAt: current.runStartedAt ?? now, lastEventAt: now }
+    return { ...all, [id]: change(open) }
   })
 }
 
@@ -56,7 +62,11 @@ export const register: Register = on => {
 
   on('tool.call', async ($, e, next) => {
     if (e.agentId) {
-      await touch($, e.agentId, s => ({ ...s, tools: s.tools + 1, lastTool: e.tool }))
+      // Written before the call runs, so the pane shows the tool while it runs;
+      // not awaited, so the call is not held up by the write.
+      touch($, e.agentId, s => ({ ...s, tools: s.tools + 1, lastTool: e.tool })).catch(
+        () => undefined,
+      )
     }
 
     return next(e)
@@ -75,24 +85,24 @@ export const register: Register = on => {
     if (e.agentId) {
       const id = e.agentId
       const now = await $.clock.now()
-      const usage = e.usage
+      const listed = new Set((await $.agent.list()).map(agent => agent.id))
       await update($, stats, all => {
-        const current = all[id] ?? blank(now - e.durationMs)
-        return {
+        const current = all[id] ?? blank(now)
+        // Loaded mid-run: the run began when the turn's length says it did.
+        const began = current.runStartedAt ?? now - e.durationMs
+        const updated = {
           ...all,
           [id]: {
             ...current,
-            endedAt: now,
-            tokensOut: current.tokensOut + (usage?.output_tokens ?? 0),
-            tokensIn:
-              current.tokensIn +
-              (usage
-                ? usage.input_tokens +
-                  usage.cache_read_input_tokens +
-                  usage.cache_creation_input_tokens
-                : 0),
+            runStartedAt: undefined,
+            activeMs: current.activeMs + Math.max(0, now - began),
+            lastEventAt: now,
+            // No usage on an interrupt or an API error.
+            tokensOut: current.tokensOut + (e.usage?.output_tokens ?? 0),
           },
         }
+
+        return prune(updated, listed, now)
       })
     }
 
@@ -109,7 +119,8 @@ export const register: Register = on => {
     const room = Math.max(1, (e.viewport?.rows ?? 24) - 5)
     const shown = rows.slice(0, room)
     const live = liveCount(agents)
-    const tokens = Object.values(all).reduce((sum, s) => sum + s.tokensOut, 0)
+    // Only agents the tree shows: forks and workflow agents carry ids no list names.
+    const tokens = agents.reduce((sum, agent) => sum + (all[agent.id]?.tokensOut ?? 0), 0)
 
     return (
       <Box flexDirection="column">
