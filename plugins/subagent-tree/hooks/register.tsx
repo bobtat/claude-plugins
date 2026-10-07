@@ -115,9 +115,7 @@ export const register: Register = on => {
     const all = await read($, stats)
     const agents = await $.agent.list()
     const now = await $.clock.now()
-    const rows = buildRows(agents, all, now, e.viewport?.columns ?? 60)
-    const room = Math.max(1, (e.viewport?.rows ?? 24) - 5)
-    const shown = rows.slice(0, room)
+    const rows = buildRows(agents, all, now)
     const live = liveCount(agents)
     // Only agents the tree shows: forks and workflow agents carry ids no list names.
     const tokens = agents.reduce((sum, agent) => sum + (all[agent.id]?.tokensOut ?? 0), 0)
@@ -125,20 +123,17 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column">
         {rows.length === 0 && <Text dimColor>No subagents yet.</Text>}
-        {shown.map(row => (
-          <Box key={row.id} flexDirection="column">
-            <Text bold={row.isLive} dimColor={!row.isLive}>
-              {'  '.repeat(row.depth)}
+        {rows.map(row => (
+          <Box key={row.id} flexDirection="column" paddingLeft={row.depth * 2}>
+            <Text bold={row.isLive} dimColor={!row.isLive} wrap="truncate">
               {row.glyph} {row.label}
             </Text>
-            <Text dimColor>
-              {'  '.repeat(row.depth)}  {row.detail}
+            <Text dimColor wrap="truncate">
+              {'  '}
+              {row.detail}
             </Text>
           </Box>
         ))}
-        {rows.length > shown.length && (
-          <Text dimColor>… {rows.length - shown.length} more</Text>
-        )}
         {rows.length > 0 && (
           <Text dimColor>
             {rows.length} agents · {live} running · {formatTokens(tokens)} tokens out
