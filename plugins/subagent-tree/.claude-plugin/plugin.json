@@ -1,0 +1,12 @@
+{
+  "name": "subagent-tree",
+  "version": "0.1.0",
+  "description": "A live /agents-tree pane showing the session's subagents as a tree — status, how long each has run, its tool calls and steps, the tool it is on now and the tokens it used",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": ["subagents", "agents", "tree", "pane", "mod"],
+  "types": "./types/index.d.ts"
+}

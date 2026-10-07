@@ -45,7 +45,7 @@
         "email": ""
       },
       "license": "MIT",
-      "keywords": ["cost", "spend", "usage", "prompt-caching", "budget", "bedrock", "status-line", "mod"],
+      "keywords": ["cost", "spend", "usage", "prompt-caching", "budget", "bedrock", "mod"],
       "category": "productivity"
     },
     {
@@ -151,6 +151,18 @@
       "license": "MIT",
       "keywords": ["testing", "unit-tests", "test-doubles", "tdd", "bdd", "acceptance-criteria", "test-quality", "test-coverage", "spec-conformance", "mutation-testing", "cypress", "playwright", "e2e-testing"],
       "category": "code-quality"
+    },
+    {
+      "name": "subagent-tree",
+      "source": "./plugins/subagent-tree",
+      "description": "A live /agents-tree pane showing the session's subagents as a tree — status, how long each has run, its tool calls and steps, the tool it is on now and the tokens it used",
+      "version": "0.1.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["subagents", "agents", "tree", "pane", "mod"]
     }
   ]
 }
