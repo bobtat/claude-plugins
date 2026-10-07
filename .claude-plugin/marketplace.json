@@ -156,7 +156,7 @@
       "name": "subagent-tree",
       "source": "./plugins/subagent-tree",
       "description": "A live /agents-tree pane showing the session's subagents as a tree — status, how long each has run, its tool calls and steps, the tool it is on now and the output tokens it used",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "author": {
         "name": "bobtat",
         "email": ""
