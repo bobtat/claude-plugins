@@ -101,7 +101,7 @@ async function redrawTick($: EngineInterface) {
 function reasonOf(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error)
 
-  return text.replace(/^(?:\w+: )*(?:[\w-]+: )?\$\.ui\.close: /, '')
+  return text.replace(/^.*?\$\.ui\.close: /, '')
 }
 
 async function watch($: EngineInterface) {
