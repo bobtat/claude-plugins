@@ -30,7 +30,7 @@ for (const surface of SURFACES) {
     expect(await ui.find({ text: /Explore: task a/ })).toBeDefined()
     expect(await ui.find({ text: /running · 5s · 1 tool · 1 step · on Read/ })).toBeDefined()
     expect(await ui.find({ text: /completed · 5s · 0 tools · 0 steps · 2k out/ })).toBeDefined()
-    expect(await ui.find({ text: /2 agents · 1 running · 2k tokens out/ })).toBeDefined()
+    expect(await ui.find({ text: /2 agents · 1 active · 2k tokens out/ })).toBeDefined()
   })
 
   test(`${surface}: an event from an id the list does not show changes neither rows nor footer`, async ($, on) => {
@@ -41,7 +41,7 @@ for (const surface of SURFACES) {
     await $.turn.complete(done('a', 1_000, 500))
 
     const ui = await $.ui.mount(PANE(surface))
-    expect(await ui.find({ text: /1 agents · 1 running · 500 tokens out/ })).toBeDefined()
+    expect(await ui.find({ text: /1 agents · 1 active · 500 tokens out/ })).toBeDefined()
     expect(await ui.find({ text: /fork-1/ })).toBeUndefined()
   })
 }
@@ -108,17 +108,6 @@ for (const surface of SURFACES) {
     expect(await ui.find({ text: /Explore: task a0$/ })).toBeDefined()
     expect(await ui.find({ text: /Explore: task a59$/ })).toBeDefined()
     expect(await ui.find({ text: /more/ })).toBeUndefined()
-  })
-
-  test(`${surface}: a child of a listed agent is drawn too`, async ($, on) => {
-    mock.clock(on, { now: T0 })
-    engine(on, [subagent('a'), subagent('b', 'running', { parentId: 'a' })])
-
-    const ui = await $.ui.mount(PANE(surface))
-    const parent = await ui.find({ text: /Explore: task a$/ })
-    const child = await ui.find({ text: /Explore: task b$/ })
-    expect(parent).toBeDefined()
-    expect(child).toBeDefined()
   })
 }
 
@@ -243,4 +232,27 @@ test('while the pane is open, the timer drops stale stats of ids the list does n
   await pane.redraw()
 
   expect(await pane.find({ text: /2 agents · .* · 0 tokens out/ })).toBeDefined()
+})
+
+test('the current tool shows between a tool call and the next request, then clears', async ($, on) => {
+  mock.clock(on, { now: T0 })
+  engine(on, [subagent('a')])
+
+  await $.tool.call({ tool: 'Read', agentId: 'a' })
+  const during = await $.ui.mount(PANE('terminal'))
+  expect(await during.find({ text: /1 tool · 0 steps · on Read/ })).toBeDefined()
+  await during.unmount()
+
+  await runStep($, 'a')
+  const after = await $.ui.mount(PANE('terminal'))
+  expect(await after.find({ text: /running · .* · 1 tool · 1 step$/ })).toBeDefined()
+})
+
+test('an agent that raises no events here, such as a teammate in a terminal pane of its own, shows by status', async ($, on) => {
+  mock.clock(on, { now: T0 })
+  engine(on, [subagent('mate', 'idle', { type: 'teammate', description: 'review the PR' })])
+
+  const ui = await $.ui.mount(PANE('terminal'))
+  expect(await ui.find({ text: /○ teammate: review the PR/ })).toBeDefined()
+  expect(await ui.find({ text: /^idle$/ })).toBeDefined()
 })

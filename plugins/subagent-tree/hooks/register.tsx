@@ -107,7 +107,10 @@ export const register: Register = on => {
   on('tool.call', async ($, e, next) => {
     if (e.agentId) {
       // Written before the call runs, so the pane shows the tool while it runs;
-      // not awaited, so the call is not held up by the write.
+      // not awaited, so the call is not held up by the write. update() retries
+      // on a version miss, so the write is not lost to the turn.step and
+      // turn.complete writes; on an interrupt it may be aborted and that call
+      // goes uncounted.
       touch($, e.agentId, s => ({ ...s, tools: s.tools + 1, lastTool: e.tool })).catch(
         () => undefined,
       )
@@ -118,7 +121,8 @@ export const register: Register = on => {
 
   on('turn.step', async function* ($, e, next) {
     if (e.agentId) {
-      await touch($, e.agentId, s => ({ ...s, steps: s.steps + 1 }))
+      // A new request means the last tool call has finished.
+      await touch($, e.agentId, s => ({ ...s, steps: s.steps + 1, lastTool: undefined }))
     }
 
     return yield* next(e)
@@ -180,15 +184,16 @@ export const register: Register = on => {
             <Text bold={row.isLive} dimColor={!row.isLive} wrap="truncate">
               {row.glyph} {row.label}
             </Text>
-            <Text dimColor wrap="truncate">
-              {'  '}
-              {row.detail}
-            </Text>
+            <Box paddingLeft={2}>
+              <Text dimColor wrap="truncate">
+                {row.detail}
+              </Text>
+            </Box>
           </Box>
         ))}
         {rows.length > 0 && (
           <Text dimColor>
-            {rows.length} agents · {live} running · {formatTokens(tokens)} tokens out
+            {rows.length} agents · {live} active · {formatTokens(tokens)} tokens out
           </Text>
         )}
       </Box>
