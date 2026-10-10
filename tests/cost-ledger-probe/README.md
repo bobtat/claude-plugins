@@ -67,6 +67,31 @@ real prompt.
 
 Bring the JSONL file back when you're done. It holds everything the report leaves out.
 
+## Results
+
+### 2026-10-10: personal Pro account, Opus 5.5, ~67k-token context
+
+| # | Result |
+|---|---|
+| 1 | **Yes.** A fork 2.8 min after a turn read 61,084 of 66,067 tokens from the cache (92%) and wrote 4,981: the tail since the last cached point. Read, write and input add up to the whole context plus the ping prompt. |
+| 2 | **Not settled.** The pings themselves behaved: `+4m` read 99% and wrote 790 tokens, `+8m` and `+12m` read 100% and wrote 0. But the cache stayed warm without pings too: the first requests after idle gaps of 7.4, 18.3 and 15.2 minutes with no ping in between (the last one the control) all read the whole context. The likeliest cause is that this account uses the one-hour cache. Claude Code never reported the lifetime, so that is inferred, not read. |
+| 3 | **Yes, Claude Code counts it.** Each fork's `Δcost` equals its tokens at list price to the cent: the first fork $0.0374 = 61,084 read × $0.20/M + 4,981 written × $5/M + 49 input × $4/M + 4 output × $20/M. Writes were priced at the five-minute rate even though the cache outlived five minutes. |
+| 4 | **4 output tokens per ping**, about $0.0001: no noticeable thinking. A ping that writes nothing cost $0.0137 at this context size. |
+| 5 | **Not measured.** The 5-hour reading went from 3% to 6% over the whole session, real turns included. |
+
+Still to run:
+
+- **Confirm the one-hour expiry.** Leave a session idle for more than an hour, then send a prompt: its first request should show a large `write`.
+- **Confirm a ping just under the hour keeps it warm.** After a turn, `/probe schedule 55`, then send a prompt at about 70 minutes: its first request should show a large `read`.
+- **Experiment 5** on the Pro account.
+
+### What this changes for cost-ledger's keep-alive
+
+- **The ping interval comes from the cache lifetime, not a fixed ~4.5 minutes.** On a one-hour cache that means one ping about every 55 minutes, about $0.014 each at 67k tokens, against a cold re-cache of 67k × $8/M ≈ $0.54 at the one-hour write rate. That is about 40 hours of pings before they cost more than one re-cache, so the limit that matters is the maximum idle time, not break-even.
+- **cost-ledger should learn the lifetime from what it observes.** With `cacheTtl` on `auto` and nothing reported, it assumes five minutes. That shows "cache cold" and the re-cache warning too early, and prices writes too low, on an account like this one. A request after more than five idle minutes that still reads nearly all of the context shows the cache lasts at least that long.
+- **Keep-alive cost goes into the category breakdown only.** Claude Code's running total already includes forks, and cost-ledger's totals come from it, so adding forks to the totals would count them twice. Forks don't pass through `turn.step`, so the breakdown must record their usage itself.
+- **Only the first ping after a turn writes anything.** It writes the tail; later pings are pure cache reads.
+
 ## Development
 
 ```
