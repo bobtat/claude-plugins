@@ -36,11 +36,12 @@ file. Timers still pending are lost on a reload.
 |---|---|
 | `/probe ping` | Forks now |
 | `/probe schedule 4 8 12` | Forks at those minutes after the last turn ended |
+| `/probe prompt 110 [text]` | Sends a prompt (default `ok`) at that minute after the last turn ended, as if you typed it, so a long run needs no one at the keyboard |
 | `/probe burst 20 30` | 20 forks, each started 30 s after the previous one returned |
 | `/probe mark <text>` | Writes a label into the log, such as `control start` |
 | `/probe report` | Summarises forks, the first request of each turn, each turn's cost against its tokens at both cache write rates, spend no logged request explains, rate limits and cache lifetime |
 
-A prompt you send cancels any pings still pending, and a ping is skipped (and logged as
+A prompt you send cancels any pings and any scheduled prompt still pending, and a ping is skipped (and logged as
 skipped) while a turn is running.
 
 ## The experiments
@@ -104,7 +105,7 @@ About $0.021 is what one cache read of the 67k context plus a few hundred output
 
 Still to run:
 
-- **A ping just under the hour renews the cache.** After a turn, `/probe schedule 55`, then send a prompt about 110 minutes after the turn ended. The `+55m` ping should read nearly everything, and so should the prompt's first request, 55 minutes after the ping.
+- **A ping just under the hour renews the cache.** After a turn, `/probe schedule 55` and `/probe prompt 110`, then leave the session alone. The `+55m` ping should read nearly everything, and so should the prompt's first request, 55 minutes after the ping.
 - **Experiment 5** on the Pro account. It tells whether Pro limits weigh cache reads at their discounted price: if they do, an hourly ping is about 0.1% of the 5-hour window; if they count cache reads like full input, many times that.
 - **The one-hour expiry**, to confirm the server agrees with Claude Code's pricing. Leave a session idle for more than an hour, then send a prompt: its first request should show a large `write`.
 
