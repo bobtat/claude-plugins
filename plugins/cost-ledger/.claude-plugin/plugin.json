@@ -93,6 +93,28 @@
       "title": "Expensive prompt alert (USD)",
       "description": "Toast when one prompt, its subagents included, costs at least this much (estimated); 0 turns it off",
       "default": 2
+    },
+    "keepAlive": {
+      "type": "string",
+      "title": "Keep the prompt cache warm",
+      "description": "on: while the session sits idle, send a one-word request over the conversation just before the cache expires, so the next prompt reads it instead of re-writing it. Each ping costs a cache read of the context; /costs keepalive on|off overrides this for one session",
+      "default": "off",
+      "options": [
+        "off",
+        "on"
+      ]
+    },
+    "keepAliveMaxIdleMinutes": {
+      "type": "number",
+      "title": "Keep-alive: stop after idle (minutes)",
+      "description": "Stop pinging once the session has had no prompt for this long; the cache then expires one lifetime after the last ping",
+      "default": 180
+    },
+    "keepAliveMinContextTokens": {
+      "type": "number",
+      "title": "Keep-alive: smallest context (tokens)",
+      "description": "Send no pings while the context is smaller than this, since re-caching it is cheap",
+      "default": 20000
     }
   }
 }

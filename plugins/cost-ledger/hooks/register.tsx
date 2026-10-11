@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 
-import type { Breakdown, Context, RateLimit, ToolUse, Totals } from '../types'
+import type { Breakdown, Context, KeepAlive, RateLimit, ToolUse, Totals } from '../types'
 import {
   addStepToTurn,
   addToolResult,
@@ -59,11 +59,15 @@ import {
   writeRate,
 } from './pricing'
 import type { CacheTtl, RateTable, Usage } from './pricing'
+import { checkPing, coldEstimate, impliedTtl, pingDelay, pingHit, TTL_MS } from './keepalive'
+import type { ColdEstimate, PricedRequest } from './keepalive'
 
 const PANE = 'cost-ledger'
 const SESSION_PREFIX = 'session:'
 const ARCHIVE_PREFIX = 'archive:'
 const LEARNED_TTL_KEY = 'learnedCacheTtl'
+const LEARNED_TTL_SOURCE_KEY = 'learnedCacheTtlSource'
+const SHARED_PREFIX_KEY = 'sharedPrefixTokens'
 const LEARNED_PRICING_KEY = 'learnedPricing'
 const UNPRICED_MODELS_KEY = 'unpricedModels'
 const PROBE_KEY = 'doctorProbe'
@@ -73,7 +77,6 @@ const SHOWN_TOOLS = 8
 const BUDGET_PREFIX = 'budget:'
 const TICK_MS = 30_000
 const SHOWN_PROJECTS = 8
-const TTL_MS: Record<CacheTtl, number> = { '5m': 5 * 60_000, '1h': 60 * 60_000 }
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 const HEAT = ['', '#0e4429', '#006d32', '#26a641', '#39d353'] as const
 const RATE_LIMIT_NAMES: Record<string, string> = { five_hour: '5h', seven_day: '7d' }
@@ -88,6 +91,20 @@ const tick = atom({ plugin: 'cost-ledger', key: 'tick' } as const, 0)
 const activeTurn = atom({ plugin: 'cost-ledger', key: 'activeTurn' } as const, null)
 const turnPrompts = atom({ plugin: 'cost-ledger', key: 'turnPrompts' } as const, {})
 const loops = atom({ plugin: 'cost-ledger', key: 'loops' } as const, {})
+const NO_KEEP_ALIVE: KeepAlive = { override: null, idleSince: null, pings: 0, usd: 0, stopped: null }
+const keepAlive = atom({ plugin: 'cost-ledger', key: 'keepAlive' } as const, NO_KEEP_ALIVE)
+const sharedPrefix = atom({ plugin: 'cost-ledger', key: 'sharedPrefix' } as const, null)
+
+// Claude Code prices at list rates unless an administrator set managed rates,
+// so the cache lifetime it charged is read against list prices, never the
+// rates setting.
+const LIST_TABLE = rateTable('')
+
+// Short, tool-free and asking for one word, so a ping's output stays at a
+// handful of tokens.
+const PING_PROMPT =
+  'This is an automated prompt-cache keep-alive check, not a request from the user. ' +
+  'Do not use any tools. Reply with exactly: ok'
 
 type Settings = {
   isSubscription: boolean
@@ -99,6 +116,9 @@ type Settings = {
   contextNudgeTokens: number
   budgets: { day: number; week: number; month: number }
   expensiveTurnUsd: number
+  keepAlive: boolean
+  keepAliveMaxIdleMs: number
+  keepAliveMinTokens: number
 }
 
 function readSettings(options: PluginOptions): Settings {
@@ -117,6 +137,9 @@ function readSettings(options: PluginOptions): Settings {
       month: typeof options.monthlyBudget === 'number' ? options.monthlyBudget : 0,
     },
     expensiveTurnUsd: typeof options.expensiveTurnUsd === 'number' ? options.expensiveTurnUsd : 0,
+    keepAlive: options.keepAlive === 'on',
+    keepAliveMaxIdleMs: (typeof options.keepAliveMaxIdleMinutes === 'number' ? options.keepAliveMaxIdleMinutes : 0) * 60_000,
+    keepAliveMinTokens: typeof options.keepAliveMinContextTokens === 'number' ? options.keepAliveMinContextTokens : 0,
   }
 }
 
@@ -146,9 +169,31 @@ function nudgeText(ctx: Context, settings: Settings): string {
   return settings.contextNudgeTokens > 0 && ctx.tokens >= settings.contextNudgeTokens ? ', consider /compact' : ''
 }
 
-function cacheText(ctx: Context, ttl: CacheTtl, now: number): string {
+// What re-caching the context would cost now that it has gone cold, priced
+// at the rates in use; undefined for a model with no rate. The shared opening
+// is this session's, else the last one any session measured.
+async function coldCost($: EngineInterface, settings: Settings, ctx: Context, ttl: CacheTtl): Promise<ColdEstimate | undefined> {
+  const rates = ratesFor(settings.table, ctx.model)
+  if (rates === undefined) return undefined
+  const prefix = (await read($, sharedPrefix)) ?? Number((await $.store.get(SHARED_PREFIX_KEY)) ?? 0)
+  return coldEstimate(ctx.tokens, prefix, writeRate(rates, ttl))
+}
+
+// "≈$0.33–$0.57" when part of the context is likely still cached by other
+// sessions, else the one figure.
+function coldText(cold: ColdEstimate): string {
+  return cold.likelyTokens < cold.worstTokens
+    ? `≈${formatUsd(cold.likelyUsd)}–${formatUsd(cold.worstUsd)}`
+    : `≈${formatUsd(cold.worstUsd)}`
+}
+
+function cacheText(ctx: Context, ttl: CacheTtl, now: number, ka: KeepAlive, cold: ColdEstimate | undefined): string {
   const left = cacheMinutesLeft(ctx.at, TTL_MS[ttl], now)
-  return left > 0 ? ` · cache warm ${left}m` : ' · cache cold'
+  if (left > 0) {
+    const kept = ka.pings > 0 && ka.stopped === null ? ` (kept warm: ${ka.pings} ping${ka.pings === 1 ? '' : 's'} ${formatUsd(ka.usd)})` : ''
+    return ` · cache warm ${left}m${kept}`
+  }
+  return ` · cache cold${cold ? ` (re-cache ${coldText(cold)})` : ''}`
 }
 
 // The context segment of the status line and band; empty before the first
@@ -156,7 +201,7 @@ function cacheText(ctx: Context, ttl: CacheTtl, now: number): string {
 async function contextLine($: EngineInterface, settings: Settings, ctx: Context | null): Promise<string> {
   if (ctx === null || ctx.tokens === 0) return ''
   const ttl = await cacheTtl($, settings)
-  const cache = cacheText(ctx, ttl, await $.clock.now())
+  const cache = cacheText(ctx, ttl, await $.clock.now(), await read($, keepAlive), await coldCost($, settings, ctx, ttl))
   return ` · ctx ${formatTokens(ctx.tokens)}${perStepText(ctx, settings)}${cache}${nudgeText(ctx, settings)}`
 }
 
@@ -307,6 +352,13 @@ async function recordStep($: EngineInterface, settings: Settings, usage: Usage &
   const priced = priceUsage(usage, rates, ttl)
   if (rates === undefined) await noteUnpricedModel($, usage.model)
 
+  const measured = turnCosts.get(step.turnId)
+  if (measured !== undefined) {
+    const listRates = ratesFor(LIST_TABLE, usage.model)
+    if (listRates === undefined) measured.isSpoiled = true
+    else measured.requests.push({ usage, rates: listRates })
+  }
+
   const loopId = step.agentId ?? 'main'
   const loopsNow = await read($, loops)
   const charged = chargeStep(
@@ -327,9 +379,15 @@ async function recordStep($: EngineInterface, settings: Settings, usage: Usage &
   await update($, totals, t => (t === null ? t : applyUsage(t, now, priced, project, !isMainThread)))
 
   if (isMainThread) {
+    const previous = await read($, context)
     const tokens =
       usage.input_tokens + usage.cache_read_input_tokens + usage.cache_creation_input_tokens + usage.output_tokens
-    await update($, context, () => ({ tokens, model: usage.model, at: step.startedAt }))
+    // A conversation's first request, and the first after its cache went
+    // cold, reads from the cache only the opening other sessions keep warm.
+    if (previous === null || step.startedAt - previous.at > TTL_MS[ttl]) await noteSharedPrefix($, usage.cache_read_input_tokens)
+    await update($, context, () => ({ tokens, model: usage.model, at: step.startedAt, tail: usage.output_tokens }))
+    // A real request ends any idle stretch, and with it a stop the last one caused.
+    await update($, keepAlive, ka => ({ ...ka, idleSince: step.startedAt, stopped: null }))
   }
 
   const written = usage.cache_creation_input_tokens
@@ -512,10 +570,25 @@ async function runDoctor($: EngineInterface, settings: Settings): Promise<string
   )
 
   const learnedTtl = await $.store.get(LEARNED_TTL_KEY)
+  const learnedFrom = (await $.store.get(LEARNED_TTL_SOURCE_KEY)) === 'pricing' ? "from Claude Code's pricing of a turn" : 'reported by Claude Code'
   say(
     null,
     'Cache lifetime',
-    `using ${await cacheTtl($, settings)} (setting: ${settings.ttlSetting}; reported by Claude Code: ${typeof learnedTtl === 'string' ? learnedTtl : 'not yet'})`,
+    `using ${await cacheTtl($, settings)} (setting: ${settings.ttlSetting}; ${typeof learnedTtl === 'string' ? `${learnedFrom}: ${learnedTtl}` : 'not learned yet'})`,
+  )
+  const prefix = await $.store.get(SHARED_PREFIX_KEY)
+  say(
+    null,
+    'Shared opening',
+    typeof prefix === 'number'
+      ? `${formatTokens(prefix)} tokens stay cached between sessions; cold-resume estimates leave them out of the likely cost`
+      : 'not measured yet; it is read from the first request of a new conversation',
+  )
+  const ka = await read($, keepAlive)
+  say(
+    null,
+    'Keep-alive',
+    `${(await isKeepAliveOn($, settings)) ? 'on' : 'off'}${ka.override === null ? '' : ' for this session'}; ${ka.pings} ping${ka.pings === 1 ? '' : 's'} this session${ka.stopped ? `, stopped: ${ka.stopped}` : ''}`,
   )
 
   const usd = (await $.session.usage()).cost?.usd ?? 0
@@ -532,41 +605,207 @@ async function runDoctor($: EngineInterface, settings: Settings): Promise<string
   return lines.join('\n')
 }
 
-async function warnIfCacheExpired($: EngineInterface, settings: Settings) {
+async function noteSharedPrefix($: EngineInterface, tokens: number) {
+  if (tokens <= 0) return
+  await update($, sharedPrefix, () => tokens)
+  if ((await $.store.get(SHARED_PREFIX_KEY)) !== tokens) await $.store.set(SHARED_PREFIX_KEY, tokens)
+}
+
+// Module scope: the keep-alive timer, the running turn and the turns being
+// measured belong to this load of the mod. A reload starts them over, and the
+// next turn re-arms the timer.
+let keepAliveTimer: { cancel: () => void } | null = null
+let runningTurn: string | null = null
+let warnedColdAt: number | null = null
+const turnCosts = new Map<string, { startUsd: number; requests: PricedRequest[]; isSpoiled: boolean }>()
+
+// Steps of parallel subagents finish concurrently, and a keep-alive ping can
+// land between them; each read-modify-write of this session's store entry
+// must see the previous one's result.
+let queue: Promise<void> = Promise.resolve()
+function serially(task: () => Promise<void>) {
+  const run = queue.then(task)
+  queue = run.catch(() => undefined)
+  return run
+}
+
+function resetModuleState() {
+  keepAliveTimer?.cancel()
+  keepAliveTimer = null
+  runningTurn = null
+  warnedColdAt = null
+  turnCosts.clear()
+  queue = Promise.resolve()
+}
+
+function cancelKeepAlive() {
+  keepAliveTimer?.cancel()
+  keepAliveTimer = null
+}
+
+async function startTurnCost($: EngineInterface, turnId: string) {
+  const usd = (await $.session.usage()).cost?.usd
+  if (usd !== undefined) turnCosts.set(turnId, { startUsd: usd, requests: [], isSpoiled: false })
+}
+
+// The cache lifetime Claude Code charged, read from what one turn moved its
+// running total by. Skipped under managed rates, which list prices cannot
+// match, and for any turn that does not add up either way.
+async function learnTtlFromTurn($: EngineInterface, turnId: string) {
+  const measured = turnCosts.get(turnId)
+  turnCosts.delete(turnId)
+  if (measured === undefined || measured.isSpoiled) return
+  if ((await $.store.get(LEARNED_PRICING_KEY)) === 'configured') return
+  const usd = (await $.session.usage()).cost?.usd
+  if (usd === undefined) return
+  const ttl = impliedTtl(usd - measured.startUsd, measured.requests)
+  if (ttl === undefined) return
+  if ((await $.store.get(LEARNED_TTL_KEY)) !== ttl) await $.store.set(LEARNED_TTL_KEY, ttl)
+  if ((await $.store.get(LEARNED_TTL_SOURCE_KEY)) !== 'pricing') await $.store.set(LEARNED_TTL_SOURCE_KEY, 'pricing')
+}
+
+async function isKeepAliveOn($: EngineInterface, settings: Settings): Promise<boolean> {
+  const { override } = await read($, keepAlive)
+  return override === null ? settings.keepAlive : override === 'on'
+}
+
+// One timer at a time, due nine tenths of a cache lifetime after the cache
+// was last used.
+async function armKeepAlive($: EngineInterface, settings: Settings) {
+  cancelKeepAlive()
+  if (!(await isKeepAliveOn($, settings))) return
   const ctx = await read($, context)
   if (ctx === null || ctx.tokens === 0) return
+  const delay = pingDelay(ctx.at, await cacheTtl($, settings), await $.clock.now())
+  keepAliveTimer = $.clock.after(delay, () => void keepAlivePing($, settings))
+}
+
+async function stopKeepAlive($: EngineInterface, settings: Settings, ctx: Context, why: string) {
+  await update($, keepAlive, ka => ({ ...ka, stopped: why }))
+  const cold = await coldCost($, settings, ctx, await cacheTtl($, settings))
+  const cost = cold ? ` ${coldText(cold)}` : ''
+  $.ui.toast(`Keep-alive stopped (${why}). Once the cache goes cold, the next prompt re-caches it${cost}.`, {
+    timeoutMs: 10_000,
+  })
+}
+
+// One ping: the session's own transcript sent again through $.model.fork,
+// which reads it from the cache and so renews the cache's lifetime. Its cost
+// is already in Claude Code's running total, so it is added to the category
+// breakdown only. A fork's own writes are charged at the five-minute rate.
+async function keepAlivePing($: EngineInterface, settings: Settings) {
+  keepAliveTimer = null
+  const ctx = await read($, context)
+  const ka = await read($, keepAlive)
+  const now = await $.clock.now()
+  const check = checkPing({
+    isOn: await isKeepAliveOn($, settings),
+    isTurnRunning: runningTurn !== null,
+    contextTokens: ctx?.tokens ?? null,
+    minContextTokens: settings.keepAliveMinTokens,
+    idleSince: ka.idleSince ?? ctx?.at ?? now,
+    maxIdleMs: settings.keepAliveMaxIdleMs,
+    now,
+  })
+  if (ctx === null || !check.isDue) {
+    if (ctx !== null && !check.isDue && check.why === 'idle too long') {
+      await stopKeepAlive($, settings, ctx, `idle ${Math.round((now - (ka.idleSince ?? ctx.at)) / 60_000)} min`)
+    }
+    return
+  }
+
+  const result = await $.model.fork({ prompt: PING_PROMPT })
+  if (!result.isAnswered && result.reason === 'nothing-to-fork') return
+  await serially(() => recordPing($, settings, result.usage, ctx.model))
+  if (!result.isAnswered && result.reason !== 'empty-reply') {
+    await stopKeepAlive($, settings, ctx, result.reason === 'api-error' ? `ping failed: ${result.error}` : 'ping interrupted')
+    return
+  }
+  if (!pingHit(result.usage, ctx.tail)) {
+    await stopKeepAlive($, settings, ctx, 'a ping found the cache already cold')
+    return
+  }
+  // The cache's lifetime runs from the ping's start. A turn that began while
+  // the ping ran has moved the context on already and re-arms on its own.
+  await update($, context, current => (current !== null && current.at < now ? { ...current, at: now } : current))
+  if (runningTurn === null) await armKeepAlive($, settings)
+  await updateStatus($, settings)
+}
+
+async function recordPing($: EngineInterface, settings: Settings, usage: Usage, model: string) {
+  const priced = priceUsage(usage, ratesFor(settings.table, model), '5m')
+  const now = await $.clock.now()
+  const project = await $.session.root()
+  const key = SESSION_PREFIX + (await $.session.id())
+  const entry = (await $.store.get(key)) as SessionEntry | undefined
+  await saveEntry($, key, addUsage(entry, now, priced, project, false))
+  await update($, totals, t => (t === null ? t : applyUsage(t, now, priced, project, false)))
+  await update($, keepAlive, ka => ({ ...ka, pings: ka.pings + 1, usd: ka.usd + totalUsd(priced) }))
+}
+
+async function warnIfCacheExpired($: EngineInterface, settings: Settings) {
+  const ctx = await read($, context)
+  if (ctx === null || ctx.tokens === 0 || warnedColdAt === ctx.at) return
 
   const ttl = await cacheTtl($, settings)
   const idleMs = (await $.clock.now()) - ctx.at
   if (idleMs <= TTL_MS[ttl]) return
 
-  const rates = ratesFor(settings.table, ctx.model)
-  const cost = rates ? ` ≈ ${formatUsd((ctx.tokens * writeRate(rates, ttl)) / 1_000_000)}` : ''
+  warnedColdAt = ctx.at
+  const cold = await coldCost($, settings, ctx, ttl)
   $.ui.toast(
     `Prompt cache has likely expired (idle ${Math.round(idleMs / 60_000)} min, ${ttl} cache): ` +
-      `this prompt re-writes ~${formatTokens(ctx.tokens)} tokens${cost}.`,
+      `this prompt re-writes ${cold ? `${coldTokens(cold)} tokens ${coldText(cold)}` : `~${formatTokens(ctx.tokens)} tokens`}.`,
     { timeoutMs: 10_000 },
   )
+}
+
+// /costs keepalive [on|off]: the choice holds for this session and overrides
+// the keepAlive setting; with no argument, what the keep-alive is doing.
+async function keepAliveCommand($: EngineInterface, settings: Settings, arg: string): Promise<string> {
+  if (arg === 'on' || arg === 'off') {
+    const override: 'on' | 'off' = arg
+    await update($, keepAlive, ka => ({ ...ka, override, stopped: null }))
+    if (override === 'off') cancelKeepAlive()
+    else if (runningTurn === null) await armKeepAlive($, settings)
+  } else if (arg !== '') {
+    return 'Usage: /costs keepalive [on|off]'
+  }
+  const ka = await read($, keepAlive)
+  const isOn = await isKeepAliveOn($, settings)
+  const ttl = await cacheTtl($, settings)
+  const source = ka.override === null ? 'the keepAlive setting' : '/costs keepalive for this session'
+  const lines = [`Keep-alive is ${isOn ? 'on' : 'off'} (${source}); cache lifetime ${ttl}.`]
+  if (ka.pings > 0) lines.push(`${ka.pings} ping${ka.pings === 1 ? '' : 's'} this session, ≈${formatUsd(ka.usd)}.`)
+  if (ka.stopped !== null) lines.push(`Stopped: ${ka.stopped}. It starts again after your next prompt.`)
+  const ctx = await read($, context)
+  if (isOn && ka.stopped === null && ctx !== null && ctx.tokens > 0) {
+    if (ctx.tokens < settings.keepAliveMinTokens) {
+      lines.push(`The context (${formatTokens(ctx.tokens)}) is below keepAliveMinContextTokens, so no pings are sent.`)
+    } else if (runningTurn === null) {
+      lines.push(`Next ping in ${Math.ceil(pingDelay(ctx.at, ttl, await $.clock.now()) / 60_000)} min.`)
+    }
+  }
+  return lines.join('\n')
+}
+
+function coldTokens(cold: ColdEstimate): string {
+  return cold.likelyTokens < cold.worstTokens
+    ? `~${formatTokens(cold.likelyTokens)}–${formatTokens(cold.worstTokens)}`
+    : `~${formatTokens(cold.worstTokens)}`
 }
 
 export const register: Register = (on, options) => {
   const settings = readSettings(options)
   const { isSubscription } = settings
-
-  // Steps of parallel subagents finish concurrently; each read-modify-write of
-  // this session's store entry must see the previous one's result.
-  let queue: Promise<void> = Promise.resolve()
-  const serially = (task: () => Promise<void>) => {
-    const run = queue.then(task)
-    queue = run.catch(() => undefined)
-    return run
-  }
+  resetModuleState()
 
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'costs',
-      description: 'Show session, weekly and monthly Claude Code costs; "export" writes a CSV, "doctor" checks the setup',
-      argumentHint: '[export|doctor]',
+      description:
+        'Show session, weekly and monthly Claude Code costs; "export" writes a CSV, "doctor" checks the setup, "keepalive on|off" keeps this session\'s prompt cache warm',
+      argumentHint: '[export|doctor|keepalive on|off]',
     })
     if (settings.table.error) $.ui.toast(`cost-ledger: ${settings.table.error}`)
 
@@ -598,18 +837,37 @@ export const register: Register = (on, options) => {
       await update($, activeTurn, () => null)
       await update($, turnPrompts, () => ({}))
     }
+    // The keep-alive follows the conversation: a new one starts with no pings,
+    // and is armed by its first turn. A /costs keepalive choice stays.
+    if (e.source !== 'startup') {
+      cancelKeepAlive()
+      await update($, keepAlive, ka => ({ ...NO_KEEP_ALIVE, override: ka.override }))
+    }
 
     // A resumed transcript's cache is as old as its last response, so the
-    // idle warning on the first prompt covers resumes too.
+    // idle warning on the first prompt covers resumes too; when Claude Code
+    // says it has likely expired, the cost is shown now, before any prompt.
     if (e.context_tokens && e.seconds_since_last_response !== undefined && e.model) {
       const at = (await $.clock.now()) - e.seconds_since_last_response * 1000
-      await update($, context, () => ({ tokens: e.context_tokens ?? 0, model: e.model ?? '', at }))
+      const ctx: Context = { tokens: e.context_tokens, model: e.model, at }
+      await update($, context, () => ctx)
+      if (e.prompt_cache_likely_expired) {
+        warnedColdAt = at
+        const cold = await coldCost($, settings, ctx, await cacheTtl($, settings))
+        const idle = Math.round(e.seconds_since_last_response / 60)
+        $.ui.toast(
+          `This session's prompt cache has likely expired (idle ${idle} min): ` +
+            `the first prompt re-writes ${cold ? `${coldTokens(cold)} tokens ${coldText(cold)}` : `~${formatTokens(ctx.tokens)} tokens`}.`,
+          { timeoutMs: 10_000 },
+        )
+      }
     }
     return next(e)
   })
 
   on('classic.PreModelSwitch', async ($, e, next) => {
     await $.store.set(LEARNED_TTL_KEY, e.cache_ttl)
+    await $.store.set(LEARNED_TTL_SOURCE_KEY, 'claude-code')
     await $.store.set(LEARNED_PRICING_KEY, e.pricing)
     if (e.prompt_cache_warm && e.context_tokens > 0) {
       const rates = ratesFor(settings.table, e.to_model)
@@ -627,6 +885,7 @@ export const register: Register = (on, options) => {
 
   on('classic.PostModelSwitch', async ($, e, next) => {
     await $.store.set(LEARNED_TTL_KEY, e.cache_ttl)
+    await $.store.set(LEARNED_TTL_SOURCE_KEY, 'claude-code')
     await $.store.set(LEARNED_PRICING_KEY, e.pricing)
     return next(e)
   })
@@ -635,6 +894,7 @@ export const register: Register = (on, options) => {
   // after a turn) is otherwise never recorded; a /clear or /resume ends the
   // old session here before its successor's baseline is taken.
   on('session.end', async ($, e, next) => {
+    cancelKeepAlive()
     const usage = await $.session.usage()
     const usd = usage.cost?.usd
     if (usd !== undefined) await serially(() => recordSpend($, usd))
@@ -647,8 +907,11 @@ export const register: Register = (on, options) => {
   })
 
   on('turn.start', async ($, e, next) => {
+    runningTurn = e.turnId
+    cancelKeepAlive()
     const at = await $.clock.now()
     await update($, turnPrompts, prompts => ({ ...prompts, [e.turnId]: { text: e.text, at } }))
+    await startTurnCost($, e.turnId)
     return next(e)
   })
 
@@ -663,8 +926,12 @@ export const register: Register = (on, options) => {
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
     const agentId = e.agentId
-    if (agentId === undefined) await serially(() => finishActiveTurn($, settings, e.turnId))
-    else
+    if (agentId === undefined) {
+      await serially(() => finishActiveTurn($, settings, e.turnId))
+      await serially(() => learnTtlFromTurn($, e.turnId))
+      runningTurn = null
+      await armKeepAlive($, settings)
+    } else
       await update($, loops, all => {
         const { [agentId]: _done, ...rest } = all
         return rest
@@ -693,6 +960,7 @@ export const register: Register = (on, options) => {
     const args = e.args.trim()
     if (args === 'export') return { text: await writeExport($) }
     if (args === 'doctor') return { text: await runDoctor($, settings) }
+    if (args === 'keepalive' || args.startsWith('keepalive ')) return { text: await keepAliveCommand($, settings, args.slice(9).trim()) }
 
     const usage = await $.session.usage()
     await refresh($, settings, usage.cost?.usd ?? 0, usage.rateLimits)
@@ -722,6 +990,7 @@ export const register: Register = (on, options) => {
     const offset = await read($, monthOffset)
     const shading = await read($, shadeBy)
     const ctx = await read($, context)
+    const ka = await read($, keepAlive)
     await read($, tick)
     const shown = monthView(now, offset)
     const days = daysIn(t.days, shown.key)
@@ -742,6 +1011,7 @@ export const register: Register = (on, options) => {
       .filter(p => p.usd > 0 || p.cacheWriteUsd > 0)
       .sort((a, b) => b.usd - a.usd)
     const ttl = await cacheTtl($, settings)
+    const cold = ctx !== null && ctx.tokens > 0 ? await coldCost($, settings, ctx, ttl) : undefined
     const pace = monthPace(t.month, now)
     const reachDay = budgetReachDay(t.month, settings.budgets.month, now)
     const wow = weekOverWeek(t.days, now)
@@ -889,7 +1159,7 @@ export const register: Register = (on, options) => {
           <Text dimColor>
             Current context {formatTokens(ctx.tokens)} on {ctx.model}
             {perStepText(ctx, settings)}
-            {cacheText(ctx, ttl, now)}
+            {cacheText(ctx, ttl, now, ka, cold)}
             {nudgeText(ctx, settings)}
           </Text>
         )}
