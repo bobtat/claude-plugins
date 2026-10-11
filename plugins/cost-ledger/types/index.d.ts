@@ -47,7 +47,20 @@ export type Totals = {
   rateLimits: RateLimit[]
 }
 
-export type Context = { tokens: number; model: string; at: number }
+// at is when the cache was last used (a request's start, a keep-alive ping
+// included); tail is the last answer's tokens, which only the next request
+// sends back. tail is absent in a context restored on resume.
+export type Context = { tokens: number; model: string; at: number; tail?: number }
+
+// The session's keep-alive: the /costs keepalive override, when the last real
+// request was made (pings do not count), and what the pings so far cost.
+export type KeepAlive = {
+  override: 'on' | 'off' | null
+  idleSince: number | null
+  pings: number
+  usd: number
+  stopped: string | null
+}
 
 export type Shading = 'total' | 'cacheWrite'
 
@@ -63,6 +76,8 @@ declare module 'claude-code' {
       activeTurn: ActiveTurn | null
       turnPrompts: Record<string, { text: string; at: number }>
       loops: Record<string, LoopContext>
+      keepAlive: KeepAlive
+      sharedPrefix: number | null
     }
   }
 }
