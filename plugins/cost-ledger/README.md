@@ -3,7 +3,8 @@
 A Claude Code mod that keeps a running ledger of what Claude Code costs: this session, this
 calendar week (Monday to Sunday) and this calendar month, in local time. It also makes
 prompt-cache spend visible, since on long agentic sessions `cache_read` and `cache_write`
-are usually most of the bill.
+are usually most of the bill, says what letting the cache go cold will cost, and can keep it
+warm while a session sits idle.
 
 Unlike the other plugins in this marketplace, cost-ledger is code: a TypeScript hooks
 module that Claude Code loads and runs inside the session, not skills or commands for
@@ -20,11 +21,12 @@ Claude to read.
 
 | Where | What |
 |---|---|
-| Status line and a band above the prompt | `$1.84 session · $23.10 week · $96.40 month · ctx 150k ≈$0.03/step · cache warm 3m` |
+| Status line and a band above the prompt | `$1.84 session · $23.10 week · $96.40 month · ctx 150k ≈$0.03/step · cache warm 3m`; once the cache has gone cold, `cache cold (re-cache ≈$0.34–$0.57)`; while the keep-alive holds it, `cache warm 41m (kept warm: 2 pings $0.03)` |
 | `/costs` pane | Totals with budget progress, the change against the same point last week and the month's pace (with the day a monthly budget would be reached), a heat-map calendar per month (shade by total spend or by cache writes, `p`/`n` to change month, `s` to switch shading), the month's prompt-cache breakdown, the subagent share, the most expensive prompts, what filled the context, spend by project, and daily bars |
 | `/costs export` | Writes `~/claude-costs/claude-costs-<date>.csv`: one row per day and project with the total, tokens and estimated cost per category, and subagent cost |
 | `/costs doctor` | Checks the assumptions the totals rest on (see below) |
-| Toasts | Before a prompt is sent once the cache has likely expired; before a model switch that drops a warm cache; after one request writes a large amount to the cache; after a prompt whose cost passes a threshold; at 80% and 100% of a budget |
+| `/costs keepalive [on\|off]` | Turns the keep-alive on or off for this session, overriding the `keepAlive` setting; with no argument, says whether it is on, the pings so far and when the next is due |
+| Toasts | Before a prompt is sent once the cache has likely expired, and on resuming a session whose cache has likely expired, with what re-caching will cost; when the keep-alive stops; before a model switch that drops a warm cache; after one request writes a large amount to the cache; after a prompt whose cost passes a threshold; at 80% and 100% of a budget |
 
 All warnings are informational: nothing is ever blocked.
 
@@ -59,6 +61,40 @@ All warnings are informational: nothing is ever blocked.
   one day. Week over week compares Monday to today with Monday to the same weekday last week.
 - Only sessions that ran with the mod enabled are counted. There is no backfill from older
   transcripts.
+- **The cache lifetime** is read from Claude Code's own pricing: after each turn, the turn's
+  requests are priced at list rates with five-minute and with one-hour cache writes, and
+  whichever matches what the turn moved Claude Code's running total by is the lifetime it
+  charged. A model switch's report also sets it. Under managed rates, which list prices
+  cannot match, only the report does.
+- **The cost of a cold cache** is the context's tokens at the cache write rate, less the
+  opening other sessions keep cached: the system prompt and tool definitions, measured as
+  what a new conversation's first request reads from the cache. That opening stays cached
+  only while something else uses it, so the whole context is shown as the worst case:
+  `≈$0.34–$0.57`.
+
+## Keeping the cache warm
+
+With `keepAlive` on (or `/costs keepalive on`), once a turn ends the mod waits nine tenths of
+the cache lifetime, 54 minutes on the one-hour cache, and then sends the conversation again
+with a one-word question through Claude Code's own client (`$.model.fork`). That request
+reads the context from the cache, which renews the cache's lifetime, and writes nothing to
+the transcript. It repeats until you send a prompt, which cancels the pending ping, or until
+the session has been idle for `keepAliveMaxIdleMinutes`; the cache then lapses one lifetime
+after the last ping.
+
+- **What a ping costs** is a cache read of the context plus about four output tokens, and
+  the first ping after a turn also writes the last answer: about $0.014–0.02 at 62–67k
+  tokens on Opus 5.5. The cold re-cache it avoids was about $0.33 at that size. Each ping
+  is in Claude Code's running total like any request, and in the category breakdown.
+- **A ping that finds the cache already cold** (it writes the conversation rather than
+  reading it) stops the keep-alive, as does a failed request.
+- **On the five-minute cache** a ping goes out every 4.5 minutes, which costs more per idle
+  hour; the break-even against one cold re-cache is roughly 25 pings.
+- **On a subscription**, pings count against the 5-hour and 7-day limits like any request.
+  How much a cache read weighs there has not been measured.
+
+The measurements behind these numbers are in `tests/cost-ledger-probe/README.md` at the
+repository root.
 
 ## Checking the setup
 
@@ -74,7 +110,8 @@ All warnings are informational: nothing is ever blocked.
   history recorded by one is not in another's totals.
 - **Claude Code pricing**: whether Claude Code prices at your organisation's managed rates or
   at list price, once it has said so, which it does when you switch models.
-- **Cache lifetime**, **baseline**, **rates** and **models without a rate**.
+- **Cache lifetime** and where it was learned, the **shared opening**, the **keep-alive**,
+  **baseline**, **rates** and **models without a rate**.
 
 It cannot check the `/resume` accounting: for that, compare `/costs` before and after
 resuming a session whose spend you know.
@@ -88,7 +125,10 @@ Set in `/config` under `cost-ledger`.
 | `billing` | `api` | `subscription` labels figures as API-equivalent and adds the 5-hour and 7-day rate-limit percentages |
 | `statusLine`, `band` | on | Show the summary in the status line and in the band |
 | `rates` | empty | JSON of USD per million tokens by model family, overriding list prices for some or all fields, for example `{"opus-5-5": {"input": 4, "output": 20, "cacheRead": 0.2, "cacheWrite5m": 5, "cacheWrite1h": 8}}`. A family matches any model id that contains it and does not continue with another version number, so Bedrock ids such as `us.anthropic.claude-opus-5-5-v1:0` resolve. A family with no list price needs `input`, `output` and `cacheRead` |
-| `cacheTtl` | `auto` | Prompt-cache lifetime used for the countdown, the idle warning and write pricing. `auto` uses what Claude Code reports around a model switch or resume, otherwise 5 minutes. Set `1h` if you know your setup uses the one-hour cache |
+| `cacheTtl` | `auto` | Prompt-cache lifetime used for the countdown, the idle warning, the keep-alive and write pricing. `auto` learns it from Claude Code's pricing of each turn or from a model switch, and uses 5 minutes until then |
+| `keepAlive` | `off` | `on` keeps the prompt cache warm while the session is idle (see above) |
+| `keepAliveMaxIdleMinutes` | 180 | Stop pinging once the session has had no prompt for this long |
+| `keepAliveMinContextTokens` | 20000 | Send no pings while the context is smaller than this |
 | `largeWriteTokens` | 50000 | Toast when one request writes at least this many tokens to the cache; 0 turns it off |
 | `contextNudgeTokens` | 150000 | Suggest `/compact` once the context reaches this size; 0 turns it off |
 | `dailyBudget`, `weeklyBudget`, `monthlyBudget` | 0 | USD; toast at 80% and 100%; 0 turns each off |
@@ -109,12 +149,17 @@ guessed at: their tokens are reported as unpriced in the pane until `rates` name
   documentation and covered by tests, not yet observed in a live resume.
 - Spend from a subagent that finishes after the session's last turn is recorded when the
   session ends; a process that is killed outright loses it.
+- The keep-alive's timer lives in the running process: a computer that sleeps, a closed
+  terminal or a reload of the mod drops it until the next turn arms it again.
+- A turn whose interval also holds other spend (a background subagent, managed rates)
+  matches neither write rate and teaches nothing about the cache lifetime.
 
 ## Development
 
 The module is `hooks/register.tsx`. Date and summary logic is in `hooks/ledger.ts`, pricing
-in `hooks/pricing.ts`, and the per-prompt, context and pace arithmetic in
-`hooks/insights.ts`; all three are free of engine calls so they can be tested directly.
+in `hooks/pricing.ts`, the per-prompt, context and pace arithmetic in `hooks/insights.ts`,
+and the cache-lifetime, cold-cost and keep-alive rules in `hooks/keepalive.ts`; all four are
+free of engine calls so they can be tested directly.
 
 ```
 claude plugin validate plugins/cost-ledger
