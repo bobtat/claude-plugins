@@ -1,6 +1,8 @@
 // The probe's records and the arithmetic over them, free of engine calls so the
 // tests can check it directly. Each record is one line of the JSONL log.
 
+import { ratesFor } from './pricing'
+
 export type Limit = { kind: string; percentUsed: number; resetsAt?: string }
 
 export type Snapshot = { costUsd: number | null; rateLimits: Limit[] }
@@ -9,7 +11,9 @@ export type Tokens = { input: number; output: number; cacheRead: number; cacheWr
 
 export type ProbeRecord = { at: number } & (
   | { kind: 'session'; sessionId: string; version: string }
-  | { kind: 'turn'; phase: 'start' | 'end'; turnId: string }
+  // costUsd is Claude Code's running total as the turn starts and ends, so a
+  // turn's cost can be set against its tokens; absent from older logs.
+  | { kind: 'turn'; phase: 'start' | 'end'; turnId: string; costUsd?: number | null }
   | { kind: 'step'; turnId: string; agentId?: string; model: string; startedAt: number; tokens: Tokens }
   | { kind: 'measure'; snapshot: Snapshot }
   | {
@@ -113,6 +117,96 @@ export function scheduleDelays(anchor: number, now: number, minutes: readonly nu
   return minutes.map(m => ({ minutes: m, delayMs: anchor + m * 60_000 - now }))
 }
 
+// Below this many tokens written, a turn's other charges swamp the write and
+// the implied rate says nothing.
+const MIN_WRITE_FOR_RATE = 1_000
+// Spend under this is rounding in Claude Code's total, not a request.
+const MIN_UNATTRIBUTED_USD = 0.0005
+
+export type TurnCost = {
+  turnId: string
+  startedAt: number
+  endedAt: number
+  deltaUsd: number
+  writeTokens: number
+  // The turn's tokens priced at list rates, with writes at each lifetime.
+  at5m: number
+  at1h: number
+  // What one written million tokens must have cost for the rest to add up.
+  impliedWriteRate: number | null
+  matches: '5m' | '1h' | '?'
+  hasUnpriced: boolean
+}
+
+// Each turn whose start and end both carry Claude Code's running total, its
+// cost set against its requests (subagents' included) priced both ways: the
+// lifetime whose write rate makes them add up is the one Claude Code charged.
+export function turnCosts(records: readonly ProbeRecord[]): TurnCost[] {
+  const turns: TurnCost[] = []
+  let open: { turnId: string; at: number; costUsd: number; steps: Tokens[]; models: string[] } | undefined
+  for (const r of records) {
+    if (r.kind === 'turn' && r.phase === 'start') {
+      open = typeof r.costUsd === 'number' ? { turnId: r.turnId, at: r.at, costUsd: r.costUsd, steps: [], models: [] } : undefined
+    } else if (r.kind === 'step' && open && r.turnId === open.turnId) {
+      open.steps.push(r.tokens)
+      open.models.push(r.model)
+    } else if (r.kind === 'turn' && r.phase === 'end' && open && r.turnId === open.turnId) {
+      if (typeof r.costUsd === 'number') {
+        let base = 0
+        let w5 = 0
+        let w1 = 0
+        let writeTokens = 0
+        let hasUnpriced = false
+        open.steps.forEach((t, i) => {
+          const rates = ratesFor(open?.models[i] ?? '')
+          if (rates === undefined) {
+            hasUnpriced = true
+            return
+          }
+          base += (t.input * rates.input + t.cacheRead * rates.cacheRead + t.output * rates.output) / 1e6
+          w5 += (t.cacheWrite * rates.cacheWrite5m) / 1e6
+          w1 += (t.cacheWrite * rates.cacheWrite1h) / 1e6
+          writeTokens += t.cacheWrite
+        })
+        const deltaUsd = r.costUsd - open.costUsd
+        const at5m = base + w5
+        const at1h = base + w1
+        const impliedWriteRate = writeTokens >= MIN_WRITE_FOR_RATE && !hasUnpriced ? ((deltaUsd - base) / writeTokens) * 1e6 : null
+        const near = (a: number, b: number) => Math.abs(a - b) <= Math.max(0.0005, Math.abs(b) * 0.02)
+        const matches = impliedWriteRate === null ? '?' : near(deltaUsd, at1h) ? '1h' : near(deltaUsd, at5m) ? '5m' : '?'
+        turns.push({ turnId: open.turnId, startedAt: open.at, endedAt: r.at, deltaUsd, writeTokens, at5m, at1h, impliedWriteRate, matches, hasUnpriced })
+      }
+      open = undefined
+    }
+  }
+  return turns
+}
+
+export type Unattributed = { from: number; to: number; usd: number }
+
+// Spend between one known total and the next that no logged request explains:
+// the totals come from turn starts and ends and from either side of each fork,
+// so whatever the running total gained between them was spent by something
+// else (a background request Claude Code made on its own).
+export function unattributedSpend(records: readonly ProbeRecord[]): Unattributed[] {
+  const found: Unattributed[] = []
+  let last: { at: number; costUsd: number } | undefined
+  const reach = (at: number, costUsd: number | null | undefined) => {
+    if (typeof costUsd !== 'number') return
+    if (last && costUsd - last.costUsd >= MIN_UNATTRIBUTED_USD) found.push({ from: last.at, to: at, usd: costUsd - last.costUsd })
+    last = { at, costUsd }
+  }
+  for (const r of records) {
+    if (r.kind === 'turn' && r.phase === 'start') reach(r.at, r.costUsd)
+    else if (r.kind === 'turn' && r.phase === 'end') last = typeof r.costUsd === 'number' ? { at: r.at, costUsd: r.costUsd } : undefined
+    else if (r.kind === 'fork') {
+      reach(r.startedAt, r.before.costUsd)
+      last = typeof r.after.costUsd === 'number' ? { at: r.at, costUsd: r.after.costUsd } : undefined
+    }
+  }
+  return found
+}
+
 const time = (ms: number) => new Date(ms).toTimeString().slice(0, 8)
 const minutes = (ms: number) => `${(ms / 60_000).toFixed(1)}m`
 const pct = (part: number, whole: number | null) => (whole ? `${Math.round((part / whole) * 100)}%` : '?')
@@ -192,6 +286,26 @@ export function report(records: readonly ProbeRecord[]): string {
 
   lines.push(`Forks (${forks.length})`, ...(forks.length ? forks : ['  none yet']))
   lines.push('', 'First request of each turn', ...(firstSteps.length ? firstSteps : ['  none yet']))
+  const turns = turnCosts(records)
+  lines.push(
+    '',
+    'Turn cost against its tokens (writes priced at the 5-minute and 1-hour rates)',
+    ...(turns.length
+      ? turns.map(
+          t =>
+            `  ${time(t.startedAt)}  write ${String(t.writeTokens).padStart(8)}  Δcost ${usd(t.deltaUsd)}` +
+            `  5m ${usd(t.at5m)}  1h ${usd(t.at1h)}` +
+            `  implied ${t.impliedWriteRate === null ? '-' : `$${t.impliedWriteRate.toFixed(2)}/M`}  matches ${t.matches}` +
+            (t.hasUnpriced ? '  (a model with no list price)' : ''),
+        )
+      : ['  none recorded (turns logged before this version carry no totals)']),
+  )
+  const other = unattributedSpend(records)
+  lines.push(
+    '',
+    'Spend no logged request explains',
+    ...(other.length ? other.map(u => `  ${time(u.from)} → ${time(u.to)}  ${usd(u.usd)}`) : ['  none']),
+  )
   const first = limits[0]
   const last = limits[limits.length - 1]
   lines.push('', `Rate limits: first ${first ? limitsText(first) : 'none reported'}; last ${last ? limitsText(last) : 'none reported'}`)

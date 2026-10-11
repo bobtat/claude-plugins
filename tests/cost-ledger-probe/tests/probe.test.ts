@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'claude-code/testing'
 
-import { contextOf, fromJsonl, parseCommand, report, scheduleDelays } from '../hooks/probe'
+import { contextOf, fromJsonl, parseCommand, report, scheduleDelays, turnCosts, unattributedSpend } from '../hooks/probe'
 import type { ProbeRecord } from '../hooks/probe'
 import { engine, LOG, MIN, NOW, probe, turn, usage } from './support'
 
@@ -118,4 +118,63 @@ test('a ping while a turn runs is logged as skipped, not forked', async ($, on) 
 
   expect(forked).toEqual([])
   expect(await probe($, 'report')).toMatch(/ping\s+skipped: a turn is running/)
+})
+
+// Figures from the first Pro-account run (2026-10-10): Claude Code's running
+// total around the 11:50 turn, and that turn's one request.
+const PRO_TURN: ProbeRecord[] = [
+  { at: NOW, kind: 'turn', phase: 'start', turnId: 't', costUsd: 0.41882669 },
+  {
+    at: NOW + 11_000,
+    kind: 'step',
+    turnId: 't',
+    model: 'claude-opus-5-5',
+    startedAt: NOW,
+    tokens: { input: 2, output: 790, cacheRead: 61_084, cacheWrite: 5_398 },
+  },
+  { at: NOW + 11_100, kind: 'turn', phase: 'end', turnId: 't', costUsd: 0.49003549 },
+]
+
+test('a turn whose cost adds up only at $8/M writes is on the one-hour cache', async () => {
+  const [turn] = turnCosts(PRO_TURN)
+  expect(turn?.matches).toBe('1h')
+  expect(Math.round((turn?.impliedWriteRate ?? 0) * 100) / 100).toBe(8)
+  expect(Math.round((turn?.at5m ?? 0) * 10_000) / 10_000).toBe(0.055)
+})
+
+test('a turn that adds up at $5/M writes is on the five-minute cache', async () => {
+  const records = PRO_TURN.map(r => (r.kind === 'turn' && r.phase === 'end' ? { ...r, costUsd: 0.41882669 + 0.0550 } : r))
+  expect(turnCosts(records)[0]?.matches).toBe('5m')
+})
+
+test('a turn that writes too little to tell, or carries no totals, names no lifetime', async () => {
+  const small = PRO_TURN.map(r => (r.kind === 'step' ? { ...r, tokens: { ...r.tokens, cacheWrite: 265 } } : r))
+  expect(turnCosts(small)[0]?.matches).toBe('?')
+  const old = PRO_TURN.map(r => (r.kind === 'turn' ? { ...r, costUsd: undefined } : r))
+  expect(turnCosts(old)).toEqual([])
+})
+
+test('spend between a fork and the next turn that nothing logged explains is reported with its window', async () => {
+  const snap = (costUsd: number) => ({ costUsd, rateLimits: [] })
+  const records: ProbeRecord[] = [
+    { at: NOW + 2_000, kind: 'fork', label: '+12m', startedAt: NOW, contextTokens: 67_274, result: 'answered', before: snap(0.5212883), after: snap(0.5350187) },
+    { at: NOW + 18 * MIN, kind: 'turn', phase: 'start', turnId: 't', costUsd: 0.5567 },
+    { at: NOW + 19 * MIN, kind: 'turn', phase: 'end', turnId: 't', costUsd: 0.5859 },
+    { at: NOW + 30 * MIN, kind: 'turn', phase: 'start', turnId: 'u', costUsd: 0.5859 },
+  ]
+  const found = unattributedSpend(records)
+  expect(found.length).toBe(1)
+  expect(found[0]?.from).toBe(NOW + 2_000)
+  expect(found[0]?.to).toBe(NOW + 18 * MIN)
+  expect(Math.round((found[0]?.usd ?? 0) * 10_000) / 10_000).toBe(0.0217)
+})
+
+test("each turn logs Claude Code's running total at its start and end", async ($, on) => {
+  const clock = mock.clock(on, { now: NOW })
+  const { files } = engine(on, clock)
+  await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+  await turn($, 't1')
+
+  const turns = fromJsonl(files.get(LOG) ?? '').filter(r => r.kind === 'turn')
+  expect(turns.map(r => (r.kind === 'turn' ? r.costUsd : null))).toEqual([1, 1])
 })
