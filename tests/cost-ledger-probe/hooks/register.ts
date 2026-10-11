@@ -183,7 +183,8 @@ export const register: Register = on => {
     const cancelled = cancelPending()
     const at = await $.clock.now()
     if (cancelled > 0) await add($, { at, kind: 'mark', text: `turn started; ${cancelled} pending ping(s) cancelled` })
-    await add($, { at, kind: 'turn', phase: 'start', turnId: e.turnId })
+    const { costUsd } = await snapshot($)
+    await add($, { at, kind: 'turn', phase: 'start', turnId: e.turnId, costUsd })
     return next(e)
   })
 
@@ -213,7 +214,8 @@ export const register: Register = on => {
       state.runningTurn = null
       const at = await $.clock.now()
       state.lastTurnEnd = at
-      await add($, { at, kind: 'turn', phase: 'end', turnId: e.turnId })
+      const { costUsd } = await snapshot($)
+      await add($, { at, kind: 'turn', phase: 'end', turnId: e.turnId, costUsd })
     }
     return result
   })
