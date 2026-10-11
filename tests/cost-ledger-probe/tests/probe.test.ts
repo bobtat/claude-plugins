@@ -13,6 +13,9 @@ test('subcommands parse, and bad arguments say what was expected', async () => {
   expect(parseCommand('burst 2.5 30').kind).toBe('help')
   expect(parseCommand('burst 20').kind).toBe('help')
   expect(parseCommand('pong').kind).toBe('help')
+  expect(parseCommand('prompt 110')).toEqual({ kind: 'prompt', minutes: 110, text: 'ok' })
+  expect(parseCommand('prompt 110 still there?')).toEqual({ kind: 'prompt', minutes: 110, text: 'still there?' })
+  expect(parseCommand('prompt soon').kind).toBe('help')
 })
 
 test('the context is the last response counted whole, as cost-ledger counts it', async () => {
@@ -89,7 +92,7 @@ test('scheduled pings fire at their offsets after the turn, and a new prompt can
   await clock.advance(10 * MIN)
 
   expect(forked).toEqual([turnEnd + 4 * MIN, turnEnd + 8 * MIN])
-  expect(files.get(LOG)).toMatch(/1 pending ping\(s\) cancelled/)
+  expect(files.get(LOG)).toMatch(/1 pending timer\(s\) cancelled/)
 })
 
 test('a burst spaces its forks after each returns, and a miss shows in the report', async ($, on) => {
@@ -177,4 +180,43 @@ test("each turn logs Claude Code's running total at its start and end", async ($
 
   const turns = fromJsonl(files.get(LOG) ?? '').filter(r => r.kind === 'turn')
   expect(turns.map(r => (r.kind === 'turn' ? r.costUsd : null))).toEqual([1, 1])
+})
+
+test('a scheduled prompt is sent at its offset, and setting up pings afterwards leaves it in place', async ($, on) => {
+  const clock = mock.clock(on, { now: NOW })
+  const { forked } = engine(on, clock)
+  const submitted: { at: number; text: string }[] = []
+  on('prompt.submit', (_$, e) => {
+    submitted.push({ at: clock.now(), text: e.text })
+    return { text: e.text }
+  })
+  await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+  await turn($, 't1')
+  const turnEnd = clock.now()
+
+  expect(await probe($, 'prompt 110')).toMatch(/at \+110m after the last turn's end, in 110\.0 min/)
+  await probe($, 'schedule 55')
+  await clock.advance(120 * MIN)
+
+  expect(forked).toEqual([turnEnd + 55 * MIN])
+  expect(submitted).toEqual([{ at: turnEnd + 110 * MIN, text: 'ok' }])
+})
+
+test('a prompt typed before the scheduled one cancels it', async ($, on) => {
+  const clock = mock.clock(on, { now: NOW })
+  engine(on, clock)
+  const submitted: string[] = []
+  on('prompt.submit', (_$, e) => {
+    submitted.push(e.text)
+    return { text: e.text }
+  })
+  await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+  await turn($, 't1')
+
+  await probe($, 'prompt 30')
+  await clock.advance(10 * MIN)
+  await turn($, 't2')
+  await clock.advance(60 * MIN)
+
+  expect(submitted).toEqual([])
 })

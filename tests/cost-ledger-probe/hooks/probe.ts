@@ -43,12 +43,13 @@ export type Command =
   | { kind: 'ping' }
   | { kind: 'schedule'; minutes: number[] }
   | { kind: 'burst'; count: number; seconds: number }
+  | { kind: 'prompt'; minutes: number; text: string }
   | { kind: 'mark'; text: string }
   | { kind: 'report' }
   | { kind: 'help'; error?: string }
 
 export const USAGE =
-  'Usage: /probe ping | schedule <minutes...> | burst <count> <seconds> | mark <text> | report'
+  'Usage: /probe ping | schedule <minutes...> | prompt <minutes> [text] | burst <count> <seconds> | mark <text> | report'
 
 const isPositive = (n: number) => Number.isFinite(n) && n > 0
 
@@ -70,6 +71,14 @@ export function parseCommand(args: string): Command {
         return { kind: 'help', error: 'burst takes a whole count and a spacing in seconds, e.g. burst 20 30' }
       }
       return { kind: 'burst', count, seconds }
+    }
+    case 'prompt': {
+      const [first, ...words] = rest
+      const minutes = Number(first)
+      if (first === undefined || !isPositive(minutes)) {
+        return { kind: 'help', error: 'prompt takes a positive minute offset and optional text, e.g. prompt 110 ok' }
+      }
+      return { kind: 'prompt', minutes, text: words.join(' ') || 'ok' }
     }
     case 'mark': {
       const text = rest.join(' ')

@@ -19,6 +19,8 @@ const tokensOf = (u: Usage): Tokens => ({
 
 // Module state starts over on a reload; the log itself is read back from its
 // file, so a reload mid-experiment loses only pending timers.
+type TimerKind = 'ping' | 'prompt'
+
 const state = {
   records: [] as ProbeRecord[],
   logPath: undefined as string | undefined,
@@ -26,7 +28,7 @@ const state = {
   lastTurnEnd: undefined as number | undefined,
   contextTokens: null as number | null,
   lastMeasured: '',
-  pending: [] as { cancel: () => void }[],
+  pending: [] as { cancel: () => void; kind: TimerKind }[],
   queue: Promise.resolve() as Promise<void>,
 }
 
@@ -92,13 +94,28 @@ async function pingFromTimer($: EngineInterface, label: string) {
 }
 
 // A pending timer leaves the list as it fires, so a prompt cancels, and
-// reports, only the pings still to come.
-function later($: EngineInterface, ms: number, run: () => Promise<void>) {
+// reports, only the timers still to come.
+function later($: EngineInterface, ms: number, run: () => Promise<void>, kind: TimerKind = 'ping') {
   const timer = $.clock.after(ms, () => {
-    state.pending = state.pending.filter(t => t !== timer)
+    state.pending = state.pending.filter(t => t !== entry)
     void run()
   })
-  state.pending.push(timer)
+  const entry = { cancel: () => timer.cancel(), kind }
+  state.pending.push(entry)
+}
+
+// A scheduled prompt stands in for the person typing one: the same turn, so
+// its first request shows whether the cache was still warm when it ran.
+async function submitScheduled($: EngineInterface, label: string, text: string) {
+  try {
+    await add($, { at: await $.clock.now(), kind: 'mark', text: `prompt ${label} submitted: ${text}` })
+    const result = await $.prompt.submit({ text })
+    if (result.drop !== undefined) {
+      await add($, { at: await $.clock.now(), kind: 'skip', label: `prompt ${label}`, why: `refused: ${result.drop}` })
+    }
+  } catch (err) {
+    await add($, { at: await $.clock.now(), kind: 'skip', label: `prompt ${label}`, why: String(err) })
+  }
 }
 
 // Each fork of a burst starts only after the previous one returned, so slow
@@ -110,11 +127,13 @@ async function burst($: EngineInterface, i: number, count: number, seconds: numb
   }
 }
 
-function cancelPending() {
-  const n = state.pending.length
-  for (const timer of state.pending) timer.cancel()
-  state.pending = []
-  return n
+// Without a kind, every pending timer; with one, only that kind, so setting
+// up pings leaves a scheduled prompt in place and the other way round.
+function cancelPending(kind?: TimerKind) {
+  const cancelled = state.pending.filter(t => kind === undefined || t.kind === kind)
+  for (const timer of cancelled) timer.cancel()
+  state.pending = state.pending.filter(t => !cancelled.includes(t))
+  return cancelled.length
 }
 
 export const register: Register = on => {
@@ -132,8 +151,8 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'probe',
-      description: 'cost-ledger-probe: ping (fork now), schedule <minutes...>, burst <count> <seconds>, mark <text>, report',
-      argumentHint: 'ping | schedule <min...> | burst <n> <s> | mark <text> | report',
+      description: 'cost-ledger-probe: ping (fork now), schedule <minutes...>, prompt <minutes> [text], burst <count> <seconds>, mark <text>, report',
+      argumentHint: 'ping | schedule <min...> | prompt <min> [text] | burst <n> <s> | mark <text> | report',
     })
     const home = (await $.env.get('USERPROFILE')) ?? (await $.env.get('HOME'))
     const sessionId = await $.session.id()
@@ -178,11 +197,11 @@ export const register: Register = on => {
 
   on('turn.start', async ($, e, next) => {
     state.runningTurn = e.turnId
-    // A real prompt ends whatever schedule or burst was waiting: the gap it was
-    // meant to measure no longer exists.
+    // A real prompt ends whatever schedule, burst or scheduled prompt was
+    // waiting: the gap it was meant to measure no longer exists.
     const cancelled = cancelPending()
     const at = await $.clock.now()
-    if (cancelled > 0) await add($, { at, kind: 'mark', text: `turn started; ${cancelled} pending ping(s) cancelled` })
+    if (cancelled > 0) await add($, { at, kind: 'mark', text: `turn started; ${cancelled} pending timer(s) cancelled` })
     const { costUsd } = await snapshot($)
     await add($, { at, kind: 'turn', phase: 'start', turnId: e.turnId, costUsd })
     return next(e)
@@ -249,7 +268,7 @@ export const register: Register = on => {
       case 'schedule': {
         const anchor = state.lastTurnEnd
         if (anchor === undefined) return { text: 'No turn has finished in this session yet; send a prompt first.' }
-        cancelPending()
+        cancelPending('ping')
         const lines: string[] = []
         for (const { minutes, delayMs } of scheduleDelays(anchor, now, command.minutes)) {
           if (delayMs <= 0) {
@@ -262,8 +281,22 @@ export const register: Register = on => {
         await add($, { at: now, kind: 'mark', text: `schedule ${command.minutes.join(' ')} after turn end` })
         return { text: `Pings after the last turn's end:\n${lines.join('\n')}\nA new prompt cancels any still pending.` }
       }
+      case 'prompt': {
+        const anchor = state.lastTurnEnd
+        if (anchor === undefined) return { text: 'No turn has finished in this session yet; send a prompt first.' }
+        const [{ minutes, delayMs }] = scheduleDelays(anchor, now, [command.minutes]) as [{ minutes: number; delayMs: number }]
+        if (delayMs <= 0) return { text: `+${minutes}m after the last turn's end is already past.` }
+        cancelPending('prompt')
+        later($, delayMs, () => submitScheduled($, `+${minutes}m`, command.text), 'prompt')
+        await add($, { at: now, kind: 'mark', text: `prompt "${command.text}" at +${minutes}m after turn end` })
+        return {
+          text:
+            `Will send "${command.text}" at +${minutes}m after the last turn's end, in ${(delayMs / 60_000).toFixed(1)} min.\n` +
+            'Leave the session idle until then: a prompt you type first cancels it.',
+        }
+      }
       case 'burst': {
-        cancelPending()
+        cancelPending('ping')
         const { count, seconds } = command
         await add($, { at: now, kind: 'mark', text: `burst ${count} x ${seconds}s` })
         void burst($, 1, count, seconds)
