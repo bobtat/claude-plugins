@@ -75,10 +75,10 @@ Bring the JSONL file back when you're done. It holds everything the report leave
 | # | Result |
 |---|---|
 | 1 | **Yes.** A fork 2.8 min after a turn read 61,084 of 66,067 tokens from the cache (92%) and wrote 4,981: the tail since the last cached point. Read, write and input add up to the whole context plus the ping prompt. |
-| 2 | **Not settled.** The pings themselves behaved: `+4m` read 99% and wrote 790 tokens, `+8m` and `+12m` read 100% and wrote 0. But the cache stayed warm without pings too: the first requests after idle gaps of 7.4, 18.3 and 15.2 minutes with no ping in between (the last one the control) all read the whole context. The likeliest cause is that this account uses the one-hour cache. Claude Code never reported the lifetime directly, but its own pricing of the turns agrees (below). |
+| 2 | **Not settled.** The pings themselves behaved: `+4m` read 99% and wrote 790 tokens, `+8m` and `+12m` read 100% and wrote 0. But the cache stayed warm without pings too: the first requests after idle gaps of 7.4, 18.3 and 15.2 minutes with no ping in between (the last one the control) all read the whole context. The likeliest cause is that this account uses the one-hour cache. Claude Code never reported the lifetime directly, but its own pricing of the turns agrees (below). The 2026-10-11 run settles it. |
 | 3 | **Yes, Claude Code counts it.** Each fork's `Δcost` equals its tokens at list price to the cent: the first fork $0.0374 = 61,084 read × $0.20/M + 4,981 written × $5/M + 49 input × $4/M + 4 output × $20/M. A fork's own writes are priced at the five-minute rate; the main thread's turns at the one-hour rate (below). |
 | 4 | **4 output tokens per ping**, about $0.0001: no noticeable thinking. A ping that writes nothing cost $0.0137 at this context size. |
-| 5 | **Not measured.** Forks don't update the readings: every fork's before and after are identical, and the readings changed only at real turns. The 5-hour reading went from 3% to 7% over the whole session, about $0.65 of API-equivalent spend, real turns included. |
+| 5 | **Not measured.** The readings around each fork stayed the same and moved only at real turns. That does not mean forks never update them: in the 2026-10-11 run a fork's response carried a reading that had moved (below). The 5-hour reading went from 3% to 7% over the whole session, about $0.65 of API-equivalent spend, real turns included. |
 
 #### From the JSONL
 
@@ -101,20 +101,36 @@ Some spend passed through no hook the probe logs:
 | 11:44 → 11:50, 7 min idle | $0.0712 | $0.0712 | none |
 | After the last turn | $0.0331 | none | $0.0331 |
 
-About $0.021 is what one cache read of the 67k context plus a few hundred output tokens costs. That looks like Claude Code making a background request of its own after a long idle gap. If such a request reads the transcript, it renews the cache too. The report now lists this spend with its window, so the next runs show when it happens.
+About $0.021 is what one cache read of the 67k context plus a few hundred output tokens costs. That looks like Claude Code making a background request of its own after a long idle gap. If such a request reads the transcript, it renews the cache too. The report now lists this spend with its window, so the next runs show when it happens. The 2026-10-11 run had none in 110 minutes, so what it was is still unknown.
+
+### 2026-10-11: personal Pro account, Opus 5.5, ~64k-token context
+
+One turn, then `/probe schedule 55` and `/probe prompt 110`, and the session left alone.
+
+| After the turn ended | Event | Read | Write | Total moved |
+|---|---|---|---|---|
+| 0 | Context-building turn | 29,130 | 33,009 | $0.29908 |
+| 55.0 min | `+55m` ping | 62,139 of 63,587 (98%) | 1,446 | $0.01993 |
+| 110.0 min, 55.0 after the ping | Scheduled `ok` | 62,139 | 8,667 | $0.08424 |
+
+- **The cache lasted at least 55 minutes,** and the ping renewed it: the prompt at 110 minutes read the same 62,139 tokens again. This relies on the cache otherwise expiring at about an hour, which Claude Code's pricing says but no run has yet shown (see "Still to run").
+- **The write rates match exactly again.** The first turn comes to $0.29883 with one-hour writes and $0.1998 with five-minute writes. The `ok` turn comes to $0.08424 with one-hour writes, exactly. The ping comes to $0.01993 with five-minute writes, exactly.
+- **The ping wrote only the tail.** Its 1,446 written tokens equal the first turn's 1,446 output tokens. That write is priced, and so presumably kept, at the five-minute rate, so it had expired by the `ok` 55 minutes later, which wrote it again. The other ~7,200 tokens the `ok` wrote are far more than a short prompt needs; the log does not show what they were.
+- **No spend went unexplained.** Each known total equals the next across the whole 110 minutes.
+- **Saving:** without the ping, the `ok` would have re-written about 62k tokens at $8/M, roughly $0.50, against $0.0199 for the ping.
+- **A fork can carry a moved rate-limit reading.** The ping's response came with the 5-hour reading at 62% (55% before) and the 7-day at 13% (12% before). A $0.02 request cannot account for 7 points when $0.65 moved the reading 4 points in the first run, so this is almost certainly other use on the account in those 55 minutes. The readings cover the whole account, so experiment 5 has to run while Claude is not in use anywhere else on it.
 
 Still to run:
 
-- **A ping just under the hour renews the cache.** After a turn, `/probe schedule 55` and `/probe prompt 110`, then leave the session alone. The `+55m` ping should read nearly everything, and so should the prompt's first request, 55 minutes after the ping.
-- **Experiment 5** on the Pro account. It tells whether Pro limits weigh cache reads at their discounted price: if they do, an hourly ping is about 0.1% of the 5-hour window; if they count cache reads like full input, many times that.
-- **The one-hour expiry**, to confirm the server agrees with Claude Code's pricing. Leave a session idle for more than an hour, then send a prompt: its first request should show a large `write`.
+- **The one-hour expiry,** the control for the 55-minute result. Let a turn finish, schedule no pings, and `/probe prompt 70`. Its first request should show a large `write`.
+- **Experiment 5** on the Pro account, with Claude not in use anywhere else on it. It tells whether Pro limits weigh cache reads at their discounted price: if they do, an hourly ping is about 0.1% of the 5-hour window; if they count cache reads like full input, many times that.
 
 ### What this changes for cost-ledger's keep-alive
 
-- **The ping interval comes from the cache lifetime, not a fixed ~4.5 minutes.** On a one-hour cache that means one ping about every 55 minutes, about $0.014 each at 67k tokens, against a cold re-cache of 67k × $8/M ≈ $0.54 at the one-hour write rate. That is about 40 hours of pings before they cost more than one re-cache, so the limit that matters is the maximum idle time, not break-even.
+- **The ping interval comes from the cache lifetime, not a fixed ~4.5 minutes.** On a one-hour cache that means one ping about every 55 minutes, about $0.014–0.02 each at 62–67k tokens, against a cold re-cache of 67k × $8/M ≈ $0.54 at the one-hour write rate. That is about 40 hours of pings before they cost more than one re-cache, so the limit that matters is the maximum idle time, not break-even.
 - **cost-ledger should learn the lifetime from what it observes.** With `cacheTtl` on `auto` and nothing reported, it assumes five minutes. That shows "cache cold" and the re-cache warning too early, and prices writes too low, on an account like this one. The reliable signal is Claude Code's own pricing: price each request with five-minute and one-hour writes and see which matches the running total's change, as the probe's report now does.
 - **Keep-alive cost goes into the category breakdown only.** Claude Code's running total already includes forks, and cost-ledger's totals come from it, so adding forks to the totals would count them twice. Forks don't pass through `turn.step`, so the breakdown must record their usage itself.
-- **Only the first ping after a turn writes anything.** It writes the tail; later pings are pure cache reads.
+- **Only the first ping after a turn writes anything.** It writes the tail; later pings are pure cache reads. That tail is written at the five-minute rate, so on a one-hour cache it has expired by the next ping or prompt and is written again: about $0.01 an hour at this size, not worth working around.
 
 ## Development
 
