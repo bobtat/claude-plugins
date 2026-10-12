@@ -90,8 +90,10 @@ after the last ping.
   reading it) stops the keep-alive, as does a failed request.
 - **On the five-minute cache** a ping goes out every 4.5 minutes, which costs more per idle
   hour; the break-even against one cold re-cache is roughly 25 pings.
-- **On a subscription**, pings count against the 5-hour and 7-day limits like any request.
-  How much a cache read weighs there has not been measured.
+- **On a subscription**, pings count against the 5-hour and 7-day limits like any request,
+  weighted by their API-equivalent price as far as measured: on a Pro account, about 0.045%
+  of the 5-hour window per ping at 62k tokens, so three hourly pings cost about 0.13%
+  against about 1% for one cold re-cache of a conversation that size.
 
 The measurements behind these numbers are in `tests/cost-ledger-probe/README.md` at the
 repository root.
