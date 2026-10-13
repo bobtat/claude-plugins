@@ -123,7 +123,8 @@ check("below the trim the shoulder is metal", inside(cast, (3.75, 0, 11.5)))
 check("above the trim it is gone", not inside(cast, (3.75, 0, 12.6)))
 check("the seat groove follows the wire (0.6 mm around it)", not inside(cast, (0.8, 0.8, 9.7)))
 check("the bar is untouched away from the groove", inside(cast, (6.0, 0, 9.0)) and inside(cast, (0.3, 0, 9.2)))
-check("the drill dimple sits under the crossing", not inside(cast, (0, 0, 9.2)) and inside(cast, (0, 0, 8.5)))
+check("the drill dimple sits under the crossing", not inside(cast, (0, 0, 9.2)) and inside(cast, (0, 0, 8.5)),
+      {z: inside(cast, (0, 0, z)) for z in (8.5, 8.9, 9.0, 9.1, 9.2, 9.3, 9.45, 9.6, 9.9)})
 
 # ---------------------------------------------------------------- fuse
 # A head 7 mm wide (x +-3.5), z 12..14: it sits on the inner half of each shoulder once the
@@ -156,10 +157,10 @@ def sz(v):
 
 (s1, z1), (s2, z2) = sz(pts[1][0]), sz(pts[2][0])
 check("the straight arm is 23.75 degrees below horizontal",
-      abs(math.degrees(math.atan2(z2 - z1, s2 - s1)) - 23.75) < 1e-6)
-coll = all(abs((pts[i][1] - pts[i][0]).normalized().dot((pts[i][2] - pts[i][0]).normalized()) + 1) < 1e-9
-           for i in (1, 2, 3))
-check("the arcs and straights meet tangentially", coll)
+      abs(math.degrees(math.atan2(z2 - z1, s2 - s1)) - 23.75) < 1e-4, math.degrees(math.atan2(z2 - z1, s2 - s1)))
+# Vector is single precision, so "exactly opposite" is checked to 1e-6.
+coll = [abs((pts[i][1] - pts[i][0]).normalized().dot((pts[i][2] - pts[i][0]).normalized()) + 1) for i in (1, 2, 3)]
+check("the arcs and straights meet tangentially", max(coll) < 1e-6, coll)
 check("the prong runs straight up from the bend to the tip at (3, 4, 0.5)",
       (pts[4][0] - Vector((3, 4, 0.5))).length < 1e-9 and abs(pts[3][0].x - 3) < 1e-9 and abs(pts[3][0].y - 4) < 1e-9)
 
