@@ -17,7 +17,7 @@ from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 # The skills compare the loaded copy against this line, so bump it with every change.
-HELPERS_VERSION = "0.3.0"
+HELPERS_VERSION = "0.3.1"
 
 # Densities (g/cm3) and compositions from JewelCraft 2.18.1's default weighting list;
 # used only when the current scene's list is empty. The composition matters: other
@@ -941,14 +941,17 @@ def stl_bbox(path):
 
 
 def stl_info(path):
-    """Bounding-box size and triangle count of a binary STL."""
-    import struct
-    data = open(path, "rb").read()
-    n = struct.unpack("<I", data[80:84])[0]
-    pts = [struct.unpack("<3f", data[84 + i * 50 + 12 + k * 12: 84 + i * 50 + 24 + k * 12])
-           for i in range(n) for k in range(3)]
-    return {"bbox": [round(max(p[a] for p in pts) - min(p[a] for p in pts), 4) for a in range(3)],
-            "triangles": n}
+    """Bounding-box size and triangle count of a binary STL (0 x 0 x 0 when it's empty)."""
+    import numpy as np
+    with open(path, "rb") as f:
+        f.seek(80)
+        n = int(np.frombuffer(f.read(4), dtype="<u4")[0])
+        rec = np.dtype([("normal", "<f4", 3), ("v", "<f4", (3, 3)), ("attr", "<u2")])
+        data = np.frombuffer(f.read(n * 50), dtype=rec, count=n)
+    if not n:
+        return {"bbox": [0.0, 0.0, 0.0], "triangles": 0}
+    v = data["v"].reshape(-1, 3).astype(np.float64)
+    return {"bbox": [round(float(x), 4) for x in v.max(0) - v.min(0)], "triangles": n}
 
 
 def _export_stl(obs, path):
@@ -968,6 +971,11 @@ def _export_stl(obs, path):
         c = ctx()
         kw = dict(filepath=path, export_selected_objects=True, ascii_format=False,
                   apply_modifiers=True)
+        # Export what the checks measured: the viewport evaluation. The exporter's default,
+        # Render, writes an empty file for parts hidden from renders and can differ from
+        # the viewport wherever a modifier has its own render setting (Subdivision levels).
+        if "evaluation_mode" in bpy.ops.wm.stl_export.get_rna_type().properties.keys():
+            kw["evaluation_mode"] = 'DAG_EVAL_VIEWPORT'
         if c:
             with bpy.context.temp_override(**c):
                 bpy.ops.wm.stl_export(**kw)

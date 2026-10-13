@@ -86,6 +86,12 @@ the defaults write millimetre numbers, which is what slicers expect. **Don't set
 `use_scene_unit=True`:** it writes metres (1000× too small). `H["print_check"](...,
 stl_path=...)` exports and verifies the size. [verified]
 
+**Pass `evaluation_mode='DAG_EVAL_VIEWPORT'`.** The default is `DAG_EVAL_RENDER`
+("Export objects as they appear in render") [docs: the operator's own property definition in
+Blender 5.2.2]. A part hidden from renders then exports as an empty file, and a modifier
+with separate render settings (Subdivision levels) exports differently from what was
+measured. `print_check` passes it. [verified]
+
 ## 6. Seeing the result
 
 - MCP screenshots of the Blender window come back **black** when the window is minimized or

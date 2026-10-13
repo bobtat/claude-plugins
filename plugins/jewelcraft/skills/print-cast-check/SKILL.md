@@ -27,10 +27,11 @@ description: Checks a jewelry model (ring, pendant, setting) in Blender before 3
      especially inside the band (it enlarges the size) and on prong tips.
 4. Run `H["print_check"](parts, min_wall_mm=..., parts_that_must_not_touch=[(a, b), ...])`.
    - To export, confirm the file path with the user first, then pass `stl_path=...`.
-     The helper exports the listed parts with modifiers applied, reads the file back,
-     and checks its size and triangle count against the model (millimetres). The user's
-     selection is restored. A part hidden in the viewport stops the export; ask the user
-     whether to unhide it or leave it out.
+     The helper exports the listed parts with modifiers applied, as the viewport evaluates
+     them (what was measured; parts hidden only from renders export too), reads the file
+     back, and checks its size and triangle count against the model (millimetres). The
+     user's selection is restored. A part hidden in the viewport stops the export; ask the
+     user whether to unhide it or leave it out.
 5. Report `problems` first, then `warnings`, then the per-part table: volume,
    non-manifold edges, inside-out, thinnest wall and where, scale.
    - **Thinnest wall:** the location matters. Knife edges and seat rims read as very thin
