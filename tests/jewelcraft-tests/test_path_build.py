@@ -123,8 +123,12 @@ check("below the trim the shoulder is metal", inside(cast, (3.75, 0, 11.5)))
 check("above the trim it is gone", not inside(cast, (3.75, 0, 12.6)))
 check("the seat groove follows the wire (0.6 mm around it)", not inside(cast, (0.8, 0.8, 9.7)))
 check("the bar is untouched away from the groove", inside(cast, (6.0, 0, 9.0)) and inside(cast, (0.3, 0, 9.2)))
-check("the drill dimple sits under the crossing", not inside(cast, (0, 0, 9.2)) and inside(cast, (0, 0, 8.5)),
-      {z: inside(cast, (0, 0, z)) for z in (8.5, 8.9, 9.0, 9.1, 9.2, 9.3, 9.45, 9.6, 9.9)})
+# The groove floor under the crossing is at 10 - 0.6 = 9.4; the dimple's apex should be
+# Dimple Depth (0.35) below it, at 9.05, and it should be about 0.54 mm across at the floor.
+probe = {z: inside(cast, (0, 0, z)) for z in (8.9, 9.0, 9.2, 9.3)}
+check("the drill dimple goes 0.35 below the groove floor under the crossing",
+      not probe[9.2] and not probe[9.3] and probe[9.0] and probe[8.9], probe)
+check("and is about 0.5 mm across at the floor", not inside(cast, (0.2, 0, 9.38)) and inside(cast, (0.35, 0, 9.38)))
 
 # ---------------------------------------------------------------- fuse
 # A head 7 mm wide (x +-3.5), z 12..14: it sits on the inner half of each shoulder once the

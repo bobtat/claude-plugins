@@ -283,7 +283,8 @@ def casting(name="Casting"):
     wire = b.obj("Wire")
     half = b.math('ADD', b.math('MULTIPLY', b.gi.outputs["Wire Diameter"], 0.5), b.gi.outputs["Seat Gap"])
     grooves = b.sdf(b.mirror_xy(b.tubes(wire, half, ends=False)), vox, 4)
-    # Dimple: a cone, apex down, under the first point of the wire path.
+    # Dimple: a cone, apex down, under the first point of the wire path: its apex Dimple
+    # Depth below the groove floor, its top 0.1 above it.
     si = b.N('GeometryNodeSampleIndex')
     si.data_type, si.domain = 'FLOAT_VECTOR', 'POINT'
     b.L(wire, si.inputs["Geometry"])
@@ -295,10 +296,16 @@ def casting(name="Casting"):
     cone.inputs["Vertices"].default_value = 32
     b.L(b.math('MULTIPLY', b.gi.outputs["Dimple Diameter"], 0.5), cone.inputs["Radius Top"])
     cone.inputs["Radius Bottom"].default_value = 0.0
-    depth = b.math('ADD', b.gi.outputs["Dimple Depth"], 0.1)
-    b.L(depth, cone.inputs["Depth"])
+    b.L(b.math('ADD', b.gi.outputs["Dimple Depth"], 0.1), cone.inputs["Depth"])
     floor = b.math('SUBTRACT', sep.outputs["Z"], half)
-    cz = b.math('SUBTRACT', b.math('ADD', floor, 0.1), b.math('MULTIPLY', depth, 0.5))
+    # Move the cone by where its apex actually is: in Blender 5.2.2 the Cone node's mesh runs
+    # from z = 0 to z = Depth, not centred on its origin, and placing it as if it were centred
+    # left the R1 dimple about 0.12 mm deep instead of 0.35. [verified]
+    cbb = b.N('GeometryNodeBoundBox')
+    b.L(cone.outputs["Mesh"], cbb.inputs["Geometry"])
+    cmin = b.N('ShaderNodeSeparateXYZ')
+    b.L(cbb.outputs["Min"], cmin.inputs["Vector"])
+    cz = b.math('SUBTRACT', b.math('SUBTRACT', floor, b.gi.outputs["Dimple Depth"]), cmin.outputs["Z"])
     cxyz = b.N('ShaderNodeCombineXYZ')
     b.L(sep.outputs["X"], cxyz.inputs["X"])
     b.L(sep.outputs["Y"], cxyz.inputs["Y"])
