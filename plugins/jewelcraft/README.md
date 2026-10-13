@@ -25,6 +25,7 @@ MCP connection.
 | `jewelcraft:print-cast-check` | Closed mesh, wall thickness, collisions, units; export and verify an STL |
 | `jewelcraft:build-ring` | Step-by-step ring workflow with a check after each stage |
 | `jewelcraft:scene-setup` | Studio scene for review renders: fixed cameras, 18K gold and diamond materials, lighting, contact sheet |
+| `jewelcraft:build-from-paths` | Metalwork built from editable paths and fused with Geometry Nodes, split into a cast part and a hand-built wire head, checked after every change; STLs and a 1:1 bending template with a cut list |
 
 Bracelet, necklace and earring workflows are planned for a later version.
 
@@ -37,12 +38,16 @@ Bracelet, necklace and earring workflows are planned for a later version.
 - Scene units of 1 unit = 1 mm (`jewelcraft:check-setup` will tell you if not).
 - For `jewelcraft:scene-setup` renders: Cycles (bundled with Blender). A GPU is optional;
   it made renders about 5 s per view on a GTX 970.
+- For `jewelcraft:build-from-paths`: Blender 5.x (Geometry Nodes' SDF grid nodes; tested on
+  5.2.2 with JewelCraft 3.0.1). Its template generator runs outside Blender, in Python 3 with
+  numpy and reportlab.
 
 ## How it works
 
 The skills share one helper script, `skills/jewelcraft-blender/scripts/jc_helpers.py`,
 which Claude loads into Blender once per session (`jewelcraft:scene-setup` adds its own,
-`skills/scene-setup/scripts/scene_setup.py`). All measurements use the evaluated
+`skills/scene-setup/scripts/scene_setup.py`, and `jewelcraft:build-from-paths` adds
+`path_build.py` and `u_wire.py`). All measurements use the evaluated
 model (modifiers included), in millimetres. Checks work on temporary copies and don't
 change your model; anything that would change it is proposed first. Creating and removing
 those copies can mark the file as modified, so Blender may ask to save on quit. Save your file
@@ -59,13 +64,17 @@ Facts in the reference files are tagged:
 
 The helpers were tested against known geometry: prong grip and tip height, cutter fit,
 seat clearance, union weights, ring size (rotated, coarse, open, comfort-fit, with heads
-and bezels), culet clearance, stone overlaps, loose pieces, and STL size.
+and bezels), culet clearance, stone overlaps, loose pieces, STL size, overlap islands, thin
+spots, the Boolean solver choice, and the build-from-paths node groups and U-wire geometry.
 
 ## Known limits
 
-- The head, gallery and cathedral workflow is not tested yet;
+- One head type is tested, on one ring: a U-wire basket head on a cast shank with cathedral
+  shoulders (`jewelcraft:build-from-paths`). Other heads aren't;
   `skills/jewelcraft-blender/references/heads.md` gives anatomy, starting proportions and
   sources.
+- The helper tests that build prongs and cutters (`test_prongs`, `test_build_ring`) use
+  JewelCraft 2.18's builder recipe and fail on 3.x.
 - Prong grip is checked against a 30–50% notch depth (Stuller's bench guidance). Casting
   wall thickness, shrinkage and finishing allowance depend on your caster or printer, so
   `jewelcraft:print-cast-check` asks for them rather than assuming values.
