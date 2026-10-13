@@ -13,7 +13,9 @@ object** (slot link = Object), which leaves each mesh's own materials in place.
 
 Tested in Blender 5.1.1 with JewelCraft 3.0.1 on a US 8 test band, an 8.85 × 7.38 mm
 cushion and four prongs: setup, render, reframe, the image viewer, and teardown leaving
-the objects' material slots exactly as before (none, empty, or their own material). [verified]
+the objects' material slots exactly as before (none, empty, or their own material). The
+background tests pass on Blender 5.2.2 too, where a new scene's layer collections only appear
+once the view layer is updated; `setup` now does that. [verified]
 
 ## 1. Prepare
 
