@@ -17,7 +17,7 @@ from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 # The skills compare the loaded copy against this line, so bump it with every change.
-HELPERS_VERSION = "0.3.1"
+HELPERS_VERSION = "0.3.2"
 
 # Densities (g/cm3) and compositions from JewelCraft 2.18.1's default weighting list;
 # used only when the current scene's list is empty. The composition matters: other
@@ -134,19 +134,35 @@ def volume_nm(ob):
 
 
 def min_wall(ob):
-    """Minimum wall thickness: ray from each face centre inward to the opposite wall.
-    Needs outward normals. Samples face centres only."""
+    """Minimum wall thickness: a ray from each face centre straight inward to where it
+    leaves the solid on the other side. Needs outward normals. Samples face centres only.
+
+    Only a real exit counts. The ray skips, and carries on past, a hit on the face it
+    started from (a non-planar quad's centre can sit a hair outside one of its own
+    triangles, which read as a wall of almost nothing), a face whose normal points back
+    along the ray (the ray is outside the solid there), and hits closer than 1e-5 mm."""
     bm = eval_bm(ob)
     bm.normal_update()
+    bm.faces.index_update()
     tree = BVHTree.FromBMesh(bm)
     best, where = None, None
     for f in bm.faces:
         c, n = f.calc_center_median(), f.normal
-        hit = tree.ray_cast(c - n * 1e-4, -n)
-        if hit[0] is not None:
-            d = (hit[0] - c).length
-            if best is None or d < best:
-                best, where = d, tuple(round(x, 3) for x in c)
+        if n.length < 0.5:
+            continue
+        d = -n
+        o = c - n * 1e-4
+        for _ in range(16):
+            loc, nrm, idx, dist = tree.ray_cast(o, d)
+            if loc is None:
+                break
+            if idx == f.index or nrm.dot(d) <= 0 or (loc - o).length < 1e-5:
+                o = loc + d * 1e-5
+                continue
+            t = (loc - c).length
+            if best is None or t < best:
+                best, where = t, tuple(round(x, 3) for x in c)
+            break
     bm.free()
     return best, where
 
