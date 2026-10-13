@@ -40,6 +40,11 @@ description: Checks a jewelry model (ring, pendant, setting) in Blender before 3
      edges that read as walls of a few thousandths of a millimetre (0.002 mm on the test
      ring); they are the notch rim. It samples face centres only, so on a low-poly part
      say the true minimum may be thinner, and offer to check a subdivided copy.
+   - **Thin spots:** when the caster gave a minimum wall, also run
+     `H["thin_spots"](part, min_mm=...)` on each part (Blender 5.x). It lists every place
+     thinner than that, including thin wires and fins, with how deep each sits below the
+     opened shape: about 0.41 r is a 90° edge and 0.73 r a corner (r = min_mm / 2), 1 r or more
+     a real thin place or an edge sharper than 60°. Report where each spot is.
    - **More than one piece** (`pieces` > 1) means a part floats: prongs that don't reach
      the band, a head that doesn't touch the shank. It would cast as loose pieces. Say
      which parts, and that they need joining (usually a head or gallery).
