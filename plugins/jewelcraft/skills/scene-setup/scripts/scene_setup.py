@@ -18,7 +18,7 @@ import time
 from mathutils import Matrix, Vector
 
 # The skill compares the loaded copy against this line, so bump it with every change.
-SCENE_HELPERS_VERSION = "0.2.2"
+SCENE_HELPERS_VERSION = "0.2.3"
 
 STUDIO = "JC Studio"
 RIG = "JC Studio Rig"
@@ -162,7 +162,12 @@ def _sync(src, studio):
     for o in list(root.objects):
         if o.name not in want_o:
             root.objects.unlink(o)
-    _mirror_layers(_source_view_layer(src).layer_collection, studio.view_layers[0].layer_collection)
+    vl = studio.view_layers[0]
+    if vl.layer_collection is None:
+        # In Blender 5.2.2 a new scene's view layer has no layer collection until it is
+        # updated, which made the first setup() fail. [verified]
+        vl.update()
+    _mirror_layers(_source_view_layer(src).layer_collection, vl.layer_collection)
 
 
 # ---------------------------------------------------------------- materials
