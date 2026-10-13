@@ -1,10 +1,12 @@
 # Heads, baskets and cathedral settings
 
-**No head-building workflow has been tested yet.** JewelCraft places stones, prongs and
-cutters, but heads, galleries, cathedral arches and curved claws are ordinary Blender
-modeling. This file gives the vocabulary, bench proportions and sources to build from. Tell
-the user when a head you model is unverified, and measure it with the helpers (prong
-grip, seat clearance, wall thickness).
+**One head-building workflow is tested: `jewelcraft:build-from-paths`**, a U-wire basket head
+(four prongs from two crossed wires, a four-bar gallery and a peg) built from paths and
+fused with Geometry Nodes, on a cast shank with cathedral shoulders. Use it for heads made of
+wire and bars. JewelCraft places stones, prongs and cutters, but other heads (cast baskets,
+curved claws, halos) are still ordinary Blender modeling. This file gives the vocabulary,
+bench proportions and sources to build from. Tell the user when a head you model is
+unverified, and measure it with the helpers (prong grip, seat clearance, wall thickness).
 
 ## Anatomy [cited]
 

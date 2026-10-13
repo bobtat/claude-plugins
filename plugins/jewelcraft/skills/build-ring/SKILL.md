@@ -6,8 +6,10 @@ description: Step-by-step workflow for building a ring in Blender with JewelCraf
 # Build a ring
 
 The band, stone, prong and seat stages below were tested end to end in Blender 5.1.1 with
-JewelCraft 2.18.1. **Heads (baskets, cathedral arches, curved claws) have no tested
-workflow yet.** See `../jewelcraft-blender/references/heads.md`, and tell the user that part is unverified.
+JewelCraft 2.18.1. **For a head made of wire and bars** (a basket of bent wire on a cast
+shank), use `jewelcraft:build-from-paths`, tested on one ring in Blender 5.2.2. Other heads
+(cast baskets, curved claws) have no tested workflow yet: see
+`../jewelcraft-blender/references/heads.md`, and tell the user that part is unverified.
 
 ## 0. Prepare
 
@@ -74,10 +76,13 @@ workflow yet.** See `../jewelcraft-blender/references/heads.md`, and tell the us
 2. **Check:** run the `jewelcraft:check-prongs` skill (`H["prong_report"]`). Every prong
    should grip 30–50% of its thickness and reach at least halfway up the crown.
 
-## 4. Head [untested]
+## 4. Head
 
-Model the head (gallery rails, basket or cathedral arches) with ordinary Blender modeling,
-using `../jewelcraft-blender/references/heads.md` for anatomy and starting proportions. Say it's unverified.
+For a wire-and-bar head, follow `jewelcraft:build-from-paths` (it also covers the prongs and the
+cathedral shoulders, so step 3 can be skipped). Otherwise model the head (gallery rails,
+basket or cathedral arches) with ordinary Blender modeling, using
+`../jewelcraft-blender/references/heads.md` for anatomy and starting proportions, and say it's
+unverified.
 Something has to join the prongs to the band: corner prongs on an elongated stone sit
 beyond a narrow band's edges and otherwise float, which `print_check` reports as more
 than one piece. Measure the head: prong grip, collisions with the stone, wall thickness,

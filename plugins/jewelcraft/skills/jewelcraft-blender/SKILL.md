@@ -13,8 +13,9 @@ server returns `result`, end each call with
 out for brevity.
 JewelCraft must be installed and enabled in that Blender.
 
-Everything here was written against **JewelCraft 2.18.1 on Blender 5.1.1**. Tags in the
-reference files:
+Everything here was written against **JewelCraft 2.18.1 on Blender 5.1.1**; the helpers'
+0.4.0 additions and `jewelcraft:build-from-paths` were tested on **Blender 5.2.2 with JewelCraft
+3.0.1**. Tags in the reference files:
 - **[verified]**: run in Blender and the result measured.
 - **[source]**: read in the JewelCraft source, not run.
 - **[docs]**: from the Blender manual or Python API reference.
@@ -101,6 +102,9 @@ reference files:
 - **`jewelcraft:build-ring`**: the tested ring workflow.
 - **`jewelcraft:scene-setup`**: a separate studio scene with fixed cameras, gold and
   diamond preview materials and lighting; renders every view and a contact sheet.
+- **`jewelcraft:build-from-paths`**: metalwork built from editable paths and fused with
+  Geometry Nodes (a wire head on a cast shank), split for fabrication, checked after every
+  change, with STLs and a 1:1 bending template for the bench.
 
 Bracelet, necklace and earring workflows are not included yet. They'll be added once
 they've been researched and tested.
