@@ -76,6 +76,10 @@ The MCP runs code in the Blender the user has open; their work lives in memory.
   to give proper results. [docs]
 - `EXACT` gave clean results in every test here. The operand's world transform is used,
   parented or not. [verified]
+- `MANIFOLD` matched `EXACT` for separate closed meshes (overlapping, coincident or only
+  touching) and was about 27× faster on dense Geometry Nodes SDF meshes, but it doesn't merge
+  parts that overlap inside one mesh and gives wrong volumes on open meshes. The helpers pick
+  it only when that's safe and check its result (`helpers.md`, `overlap_volume`). [verified]
 - A live (unapplied) Boolean is measured correctly by the helpers: the seated test plate
   read 103.172 mm³ whether applied or live. [verified]
 

@@ -17,7 +17,7 @@ from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 # The skills compare the loaded copy against this line, so bump it with every change.
-HELPERS_VERSION = "0.3.2"
+HELPERS_VERSION = "0.3.3"
 
 # Densities (g/cm3) and compositions from JewelCraft 2.18.1's default weighting list;
 # used only when the current scene's list is empty. The composition matters: other
@@ -306,13 +306,132 @@ class TempObjects:
         return False
 
 
-def _boolean(target, op, other=None, collection=None):
+# ---------------------------------------------------------------- mesh statistics (numpy)
+
+def _np_mesh(me):
+    """Vertex positions (N x 3), edges (E x 2), how many faces use each edge, and which
+    vertices belong to a face, as numpy arrays."""
+    import numpy as np
+    co = np.empty(len(me.vertices) * 3, np.float32)
+    me.vertices.foreach_get("co", co)
+    E = np.empty(len(me.edges) * 2, np.int32)
+    me.edges.foreach_get("vertices", E)
+    le = np.empty(len(me.loops), np.int32)
+    me.loops.foreach_get("edge_index", le)
+    lv = np.empty(len(me.loops), np.int32)
+    me.loops.foreach_get("vertex_index", lv)
+    used = np.zeros(len(me.vertices), bool)
+    used[lv] = True
+    return (co.reshape(-1, 3).astype(np.float64), E.reshape(-1, 2).astype(np.int64),
+            np.bincount(le, minlength=len(me.edges)), used)
+
+
+def _labels(n, E):
+    """Connected-piece label of each of `n` vertices: a vectorised union-find over the
+    edges. Each pass hooks every root onto the smallest root it shares an edge with, then
+    flattens the trees."""
+    import numpy as np
+    par = np.arange(n)
+    while len(E):
+        pu, pv = par[E[:, 0]], par[E[:, 1]]
+        if np.array_equal(pu, pv):
+            break
+        np.minimum.at(par, np.maximum(pu, pv), np.minimum(pu, pv))
+        while True:
+            pp = par[par]
+            if np.array_equal(pp, par):
+                break
+            par = pp
+    return par
+
+
+def _mesh_info(me):
+    """Non-manifold edges (edges without exactly two faces), pieces (groups of faces
+    joined through edges), each piece's bounding box, and the vertex arrays."""
+    import numpy as np
+    co, E, fpe, used = _np_mesh(me)
+    lab = _labels(len(co), E)
+    roots, inv = np.unique(lab[used], return_inverse=True)
+    lo = np.full((len(roots), 3), np.inf)
+    hi = np.full((len(roots), 3), -np.inf)
+    if len(roots):
+        np.minimum.at(lo, inv.ravel(), co[used])
+        np.maximum.at(hi, inv.ravel(), co[used])
+    return {"nonmanifold": int((fpe != 2).sum()), "pieces": len(roots), "lo": lo, "hi": hi,
+            "roots": roots, "labels": lab, "co": co, "used": used}
+
+
+def _np_tris(me):
+    import numpy as np
+    me.calc_loop_triangles()
+    T = np.empty(len(me.loop_triangles) * 3, np.int32)
+    me.loop_triangles.foreach_get("vertices", T)
+    return T.reshape(-1, 3).astype(np.int64)
+
+
+def _tri_volumes(co, T):
+    """Signed volume each triangle contributes (summed, the mesh's volume)."""
+    import numpy as np
+    if not len(T):
+        return np.zeros(0)
+    A, B, C = co[T[:, 0]], co[T[:, 1]], co[T[:, 2]]
+    return np.einsum("ij,ij->i", A, np.cross(B, C)) / 6.0
+
+
+class _EvalMesh:
+    """`with _EvalMesh(ob) as me:` the evaluated mesh of `ob`, in its local space."""
+
+    def __init__(self, ob):
+        if ob.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
+            raise ValueError(f"{ob.name} is a {ob.type.lower()}, with no geometry to measure. "
+                             "Pass the mesh objects themselves.")
+        self.ev = ob.evaluated_get(bpy.context.evaluated_depsgraph_get())
+
+    def __enter__(self):
+        return self.ev.to_mesh()
+
+    def __exit__(self, *exc):
+        self.ev.to_mesh_clear()
+        return False
+
+
+# ---------------------------------------------------------------- Booleans
+
+# The Boolean modifier's solvers [docs]: Exact handles overlapping geometry but is slow;
+# Manifold is usually fastest but only works on closed (manifold) meshes. On dense meshes,
+# such as Geometry Nodes SDF output with hundreds of thousands of faces, Exact can take
+# minutes where Manifold takes seconds. Measured in Blender 5.2.2 [verified]: Manifold
+# matched Exact for separate closed cubes that overlap, coincide or only touch; it left two
+# overlapping cubes joined in one mesh unmerged (2000 mm3 instead of 1500), and gave a
+# wrong volume on an open mesh. So it is used only when every mesh is closed and no two
+# of its pieces' bounding boxes meet, and its result is checked.
+MANIFOLD_SOLVER = "MANIFOLD" in {
+    i.identifier for i in bpy.types.BooleanModifier.bl_rna.properties["solver"].enum_items}
+
+
+def _manifold_safe(info):
+    """True when the Manifold solver gives Exact's answer for this mesh: it is closed,
+    and no two of its pieces' bounding boxes meet, so no piece can overlap another."""
+    import numpy as np
+    k = info["pieces"]
+    if info["nonmanifold"] or k == 0 or k > 200:
+        return False
+    if k == 1:
+        return True
+    lo, hi = info["lo"], info["hi"]
+    meet = np.all((lo[:, None] <= hi[None, :] + 1e-6) & (lo[None, :] <= hi[:, None] + 1e-6), axis=2)
+    np.fill_diagonal(meet, False)
+    return not bool(meet.any())
+
+
+def _boolean(target, op, other=None, collection=None, solver="EXACT"):
     md = target.modifiers.new("JC_" + op, 'BOOLEAN')
     md.operation = op
-    md.solver = 'EXACT'
-    # Without self-intersection handling, a part that overlaps itself (a head joined
-    # into the band) is counted twice or gives an undefined result.
-    md.use_self = True
+    md.solver = solver
+    if solver == "EXACT":
+        # Without self-intersection handling, a part that overlaps itself (a head joined
+        # into the band) is counted twice or gives an undefined result.
+        md.use_self = True
     if collection is not None:
         md.operand_type = 'COLLECTION'
         md.collection = collection
@@ -321,13 +440,49 @@ def _boolean(target, op, other=None, collection=None):
     return md
 
 
-def overlap_volume(a, b, matrix_a=None, matrix_b=None):
+def _apply_boolean(target, op, operands, collection=None, solver="AUTO"):
+    """Boolean `op` ('UNION' or 'INTERSECT') on the temporary copy `target` with the
+    temporary copies `operands` (one object, or the members of `collection`). Leaves the
+    modifier on `target`, so its evaluated mesh is the result, and returns the solver used.
+
+    solver="AUTO" picks Manifold when it is safe for every mesh (see MANIFOLD_SOLVER) and
+    checks the result: one that isn't closed, or whose volume the operation can't produce
+    (a union smaller than its largest part or bigger than all parts together, an
+    intersection bigger than its smallest part), is redone with Exact."""
+    copies = [target] + list(operands)
+    if solver == "AUTO":
+        infos = [_mesh_info(c.data) for c in copies]
+        safe = MANIFOLD_SOLVER and all(_manifold_safe(i) for i in infos)
+        tries = ["MANIFOLD", "EXACT"] if safe else ["EXACT"]
+    else:
+        infos, tries = None, [solver]
+    for s in tries:
+        md = _boolean(target, op, other=None if collection is not None else copies[1],
+                      collection=collection, solver=s)
+        bpy.context.view_layer.update()
+        if s != "MANIFOLD" or len(tries) == 1:
+            return s
+        vols = [abs(float(_tri_volumes(i["co"], _np_tris(c.data)).sum())) for i, c in zip(infos, copies)]
+        with _EvalMesh(target) as me:
+            res = _mesh_info(me)
+            v = float(_tri_volumes(res["co"], _np_tris(me)).sum())
+        tol = 1e-4 * sum(vols) + 1e-6
+        if op == 'UNION':
+            ok = max(vols) - tol <= v <= sum(vols) + tol
+        else:
+            ok = -tol <= v <= min(vols) + tol
+        if ok and res["nonmanifold"] == 0:
+            return s
+        target.modifiers.remove(md)
+    return tries[-1]
+
+
+def overlap_volume(a, b, matrix_a=None, matrix_b=None, solver="AUTO"):
     """Volume (mm3) of a ∩ b, using evaluated copies. 0 = no collision."""
     with TempObjects() as t:
         ca, cb = t.copy_eval(a, matrix=matrix_a), t.copy_eval(b, matrix=matrix_b)
         cb.hide_set(True)
-        _boolean(ca, 'INTERSECT', other=cb)
-        bpy.context.view_layer.update()
+        _apply_boolean(ca, 'INTERSECT', [cb], solver=solver)
         v, _, _ = volume_nm(ca)
     return v
 
@@ -335,38 +490,25 @@ def overlap_volume(a, b, matrix_a=None, matrix_b=None):
 def union_stats(obs):
     """(volume, non-manifold edges) of the union of evaluated copies of `obs`. Also
     resolves overlaps inside each object, including when there is only one."""
-    v, nm, _ = _union(obs)
+    v, nm, _, _ = _union(obs)
     return v, nm
 
 
-def _shell_count(bm):
-    bm.verts.index_update()
-    parent = list(range(len(bm.verts)))
-
-    def find(i):
-        while parent[i] != i:
-            parent[i] = parent[parent[i]]
-            i = parent[i]
-        return i
-    for e in bm.edges:
-        parent[find(e.verts[0].index)] = find(e.verts[1].index)
-    return len({find(v.index) for v in bm.verts if v.link_faces})
-
-
-def _union(obs):
-    """(volume, non-manifold edges, separate pieces) of the union of `obs`."""
+def _union(obs, solver="AUTO"):
+    """(volume, non-manifold edges, separate pieces, solver used) of the union of `obs`."""
     with TempObjects() as t:
         base = t.copy_eval(obs[0])
         ops = t.sub_collection()
+        operands = []
         for o in obs[1:]:
-            t.copy_eval(o, coll=ops).hide_set(True)
-        _boolean(base, 'UNION', collection=ops)
-        bpy.context.view_layer.update()
+            c = t.copy_eval(o, coll=ops)
+            c.hide_set(True)
+            operands.append(c)
+        used = _apply_boolean(base, 'UNION', operands, collection=ops, solver=solver)
         v, _, nm = volume_nm(base)
-        bm = eval_bm(base)
-        shells = _shell_count(bm)
-        bm.free()
-    return v, nm, shells
+        with _EvalMesh(base) as me:
+            shells = _mesh_info(me)["pieces"]
+    return v, nm, shells, used
 
 
 # ---------------------------------------------------------------- actions
@@ -707,14 +849,15 @@ def weigh(objs, union=True):
         parts.append({"name": o.name, "volume_mm3": round(v, 3), "nonmanifold_edges": nm,
                       "inside_out": vs < 0})
     raw = sum(p["volume_mm3"] for p in parts)
+    solver = None
     if union:
-        vol, nm = union_stats(obs)
+        vol, nm, _, solver = _union(obs)
     else:
         vol, nm = raw, sum(p["nonmanifold_edges"] for p in parts)
     dens, src = densities()
     return {"parts": parts, "sum_of_parts_mm3": round(raw, 3),
             "volume_mm3": round(vol, 3), "overlap_counted_twice_mm3": round(raw - vol, 3),
-            "result_nonmanifold_edges": nm, "densities_from": src,
+            "result_nonmanifold_edges": nm, "union_solver": solver, "densities_from": src,
             "weights_g": [{"alloy": n, "composition": c, "g": round(vol * d / 1000, 2)}
                           for n, d, c in dens]}
 
@@ -1030,12 +1173,12 @@ def print_check(objs, min_wall_mm=None, parts_that_must_not_touch=(), stl_path=N
         collisions.append({"a": a.name, "b": b.name, "overlap_mm3": round(v, 4)})
         if v > 1e-6:
             problems.append(f"{a.name} and {b.name} overlap by {v:.4f} mm3.")
-    _, _, shells = _union(obs)
+    _, _, shells, solver = _union(obs)
     if shells > 1:
         problems.append(f"The parts form {shells} separate pieces once joined: something "
                         "floats (for example prongs that don't reach the band or a head). "
                         "It would cast as loose pieces.")
-    out = {"objects": rows, "collisions": collisions, "pieces": shells,
+    out = {"objects": rows, "collisions": collisions, "pieces": shells, "union_solver": solver,
            "units_mm": u.system == 'METRIC' and abs(u.scale_length - 0.001) < 1e-7}
     if not out["units_mm"]:
         problems.append("Scene is not 1 unit = 1 mm; STL numbers will not be millimetres.")
@@ -1068,7 +1211,7 @@ def print_check(objs, min_wall_mm=None, parts_that_must_not_touch=(), stl_path=N
 
 bpy.app.driver_namespace["JC"] = {k: v for k, v in globals().items()
                                   if callable(v) and not k.startswith("_") or k in (
-                                      "HELPERS_VERSION", "DEFAULT_DENSITIES")}
+                                      "HELPERS_VERSION", "DEFAULT_DENSITIES", "MANIFOLD_SOLVER")}
 result = {"registered": sorted(bpy.app.driver_namespace["JC"].keys()),
           "helpers_version": HELPERS_VERSION}
 # Some Blender MCP servers return only printed output, not a `result` variable.
