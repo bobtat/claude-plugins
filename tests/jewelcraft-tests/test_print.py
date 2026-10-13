@@ -44,6 +44,14 @@ for label, obs in (("negative scale", [m]), ("curve", [rod])):
     r = H["print_check"](obs, stl_path=stl(label))
     check(f"STL of a {label} object matches", r["stl"]["matches"], r["stl"])
 
+# Parts that are hidden from renders only (the build-from-paths fabrication solids are)
+# must still export: the exporter's default evaluation mode, Render, wrote an empty file.
+rh = cube("RenderHidden", 4, (0, 140, 0))
+rh.hide_render = True
+r = H["print_check"]([rh], stl_path=stl("render_hidden"))
+check("a part hidden from renders exports in full", r["stl"]["matches"] and r["stl"]["stl_triangles"] == 12,
+      r.get("stl"))
+
 b.hide_set(True)
 r = H["print_check"]([a, b], stl_path=stl("hidden"))
 check("a hidden part blocks the export", "stl" not in r and any("hidden" in p for p in r["problems"]), r["problems"])
