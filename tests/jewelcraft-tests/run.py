@@ -36,8 +36,11 @@ def main():
     failed = []
     for f in files:
         t0 = time.time()
+        # No console window per test on Windows (output is captured either way), so the suite
+        # can also be started from the open Blender without windows flashing up.
         p = subprocess.run([args.blender, "-b", "--python-exit-code", "1", "--python", f],
-                           env=env, capture_output=True, text=True, encoding="utf-8", errors="replace")
+                           env=env, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                           creationflags=0x08000000 if os.name == "nt" else 0)
         lines = p.stdout.splitlines()
         result = next((l for l in lines if l.startswith("RESULT")), None)
         ok = p.returncode == 0 and result == "RESULT ALL PASSED"
