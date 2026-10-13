@@ -100,7 +100,9 @@ measured. `print_check` passes it. [verified]
 
 - MCP screenshots of the Blender window come back **black** when the window is minimized or
   covered.
-- Render the viewport instead: [verified]
+- To look at a render without a screenshot, `jewelcraft:scene-setup`'s `preview_jpeg(path)`
+  returns a small JPEG as base64; decode it to a file and view that. [verified]
+- Or render the viewport: [verified]
   ```python
   with bpy.context.temp_override(**H["ctx"]()):
       bpy.ops.render.opengl(view_context=True)
