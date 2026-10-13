@@ -1,7 +1,7 @@
 {
   "name": "jewelcraft",
-  "version": "0.2.0",
-  "description": "Teaches Claude to model and check jewelry in Blender with the JewelCraft add-on over a Blender MCP connection — prong grip, seat clearance and stone overlaps measured rather than eyeballed, ring sizes read from the band's actual inner surface, metal weight with overlapping parts counted once, and print/cast checks that confirm an STL comes out in millimetres, with the add-on's scripting traps documented and worked around",
+  "version": "0.3.0",
+  "description": "Teaches Claude to model and check jewelry in Blender with the JewelCraft add-on over a Blender MCP connection — prong grip, seat clearance and stone overlaps measured rather than eyeballed, ring sizes read from the band's actual inner surface, metal weight with overlapping parts counted once, print/cast checks that confirm an STL comes out in millimetres, and metalwork built from editable paths fused with Geometry Nodes, split into a cast part and a hand-built wire head with a 1:1 bending template, with the add-on's scripting traps documented and worked around",
   "author": {
     "name": "bobtat",
     "email": ""
@@ -20,6 +20,8 @@
     "casting",
     "3d-printing",
     "stl",
-    "rendering"
+    "rendering",
+    "geometry-nodes",
+    "fabrication"
   ]
 }
