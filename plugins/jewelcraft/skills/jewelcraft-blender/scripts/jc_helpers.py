@@ -17,7 +17,7 @@ from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 # The skills compare the loaded copy against this line, so bump it with every change.
-HELPERS_VERSION = "0.3.3"
+HELPERS_VERSION = "0.4.0"
 
 # Densities (g/cm3) and compositions from JewelCraft 2.18.1's default weighting list;
 # used only when the current scene's list is empty. The composition matters: other
@@ -97,6 +97,84 @@ def get(name):
     if ob is None:
         raise KeyError(f"No object named {name!r}")
     return ob
+
+
+# ---------------------------------------------------------------- Geometry Nodes inputs
+
+def _gn_modifier(ob, modifier=None):
+    ob = get(ob) if isinstance(ob, str) else ob
+    mods = [m for m in ob.modifiers if m.type == 'NODES' and m.node_group is not None
+            and (modifier is None or m.name == modifier)]
+    if not mods:
+        raise KeyError(f"{ob.name} has no Geometry Nodes modifier"
+                       + (f" named {modifier!r}" if modifier else ""))
+    if len(mods) > 1:
+        raise ValueError(f"{ob.name} has several Geometry Nodes modifiers "
+                         f"{[m.name for m in mods]}: pass modifier=")
+    return ob, mods[0]
+
+
+def _gn_items(md):
+    return [it for it in md.node_group.interface.items_tree
+            if getattr(it, "item_type", "SOCKET") == 'SOCKET' and it.in_out == 'INPUT'
+            and it.socket_type != 'NodeSocketGeometry']
+
+
+def _gn_slot(md, identifier):
+    """Where a modifier input's value lives. Blender 5.2 keeps it in
+    modifier.properties.inputs.<identifier>.value, and the modifier no longer takes ID
+    properties (modifier["Socket_2"] raises TypeError) [verified]; older versions use the
+    ID property. Returns None for the ID-property case."""
+    props = getattr(md, "properties", None)
+    inputs = getattr(props, "inputs", None) if props is not None else None
+    return getattr(inputs, identifier, None) if inputs is not None else None
+
+
+def _plain(v):
+    if isinstance(v, bpy.types.ID):
+        return v.name
+    if hasattr(v, "__len__") and not isinstance(v, str):
+        return [round(x, 6) if isinstance(x, float) else x for x in v]
+    return round(v, 6) if isinstance(v, float) else v
+
+
+def node_inputs(ob, modifier=None):
+    """{input name: value} of an object's Geometry Nodes modifier (the only one, or the
+    one named `modifier`). Objects and collections come back as names."""
+    ob, md = _gn_modifier(ob, modifier)
+    out = {}
+    for it in _gn_items(md):
+        slot = _gn_slot(md, it.identifier)
+        out[it.name] = _plain(slot.value if slot is not None else md.get(it.identifier))
+    return out
+
+
+def set_node_inputs(ob, modifier=None, values=None, **kw):
+    """Set Geometry Nodes modifier inputs by name: set_node_inputs("R1 Head Wire", "Head",
+    {"Wire Diameter": 1.0}). Objects and collections can be given by name. Returns the
+    values they had before, so a change can be undone."""
+    ob, md = _gn_modifier(ob, modifier)
+    values = dict(values or {}, **kw)
+    items = {it.name: it for it in _gn_items(md)}
+    unknown = [k for k in values if k not in items]
+    if unknown:
+        raise KeyError(f"{ob.name} / {md.name} has no input {unknown}; it has {sorted(items)}")
+    before = {}
+    for k, v in values.items():
+        it = items[k]
+        if isinstance(v, str) and it.socket_type == 'NodeSocketObject':
+            v = get(v)
+        elif isinstance(v, str) and it.socket_type == 'NodeSocketCollection':
+            v = bpy.data.collections[v]
+        slot = _gn_slot(md, it.identifier)
+        before[k] = _plain(slot.value if slot is not None else md.get(it.identifier))
+        if slot is not None:
+            slot.value = v
+        else:
+            md[it.identifier] = v
+    ob.update_tag(refresh={'OBJECT', 'DATA'})
+    bpy.context.view_layer.update()
+    return {"object": ob.name, "modifier": md.name, "previous": before}
 
 
 # ---------------------------------------------------------------- geometry basics
@@ -509,6 +587,139 @@ def _union(obs, solver="AUTO"):
         with _EvalMesh(base) as me:
             shells = _mesh_info(me)["pieces"]
     return v, nm, shells, used
+
+
+def pieces(ob):
+    """How many separate pieces the evaluated object is made of: groups of faces joined
+    through shared edges. Loose vertices and edges don't count."""
+    ob = get(ob) if isinstance(ob, str) else ob
+    with _EvalMesh(ob) as me:
+        return _mesh_info(me)["pieces"] if me is not None else 0
+
+
+def overlap_islands(a, b, frame=None, min_mm3=1e-6):
+    """Where two parts overlap: the volume of a ∩ b split into separate islands, largest
+    first, each with its volume and centre (world space, or in `frame`, a Matrix). A stone
+    held by four notched prongs gives four islands, one per seat; a head that should meet
+    a casting only at its peg gives one. Islands under `min_mm3` (faces that only touch)
+    are left out."""
+    import numpy as np
+    a, b = (get(x) if isinstance(x, str) else x for x in (a, b))
+    with TempObjects() as t:
+        ca, cb = t.copy_eval(a), t.copy_eval(b)
+        cb.hide_set(True)
+        solver = _apply_boolean(ca, 'INTERSECT', [cb])
+        with _EvalMesh(ca) as me:
+            info = _mesh_info(me)
+            T = _np_tris(me)
+        co, lab = info["co"], info["labels"]
+        islands = []
+        if len(T):
+            # Each triangle and the origin make a tetrahedron; summed per island, their
+            # signed volumes give its volume and their volume-weighted centres its centroid.
+            isl = np.searchsorted(info["roots"], lab[T[:, 0]])
+            tv = _tri_volumes(co, T)
+            tc = (co[T[:, 0]] + co[T[:, 1]] + co[T[:, 2]]) / 4.0
+            k = len(info["roots"])
+            vol = np.bincount(isl, weights=tv, minlength=k)
+            mom = np.stack([np.bincount(isl, weights=tv * tc[:, j], minlength=k) for j in range(3)], 1)
+            F = np.array(frame) if frame is not None else None
+            for i in range(k):
+                if abs(vol[i]) < min_mm3:
+                    continue
+                c = mom[i] / vol[i]
+                if F is not None:
+                    c = F[:3, :3] @ c + F[:3, 3]
+                islands.append({"mm3": round(float(vol[i]), 4),
+                                "centre": [round(float(x), 3) for x in c]})
+    islands.sort(key=lambda d: -d["mm3"])
+    return {"a": a.name, "b": b.name, "total_mm3": round(sum(i["mm3"] for i in islands), 4),
+            "islands": islands, "solver": solver}
+
+
+def thin_spots(ob, min_mm=0.5, voxel=None, threshold=None, step=None, cell_mm=1.0, frame=None):
+    """Where a part is thinner than `min_mm`, by an opening test: the evaluated part is
+    turned into a signed-distance volume, shrunk by r = min_mm / 2 and grown back by r
+    (Geometry Nodes Mesh to SDF Grid and Grid to Mesh, on a temporary object). Anything
+    thinner than min_mm disappears; everything else comes back, apart from sharp edges,
+    which come back rounded: a 90° edge sinks 0.41 r, the corner of a cube 0.73 r, an
+    edge of angle θ r(1 / sin(θ/2) - 1), so 1.0 r at 60°. Surface points that end up
+    more than `threshold` (default 0.85 r) from the opened shape are reported, grouped
+    into cells of `cell_mm` (world space, or `frame`), deepest first.
+
+    Unlike min_wall this measures a thickness the part keeps in every direction, so thin
+    wires and narrow fins show up, and it reports every thin place, not just the thinnest.
+    Needs the SDF grid nodes (Blender 5.x). `voxel` defaults to r / 8."""
+    import numpy as np
+    ob = get(ob) if isinstance(ob, str) else ob
+    if not hasattr(bpy.types, "GeometryNodeMeshToSDFGrid"):
+        raise RuntimeError("thin_spots needs Geometry Nodes' SDF grid nodes (Blender 5.x).")
+    r = min_mm / 2.0
+    vox = voxel or max(r / 8.0, 0.005)
+    thr = 0.85 * r if threshold is None else threshold
+    band = int(math.ceil(r / vox)) + 3
+    with _EvalMesh(ob) as me:
+        co, _, _, used = _np_mesh(me)
+    M = np.array(ob.matrix_world)
+    P = co[used] @ M[:3, :3].T + M[:3, 3]
+    step = step or max(1, len(P) // 150000)
+    ng = bpy.data.node_groups.new("JC_TMP_opening", 'GeometryNodeTree')
+    try:
+        ng.interface.new_socket("Geometry", in_out='OUTPUT', socket_type='NodeSocketGeometry')
+        N, L = ng.nodes.new, ng.links.new
+        info = N('GeometryNodeObjectInfo')
+        info.transform_space = 'RELATIVE'
+        info.inputs["Object"].default_value = ob
+        geo = info.outputs["Geometry"]
+        for level in (-r, r):          # shrink, then grow back
+            sdf = N('GeometryNodeMeshToSDFGrid')
+            L(geo, sdf.inputs["Mesh"])
+            sdf.inputs["Voxel Size"].default_value = vox
+            sdf.inputs["Band Width"].default_value = band
+            surf = N('GeometryNodeGridToMesh')
+            L(sdf.outputs[0], surf.inputs["Grid"])
+            surf.inputs["Threshold"].default_value = level
+            geo = surf.outputs["Mesh"]
+        L(geo, N('NodeGroupOutput').inputs[0])
+        with TempObjects() as t:
+            tmp = bpy.data.objects.new("JC_TMP_opening", bpy.data.meshes.new("JC_TMP_opening"))
+            t.coll.objects.link(tmp)
+            t.obs.append(tmp)
+            tmp.modifiers.new("Opening", 'NODES').node_group = ng
+            bpy.context.view_layer.update()
+            opened = tmp.evaluated_get(bpy.context.evaluated_depsgraph_get())
+            empty = len(opened.data.polygons) == 0
+            far = []
+            for p in P[::step]:
+                v = Vector(p)
+                ok, loc, _, _ = (False, None, None, None) if empty else opened.closest_point_on_mesh(v)
+                d = (v - loc).length if ok else None
+                if d is None or d > thr:
+                    far.append((d, p))
+    finally:
+        bpy.data.node_groups.remove(ng)
+    F = np.array(frame) if frame is not None else None
+    cells = {}
+    for d, p in far:
+        q = p if F is None else F[:3, :3] @ p + F[:3, 3]
+        c = cells.setdefault(tuple(np.floor(q / cell_mm).astype(int)), [0, 0.0, np.zeros(3), False])
+        c[0] += 1
+        c[2] += q
+        if d is None:
+            c[3] = True
+        else:
+            c[1] = max(c[1], d)
+    spots = [{"centre": [round(float(x), 2) for x in s / n], "points": n,
+              "depth_mm": None if gone else round(dep, 3),
+              "depth_r": None if gone else round(dep / r, 2)}
+             for n, dep, s, gone in cells.values()]
+    spots.sort(key=lambda s: -(s["depth_mm"] if s["depth_mm"] is not None else 1e9))
+    out = {"object": ob.name, "min_mm": min_mm, "r": r, "voxel": vox, "threshold_mm": round(thr, 4),
+           "sampled": len(P[::step]), "flagged_points": len(far), "spots": spots[:20],
+           "more_spots": max(0, len(spots) - 20)}
+    if empty:
+        out["note"] = f"Nothing survives the opening: the whole part is thinner than {min_mm} mm."
+    return out
 
 
 # ---------------------------------------------------------------- actions

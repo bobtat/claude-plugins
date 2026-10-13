@@ -71,6 +71,9 @@ reference files:
   (`references/prongs.md`, `references/cutters-and-seats.md`). [verified]
 - **Measure, don't eyeball.** Report numbers from the helpers, not impressions from a
   screenshot.
+- **Geometry Nodes inputs by name:** `H["node_inputs"]` / `H["set_node_inputs"]`. In Blender
+  5.2 a Geometry Nodes modifier has no ID properties, so `modifier["Socket_2"]` fails.
+  [verified]
 
 ## Reference files (read when the task needs them)
 
