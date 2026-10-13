@@ -1,4 +1,4 @@
-"""weigh, volume_nm, min_wall, overlap_volume, union_stats."""
+"""weigh, volume_nm, min_wall, overlap_volume, union_stats, and the Boolean solver choice."""
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -11,6 +11,9 @@ a, b = cube("A"), cube("B", loc=(5, 0, 0))
 w = H["weigh"]([a, b])
 check("two cubes overlapping by half union to 1500", abs(w["volume_mm3"] - 1500) < 0.01, w["volume_mm3"])
 check("overlap_volume of the same pair is 500", abs(H["overlap_volume"](a, b) - 500) < 0.01)
+FAST = "MANIFOLD" if H["MANIFOLD_SOLVER"] else "EXACT"
+check("separate closed parts are unioned with the fast solver", w["union_solver"] == FAST, w["union_solver"])
+check("Exact gives the same 500 when asked for", abs(H["overlap_volume"](a, b, solver="EXACT") - 500) < 0.01)
 
 
 def two_cubes(bm):
@@ -22,6 +25,7 @@ j = mesh("Joined", two_cubes)
 j.location = (0, 40, 0)
 w = H["weigh"]([j])
 check("one object overlapping itself is unioned to 1500", abs(w["volume_mm3"] - 1500) < 0.01, w)
+check("an object overlapping itself is unioned with Exact", w["union_solver"] == "EXACT", w["union_solver"])
 
 m = cube("Mirrored", loc=(40, 0, 0))
 m.scale = (-1, 1, 1)
@@ -30,6 +34,16 @@ v, vs, nm = H["volume_nm"](m)
 check("mirrored cube has positive signed volume", vs > 0 and abs(v - 1000) < 0.01, (v, vs))
 t, _ = H["min_wall"](m)
 check("mirrored cube wall reads 10", t is not None and abs(t - 10) < 0.01, t)
+
+# A Geometry Nodes SDF rebuild of a 10 mm cube is a dense quad mesh whose quads are
+# slightly non-planar on the rounded edges. A ray started just behind a warped quad's
+# centre can hit that quad's own other triangle first, which read as a wall of almost
+# nothing.
+src = cube("SDF source", loc=(0, 200, 0))
+sc = sdf_remesh("SDF cube", src, voxel=0.25)
+t, where = H["min_wall"](sc)
+check("an SDF-rebuilt 10 mm cube's wall reads about 10, not a near-zero false hit",
+      t is not None and 9.5 < t < 10.5, (t, where))
 check("mirrored cube isn't inside-out", not H["weigh"]([m])["parts"][0]["inside_out"])
 
 rod = curve_rod("Rod", y=80)
@@ -47,9 +61,11 @@ check("inside-out cube is reported inside-out", H["weigh"]([f])["parts"][0]["ins
 check("inside-out cube still weighs 1000", abs(H["weigh"]([f])["volume_mm3"] - 1000) < 0.01)
 
 d1, d2 = cube("Dup1", loc=(0, 120, 0)), cube("Dup2", loc=(0, 120, 0))
-check("coincident duplicates count once", abs(H["weigh"]([d1, d2])["volume_mm3"] - 1000) < 0.01)
+w = H["weigh"]([d1, d2])
+check("coincident duplicates count once", abs(w["volume_mm3"] - 1000) < 0.01, w["union_solver"])
 t1, t2 = cube("T1", loc=(80, 0, 0)), cube("T2", loc=(90, 0, 0))
-check("touching cubes sum to 2000", abs(H["weigh"]([t1, t2])["volume_mm3"] - 2000) < 0.01)
+w = H["weigh"]([t1, t2])
+check("touching cubes sum to 2000", abs(w["volume_mm3"] - 2000) < 0.01, w["union_solver"])
 
 
 def open_cube(bm):
@@ -61,6 +77,7 @@ o = mesh("Open", open_cube)
 o.location = (0, 160, 0)
 w = H["weigh"]([o])
 check("an open mesh is flagged non-manifold, not silently closed", w["result_nonmanifold_edges"] > 0, w)
+check("an open mesh is unioned with Exact", w["union_solver"] == "EXACT", w["union_solver"])
 
 emp = link("Empty", None)
 try:
