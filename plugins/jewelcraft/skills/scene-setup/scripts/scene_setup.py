@@ -18,7 +18,7 @@ import time
 from mathutils import Matrix, Vector
 
 # The skill compares the loaded copy against this line, so bump it with every change.
-SCENE_HELPERS_VERSION = "0.2.3"
+SCENE_HELPERS_VERSION = "0.3.0"
 
 STUDIO = "JC Studio"
 RIG = "JC Studio Rig"
@@ -575,6 +575,36 @@ def make_contact_sheet(files, path, cols=3, cell=600):
     out.save()
     bpy.data.images.remove(out)
     return {"path": path, "order": [os.path.basename(f) for f in files], "cols": cols}
+
+
+def preview_jpeg(path, size=600, quality=85):
+    """A small JPEG of an image on disk (a render, the contact sheet), base64-encoded in
+    `jpg`, for looking at it without a screenshot. The MCP's screenshots come back black
+    when Blender is minimized or covered; this works regardless, and in background
+    Blender. Decode `jpg` into a .jpg file and view that. Keep `size` (the longer side,
+    in pixels) at about 600 or less so the answer fits in one tool response."""
+    import base64
+    import tempfile
+    img = bpy.data.images.load(path, check_existing=False)
+    tmp = os.path.join(tempfile.gettempdir(), f"jc_preview_{os.getpid()}.jpg")
+    try:
+        w, h = img.size
+        k = min(1.0, size / max(w, h, 1))
+        if k < 1.0:
+            img.scale(max(1, round(w * k)), max(1, round(h * k)))
+        img.filepath_raw, img.file_format = tmp, "JPEG"
+        try:
+            img.save(quality=quality)
+        except TypeError:  # a Blender whose Image.save() takes no quality
+            img.save()
+        dims = list(img.size)
+    finally:
+        bpy.data.images.remove(img)
+    with open(tmp, "rb") as f:
+        data = f.read()
+    os.remove(tmp)
+    return {"source": path, "size": dims, "bytes": len(data),
+            "jpg": base64.b64encode(data).decode("ascii")}
 
 
 def show_image(path):

@@ -99,6 +99,14 @@ check("cutter and viewport-hidden part are hidden for the render",
 check("their render visibility is restored afterwards",
       not cutter.hide_render and not hidden.hide_render)
 
+import base64  # noqa: E402
+images_before = len(bpy.data.images)
+pv = S["preview_jpeg"](rr["contact_sheet"]["path"], size=40)
+jpg = base64.b64decode(pv["jpg"])
+check("preview_jpeg returns a JPEG no larger than asked", jpg[:2] == b"\xff\xd8" and max(pv["size"]) <= 40
+      and pv["bytes"] == len(jpg), {k: v for k, v in pv.items() if k != "jpg"})
+check("preview_jpeg leaves no image loaded", len(bpy.data.images) == images_before)
+
 S["setup"](band="Band", size=48, samples=2)
 rig = bpy.data.collections["JC Studio Rig"]
 check("running setup again updates in place",

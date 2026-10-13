@@ -89,6 +89,11 @@ Orthographic views are to scale: mm per pixel = the camera's `ortho_scale_mm` (r
 4. Tell the user where the renders are, so they can open them full size. Describe what the
    renders show, but report dimensions from the measuring helpers, not from the pictures.
 
+**If Blender is minimized or covered,** the screenshots come back black. Use
+`S["preview_jpeg"](path, size=600)` instead: it returns the image as a small JPEG, base64 in
+`jpg`. Decode that into a .jpg file and view it. If the tool saves a large result to a file,
+read the `jpg` field from that file. It needs no window, and leaves no image loaded. [verified]
+
 ## 5. Remove
 
 `S["teardown"]()` when the user asks, or before they share or send the file: it deletes
