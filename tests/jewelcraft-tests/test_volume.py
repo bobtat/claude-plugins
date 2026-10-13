@@ -30,6 +30,18 @@ v, vs, nm = H["volume_nm"](m)
 check("mirrored cube has positive signed volume", vs > 0 and abs(v - 1000) < 0.01, (v, vs))
 t, _ = H["min_wall"](m)
 check("mirrored cube wall reads 10", t is not None and abs(t - 10) < 0.01, t)
+
+# A Geometry Nodes SDF rebuild is a dense quad mesh whose quads are slightly non-planar
+# wherever the surface curves. A ray started just behind a warped quad's centre can hit
+# that quad's own other triangle first; helpers 0.3.0 read these as walls of 0.0001 to 0.0003 mm.
+ball = mesh("SDF ball source", lambda bm: bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=24, radius=4.0))
+ball.location = (0, 200, 0)
+t, where = H["min_wall"](sdf_remesh("SDF ball", ball, voxel=0.1))
+check("an SDF-rebuilt 8 mm ball's wall reads about 8, not a near-zero false hit",
+      t is not None and 7.8 < t < 8.05, (t, where))
+small = cube("SDF cube source", 2, (0, 220, 0))
+t, where = H["min_wall"](sdf_remesh("SDF cube", small, voxel=0.03))
+check("an SDF-rebuilt 2 mm cube's wall reads 2", t is not None and abs(t - 2.0) < 0.05, (t, where))
 check("mirrored cube isn't inside-out", not H["weigh"]([m])["parts"][0]["inside_out"])
 
 rod = curve_rod("Rod", y=80)

@@ -91,6 +91,31 @@ def curve_rod(name, length=10, y=0.0):
     return link(name, cu)
 
 
+def sdf_remesh(name, source, voxel=0.25, threshold=0.0):
+    """Object whose Geometry Nodes rebuild `source` through an SDF volume (Mesh to SDF Grid,
+    Grid to Mesh), the way the build-from-paths node groups make their solids: a dense quad
+    mesh whose quads are slightly non-planar where the surface curves. `source` is hidden."""
+    ng = bpy.data.node_groups.new(name + " SDF", 'GeometryNodeTree')
+    ng.interface.new_socket("Geometry", in_out='OUTPUT', socket_type='NodeSocketGeometry')
+    N, L = ng.nodes.new, ng.links.new
+    info = N('GeometryNodeObjectInfo')
+    info.transform_space = 'RELATIVE'
+    info.inputs["Object"].default_value = source
+    sdf = N('GeometryNodeMeshToSDFGrid')
+    L(info.outputs["Geometry"], sdf.inputs["Mesh"])
+    sdf.inputs["Voxel Size"].default_value = voxel
+    sdf.inputs["Band Width"].default_value = 4
+    surf = N('GeometryNodeGridToMesh')
+    L(sdf.outputs[0], surf.inputs["Grid"])
+    surf.inputs["Threshold"].default_value = threshold
+    L(surf.outputs["Mesh"], N('NodeGroupOutput').inputs[0])
+    o = link(name, bpy.data.meshes.new(name))
+    o.modifiers.new("SDF", 'NODES').node_group = ng
+    source.hide_set(True)
+    bpy.context.view_layer.update()
+    return o
+
+
 def gem(cut, size, loc, stone='DIAMOND', rot=(0, 0, 0)):
     bpy.context.scene.cursor.location = loc
     bpy.ops.object.jewelcraft_gem_add(cut=cut, stone=stone, size=size)
