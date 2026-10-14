@@ -16,7 +16,9 @@ by background tests with known answers (`tests/jewelcraft-tests/test_path_build.
 - **Parts are what a bench jeweler would make.** Round wire bent in straight runs and arcs, flat
   bars, a cast shank. Each is a path plus a cross-section, set by a few numbers (wire diameter,
   bend radii, an angle, clearances), which are also the numbers on the bending template. Freehand
-  sculpted forms are where Claude's modeling fails; these are not freehand.
+  sculpted forms are where Claude's modeling fails; these are not freehand. A part is as big as
+  what's made in one go: each U-wire is one continuous piece from prong tip to prong tip,
+  because it's bent from one length of wire.
 - **One continuous solid.** Each solid is one Geometry Nodes group: paths become tubes or swept
   profiles, everything is merged through one signed-distance volume, and inside corners get a
   fillet (a "closing": grow by r, shrink by r). Joints read like solder, not like parts pushed

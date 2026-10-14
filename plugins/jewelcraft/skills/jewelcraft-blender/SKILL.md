@@ -47,6 +47,25 @@ Everything here was written against **JewelCraft 2.18.1 on Blender 5.1.1**; the 
    in a temporary scene and delete it afterwards (`references/blender-essentials.md` §1).
    Don't change the user's objects without saying what will change.
 
+## Model metalwork the way it will be made [guidance]
+
+Learned on R1, the one ring built end to end so far (`jewelcraft:build-from-paths` has the
+method):
+
+- **One piece per part someone will make, at the size they make it.** A wire bent from one
+  length is one continuous piece, even when it forms a prong, an elbow, an arm and the arc
+  under the stone. A bar is one profile along one path. A cast part is one solid, built from
+  its features (band, shoulders). Don't split a part the bench makes in one go: R1's earlier
+  head had its prongs and bridge as separate pieces, which put a joint where the bench has
+  none.
+- **Let the computer do the joining.** Give each part a few named numbers and fuse the parts
+  procedurally, so changing a number rebuilds the solid. The approaches that failed before
+  this one were the two extremes: one mesh shaped by hand (a Subdivision cage) left nothing
+  to adjust, and parts assembled by overlapping looked pushed into each other.
+- **Joints only where the bench joins.** Between parts made separately, a joint means
+  solder: model one only where solder will go, with a fillet like solder. Inside one
+  casting, features blend with fillets, as they would in the wax.
+
 ## Rules that prevent most failures
 
 - **Viewport context:** many JewelCraft operators need one. Use
