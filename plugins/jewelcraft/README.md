@@ -15,7 +15,7 @@ MCP connection.
 
 | Skill | Use it to |
 |---|---|
-| `jewelcraft:jewelcraft-blender` | Core knowledge: driving JewelCraft from Python, its pitfalls, gem/prong/cutter/weight details, head anatomy and sources |
+| `jewelcraft:jewelcraft-blender` | Core knowledge: how to model metalwork (each part as it will be made, joined by the computer, joints only where solder goes), driving JewelCraft from Python, its pitfalls, gem/prong/cutter/weight details, head anatomy and sources |
 | `jewelcraft:check-setup` | Confirm Blender, the connection, JewelCraft and units are ready |
 | `jewelcraft:stone-report` | List stones with sizes and carats; catch overlapping stones |
 | `jewelcraft:ring-size-check` | Measure a band's real inside diameter and size, or convert a size to a diameter |
