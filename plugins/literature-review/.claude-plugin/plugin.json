@@ -1,0 +1,11 @@
+{
+  "name": "literature-review",
+  "version": "0.1.0",
+  "description": "Teaches Claude to conduct a systematic literature review — a PRISMA 2020 protocol with dual independent screening, evidence tiers that record how each claim is actually known rather than how confident it sounds, a verification pass that resolves every citation and title-matches it before it ships, and SVG figures generated from the screening data instead of from impression",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": ["literature-review", "systematic-review", "prisma", "research", "academic", "citations", "bibtex", "evidence-synthesis", "risk-of-bias", "provenance", "arxiv", "pubmed", "meta-analysis", "svg-figures"]
+}
