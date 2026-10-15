@@ -1,6 +1,8 @@
 import type { EngineInterface } from 'claude-code'
 
-export type RunResult = { exitCode: number; stdout: string; stderr: string }
+export type EnvName = 'USERPROFILE' | 'HOME' | 'TEMP' | 'TMPDIR'
+
+export type RunResult ={ exitCode: number; stdout: string; stderr: string }
 
 export type Host = {
   run(argv: string[], opts?: { cwd?: string; stdin?: string }): Promise<RunResult>
@@ -10,7 +12,7 @@ export type Host = {
   writeFile(path: string, text: string): Promise<void>
   exists(path: string): Promise<boolean>
   realPath(path: string): Promise<string | undefined>
-  env(name: string): Promise<string | undefined>
+  env(name: EnvName): Promise<string | undefined>
   pluginRoot: string
 }
 
@@ -38,7 +40,19 @@ export function hostFrom($: EngineInterface): Host {
         return undefined
       }
     },
-    env: name => $.env.get(name),
+    // The engine lists the variables a module reads, so each name is spelled out.
+    async env(name) {
+      switch (name) {
+        case 'USERPROFILE':
+          return $.env.get('USERPROFILE')
+        case 'HOME':
+          return $.env.get('HOME')
+        case 'TEMP':
+          return $.env.get('TEMP')
+        case 'TMPDIR':
+          return $.env.get('TMPDIR')
+      }
+    },
     pluginRoot: $.plugin.root,
   }
 }
