@@ -13,7 +13,7 @@ const GITHUB_NUMBER = /^#(\d+)$/
 const GITHUB_ISSUE_URL = /^https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/issues\/(\d+)$/
 
 const JIRA_NOT_CONNECTED = 'Jira not connected; paste the ticket with --brief "..."'
-const GH_UNAVAILABLE = 'gh is not available: run gh auth login'
+export const GH_UNAVAILABLE = 'gh is not available: run gh auth login'
 
 export function classifyBrief(value: string): BriefSource {
   if (JIRA_KEY.test(value)) return { kind: 'jira', key: value }
