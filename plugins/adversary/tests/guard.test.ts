@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { checkPath, isUnder, isUnplaceable, normalise } from '../hooks/guard'
+import { checkPath, isUnder, isUnplaceable, judgeCall, normalise } from '../hooks/guard'
 import { fakeHost } from './support'
 
 const ROOT = 'C:/repo'
@@ -134,4 +134,65 @@ test('the POSIX filesystem root is a root', async () => {
 test('a target with dot segments is outside', async () => {
   expect(isUnder(ROOT, 'C:/repo/../Users/x')).toBe(false)
   expect(isUnder(ROOT, 'C:/repo/./a')).toBe(false)
+})
+
+// A host whose paths land where they are spelled, as a tree without links does.
+function spelled() {
+  const asked: string[] = []
+  const host = fakeHost({
+    async realPath(path) {
+      asked.push(path)
+      return path
+    },
+  })
+  return { host, asked }
+}
+
+test('a reviewer Read is judged by its file_path', async () => {
+  expect(await judgeCall(spelled().host, { tool: 'Read', file_path: 'C:/repo/src/a.cs' }, ROOT)).toBe('allow')
+  expect(await judgeCall(spelled().host, { tool: 'Read', file_path: 'C:/other/a.cs' }, ROOT)).toBe('deny')
+  expect(await judgeCall(spelled().host, { tool: 'Read' }, ROOT)).toBe('deny')
+})
+
+test('a Grep or Glob without a path is scoped to the root, and one with a path is judged by it', async () => {
+  expect(await judgeCall(spelled().host, { tool: 'Grep', pattern: 'lock' }, ROOT)).toBe('scope')
+  expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '**/*.cs' }, ROOT)).toBe('scope')
+  expect(await judgeCall(spelled().host, { tool: 'Grep', pattern: 'lock', path: 'C:/repo/src' }, ROOT)).toBe('allow')
+  expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '*.cs', path: 'C:/other' }, ROOT)).toBe('deny')
+})
+
+test('with an empty root every call is denied, a pathless one too', async () => {
+  expect(await judgeCall(spelled().host, { tool: 'Grep', pattern: 'lock' }, '')).toBe('deny')
+  expect(await judgeCall(spelled().host, { tool: 'Read', file_path: 'C:/repo/a.cs' }, '')).toBe('deny')
+})
+
+test("Grep's regex is not a path", async () => {
+  const { host, asked } = spelled()
+
+  expect(await judgeCall(host, { tool: 'Grep', pattern: 'C:/other/.*', path: 'C:/repo' }, ROOT)).toBe('allow')
+  expect(asked).toEqual(['C:/repo'])
+})
+
+test('an absolute Glob pattern or Grep glob is judged by its directory before the first wildcard', async () => {
+  const { host, asked } = spelled()
+
+  expect(await judgeCall(host, { tool: 'Glob', pattern: 'C:/repo/src/**/*.cs' }, ROOT)).toBe('scope')
+  expect(asked).toEqual(['C:/repo/src/'])
+  expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: 'C:\\other\\*.cs' }, ROOT)).toBe('deny')
+  expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '/etc/*' }, ROOT)).toBe('deny')
+  expect(await judgeCall(spelled().host, { tool: 'Grep', pattern: 'x', path: 'C:/repo', glob: 'C:/other/*.cs' }, ROOT)).toBe('deny')
+})
+
+test('a pattern or glob starting with ~, a drive or two slashes is denied without a stat call', async () => {
+  for (const pattern of ['~/.ssh/*', 'C:*.cs', '//server/share/*', '\\\\server\\share\\*']) {
+    const { host, asked } = spelled()
+    expect(await judgeCall(host, { tool: 'Glob', pattern }, ROOT)).toBe('deny')
+    expect(asked).toEqual([])
+  }
+})
+
+test('a relative pattern or glob climbing out with .. is denied', async () => {
+  expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '../../secrets/*' }, ROOT)).toBe('deny')
+  expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: 'src/{a,../../x}/*' }, ROOT)).toBe('deny')
+  expect(await judgeCall(spelled().host, { tool: 'Grep', pattern: 'x', glob: '../*.env' }, ROOT)).toBe('deny')
 })

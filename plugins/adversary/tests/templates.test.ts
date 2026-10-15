@@ -66,6 +66,15 @@ test('seeding copies missing shipped templates and never overwrites an existing 
   })
 })
 
+test('with no home directory nothing is seeded and the user level is not looked up', async () => {
+  const shipped = `shipped {{artifact}} {{output_contract}}`
+  const host = filesystem({ [SHIPPED_TEMPLATE]: shipped, '/.claude/adversary/pr.md': 'at the filesystem root' })
+
+  await seedUserTemplates(host, '')
+  expect(host.written).toEqual({})
+  expect(await resolveTemplate(host, 'pr', '/repo', '')).toEqual({ ok: true, path: SHIPPED_TEMPLATE, text: shipped })
+})
+
 test('fill drops brief and focus lines when absent and renders them when present', async () => {
   const text = 'before\n{{brief}}\n{{focus}}\n{{artifact}}\n{{output_contract}}'
 

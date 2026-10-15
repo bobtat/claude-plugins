@@ -23,7 +23,9 @@ export async function homeDir(host: Host): Promise<string> {
   return (await host.env('USERPROFILE')) ?? (await host.env('HOME')) ?? ''
 }
 
+// An empty home would put the user level at the filesystem root.
 export async function seedUserTemplates(host: Host, home: string): Promise<void> {
+  if (home === '') return
   for (const kind of KINDS) {
     const target = userPath(home, kind)
     if (await host.exists(target)) continue
@@ -32,7 +34,8 @@ export async function seedUserTemplates(host: Host, home: string): Promise<void>
 }
 
 export async function resolveTemplate(host: Host, kind: Kind, repoRoot: string, home: string): Promise<Resolved> {
-  for (const path of [repoPath(repoRoot, kind), userPath(home, kind), shippedPath(host, kind)]) {
+  const user = home === '' ? [] : [userPath(home, kind)]
+  for (const path of [repoPath(repoRoot, kind), ...user, shippedPath(host, kind)]) {
     if (await host.exists(path)) return { ok: true, path, text: await host.readFile(path) }
   }
   return { ok: false, error: `No ${kind} template found; reinstall the adversary plugin` }
