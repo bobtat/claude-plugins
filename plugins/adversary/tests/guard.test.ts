@@ -87,7 +87,7 @@ test('an empty path or one containing NUL is outside without a stat call', async
 })
 
 test('ordinary absolute and relative spellings are placeable', async () => {
-  for (const path of ['C:\\repo\\a.cs', 'C:/repo/a.cs', 'src/a.cs', './a.cs', '../a.cs', '/repo/a.cs', '~/a.cs']) {
+  for (const path of ['C:\\repo\\a.cs', 'C:/repo/a.cs', 'src/a.cs', './a.cs', '../a.cs', '/repo/a.cs']) {
     expect(isUnplaceable(path)).toBe(false)
   }
 })
@@ -98,4 +98,40 @@ test('an unresolvable path is outside', async () => {
 
 test('a realPath that is empty is outside', async () => {
   expect(await checkPath(landing('').host, 'a.cs', ROOT)).toBe(false)
+})
+
+test('home-relative spellings are outside without a stat call', async () => {
+  const { host, asked } = landing('C:/repo/~/.claude/CLAUDE.md')
+
+  for (const path of ['~', '~/.claude/CLAUDE.md', '~\\x', '~user/x']) {
+    expect(await checkPath(host, path, ROOT)).toBe(false)
+  }
+  expect(asked).toEqual([])
+})
+
+test('a POSIX root compares case-sensitively', async () => {
+  expect(isUnder('/home/u/repo', '/home/u/Repo/secret')).toBe(false)
+  expect(isUnder('/home/u/repo', '/home/u/repo/a')).toBe(true)
+})
+
+test('a Windows root compares case-insensitively', async () => {
+  expect(isUnder('C:/repo', 'c:/REPO/x')).toBe(true)
+  expect(isUnder('//srv/Share', '//SRV/share/x')).toBe(true)
+})
+
+test('an empty or all-slash root contains nothing', async () => {
+  for (const root of ['', '//', '\\\\']) {
+    expect(isUnder(root, '/etc/x')).toBe(false)
+    expect(await checkPath(landing('/etc/x').host, 'x', root)).toBe(false)
+  }
+})
+
+test('the POSIX filesystem root is a root', async () => {
+  expect(isUnder('/', '/etc/x')).toBe(true)
+  expect(isUnder('/', '/')).toBe(true)
+})
+
+test('a target with dot segments is outside', async () => {
+  expect(isUnder(ROOT, 'C:/repo/../Users/x')).toBe(false)
+  expect(isUnder(ROOT, 'C:/repo/./a')).toBe(false)
 })
