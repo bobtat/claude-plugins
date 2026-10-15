@@ -86,6 +86,39 @@ test('a diff over 200000 characters is refused', async () => {
   expect(lines().some(l => l.startsWith('git fetch'))).toBe(false)
 })
 
+test('a diff of exactly 200000 characters is accepted', async () => {
+  const { host } = recording(prResponses(OID, 'x'.repeat(MAX_ARTIFACT_CHARS)))
+
+  const result = await prArtifact(host, '45', '/repo', '/tmp')
+
+  expect(result.ok).toBe(true)
+})
+
+test('a gh authentication failure gives the verbatim gh message', async () => {
+  const stderr = 'To get started with GitHub CLI, please run:  gh auth login'
+  const { host } = recording({ 'gh pr view': { exitCode: 1, stdout: '', stderr } })
+
+  const result = await prArtifact(host, '45', '/repo', '/tmp')
+
+  expect(result).toEqual({ ok: false, error: 'gh is not available: run gh auth login' })
+})
+
+test('a failing gh pr diff names the target and the first stderr line', async () => {
+  const { host } = recording({ ...prResponses(OID), 'gh pr diff': { exitCode: 1, stdout: '', stderr: 'diff unavailable\nmore' } })
+
+  const result = await prArtifact(host, '45', '/repo', '/tmp')
+
+  expect(result).toEqual({ ok: false, error: 'Could not read PR 45: diff unavailable' })
+})
+
+test('gh pr view output that is not JSON is an unreadable pr', async () => {
+  const { host } = recording({ 'gh pr view': { exitCode: 0, stdout: 'not json' } })
+
+  const result = await prArtifact(host, '45', '/repo', '/tmp')
+
+  expect(result).toEqual({ ok: false, error: 'Could not read PR 45: unexpected gh output' })
+})
+
 test('plan with no captured plan gives No plan this session', async () => {
   expect(await planArtifact(fakeHost(), null, '/repo')).toEqual({ ok: false, error: 'No plan this session' })
 })
