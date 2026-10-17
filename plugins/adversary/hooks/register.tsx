@@ -5,6 +5,7 @@ import { judgeCall } from './guard'
 import { hostFrom } from './host'
 import { REVIEWER, reviewerScope, reviewerTurnEnded, startReview } from './review'
 import { homeDir, seedUserTemplates } from './templates'
+import { openTriage, PANE, releaseWorktree, renderPane } from './triage'
 
 const OUTSIDE = 'outside the review root'
 const NO_SEARCH = 'Grep/Glob disabled: the review root contains links leading outside it; use Read'
@@ -27,7 +28,7 @@ export const register: Register = on => {
   on('command.run', { command: 'adversary' }, async ($, e) => {
     const parsed = parseArgs(e.args)
     if (!parsed.ok) return { text: parsed.error }
-    if (parsed.args.sub === 'triage') return { text: 'No review yet' }
+    if (parsed.args.sub === 'triage') return { text: await openTriage($, true) }
     return { text: await startReview($, parsed.args) }
   })
 
@@ -42,6 +43,19 @@ export const register: Register = on => {
 
   on('turn.complete', async ($, e, next) => {
     await reviewerTurnEnded($, e)
+    return next(e)
+  })
+
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => renderPane($, e))
+
+  on('ui.close', { id: PANE }, async ($, e, next) => {
+    const result = await next(e)
+    await releaseWorktree($, false)
+    return result
+  })
+
+  on('session.end', async ($, e, next) => {
+    await releaseWorktree($, true)
     return next(e)
   })
 }

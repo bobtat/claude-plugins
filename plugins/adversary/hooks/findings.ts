@@ -86,7 +86,7 @@ export const sortBySeverity = (findings: Finding[]): Finding[] =>
     .sort((a, b) => SEVERITIES.indexOf(a.finding.severity) - SEVERITIES.indexOf(b.finding.severity) || a.index - b.index)
     .map(({ finding }) => finding)
 
-const whereText = (location: Location): string => {
+export const whereText = (location: Location): string => {
   if ('section' in location) return `§ ${location.section}`
   return location.line === undefined ? location.file : `${location.file}:${location.line}`
 }
