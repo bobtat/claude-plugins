@@ -166,6 +166,18 @@ test('with an empty root every call is denied, a pathless one too', async () => 
   expect(await judgeCall(spelled().host, { tool: 'Read', file_path: 'C:/repo/a.cs' }, '')).toBe('deny')
 })
 
+test('a relative path or file_path is denied without a stat call', async () => {
+  for (const call of [
+    { tool: 'Read', file_path: 'src/a.cs' },
+    { tool: 'Grep', pattern: 'x', path: 'src' },
+    { tool: 'Glob', pattern: '*.cs', path: '.' },
+  ]) {
+    const { host, asked } = spelled()
+    expect(await judgeCall(host, call, ROOT)).toBe('deny')
+    expect(asked).toEqual([])
+  }
+})
+
 test("Grep's regex is not a path", async () => {
   const { host, asked } = spelled()
 

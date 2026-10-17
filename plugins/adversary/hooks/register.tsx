@@ -3,10 +3,11 @@ import type { Register } from 'claude-code'
 import { parseArgs } from './args'
 import { judgeCall } from './guard'
 import { hostFrom } from './host'
-import { REVIEWER, reviewerRoot, reviewerTurnEnded, startReview } from './review'
+import { REVIEWER, reviewerScope, reviewerTurnEnded, startReview } from './review'
 import { homeDir, seedUserTemplates } from './templates'
 
 const OUTSIDE = 'outside the review root'
+const NO_SEARCH = 'Grep/Glob disabled: the review root contains links leading outside it; use Read'
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
@@ -31,11 +32,12 @@ export const register: Register = on => {
   })
 
   on('tool.call', { tool: ['Read', 'Grep', 'Glob'] }, async ($, e, next) => {
-    const root = await reviewerRoot($, e.agentId)
-    if (root === undefined) return next(e)
-    const verdict = await judgeCall(hostFrom($), e, root)
+    const scope = await reviewerScope($, e.agentId)
+    if (scope === undefined) return next(e)
+    if (e.tool !== 'Read' && !scope.canSearch) return { deny: NO_SEARCH }
+    const verdict = await judgeCall(hostFrom($), e, scope.root)
     if (verdict === 'deny') return { deny: OUTSIDE }
-    return next(verdict === 'scope' ? { ...e, path: root } : e)
+    return next(verdict === 'scope' ? { ...e, path: scope.root } : e)
   }).catch(($, e, next) => (next.called || e.agentId === undefined ? next(e) : { deny: OUTSIDE }))
 
   on('turn.complete', async ($, e, next) => {
