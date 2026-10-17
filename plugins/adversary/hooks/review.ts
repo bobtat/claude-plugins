@@ -12,6 +12,7 @@ import { hostFrom } from './host'
 import type { Host } from './host'
 import { hasOutwardLinks } from './links'
 import { fillTemplate, homeDir, resolveTemplate } from './templates'
+import { openTriage } from './triage'
 
 type Api = EngineInterface
 
@@ -47,7 +48,9 @@ const TURN_FAILURES = {
 // Called once a review settles. The engine only lets `$` reach functions it can
 // resolve statically, so the triage pane is opened from here, not through a
 // callback another module assigns.
-export async function onReviewReady($: Api): Promise<void> {}
+export async function onReviewReady($: Api): Promise<void> {
+  await openTriage($, false)
+}
 
 // A running review blocks only while its agent is alive: after a reload or a
 // crash the state can still say running for an agent that is long gone.
