@@ -2,7 +2,10 @@ import type { EngineInterface } from 'claude-code'
 
 export type EnvName = 'USERPROFILE' | 'HOME' | 'TEMP' | 'TMPDIR'
 
-export type RunResult ={ exitCode: number; stdout: string; stderr: string }
+export type RunResult = { exitCode: number; stdout: string; stderr: string }
+
+// A symbolic link is kind `other`, whatever it leads to.
+export type Entry = { name: string; kind: 'file' | 'dir' | 'other'; isLink: boolean }
 
 export type Host = {
   run(argv: string[], opts?: { cwd?: string; stdin?: string }): Promise<RunResult>
@@ -12,6 +15,7 @@ export type Host = {
   writeFile(path: string, text: string): Promise<void>
   exists(path: string): Promise<boolean>
   realPath(path: string): Promise<string | undefined>
+  list(dir: string): Promise<Entry[]>
   env(name: EnvName): Promise<string | undefined>
   pluginRoot: string
 }
@@ -39,6 +43,9 @@ export function hostFrom($: EngineInterface): Host {
       } catch {
         return undefined
       }
+    },
+    async list(dir) {
+      return (await $.fs.list(dir)).map(({ name, kind, isLink }) => ({ name, kind, isLink }))
     },
     // The engine lists the variables a module reads, so each name is spelled out.
     async env(name) {

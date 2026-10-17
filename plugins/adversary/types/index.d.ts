@@ -32,6 +32,8 @@ export type Review = {
   unparsed: Unparsed[]
   raw: string
   startedAt: number
+  // The root holds a link leading outside it; Grep and Glob are refused while true.
+  hasOutwardLinks: boolean
 }
 
 declare module 'claude-code' {

@@ -19,6 +19,7 @@ export function fakeHost(overrides: Partial<Host> = {}): Host {
     writeFile: unexpected('writeFile'),
     exists: async () => false,
     realPath: async () => undefined,
+    list: async () => [],
     env: async () => undefined,
     pluginRoot: 'C:/plugins/adversary',
     ...overrides,

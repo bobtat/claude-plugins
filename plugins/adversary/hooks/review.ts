@@ -10,6 +10,7 @@ import type { Brief } from './brief'
 import { parseFindings, sortBySeverity } from './findings'
 import { hostFrom } from './host'
 import type { Host } from './host'
+import { hasOutwardLinks } from './links'
 import { fillTemplate, homeDir, resolveTemplate } from './templates'
 
 type Api = EngineInterface
@@ -107,6 +108,10 @@ export async function startReview($: Api, args: Start): Promise<string> {
 
   const host = hostFrom($)
   const cwd = await $.session.root()
+  // Removed first: a new review of the same PR head checks out to the same path.
+  const previous = await read($, reviewState)
+  if (previous?.worktree !== undefined) await removeWorktree(host, cwd, previous.worktree)
+
   const prepared = await prepare($, host, args, cwd)
   if (!prepared.ok) return prepared.error
 
@@ -125,15 +130,21 @@ export async function startReview($: Api, args: Start): Promise<string> {
     unparsed: [],
     raw: '',
     startedAt: await $.clock.now(),
+    hasOutwardLinks: await hasOutwardLinks(host, artifact.root),
   })
   await update($, reviewState, () => review)
 
-  const spawned = await $.agent.spawn({
-    subagentType: REVIEWER_TYPE,
-    prompt,
-    description: 'adversarial review',
-    ...(args.model === undefined ? {} : { model: args.model }),
-  })
+  let spawned: Awaited<ReturnType<Api['agent']['spawn']>>
+  try {
+    spawned = await $.agent.spawn({
+      subagentType: REVIEWER_TYPE,
+      prompt,
+      description: 'adversarial review',
+      ...(args.model === undefined ? {} : { model: args.model }),
+    })
+  } catch (error) {
+    spawned = { deny: error instanceof Error ? error.message : String(error) }
+  }
   const agentId = spawned.deny === undefined ? (spawned.agentId ?? (await newestLiveReviewer($))) : undefined
   if (agentId === undefined) {
     const error = spawned.deny ?? 'no reviewer agent was started'
@@ -173,15 +184,17 @@ export async function reviewerTurnEnded($: Api, e: TurnCompleteInput): Promise<v
   else await failReview($, e.agentId, TURN_FAILURES[e.reason], e.answer)
 }
 
-// The root a subagent's file access is confined to, or undefined for a call
-// that is not a reviewer's. Any reviewer is confined, not only the current
-// one, so an agent from an earlier review, or one whose id is not stored yet,
-// is never let loose; with no review on record it may reach nothing ('').
-export async function reviewerRoot($: Api, agentId: string | undefined): Promise<string | undefined> {
+export type Confinement = { root: string; canSearch: boolean }
+
+// Where a subagent's file access is confined, or undefined for a call that is
+// not a reviewer's. Any reviewer is confined, not only the current one, so an
+// agent from an earlier review, or one whose id is not stored yet, is never
+// let loose; with no review on record it may reach nothing (root '').
+export async function reviewerScope($: Api, agentId: string | undefined): Promise<Confinement | undefined> {
   if (agentId === undefined) return undefined
   const review = await read($, reviewState)
-  if (review?.agentId === agentId) return review.root
+  const confined = { root: review?.root ?? '', canSearch: review?.hasOutwardLinks === false }
+  if (review?.agentId === agentId) return confined
   const agent = (await $.agent.list()).find(a => a.id === agentId)
-  if (agent?.type !== REVIEWER_TYPE) return undefined
-  return review?.root ?? ''
+  return agent?.type === REVIEWER_TYPE ? confined : undefined
 }

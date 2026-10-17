@@ -40,6 +40,7 @@ export type ReviewerCall = { tool: string; file_path?: unknown; path?: unknown; 
 export type Verdict = 'allow' | 'deny' | 'scope'
 
 const isAbsoluteSpelling = (pattern: string) => /^([\\/]|[A-Za-z]:|~)/.test(pattern)
+const isAbsolute = (path: string) => /^([\\/]|[A-Za-z]:[\\/])/.test(path)
 
 // The directory a glob is anchored at: everything before the segment holding its first wildcard.
 function anchor(pattern: string): string {
@@ -50,9 +51,13 @@ function anchor(pattern: string): string {
 }
 
 // A reviewer's Read, Grep or Glob: every field naming a place must land under
-// the root. Grep's `pattern` is a regex, not a place.
+// the root. Grep's `pattern` is a regex, not a place. A relative path is
+// refused rather than resolved, since the tool and `realPath` may resolve it
+// against different directories.
 export async function judgeCall(host: Host, call: ReviewerCall, root: string): Promise<Verdict> {
   if (normalise(root) === '') return 'deny'
+  const named = call.tool === 'Read' ? call.file_path : call.path
+  if (named !== undefined && (typeof named !== 'string' || !isAbsolute(named))) return 'deny'
   const places: unknown[] = []
   if (call.tool === 'Read') places.push(call.file_path)
   else if (call.path !== undefined) places.push(call.path)

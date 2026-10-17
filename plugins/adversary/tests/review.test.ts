@@ -3,6 +3,7 @@ import type { Engine } from 'claude-code/testing'
 import type { AgentInfo, On } from 'claude-code'
 
 import type { Review } from '../types'
+import type { Entry } from '../hooks/host'
 import { OUTPUT_CONTRACT } from '../hooks/findings'
 import { USAGE } from '../hooks/args'
 
@@ -23,9 +24,12 @@ type Options = {
   files?: Record<string, string>
   runs?: Record<string, Run>
   mcpTools?: string[]
-  spawn?: { deny: string }
+  spawn?: { deny: string } | 'throw'
   env?: Record<string, string>
   writeDenied?: string
+  // Directory listings by path (an unlisted directory is empty), and where a path really lands.
+  dirs?: Record<string, Entry[]>
+  lands?: Record<string, string>
 }
 
 const ok = (stdout: string): Run => ({ exitCode: 0, stdout })
@@ -53,6 +57,7 @@ function world(on: On, opts: Options = {}) {
   const toolCalls: Record<string, unknown>[] = []
   const agents: AgentInfo[] = []
   const ran: string[] = []
+  const faults = { agentList: false }
 
   const read = (path: string) => (shippedPath(path) ? SHIPPED_PR : files[path] ?? written[path])
 
@@ -66,11 +71,12 @@ function world(on: On, opts: Options = {}) {
     return { value: { agent: `adversary:${e.name}` } }
   })
   on('agent.offer', () => ({ isOffered: true }))
-  on('agent.list', () => ({ value: agents }))
+  on('agent.list', () => (faults.agentList ? { deny: 'agent list unavailable' } : { value: agents }))
   // A plugin's spawn reaches this hook as the Agent tool's input (`subagent_type`).
   on('agent.spawn', (_$, e) => {
     const input = e as unknown as { subagent_type: string; description: string; model?: string; prompt: string }
     spawned.push(input)
+    if (opts.spawn === 'throw') throw new Error('agent runtime crashed')
     if (opts.spawn) return opts.spawn
     agents.push({ id: AGENT, description: input.description, type: input.subagent_type, status: 'running' })
     return { model: input.model ?? 'claude-opus-5-5', agentId: AGENT }
@@ -95,7 +101,13 @@ function world(on: On, opts: Options = {}) {
     written[slashes(e.path)] = e.text
     return { value: undefined }
   })
-  on('fs.stat', (_$, e) => ({ value: { kind: 'file', size: 1, mtimeMs: NOW, isLink: false, realPath: slashes(e.path) } }))
+  on('fs.stat', (_$, e) => {
+    const path = slashes(e.path)
+    return { value: { kind: 'file', size: 1, mtimeMs: NOW, isLink: false, realPath: opts.lands?.[path] ?? path } }
+  })
+  on('fs.list', (_$, e) => ({
+    value: (opts.dirs?.[slashes(e.path)] ?? []).map(entry => ({ ...entry, size: 0, mtimeMs: 0 })),
+  }))
   on('process.run', (_$, e) => {
     const line = e.argv.join(' ')
     ran.push(line)
@@ -112,7 +124,7 @@ function world(on: On, opts: Options = {}) {
     toolCalls.push({ ...e })
     return { result: 'ran' }
   })
-  return { written, spawned, registered, reviews, reads, logs, toolCalls, agents, ran }
+  return { written, spawned, registered, reviews, reads, logs, toolCalls, agents, ran, faults }
 }
 
 const PRESENTATION = { isFullscreen: false, columns: 120 }
@@ -202,6 +214,7 @@ test('a full pr review spawns the reviewer with the filled template and the chos
     unparsed: [],
     raw: '',
     startedAt: NOW,
+    hasOutwardLinks: false,
   })
 })
 
@@ -394,4 +407,126 @@ test('guard denies a reviewer Glob whose absolute pattern leaves the root', asyn
 
   expect(JSON.stringify(result)).toContain('outside the review root')
   expect(w.toolCalls).toEqual([])
+})
+
+const OUTSIDE_FILE = 'C:/Users/someone/.claude/CLAUDE.md'
+const STRAY = 'reviewer-0'
+const stray = (): AgentInfo => ({ id: STRAY, description: 'adversarial review', type: 'adversary:reviewer', status: 'running' })
+
+test('guard confines a reviewer agent that is not the stored one', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+  w.agents.push(stray())
+
+  const outside = await call($, { tool: 'Read', file_path: OUTSIDE_FILE, agentId: STRAY })
+
+  expect(JSON.stringify(outside)).toContain('outside the review root')
+  expect(w.toolCalls).toEqual([])
+})
+
+test('guard denies a reviewer agent everything when no review is on record', async ($, on) => {
+  const w = world(on)
+  w.agents.push(stray())
+
+  const result = await call($, { tool: 'Read', file_path: `${ROOT}/src/a.ts`, agentId: STRAY })
+
+  expect(JSON.stringify(result)).toContain('outside the review root')
+  expect(w.toolCalls).toEqual([])
+})
+
+test('guard fails closed for a subagent when the agent list cannot be read', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+  w.faults.agentList = true
+
+  const result = await call($, { tool: 'Read', file_path: OUTSIDE_FILE, agentId: STRAY })
+
+  expect(JSON.stringify(result)).toContain('outside the review root')
+  expect(w.toolCalls).toEqual([])
+})
+
+test('guard denies a reviewer a relative path but still scopes a pathless search', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+
+  const relative = await call($, { tool: 'Read', file_path: 'src/a.ts', agentId: AGENT })
+  await call($, { tool: 'Glob', pattern: '**/*.ts', agentId: AGENT })
+
+  expect(JSON.stringify(relative)).toContain('outside the review root')
+  expect(w.toolCalls).toHaveLength(1)
+  expect(w.toolCalls[0]).toMatchObject({ tool: 'Glob', pattern: '**/*.ts', path: ROOT })
+})
+
+const NO_SEARCH = 'Grep/Glob disabled: the review root contains links leading outside it; use Read'
+const link = (name: string): Entry => ({ name, kind: 'other', isLink: true })
+
+test('a root with a link leading outside it disables Grep and Glob but not Read', async ($, on) => {
+  const w = world(on, {
+    runs: PR_RUNS,
+    dirs: { [ROOT]: [{ name: 'src', kind: 'dir', isLink: false }], [`${ROOT}/src`]: [link('home')] },
+    lands: { [`${ROOT}/src/home`]: 'C:/Users/someone/.claude' },
+  })
+  await adversary($, 'pr 123')
+
+  const grep = await call($, { tool: 'Grep', pattern: 'token', agentId: AGENT })
+  const glob = await call($, { tool: 'Glob', pattern: '**/*', path: ROOT, agentId: AGENT })
+  await call($, { tool: 'Read', file_path: `${ROOT}/src/a.ts`, agentId: AGENT })
+
+  expect(w.reviews.at(-1)!.hasOutwardLinks).toBe(true)
+  expect(JSON.stringify(grep)).toContain(NO_SEARCH)
+  expect(JSON.stringify(glob)).toContain(NO_SEARCH)
+  expect(w.toolCalls.map(c => c.tool)).toEqual(['Read'])
+})
+
+test('a root whose links all lead inside it keeps Grep and Glob', async ($, on) => {
+  const w = world(on, {
+    runs: PR_RUNS,
+    dirs: { [ROOT]: [{ name: 'src', kind: 'dir', isLink: false }, link('alias')] },
+    lands: { [`${ROOT}/alias`]: `${ROOT}/src` },
+  })
+  await adversary($, 'pr 123')
+
+  await call($, { tool: 'Grep', pattern: 'token', agentId: AGENT })
+  await call($, { tool: 'Glob', pattern: '**/*', agentId: AGENT })
+
+  expect(w.reviews.at(-1)!.hasOutwardLinks).toBe(false)
+  expect(w.toolCalls.map(c => c.tool)).toEqual(['Grep', 'Glob'])
+})
+
+test('a root too large to scan disables Grep and Glob', async ($, on) => {
+  const many = Array.from({ length: 20_001 }, (_, i): Entry => ({ name: `f${i}.ts`, kind: 'file', isLink: false }))
+  const w = world(on, { runs: PR_RUNS, dirs: { [ROOT]: many } })
+  await adversary($, 'pr 123')
+
+  const grep = await call($, { tool: 'Grep', pattern: 'token', agentId: AGENT })
+
+  expect(JSON.stringify(grep)).toContain(NO_SEARCH)
+  expect(w.toolCalls).toEqual([])
+})
+
+test('a spawn that rejects marks the review failed and says why', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS, spawn: 'throw' })
+
+  const reply = await adversary($, 'pr 123')
+
+  expect(reply).toMatch(/^The reviewer could not start: .+/)
+  expect(w.reviews.at(-1)).toMatchObject({ status: 'failed', raw: '' })
+  expect(w.reviews.at(-1)!.error).toBe(reply.replace('The reviewer could not start: ', ''))
+})
+
+test("a new review removes the previous review's temp worktree", async ($, on) => {
+  const worktree = 'C:/tmp/adversary-pr-123-abc1234'
+  const w = world(on, {
+    runs: { ...PR_RUNS, 'git rev-parse HEAD': ok('0000000\n'), 'git fetch origin pull/123/head': ok(''), 'git worktree': ok('') },
+  })
+  await adversary($, 'pr 123')
+  await $.turn.complete(complete(json({ findings: [] })))
+
+  await adversary($, 'pr 123')
+
+  expect(w.ran.filter(line => line.startsWith('git worktree'))).toEqual([
+    `git worktree add --detach ${worktree} FETCH_HEAD`,
+    `git worktree remove --force ${worktree}`,
+    `git worktree add --detach ${worktree} FETCH_HEAD`,
+  ])
 })
