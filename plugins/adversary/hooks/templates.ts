@@ -54,7 +54,7 @@ export function fillTemplate(text: string, path: string, fill: Fill): Filled {
   const prompt = text.replace(PLACEHOLDER, (_match, lineName: 'brief' | 'focus' | undefined, newline: string | undefined, inlineName: string | undefined) => {
     if (lineName !== undefined) return sections[lineName] === undefined ? '' : `${sections[lineName]}${newline}`
     const name = inlineName as string
-    return name === 'brief' || name === 'focus' ? (sections[name] ?? '') : values[name]
+    return name === 'brief' || name === 'focus' ? (sections[name] ?? '') : (values[name] ?? '')
   })
   return { ok: true, prompt }
 }

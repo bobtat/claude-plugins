@@ -43,7 +43,7 @@ function world(on: On, outcome: Outcome = planned(PLAN)) {
   })
   on('tool.call', () => outcome as never)
   // The engine draws nothing of its own in the band.
-  on('ui.render', ($, e) => $.ui.resolve(e as never).Box({}) as never)
+  on('ui.render', ($, e) => $.ui.resolve(e).Box({}) as never)
   return { spawned, submitted }
 }
 
@@ -73,7 +73,7 @@ test('ExitPlanMode stores the plan from its result and shows the band', async ($
 
   expect(await hasBand($)).toBe(true)
   await adversary($, 'plan')
-  expect(w.spawned[0].prompt).toContain(PLAN)
+  expect(w.spawned[0]!.prompt).toContain(PLAN)
 })
 
 test('the next prompt clears the band but keeps the plan', async ($, on) => {
@@ -85,7 +85,7 @@ test('the next prompt clears the band but keeps the plan', async ($, on) => {
   expect(w.submitted).toEqual(['go ahead'])
   expect(await hasBand($)).toBe(false)
   expect(await adversary($, 'plan')).toBe('Reviewing plan with session model; findings will open in the triage pane.')
-  expect(w.spawned[0].prompt).toContain(PLAN)
+  expect(w.spawned[0]!.prompt).toContain(PLAN)
 })
 
 test('only a prompt the user sent clears the band', async ($, on) => {

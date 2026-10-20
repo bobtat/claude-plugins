@@ -1,7 +1,7 @@
 import type { Host, RunResult } from '../hooks/host'
 
 type GhResponse = { exitCode: number; stdout: string; stderr?: string }
-type Issues = Record<string, { summary: string; description: string }>
+type Issues = Record<string, { summary: string; description: unknown }>
 
 export const ATLASSIAN_SERVER = 'claude_ai_Atlassian'
 export const CLOUD_ID = 'cloud-1'
@@ -33,8 +33,9 @@ export function gh(responses: Record<string, GhResponse>): Pick<Host, 'run'> {
     async run(argv) {
       const line = argv.join(' ')
       const key = Object.keys(responses).find(k => line.startsWith(k))
-      if (key === undefined) return { exitCode: 127, stdout: '', stderr: 'not found' } satisfies RunResult
-      const { exitCode, stdout, stderr = '' } = responses[key]
+      const response = key === undefined ? undefined : responses[key]
+      if (response === undefined) return { exitCode: 127, stdout: '', stderr: 'not found' } satisfies RunResult
+      const { exitCode, stdout, stderr = '' } = response
       return { exitCode, stdout, stderr }
     },
   }
