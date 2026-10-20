@@ -93,12 +93,21 @@ background task's notification or a scheduled prompt arriving in between leaves 
 
 | Value | Source | Needs |
 |---|---|---|
-| `PROJ-123` (project key and number) | Jira issue summary and description | The [Atlassian MCP server](https://github.com/atlassian/atlassian-mcp-server), connected to this session |
+| `PROJ-123` (project key and number) | Jira issue summary and description | The [Atlassian MCP server](https://github.com/atlassian/atlassian-mcp-server), signed in (the plugin bundles it) |
 | `#123` or a `https://github.com/<owner>/<repo>/issues/<n>` URL | GitHub issue title and body | `gh`, logged in |
 | anything else | the text itself | nothing |
 
-If a brief cannot be fetched, the review does not start and the reply says why (for Jira, "Jira not
-connected; paste the ticket with --brief "..."").
+The plugin's `.mcp.json` declares Atlassian's remote server, `https://mcp.atlassian.com/v2/mcp`, so it
+appears in `/mcp` as soon as the plugin is enabled. Sign in there once. Claude Code then talks to
+Atlassian directly, so the ticket goes from Atlassian to your machine and then, inside the
+reviewer's prompt, to whichever model provider the session uses. If you already run the Atlassian
+server under a name of your own, the mod uses that one. Claude Code connects to the endpoint when a
+session starts, as it does for any listed server; the mod calls no Atlassian tool until you pass a
+Jira key. If you never use Jira, the server stays unauthenticated in `/mcp`.
+
+If a brief cannot be fetched, the review does not start and the reply says why. For Jira that is
+"Atlassian needs you to sign in: run /mcp, …" when the bundled server is waiting for sign-in, and
+"Jira not connected; paste the ticket with --brief "..."" otherwise.
 
 ## Reviewing a PR
 
