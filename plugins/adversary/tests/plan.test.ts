@@ -88,6 +88,19 @@ test('the next prompt clears the band but keeps the plan', async ($, on) => {
   expect(w.spawned[0].prompt).toContain(PLAN)
 })
 
+test('only a prompt the user sent clears the band', async ($, on) => {
+  world(on)
+  await exitPlanMode($)
+
+  await $.prompt.submit({ text: '<task-notification>done</task-notification>', wait: false, isMeta: true, origin: { kind: 'task-notification' } })
+  await $.prompt.submit({ text: 'tick', wait: false, origin: { kind: 'scheduled-trigger' } })
+  await $.prompt.submit({ text: 'injected', wait: false, isMeta: true, origin: { kind: 'composer' } })
+  expect(await hasBand($)).toBe(true)
+
+  await $.prompt.submit({ text: 'from my phone', wait: false, origin: { kind: 'bridge' } })
+  expect(await hasBand($)).toBe(false)
+})
+
 test('no band before any plan', async ($, on) => {
   world(on)
 
