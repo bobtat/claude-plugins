@@ -106,44 +106,14 @@ async function resolved(host: Host, args: Start, cwd: string, artifact: Artifact
 // A PR's diff is measured, before anything is fetched, by prArtifact.
 const SIZED = { doc: 'Document', plan: 'Plan' } as const
 
-async function prepare($: Api, host: Host, args: Start, cwd: string): Promise<Prepared> {
-  const got = await acquire($, host, args, cwd)
-  if (!got.ok) return got
-  const { length } = got.artifact.text
-  if (args.sub !== 'pr' && length > MAX_ARTIFACT_CHARS) {
-    return { ok: false, error: `${SIZED[args.sub]} is ${length} characters; too large for one review (limit ${MAX_ARTIFACT_CHARS})` }
-  }
-  let prepared: Prepared
-  try {
-    prepared = await resolved(host, args, cwd, got.artifact)
-  } catch (error) {
-    prepared = { ok: false, error: `Could not prepare the review: ${messageOf(error)}` }
-  }
-  // Nothing records a worktree until the review is stored, so it goes here.
-  if (!prepared.ok && got.artifact.worktree !== undefined) await removeWorktree(host, cwd, got.artifact.worktree)
-  return prepared
-}
-
 const withoutUndefined = <T extends object>(value: T): T =>
   Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as T
 
-export async function startReview($: Api, args: Start): Promise<string> {
-  if (await isBlocked($)) return 'Review in progress'
-
-  const host = hostFrom($)
-  const cwd = await $.session.root()
-  // Removed first: a new review of the same PR head checks out to the same path.
-  const previous = await read($, reviewState)
-  if (previous?.worktree !== undefined) await removeWorktree(host, cwd, previous.worktree)
-
-  const prepared = await prepare($, host, args, cwd)
-  if (!prepared.ok) return prepared.error
-
-  const { artifact, brief, prompt } = prepared
-  const target = args.sub === 'plan' ? '' : args.target
+async function record($: Api, host: Host, args: Start, prepared: Prepared & { ok: true }): Promise<void> {
+  const { artifact, brief } = prepared
   const review: Review = withoutUndefined({
     kind: args.sub,
-    target,
+    target: args.sub === 'plan' ? '' : args.target,
     briefLabel: brief?.label,
     model: args.model,
     root: artifact.root,
@@ -157,6 +127,42 @@ export async function startReview($: Api, args: Start): Promise<string> {
     hasOutwardLinks: await hasOutwardLinks(host, artifact.root),
   })
   await update($, reviewState, () => review)
+}
+
+// Prepares and records the review. Nothing else knows of a temp worktree until
+// the review holding it is stored, so any failure before then removes it here.
+async function prepareAndRecord($: Api, host: Host, args: Start, cwd: string): Promise<Prepared> {
+  const got = await acquire($, host, args, cwd)
+  if (!got.ok) return got
+  const { length } = got.artifact.text
+  if (args.sub !== 'pr' && length > MAX_ARTIFACT_CHARS) {
+    return { ok: false, error: `${SIZED[args.sub]} is ${length} characters; too large for one review (limit ${MAX_ARTIFACT_CHARS})` }
+  }
+  let prepared: Prepared
+  try {
+    prepared = await resolved(host, args, cwd, got.artifact)
+    if (prepared.ok) await record($, host, args, prepared)
+  } catch (error) {
+    prepared = { ok: false, error: `Could not prepare the review: ${messageOf(error)}` }
+  }
+  if (!prepared.ok && got.artifact.worktree !== undefined) await removeWorktree(host, cwd, got.artifact.worktree)
+  return prepared
+}
+
+export async function startReview($: Api, args: Start): Promise<string> {
+  if (await isBlocked($)) return 'Review in progress'
+
+  const host = hostFrom($)
+  const cwd = await $.session.root()
+  // Removed first: a new review of the same PR head checks out to the same path.
+  const previous = await read($, reviewState)
+  if (previous?.worktree !== undefined) await removeWorktree(host, cwd, previous.worktree)
+
+  const prepared = await prepareAndRecord($, host, args, cwd)
+  if (!prepared.ok) return prepared.error
+
+  const { prompt } = prepared
+  const target = args.sub === 'plan' ? '' : args.target
 
   let spawned: Awaited<ReturnType<Api['agent']['spawn']>>
   try {
