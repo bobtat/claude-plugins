@@ -159,3 +159,18 @@ test('saved markdown lists every finding with its decision and keeps the origina
   expect(md).toMatch(/drop/)
   expect(md).toMatch(/undecided/)
 })
+
+test('a closing fence inside a JSON string does not end the block', async () => {
+  const evidence = 'the snippet ``` is wrong'
+  const output = '```json\r\n' + JSON.stringify({ findings: [raw({ evidence })] }) + '\r\n```\r\n'
+
+  const result = parseFindings(output, 'C:/tmp')
+
+  expect(result.ok && result.findings.map(f => f.evidence)).toEqual([evidence])
+})
+
+test('a line of null is treated as an absent line', async () => {
+  const result = parseFindings(block({ findings: [raw({ location: { file: 'src/a.cs', line: null } })] }), 'C:/tmp')
+
+  expect(result.ok && result.findings.map(f => f.location)).toEqual([{ file: 'src/a.cs' }])
+})
