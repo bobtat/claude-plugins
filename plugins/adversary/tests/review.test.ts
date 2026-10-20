@@ -11,6 +11,7 @@ const ROOT = 'C:/work/repo'
 const HOME = 'C:/Users/someone'
 const NOW = new Date(2026, 9, 15, 12).getTime()
 const AGENT = 'reviewer-1'
+const SESSION = 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6'
 
 const PR = { number: 123, title: 'Fix the lock', body: 'Takes the lock first.', headRefOid: 'abc1234def', baseRefName: 'main', url: 'https://github.com/o/r/pull/123' }
 const DIFF = 'diff --git a/src/a.ts b/src/a.ts\n+lock()\n'
@@ -74,6 +75,7 @@ function world(on: On, opts: Options = {}) {
   mock.clock(on, { now: NOW })
   mock.env(on, opts.env ?? { USERPROFILE: HOME, TEMP: 'C:/tmp' })
   on('session.root', () => ({ value: ROOT }))
+  on('session.id', () => ({ value: SESSION }))
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   on('command.register', (_$, e) => ({ value: { command: e.name } }))
   on('agent.register', (_$, e) => {
@@ -286,8 +288,8 @@ test('a brief that fails after a temp worktree was made removes the worktree', a
 
   expect(await adversary($, 'pr 123 --brief PROJ-12')).toBe('Jira not connected; paste the ticket with --brief "..."')
   expect(w.ran.filter(line => line.startsWith('git worktree'))).toEqual([
-    'git worktree add --detach C:/tmp/adversary-pr-123-abc1234 abc1234def',
-    'git worktree remove --force C:/tmp/adversary-pr-123-abc1234',
+    'git worktree add --detach C:/tmp/adversary-pr-123-abc1234-f81d4fae abc1234def',
+    'git worktree remove --force C:/tmp/adversary-pr-123-abc1234-f81d4fae',
   ])
   expect(w.reviews).toEqual([])
 })
@@ -303,8 +305,8 @@ test('a failure that throws after a temp worktree was made removes the worktree 
 
   expect(reply).toMatch(/^Could not prepare the review: .+/)
   expect(w.ran.filter(line => line.startsWith('git worktree'))).toEqual([
-    'git worktree add --detach C:/tmp/adversary-pr-123-abc1234 abc1234def',
-    'git worktree remove --force C:/tmp/adversary-pr-123-abc1234',
+    'git worktree add --detach C:/tmp/adversary-pr-123-abc1234-f81d4fae abc1234def',
+    'git worktree remove --force C:/tmp/adversary-pr-123-abc1234-f81d4fae',
   ])
   expect(w.reviews).toEqual([])
   expect(w.spawned).toEqual([])
@@ -666,7 +668,7 @@ test('a spawn that rejects marks the review failed and says why', async ($, on) 
 })
 
 test("a new review removes the previous review's temp worktree", async ($, on) => {
-  const worktree = 'C:/tmp/adversary-pr-123-abc1234'
+  const worktree = 'C:/tmp/adversary-pr-123-abc1234-f81d4fae'
   const w = world(on, {
     runs: { ...PR_RUNS, 'git rev-parse HEAD': ok('0000000\n'), 'git fetch origin pull/123/head': ok(''), 'git worktree': ok('') },
   })
@@ -732,8 +734,8 @@ test('every other prompt passes untouched', async ($, on) => {
 const SHORT_TEMP = 'C:/Users/SOMEON~1/AppData/Local/Temp'
 const LONG_TEMP = 'C:/Users/someone.else/AppData/Local/Temp'
 const CHECKOUT = { ...PR_RUNS, 'git rev-parse HEAD': ok('0000000\n'), 'git fetch origin pull/123/head': ok(''), 'git worktree': ok('') }
-const SPELLED_ROOT = `${SHORT_TEMP}/adversary-pr-123-abc1234`
-const REAL_ROOT = `${LONG_TEMP}/adversary-pr-123-abc1234`
+const SPELLED_ROOT = `${SHORT_TEMP}/adversary-pr-123-abc1234-f81d4fae`
+const REAL_ROOT = `${LONG_TEMP}/adversary-pr-123-abc1234-f81d4fae`
 
 test('the review root is resolved once and that spelling confines the reviewer', async ($, on) => {
   const w = world(on, {

@@ -53,7 +53,7 @@ test('pr not at HEAD fetches and adds a detached worktree as the root', async ()
 
   const result = await prArtifact(host, '45', '/repo', '/tmp')
 
-  const path = '/tmp/adversary-pr-45-abcdef0'
+  const path = '/tmp/adversary-pr-45-abcdef0-f81d4fae'
   expect(result.ok && result.artifact.root).toBe(path)
   expect(result.ok && result.artifact.worktree).toBe(path)
   expect(lines()).toContain('git fetch origin pull/45/head')
@@ -63,7 +63,7 @@ test('pr not at HEAD fetches and adds a detached worktree as the root', async ()
 })
 
 test('pr at local HEAD with uncommitted or untracked changes is reviewed in a temp worktree', async () => {
-  const path = '/tmp/adversary-pr-45-abcdef0'
+  const path = '/tmp/adversary-pr-45-abcdef0-f81d4fae'
   const dirty = recording({ ...prResponses(OID), 'git status --porcelain': { exitCode: 0, stdout: ' M src/a.ts\n?? notes.md\n' } })
   // A status that cannot be read cannot vouch for a clean tree either.
   const unknown = recording({ ...prResponses(OID), 'git status --porcelain': { exitCode: 128, stdout: '', stderr: 'fatal' } })
@@ -76,7 +76,7 @@ test('pr at local HEAD with uncommitted or untracked changes is reviewed in a te
 })
 
 test('a worktree left at the path by an earlier run is removed and pruned before the add', async () => {
-  const path = '/tmp/adversary-pr-45-abcdef0'
+  const path = '/tmp/adversary-pr-45-abcdef0-f81d4fae'
   const responses = { ...prResponses('0000000'), 'git worktree remove': { exitCode: 0, stdout: '' }, 'git worktree prune': { exitCode: 0, stdout: '' } }
   const leftover = recording(responses)
   leftover.host.exists = async p => p === path
@@ -91,6 +91,19 @@ test('a worktree left at the path by an earlier run is removed and pruned before
     `git worktree add --detach ${path} ${OID}`,
   ])
   expect(clean.lines().filter(l => l.startsWith('git worktree'))).toEqual([`git worktree add --detach ${path} ${OID}`])
+})
+
+test("each session checks the same PR head out to its own path and never removes another session's", async () => {
+  const theirs = '/tmp/adversary-pr-45-abcdef0-f81d4fae'
+  const mine = '/tmp/adversary-pr-45-abcdef0-0b7c2e19'
+  const { host, lines } = recording(prResponses('0000000'))
+  host.sessionId = async () => '0b7c2e19-aaaa-bbbb-cccc-dddddddddddd'
+  host.exists = async p => p === theirs
+
+  const result = await prArtifact(host, '45', '/repo', '/tmp')
+
+  expect(result.ok && result.artifact.worktree).toBe(mine)
+  expect(lines().filter(l => l.startsWith('git worktree'))).toEqual([`git worktree add --detach ${mine} ${OID}`])
 })
 
 test('a pr from another repository is refused before anything is fetched', async () => {

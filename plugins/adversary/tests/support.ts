@@ -21,6 +21,7 @@ export function fakeHost(overrides: Partial<Host> = {}): Host {
     realPath: async () => undefined,
     list: async () => [],
     env: async () => undefined,
+    sessionId: async () => 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6',
     pluginRoot: 'C:/plugins/adversary',
     ...overrides,
   }

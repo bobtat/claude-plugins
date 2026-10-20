@@ -66,7 +66,9 @@ export async function prArtifact(host: Host, target: string, cwd: string, tmpBas
     if (status.exitCode === 0 && status.stdout.trim() === '') return { ok: true, artifact: { text, root: cwd, pr: ref } }
   }
 
-  const path = `${tmpBase}/adversary-pr-${pr.number}-${pr.headRefOid.slice(0, 7)}`
+  // Per session, so the leftover cleanup below never removes a checkout another session is reviewing.
+  const session = (await host.sessionId()).replace(/[^A-Za-z0-9]/g, '').slice(0, 8)
+  const path = `${tmpBase}/adversary-pr-${pr.number}-${pr.headRefOid.slice(0, 7)}-${session}`
   const failed = (ran: RunResult): Got => ({ ok: false, error: `Could not check out PR #${pr.number}: ${failure(ran)}` })
   const fetch = await host.run(['git', 'fetch', 'origin', `pull/${pr.number}/head`], { cwd })
   if (fetch.exitCode !== 0) return failed(fetch)
