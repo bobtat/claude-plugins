@@ -9,11 +9,12 @@ code: a TypeScript hooks module that Claude Code loads and runs in the session.
 A review written inside the session that produced the work shares that session's assumptions. The
 reviewer here is a separate agent that starts with none of them:
 
-- It does not see the session transcript, `CLAUDE.md` or memory. Its only input is one message: the
-  template, the artifact, the optional brief and focus, and the output format.
+- It does not see the session transcript or memory, and it is not given `CLAUDE.md` and cannot open
+  it. Its only input is one message: the template, the artifact, the optional brief and focus, and
+  the output format.
 - It has Read, Grep and Glob only, and a `tool.call` hook confines every call to the review root.
   A path that resolves outside the root (through `..`, a link, a drive-relative or UNC spelling) is
-  denied.
+  denied, and so is any `CLAUDE.md`, `CLAUDE.local.md`, `.claude` or `.git` inside it.
 - Nothing it finds goes anywhere on its own. The findings open in a pane where you send or drop each
   one, and only the ones you send are drafted into your prompt, posted to the PR, or both.
 
