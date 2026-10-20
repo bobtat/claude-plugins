@@ -73,6 +73,12 @@ export const register: Register = on => {
     return { drop: REVIEW_DELIVERED }
   }).catch(($, e, next) => next(e))
 
+  // Delivered into a running turn, the same notification reaches the model as an attachment.
+  on('prompt.attachment', { type: 'queued_command' }, async ($, e, next) => {
+    if (!(await namesReviewer($, e.text))) return next(e)
+    return { text: null }
+  }).catch(($, e, next) => next(e))
+
   on('turn.complete', async ($, e, next) => {
     await reviewerTurnEnded($, e)
     return next(e)
