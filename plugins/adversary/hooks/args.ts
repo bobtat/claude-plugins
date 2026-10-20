@@ -62,7 +62,7 @@ export function parseArgs(raw: string): Result {
     const name = token.text.slice(2)
     if (name !== 'brief' && name !== 'focus' && name !== 'model') return fail(`Unknown option ${token.text}.`)
     const value = tokens[++i]
-    if (!value || isFlag(value)) return fail(`${token.text} needs a value.`)
+    if (!value || isFlag(value) || value.text.trim() === '') return fail(`${token.text} needs a value.`)
     if (name === 'model') {
       const model = MODELS.find(m => m === value.text)
       if (!model) return fail(`Unknown model "${value.text}"; use ${MODELS.join(', ')}.`)
@@ -84,7 +84,7 @@ export function parseArgs(raw: string): Result {
       return { ok: true, args: { sub, ...options } }
     case 'pr':
     case 'doc':
-      if (rest.length !== 1) return fail(`${sub} needs exactly one target.`)
+      if (rest.length !== 1 || rest[0].trim() === '') return fail(`${sub} needs exactly one target.`)
       return { ok: true, args: { sub, target: rest[0], ...options } }
     default:
       return fail(`Unknown subcommand "${sub}".`)

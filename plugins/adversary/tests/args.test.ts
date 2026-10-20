@@ -73,6 +73,16 @@ test('rejects an empty string', async () => {
   expect(error('   ')).toContain(USAGE)
 })
 
+test('rejects an empty target', async () => {
+  expect(error('pr ""')).toContain(USAGE)
+  expect(error('doc "  "')).toContain(USAGE)
+})
+
+test('rejects an empty option value', async () => {
+  expect(error('plan --focus ""')).toContain(USAGE)
+  expect(error('pr 3 --brief " "')).toContain(USAGE)
+})
+
 test('rejects a flag with no value', async () => {
   expect(error('plan --focus')).toContain(USAGE)
   expect(error('plan --focus --model opus')).toContain(USAGE)
