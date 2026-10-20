@@ -60,7 +60,11 @@ export async function prArtifact(host: Host, target: string, cwd: string, tmpBas
   const text = `# PR #${pr.number}: ${pr.title}\n\n${pr.body}\n\n## Diff\n\n${diff.stdout}`
 
   const head = await host.run(['git', 'rev-parse', 'HEAD'], { cwd })
-  if (head.exitCode === 0 && head.stdout.trim() === pr.headRefOid) return { ok: true, artifact: { text, root: cwd, pr: ref } }
+  if (head.exitCode === 0 && head.stdout.trim() === pr.headRefOid) {
+    // Edits not in the PR would be read as if they were.
+    const status = await host.run(['git', 'status', '--porcelain'], { cwd })
+    if (status.exitCode === 0 && status.stdout.trim() === '') return { ok: true, artifact: { text, root: cwd, pr: ref } }
+  }
 
   const path = `${tmpBase}/adversary-pr-${pr.number}-${pr.headRefOid.slice(0, 7)}`
   const failed = (ran: RunResult): Got => ({ ok: false, error: `Could not check out PR #${pr.number}: ${failure(ran)}` })

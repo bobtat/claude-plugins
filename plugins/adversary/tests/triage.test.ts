@@ -85,6 +85,7 @@ const PR_RUNS: Record<string, Run> = {
   'gh repo view --json nameWithOwner,url': ok(JSON.stringify({ nameWithOwner: 'o/r', url: 'https://github.com/o/r' })),
   'gh pr diff 123': ok(DIFF),
   'git rev-parse HEAD': ok(`${PR.headRefOid}\n`),
+  'git status --porcelain': ok(''),
 }
 
 const slashes = (path: string) => path.replace(/\\/g, '/')
