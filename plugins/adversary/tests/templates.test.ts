@@ -13,7 +13,11 @@ function filesystem(files: Record<string, string>): Host & { written: Record<str
   const written: Record<string, string> = {}
   const host = fakeHost({
     exists: async path => path in files || path in written,
-    readFile: async path => files[path] ?? written[path],
+    readFile: async path => {
+      const text = files[path] ?? written[path]
+      if (text === undefined) throw new Error(`no such file ${path}`)
+      return text
+    },
     writeFile: async (path, text) => {
       written[path] = text
     },
@@ -114,7 +118,7 @@ test('a template missing {{output_contract}} is rejected naming its path and the
 })
 
 test('homeDir prefers USERPROFILE over HOME', async () => {
-  const both = fakeHost({ env: async name => ({ USERPROFILE: 'C:/Users/me', HOME: '/home/me' })[name] })
+  const both = fakeHost({ env: async name => ({ USERPROFILE: 'C:/Users/me', HOME: '/home/me' } as Record<string, string>)[name] })
   const homeOnly = fakeHost({ env: async name => (name === 'HOME' ? '/home/me' : undefined) })
 
   expect(await homeDir(both)).toBe('C:/Users/me')

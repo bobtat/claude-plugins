@@ -1,10 +1,10 @@
 import { atom, read, update } from 'claude-code'
-import type { Register } from 'claude-code'
+import type { On } from 'claude-code'
 
 const planState = atom({ plugin: 'adversary', key: 'plan' } as const, null)
 const pendingState = atom({ plugin: 'adversary', key: 'planPending' } as const, false)
 
-export const registerPlanBand: Register = on => {
+export const registerPlanBand = (on: On): void => {
   on('tool.call', { tool: 'ExitPlanMode' }, async ($, e, next) => {
     const ran = await next(e)
     // The plan is in the tool's result: its input carries none.

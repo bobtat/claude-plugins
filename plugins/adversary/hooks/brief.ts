@@ -18,7 +18,7 @@ export const GH_UNAVAILABLE = 'gh is not available: run gh auth login'
 export function classifyBrief(value: string): BriefSource {
   if (JIRA_KEY.test(value)) return { kind: 'jira', key: value }
   const number = GITHUB_NUMBER.exec(value)
-  if (number) return { kind: 'github', ref: number[1] }
+  if (number) return { kind: 'github', ref: number[1]! }
   if (GITHUB_ISSUE_URL.test(value)) return { kind: 'github', ref: value }
   return { kind: 'text', text: value }
 }
@@ -34,7 +34,8 @@ async function atlassianServer(host: Host): Promise<string | undefined> {
   const tools = await host.mcpTools().catch(() => [])
   for (const name of tools) {
     const match = /^mcp__(.+)__([^_]+)$/.exec(name)
-    if (match && /atlassian/i.test(match[1]) && match[2] === ISSUE_TOOL) return match[1]
+    const [, server, tool] = match ?? []
+    if (server !== undefined && /atlassian/i.test(server) && tool === ISSUE_TOOL) return server
   }
   return undefined
 }

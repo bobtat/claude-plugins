@@ -46,7 +46,8 @@ export const register: Register = on => {
     if (e.tool !== 'Read' && !scope.canSearch) return { deny: NO_SEARCH }
     const verdict = await judgeCall(hostFrom($), e, scope.root)
     if (verdict === 'deny') return { deny: OUTSIDE }
-    return next(verdict === 'scope' ? { ...e, path: scope.root } : e)
+    // A 'scope' verdict only ever comes for Grep and Glob, the tools with a path to fill in.
+    return next(verdict === 'scope' && e.tool !== 'Read' ? { ...e, path: scope.root } : e)
   }).catch(($, e, next) => (next.called || e.agentId === undefined ? next(e) : { deny: OUTSIDE }))
 
   // The agent spec already limits the reviewer's tools; this holds if a spawn

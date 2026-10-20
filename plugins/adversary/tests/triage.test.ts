@@ -28,7 +28,7 @@ const finding = (id: number, over: Partial<Finding>): Finding => ({
 })
 
 // Stored as finishReview stores them: already sorted by severity.
-const FINDINGS: Finding[] = [
+const FINDINGS: [Finding, Finding, Finding, Finding] = [
   finding(2, { severity: 'critical', location: { file: 'src/Cache.cs', line: 88 }, claim: 'Eviction races with refresh.', evidence: 'Refresh() reads _map before _lock.' }),
   finding(1, { severity: 'high', location: { file: 'src/Orders/Repo.cs', line: 140 }, claim: 'Repo leaks a connection.', evidence: 'No using around Open().' }),
   finding(4, { severity: 'medium', location: { section: 'Rollout' }, claim: 'Rollout has no rollback.', evidence: 'Step 3 is one-way.' }),
@@ -144,8 +144,9 @@ function world(on: On, opts: Options = {}) {
     const line = e.argv.join(' ')
     ran.push({ line, stdin: e.init?.stdin, cwd: e.init?.cwd })
     const key = Object.keys(opts.runs ?? {}).find(k => line.startsWith(k))
-    if (key === undefined) return { deny: `${e.argv[0]}: not found` }
-    const { exitCode, stdout, stderr = '' } = opts.runs![key]
+    const response = key === undefined ? undefined : opts.runs?.[key]
+    if (response === undefined) return { deny: `${e.argv[0]}: not found` }
+    const { exitCode, stdout, stderr = '' } = response
     return { value: { exitCode, stdout, stderr, isStdoutTruncated: false, isStderrTruncated: false } }
   })
   // The kit keeps the session's state, so a write redraws the pane as in a
@@ -319,8 +320,8 @@ test('Post sends one review with inline comments and lineless findings in the bo
 
   const posts = w.ran.filter(r => r.line === API)
   expect(posts).toHaveLength(1)
-  expect(posts[0].cwd).toBe(ROOT)
-  expect(JSON.parse(posts[0].stdin!)).toEqual({
+  expect(posts[0]!.cwd).toBe(ROOT)
+  expect(JSON.parse(posts[0]!.stdin!)).toEqual({
     event: 'COMMENT',
     commit_id: 'abc1234def',
     body: [

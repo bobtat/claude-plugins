@@ -23,9 +23,10 @@ function tokenize(raw: string): Token[] | null {
   const tokens: Token[] = []
   let i = 0
   while (i < raw.length) {
-    if (/\s/.test(raw[i])) {
+    const char = raw.charAt(i)
+    if (/\s/.test(char)) {
       i++
-    } else if (raw[i] === '"') {
+    } else if (char === '"') {
       let text = ''
       i++
       while (i < raw.length && raw[i] !== '"') {
@@ -37,7 +38,7 @@ function tokenize(raw: string): Token[] | null {
       tokens.push({ text, quoted: true })
     } else {
       let text = ''
-      while (i < raw.length && !/\s/.test(raw[i])) text += raw[i++]
+      while (i < raw.length && !/\s/.test(raw.charAt(i))) text += raw.charAt(i++)
       tokens.push({ text, quoted: false })
     }
   }
@@ -54,7 +55,7 @@ export function parseArgs(raw: string): Result {
   const options: Options = {}
   const positional: string[] = []
   for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i]
+    const token = tokens[i]!
     if (!isFlag(token)) {
       positional.push(token.text)
       continue
@@ -84,8 +85,9 @@ export function parseArgs(raw: string): Result {
       return { ok: true, args: { sub, ...options } }
     case 'pr':
     case 'doc':
-      if (rest.length !== 1 || rest[0].trim() === '') return fail(`${sub} needs exactly one target.`)
-      return { ok: true, args: { sub, target: rest[0], ...options } }
+      const [target] = rest
+      if (rest.length !== 1 || target === undefined || target.trim() === '') return fail(`${sub} needs exactly one target.`)
+      return { ok: true, args: { sub, target, ...options } }
     default:
       return fail(`Unknown subcommand "${sub}".`)
   }

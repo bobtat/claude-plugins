@@ -52,8 +52,8 @@ test('an invalid finding goes to unparsed with its raw text', async () => {
   if (!result.ok) return
   expect(result.findings.map(f => f.claim)).toEqual(['fine'])
   expect(result.unparsed).toHaveLength(1)
-  expect(result.unparsed[0].raw).toContain('"urgent"')
-  expect(result.unparsed[0].reason).toContain('severity')
+  expect(result.unparsed[0]!.raw).toContain('"urgent"')
+  expect(result.unparsed[0]!.reason).toContain('severity')
 })
 
 test('empty findings array is ok', async () => {
@@ -138,6 +138,7 @@ test('saved markdown lists every finding with its decision and keeps the origina
     target: '42',
     root: 'C:/repo',
     status: 'done',
+    hasOutwardLinks: false,
     findings: [
       finding({ id: 1, decision: 'send', claim: 'original', editedClaim: 'edited' }),
       finding({ id: 2, severity: 'low', decision: 'drop', claim: 'minor' }),

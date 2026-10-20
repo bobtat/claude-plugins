@@ -122,8 +122,9 @@ function world(on: On, opts: Options = {}) {
     const line = e.argv.join(' ')
     ran.push(line)
     const key = Object.keys(opts.runs ?? {}).find(k => line.startsWith(k))
-    if (key === undefined) return { deny: `${e.argv[0]}: not found` }
-    const { exitCode, stdout, stderr = '' } = opts.runs![key]
+    const response = key === undefined ? undefined : opts.runs?.[key]
+    if (response === undefined) return { deny: `${e.argv[0]}: not found` }
+    const { exitCode, stdout, stderr = '' } = response
     return { value: { exitCode, stdout, stderr, isStdoutTruncated: false, isStderrTruncated: false } }
   })
   on('prompt.submit', (_$, e) => {
@@ -214,7 +215,7 @@ test('a full pr review spawns the reviewer with the filled template and the chos
   expect(reply).toBe('Reviewing pr 123 with sonnet; findings will open in the triage pane.')
   expect(w.spawned).toHaveLength(1)
   expect(w.spawned[0]).toMatchObject({ subagent_type: 'adversary:reviewer', description: 'adversarial review', model: 'sonnet' })
-  expect(w.spawned[0].prompt).toBe(
+  expect(w.spawned[0]!.prompt).toBe(
     `Review the PR at ${ROOT}.\n\n## Brief (#45)\n\n#45: Locks\n\nNever deadlock.\n\n## Focus\n\nlock order\n\n${PR_TEXT}\n\n${OUTPUT_CONTRACT}\n`,
   )
   expect(w.reviews.at(-1)).toEqual({
@@ -243,7 +244,7 @@ test('the reviewer prompt contains no session transcript', async ($, on) => {
   const reply = await adversary($, 'pr 123')
 
   expect(reply).toBe('Reviewing pr 123 with session model; findings will open in the triage pane.')
-  const spawn = w.spawned[0]
+  const spawn = w.spawned[0]!
   expect(spawn.model).toBeUndefined()
   // The prompt is the shipped template, read from the plugin's folder, filled with the PR and nothing else.
   expect(w.reads.filter(shippedPath)).toEqual([w.reads.find(shippedPath)])
@@ -694,7 +695,7 @@ test('the review root is resolved once and that spelling confines the reviewer',
   const inside = await call($, { tool: 'Read', file_path: `${REAL_ROOT}/src/a.ts`, agentId: AGENT })
   await $.turn.complete(complete(json({ findings: [{ severity: 'low', location: { file: `${REAL_ROOT}/src/b.ts` }, claim: 'x', evidence: 'y' }] })))
 
-  expect(w.spawned[0].prompt).toContain(`Review the PR at ${REAL_ROOT}.`)
+  expect(w.spawned[0]!.prompt).toContain(`Review the PR at ${REAL_ROOT}.`)
   expect(JSON.stringify(inside)).not.toContain('outside the review root')
   const done = w.reviews.at(-1)!
   expect(done).toMatchObject({ root: REAL_ROOT, worktree: SPELLED_ROOT, hasOutwardLinks: false })

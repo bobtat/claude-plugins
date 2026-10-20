@@ -256,7 +256,7 @@ async function changeSelected($: Api, change: (finding: Finding) => Finding): Pr
   const review = await read($, reviewState)
   if (review === null || review.findings.length === 0) return
   const index = await selectedIndex($, review)
-  const id = review.findings[index].id
+  const id = review.findings[index]!.id
   await update($, reviewState, current =>
     current === null ? current : { ...current, findings: current.findings.map(finding => (finding.id === id ? change(finding) : finding)) },
   )
@@ -346,7 +346,7 @@ export async function releaseWorktree($: Api, isEnding: boolean): Promise<void> 
       await host.run(['git', 'worktree', 'prune'], { cwd })
     }
     await update($, reviewState, current => {
-      if (current?.worktree !== review.worktree) return current
+      if (current === null || current.worktree !== review.worktree) return current
       const { worktree: _gone, ...rest } = current
       return rest
     })
