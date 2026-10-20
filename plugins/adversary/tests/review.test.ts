@@ -32,6 +32,8 @@ type Options = {
   lands?: Record<string, string>
   // Paths whose stat fails, so where they land cannot be told.
   unresolvable?: string[]
+  // Paths that exist but whose read fails.
+  unreadable?: string[]
 }
 
 const ok = (stdout: string): Run => ({ exitCode: 0, stdout })
@@ -95,10 +97,11 @@ function world(on: On, opts: Options = {}) {
     logs.push(e.text)
     return { value: undefined }
   })
-  on('fs.exists', (_$, e) => ({ value: read(slashes(e.path)) !== undefined }))
+  on('fs.exists', (_$, e) => ({ value: read(slashes(e.path)) !== undefined || !!opts.unreadable?.includes(slashes(e.path)) }))
   on('fs.read', (_$, e) => {
     const path = slashes(e.path)
     reads.push(path)
+    if (opts.unreadable?.includes(path)) return { deny: `EACCES: ${path}` }
     const text = read(path)
     return text === undefined ? { deny: `ENOENT: ${path}` } : { value: text }
   })
@@ -284,6 +287,24 @@ test('a brief that fails after a temp worktree was made removes the worktree', a
     'git worktree remove --force C:/tmp/adversary-pr-123-abc1234',
   ])
   expect(w.reviews).toEqual([])
+})
+
+test('a failure that throws after a temp worktree was made removes the worktree and says why', async ($, on) => {
+  const template = `${ROOT}/.claude/adversary/pr.md`
+  const w = world(on, {
+    runs: CHECKOUT,
+    unreadable: [template],
+  })
+
+  const reply = await adversary($, 'pr 123')
+
+  expect(reply).toMatch(/^Could not prepare the review: .+/)
+  expect(w.ran.filter(line => line.startsWith('git worktree'))).toEqual([
+    'git worktree add --detach C:/tmp/adversary-pr-123-abc1234 abc1234def',
+    'git worktree remove --force C:/tmp/adversary-pr-123-abc1234',
+  ])
+  expect(w.reviews).toEqual([])
+  expect(w.spawned).toEqual([])
 })
 
 test('a second review while one runs replies Review in progress', async ($, on) => {

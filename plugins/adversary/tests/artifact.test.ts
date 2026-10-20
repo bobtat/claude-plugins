@@ -218,6 +218,12 @@ test('doc reads the file', async () => {
   expect(await docArtifact(host, 'docs/a.md', '/repo')).toEqual({ ok: true, artifact: { text: 'Hello', root: '/repo' } })
 })
 
+test('a doc that cannot be read names the path and the reason', async () => {
+  const host = fakeHost({ exists: async () => true, readFile: async () => Promise.reject(new Error('EACCES: permission denied')) })
+
+  expect(await docArtifact(host, 'docs/a.md', '/repo')).toEqual({ ok: false, error: 'Could not read docs/a.md: EACCES: permission denied' })
+})
+
 test('a missing doc names the path', async () => {
   expect(await docArtifact(fakeHost(), 'docs/gone.md', '/repo')).toEqual({ ok: false, error: 'Document not found: docs/gone.md' })
 })

@@ -31,18 +31,19 @@ export async function fetchBrief(host: Host, source: BriefSource): Promise<Resul
 // Servers cannot be listed, so the Atlassian one is found from the names of
 // the MCP tools the session carries (`mcp__<server>__<tool>`).
 async function atlassianServer(host: Host): Promise<string | undefined> {
-  for (const name of await host.mcpTools()) {
+  const tools = await host.mcpTools().catch(() => [])
+  for (const name of tools) {
     const match = /^mcp__(.+)__([^_]+)$/.exec(name)
     if (match && /atlassian/i.test(match[1]) && match[2] === ISSUE_TOOL) return match[1]
   }
   return undefined
 }
 
-function jsonOf(result: unknown): unknown {
-  const { content, isError } = result as McpResult
-  if (isError) return undefined
+// A call that rejects (a server gone mid-session) reads as one that failed.
+async function callJson(host: Host, server: string, tool: string, args: Record<string, unknown>): Promise<unknown> {
   try {
-    return JSON.parse(content.map(b => b.text ?? '').join(''))
+    const { content, isError } = (await host.mcpCall(server, tool, args)) as McpResult
+    return isError ? undefined : JSON.parse(content.map(b => b.text ?? '').join(''))
   } catch {
     return undefined
   }
@@ -53,11 +54,11 @@ async function fetchJira(host: Host, key: string): Promise<Result> {
   const server = await atlassianServer(host)
   if (server === undefined) return failed
 
-  const resources = jsonOf(await host.mcpCall(server, RESOURCES_TOOL, {}))
+  const resources = await callJson(host, server, RESOURCES_TOOL, {})
   const cloudId = Array.isArray(resources) ? (resources[0] as { id?: string } | undefined)?.id : undefined
   if (cloudId === undefined) return failed
 
-  const issue = jsonOf(await host.mcpCall(server, ISSUE_TOOL, { cloudId, issueIdOrKey: key })) as
+  const issue = (await callJson(host, server, ISSUE_TOOL, { cloudId, issueIdOrKey: key })) as
     | { fields?: { summary?: string; description?: string | null } }
     | undefined
   if (issue?.fields === undefined) return { ok: false, error: `Could not read ${key} from Jira; paste the ticket with --brief "..."` }
