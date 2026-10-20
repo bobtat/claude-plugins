@@ -67,7 +67,7 @@ function world(on: On, opts: Options = {}) {
   const toolCalls: Record<string, unknown>[] = []
   const agents: AgentInfo[] = []
   const ran: string[] = []
-  const faults = { agentList: false }
+  const faults = { agentList: false, reviewStore: false }
   const submitted: string[] = []
 
   const read = (path: string) => (shippedPath(path) ? SHIPPED_PR : files[path] ?? written[path])
@@ -137,6 +137,7 @@ function world(on: On, opts: Options = {}) {
   })
   on('prompt.attachment', (_$, e) => ({ text: e.text }))
   on('state.set', (_$, e, next) => {
+    if (e.key === 'review' && faults.reviewStore) return { deny: 'state store unavailable' }
     if (e.key === 'review' && e.value) reviews.push(e.value as Review)
     return next(e)
   })
@@ -310,6 +311,20 @@ test('a failure that throws after a temp worktree was made removes the worktree 
     'git worktree remove --force C:/tmp/adversary-pr-123-abc1234-f81d4fae',
   ])
   expect(w.reviews).toEqual([])
+  expect(w.spawned).toEqual([])
+})
+
+test('a failure to record the review after its worktree was made removes the worktree and says why', async ($, on) => {
+  const w = world(on, { runs: CHECKOUT })
+  w.faults.reviewStore = true
+
+  const reply = await adversary($, 'pr 123')
+
+  expect(reply).toMatch(/^Could not prepare the review: .*state store unavailable/)
+  expect(w.ran.filter(line => line.startsWith('git worktree'))).toEqual([
+    'git worktree add --detach C:/tmp/adversary-pr-123-abc1234-f81d4fae abc1234def',
+    'git worktree remove --force C:/tmp/adversary-pr-123-abc1234-f81d4fae',
+  ])
   expect(w.spawned).toEqual([])
 })
 
