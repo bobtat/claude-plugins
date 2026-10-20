@@ -253,6 +253,21 @@ test('a Grep or Glob aimed at CLAUDE.md, .claude or .git is denied', async () =>
   expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '.github/**' }, ROOT)).toBe('scope')
 })
 
+test('a brace alternative spelled absolute is denied without a stat call', async () => {
+  for (const call of [
+    { tool: 'Glob', pattern: 'src/{a,/etc}/*' },
+    { tool: 'Glob', pattern: '{C:/Users,src}/*' },
+    { tool: 'Glob', pattern: '{src, ~/.ssh}/*' },
+    { tool: 'Glob', pattern: 'a/{b,\\\\server\\share}/*' },
+    { tool: 'Grep', pattern: 'x', glob: '{*.ts,/etc/passwd}' },
+  ]) {
+    const { host, asked } = spelled()
+    expect(await judgeCall(host, call, ROOT)).toBe('deny')
+    expect(asked).toEqual([])
+  }
+  expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '{src,test}/**/*.ts' }, ROOT)).toBe('scope')
+})
+
 test('a relative pattern or glob climbing out with .. is denied', async () => {
   expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '../../secrets/*' }, ROOT)).toBe('deny')
   expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: 'src/{a,../../x}/*' }, ROOT)).toBe('deny')
