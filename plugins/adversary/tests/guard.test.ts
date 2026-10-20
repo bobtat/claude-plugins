@@ -316,3 +316,24 @@ test('in a Grep result only the part of a path below the root counts', async () 
   expect(grepNamesWithheld('/home/u/repo', files('claude.md', '.GIT/x'))).toBe(false)
   expect(grepNamesWithheld('/home/u/repo', files('/home/u/repo/CLAUDE.md'))).toBe(true)
 })
+
+test('context lines alone, or lines without numbers, still name a withheld file', async () => {
+  for (const result of [
+    // -B or -A cut down by head_limit or offset to context lines only.
+    lines('CLAUDE.md-11-the secret', 'CLAUDE.md-12-more'),
+    lines('C:/repo/.claude/notes.md-3-the secret'),
+    lines('C:\\repo\\src\\CLAUDE.local.md-9-x'),
+    // -n false: `path:text` for a match, `path-text` for context.
+    lines('CLAUDE.md-the secret'),
+    lines('.git/config-url = x'),
+  ]) {
+    expect(grepNamesWithheld(ROOT, result)).toBe(true)
+  }
+})
+
+test('a colon in a POSIX directory name does not end the path early', async () => {
+  const root = '/home/u/repo'
+  expect(grepNamesWithheld(root, lines('/home/u/repo/a:b/.claude/x.md:3:t'))).toBe(true)
+  expect(grepNamesWithheld(root, lines('a:b/CLAUDE.md-3-t'))).toBe(true)
+  expect(grepNamesWithheld(root, lines('/home/u/repo/a:b/c.ts:3:t'))).toBe(false)
+})
