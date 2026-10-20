@@ -61,6 +61,24 @@ test('pr not at HEAD fetches and adds a detached worktree as the root', async ()
   expect(calls.every(c => c.cwd === '/repo')).toBe(true)
 })
 
+test('a worktree left at the path by an earlier run is removed and pruned before the add', async () => {
+  const path = '/tmp/adversary-pr-45-abcdef0'
+  const responses = { ...prResponses('0000000'), 'git worktree remove': { exitCode: 0, stdout: '' }, 'git worktree prune': { exitCode: 0, stdout: '' } }
+  const leftover = recording(responses)
+  leftover.host.exists = async p => p === path
+  const clean = recording(responses)
+
+  expect((await prArtifact(leftover.host, '45', '/repo', '/tmp')).ok).toBe(true)
+  expect((await prArtifact(clean.host, '45', '/repo', '/tmp')).ok).toBe(true)
+
+  expect(leftover.lines().filter(l => l.startsWith('git worktree'))).toEqual([
+    `git worktree remove --force ${path}`,
+    'git worktree prune',
+    `git worktree add --detach ${path} ${OID}`,
+  ])
+  expect(clean.lines().filter(l => l.startsWith('git worktree'))).toEqual([`git worktree add --detach ${path} ${OID}`])
+})
+
 test('a pr from another repository is refused before anything is fetched', async () => {
   const url = 'https://github.com/someone/fork/pull/45'
   const { host, lines } = recording({ ...prResponses('0000000'), 'gh pr view': viewOf(url) })
