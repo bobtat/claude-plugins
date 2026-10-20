@@ -30,6 +30,8 @@ type Options = {
   // Directory listings by path (an unlisted directory is empty), and where a path really lands.
   dirs?: Record<string, Entry[]>
   lands?: Record<string, string>
+  // Paths whose stat fails, so where they land cannot be told.
+  unresolvable?: string[]
 }
 
 const ok = (stdout: string): Run => ({ exitCode: 0, stdout })
@@ -104,6 +106,7 @@ function world(on: On, opts: Options = {}) {
   })
   on('fs.stat', (_$, e) => {
     const path = slashes(e.path)
+    if (opts.unresolvable?.includes(path)) return { deny: `EACCES: ${path}` }
     return { value: { kind: 'file', size: 1, mtimeMs: NOW, isLink: false, realPath: opts.lands?.[path] ?? path } }
   })
   on('fs.list', (_$, e) => ({
@@ -581,6 +584,44 @@ test('every other prompt passes untouched', async ($, on) => {
 
   expect(results.map(r => r.drop)).toEqual([undefined, undefined, undefined])
   expect(w.submitted).toEqual([notification('shell-7', 'build ok'), notification(`${AGENT}0`, 'other'), `what did ${AGENT} find?`])
+})
+
+const SHORT_TEMP = 'C:/Users/SOMEON~1/AppData/Local/Temp'
+const LONG_TEMP = 'C:/Users/someone.else/AppData/Local/Temp'
+const CHECKOUT = { ...PR_RUNS, 'git rev-parse HEAD': ok('0000000\n'), 'git fetch origin pull/123/head': ok(''), 'git worktree': ok('') }
+const SPELLED_ROOT = `${SHORT_TEMP}/adversary-pr-123-abc1234`
+const REAL_ROOT = `${LONG_TEMP}/adversary-pr-123-abc1234`
+
+test('the review root is resolved once and that spelling confines the reviewer', async ($, on) => {
+  const w = world(on, {
+    runs: CHECKOUT,
+    env: { USERPROFILE: HOME, TEMP: SHORT_TEMP },
+    // A link inside the root, which only the resolved root shows to be inside.
+    dirs: { [REAL_ROOT]: [link('alias')] },
+    lands: { [SPELLED_ROOT]: REAL_ROOT, [`${REAL_ROOT}/alias`]: `${REAL_ROOT}/src` },
+  })
+
+  await adversary($, 'pr 123')
+  const inside = await call($, { tool: 'Read', file_path: `${REAL_ROOT}/src/a.ts`, agentId: AGENT })
+  await $.turn.complete(complete(json({ findings: [{ severity: 'low', location: { file: `${REAL_ROOT}/src/b.ts` }, claim: 'x', evidence: 'y' }] })))
+
+  expect(w.spawned[0].prompt).toContain(`Review the PR at ${REAL_ROOT}.`)
+  expect(JSON.stringify(inside)).not.toContain('outside the review root')
+  const done = w.reviews.at(-1)!
+  expect(done).toMatchObject({ root: REAL_ROOT, worktree: SPELLED_ROOT, hasOutwardLinks: false })
+  expect(done.findings.map(f => f.location)).toEqual([{ file: 'src/b.ts' }])
+})
+
+test('a review root that cannot be resolved refuses the review and removes its worktree', async ($, on) => {
+  const w = world(on, { runs: CHECKOUT, env: { USERPROFILE: HOME, TEMP: SHORT_TEMP }, unresolvable: [SPELLED_ROOT] })
+
+  expect(await adversary($, 'pr 123')).toBe(`Could not resolve the review root ${SPELLED_ROOT}`)
+  expect(w.ran.filter(line => line.startsWith('git worktree'))).toEqual([
+    `git worktree add --detach ${SPELLED_ROOT} FETCH_HEAD`,
+    `git worktree remove --force ${SPELLED_ROOT}`,
+  ])
+  expect(w.reviews).toEqual([])
+  expect(w.spawned).toEqual([])
 })
 
 test('a notice passes through when the agent list cannot be read', async ($, on) => {

@@ -98,7 +98,13 @@ async function promptFor(host: Host, args: Start, cwd: string, artifact: Artifac
 async function prepare($: Api, host: Host, args: Start, cwd: string): Promise<Prepared> {
   const got = await acquire($, host, args, cwd)
   if (!got.ok) return got
-  const prepared = await promptFor(host, args, cwd, got.artifact)
+  // The guard compares resolved targets, so the root must be resolved the same
+  // way (a short 8.3 name, a subst drive, a junction) or nothing is under it.
+  const root = await host.realPath(got.artifact.root)
+  const prepared: Prepared =
+    root === undefined
+      ? { ok: false, error: `Could not resolve the review root ${got.artifact.root}` }
+      : await promptFor(host, args, cwd, { ...got.artifact, root })
   if (!prepared.ok && got.artifact.worktree !== undefined) await removeWorktree(host, cwd, got.artifact.worktree)
   return prepared
 }
