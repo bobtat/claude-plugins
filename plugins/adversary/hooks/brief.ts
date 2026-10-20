@@ -49,6 +49,11 @@ async function callJson(host: Host, server: string, tool: string, args: Record<s
   }
 }
 
+const descriptionText = (description: unknown): string => {
+  if (description === undefined || description === null) return ''
+  return typeof description === 'string' ? description : JSON.stringify(description)
+}
+
 async function fetchJira(host: Host, key: string): Promise<Result> {
   const failed: Result = { ok: false, error: JIRA_NOT_CONNECTED }
   const server = await atlassianServer(host)
@@ -59,12 +64,12 @@ async function fetchJira(host: Host, key: string): Promise<Result> {
   if (cloudId === undefined) return failed
 
   const issue = (await callJson(host, server, ISSUE_TOOL, { cloudId, issueIdOrKey: key })) as
-    | { fields?: { summary?: string; description?: string | null } }
+    | { fields?: { summary?: string; description?: unknown } }
     | undefined
   if (issue?.fields === undefined) return { ok: false, error: `Could not read ${key} from Jira; paste the ticket with --brief "..."` }
 
   const { summary = '', description } = issue.fields
-  return { ok: true, brief: { label: key, text: `${key}: ${summary}\n\n${description ?? ''}` } }
+  return { ok: true, brief: { label: key, text: `${key}: ${summary}\n\n${descriptionText(description)}` } }
 }
 
 async function fetchGithub(host: Host, ref: string): Promise<Result> {

@@ -84,3 +84,12 @@ test('text is returned as the brief with label pasted brief', async () => {
 
   expect(result).toEqual({ ok: true, brief: { label: 'pasted brief', text: 'Make refunds idempotent' } })
 })
+
+test('a jira description that is not a string is serialised as JSON', async () => {
+  const description = { type: 'doc', content: [] }
+  const host = fakeHost(atlassian({ 'PROJ-123': { summary: 'S', description } }))
+
+  const result = await fetchBrief(host, { kind: 'jira', key: 'PROJ-123' })
+
+  expect(result).toEqual({ ok: true, brief: { label: 'PROJ-123', text: 'PROJ-123: S\n\n' + JSON.stringify(description) } })
+})
