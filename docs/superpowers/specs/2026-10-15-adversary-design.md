@@ -6,21 +6,21 @@ Location: `plugins/adversary/` (a TypeScript hooks mod, like `cost-ledger`)
 
 ## Problem
 
-Robert regularly asks one Claude session to act as an adversary to another: review a PR, a plan or a design document and find its flaws. Today that is done with a second terminal session, a subagent, or a blind headless `claude -p` run. Three things go wrong:
+The user regularly asks one Claude session to act as an adversary to another: review a PR, a plan or a design document and find its flaws. Today that is done with a second terminal session, a subagent, or a blind headless `claude -p` run. Three things go wrong:
 
 1. **The reviewer knows too much.** A subagent receives the project CLAUDE.md and often the author's framing, which biases the critique.
 2. **The adversary prompt is rewritten every time.**
-3. **There is no control over what comes back.** Every finding reaches the author session, including ones Robert disagrees with.
+3. **There is no control over what comes back.** Every finding reaches the author session, including ones the user disagrees with.
 
 ## Goal and success criteria
 
-One command, run in the author session, starts an isolated review; findings land in a triage pane; only the findings Robert approves reach the author.
+One command, run in the author session, starts an isolated review; findings land in a triage pane; only the findings the user approves reach the author.
 
 Success means:
 
 - A review starts with one command and no prompt writing.
 - The reviewer never sees the author's conversation, CLAUDE.md, memory, or any file outside the code under review.
-- Nothing reaches the author session or a PR without a per-finding decision by Robert.
+- Nothing reaches the author session or a PR without a per-finding decision by the user.
 
 ## Decisions
 
@@ -39,9 +39,9 @@ Success means:
 Rejected alternatives:
 
 - **A separate reviewer console session.** Needs cross-session messaging and a second window — the overhead that exists today.
-- **Sending approved findings directly to the author.** Saves one keypress and removes Robert's last word on framing.
+- **Sending approved findings directly to the author.** Saves one keypress and removes the user's last word on framing.
 - **Holding every plan for review before approval.** Charges a review and a wait on every plan, including trivial ones.
-- **Guessing whether a PR is Robert's own.** Extra code that can guess wrong; the pane offers every destination instead.
+- **Guessing whether a PR is the user's own.** Extra code that can guess wrong; the pane offers every destination instead.
 
 ## Architecture
 
@@ -193,7 +193,7 @@ The reviewer ends with one fenced `json` block:
 ```
 
 - Findings sorted by severity; the selected one expands to show its evidence.
-- Each finding is `undecided`, `send` or `drop`. **Edit** replaces the claim with Robert's text; the original is kept and appears in the saved file.
+- Each finding is `undecided`, `send` or `drop`. **Edit** replaces the claim with the user's text; the original is kept and appears in the saved file.
 - **Draft** fills the prompt box (`$.prompt.fill`, mode `replace`) with:
 
   > An independent reviewer raised these findings. For each one, either fix it or reject it with a specific reason. Do not skip any.
@@ -235,7 +235,7 @@ After the reviewer starts, a denied spawn, an API error, or output with no `json
 - `planPending`: boolean
 - `review`: the active or last review — kind, target, brief label, model, root, temp worktree path, reviewer `agentId`, status (`running|done|failed`), findings with decisions and edits, unparsed items, raw output
 
-Nothing is kept in `$.store`; saved reviews are Markdown files Robert controls.
+Nothing is kept in `$.store`; saved reviews are Markdown files the user controls.
 
 ## Testing
 

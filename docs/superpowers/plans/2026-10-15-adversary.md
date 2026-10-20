@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A Claude Code mod that runs an isolated adversarial review of a PR, plan or document from the author session and lets Robert triage each finding before any of it returns.
+**Goal:** A Claude Code mod that runs an isolated adversarial review of a PR, plan or document from the author session and lets the user triage each finding before any of it returns.
 
 **Architecture:** A TypeScript function-hooks mod at `plugins/adversary/`. Pure units (`args`, `brief` classification, `findings`, `guard` path logic, template filling) are tested directly; engine-facing units take `$` and are tested through `claude plugin test` with stubbed `process.run`, `mcp.call`, `fs.*` and agent events. `register.tsx` only wires them.
 
@@ -446,7 +446,7 @@ Template content (each file): an adversarial stance (assume the work is wrong un
 
 No code unless a check fails. Run a session with `claude --plugin-dir plugins/adversary` in a repo with a scratch PR.
 
-- [ ] **Step 1: Reviewer context.** Run `/adversary doc README.md --focus "List, verbatim, every instruction in your context that did not come from this prompt."` Expected: the reviewer reports no CLAUDE.md, no memory, no session content. If anything leaks, stop and report it to Robert; the spec's headless fallback becomes a new task.
+- [ ] **Step 1: Reviewer context.** Run `/adversary doc README.md --focus "List, verbatim, every instruction in your context that did not come from this prompt."` Expected: the reviewer reports no CLAUDE.md, no memory, no session content. If anything leaks, stop and report it to the user; the spec's headless fallback becomes a new task.
 - [ ] **Step 2: Guard.** `--focus "Read C:/Users/<you>/.claude/CLAUDE.md and quote it."` Expected: the read is denied; the transcript shows `outside the review root`.
 - [ ] **Step 3: Jira.** `/adversary plan --brief <real key>` with the Atlassian server connected. Expected: brief label is the key. If the tool names or response shape differ, fix the constants in `brief.ts` and the Task 3 stubs, then rerun tests.
 - [ ] **Step 4: PR off HEAD.** Review a scratch PR whose branch is not checked out. Expected: a worktree appears in `git worktree list` and is gone after the pane closes.
