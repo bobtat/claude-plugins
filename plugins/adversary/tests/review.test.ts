@@ -307,6 +307,14 @@ test('a failure that throws after a temp worktree was made removes the worktree 
   expect(w.spawned).toEqual([])
 })
 
+test('a document over 200000 characters is refused and one of exactly 200000 is reviewed', async ($, on) => {
+  const w = world(on, { files: { [`${ROOT}/big.md`]: 'x'.repeat(200_001), [`${ROOT}/fits.md`]: 'x'.repeat(200_000) } })
+
+  expect(await adversary($, 'doc big.md')).toBe('Document is 200001 characters; too large for one review (limit 200000)')
+  expect(w.spawned).toEqual([])
+  expect(await adversary($, 'doc fits.md')).toMatch(/^Reviewing doc fits\.md/)
+})
+
 test('a second review while one runs replies Review in progress', async ($, on) => {
   const w = world(on, { runs: PR_RUNS })
 

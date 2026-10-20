@@ -122,6 +122,14 @@ test('a null plan stores nothing', async ($, on) => {
   expect(await adversary($, 'plan')).toBe('No plan this session')
 })
 
+test('a plan over 200000 characters is refused', async ($, on) => {
+  const w = world(on, planned('x'.repeat(200_001)))
+  await exitPlanMode($)
+
+  expect(await adversary($, 'plan')).toBe('Plan is 200001 characters; too large for one review (limit 200000)')
+  expect(w.spawned).toEqual([])
+})
+
 test("ExitPlanMode's result is returned unchanged", async ($, on) => {
   const outcome = planned(PLAN)
   world(on, outcome)
