@@ -51,6 +51,8 @@ export type ReviewerCall = { tool: string; file_path?: unknown; path?: unknown; 
 export type Verdict = 'allow' | 'deny' | 'scope'
 
 const isAbsoluteSpelling = (pattern: string) => /^([\\/]|[A-Za-z]:|~)/.test(pattern)
+// `{src,/etc}` expands to an absolute pattern the anchor never sees.
+const hasAbsoluteAlternative = (pattern: string) => /[{,]\s*([\\/~]|[A-Za-z]:)/.test(pattern)
 const isAbsolute = (path: string) => /^([\\/]|[A-Za-z]:[\\/])/.test(path)
 
 // The directory a glob is anchored at: everything before the segment holding its first wildcard.
@@ -75,7 +77,7 @@ export async function judgeCall(host: Host, call: ReviewerCall, root: string): P
 
   const pattern = call.tool === 'Glob' ? call.pattern : call.tool === 'Grep' ? call.glob : undefined
   if (typeof pattern === 'string') {
-    if (pattern.includes('..')) return 'deny'
+    if (pattern.includes('..') || hasAbsoluteAlternative(pattern)) return 'deny'
     const absolute = isAbsoluteSpelling(pattern)
     const fixed = absolute ? anchor(pattern) : ''
     if (absolute) places.push(fixed)
