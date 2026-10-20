@@ -4,8 +4,8 @@ import type { EngineInterface, RenderInput } from 'claude-code'
 import type { Decision, Finding, Review, Severity } from '../types'
 import { removeWorktree } from './artifact'
 import { draftText, relativeTo, savedMarkdown, whereText } from './findings'
-import { hostFrom } from './host'
-import type { Host, RunResult } from './host'
+import { failure, hostFrom } from './host'
+import type { Host } from './host'
 
 type Api = EngineInterface
 
@@ -24,8 +24,6 @@ const MARK: Record<Decision, string> = { send: '✓', drop: '✗', undecided: '�
 
 const claimOf = (finding: Finding) => finding.editedClaim ?? finding.claim
 const sends = (review: Review) => review.findings.filter(finding => finding.decision === 'send')
-// What a failed process said: its stderr's first line, or its exit code when it said nothing.
-const failure = ({ exitCode, stderr }: RunResult) => stderr.trim().split(/\r?\n/)[0] || `exit ${exitCode}`
 
 export function paneTitle(review: Review): string {
   const target = review.kind === 'pr' ? `PR #${review.pr?.number ?? review.target}` : review.kind === 'plan' ? 'plan' : review.target

@@ -144,3 +144,11 @@ test('removeWorktree runs git worktree remove --force', async () => {
 
   expect(lines()).toEqual(['git worktree remove --force /tmp/wt'])
 })
+
+test('a git or gh failure with nothing on stderr names the exit code', async () => {
+  const fetch = recording({ ...prResponses('0000000'), 'git fetch': { exitCode: 128, stdout: '' } })
+  const view = recording({ 'gh pr view': { exitCode: 1, stdout: '', stderr: '\n' } })
+
+  expect(await prArtifact(fetch.host, '45', '/repo', '/tmp')).toEqual({ ok: false, error: 'Could not check out PR #45: exit 128' })
+  expect(await prArtifact(view.host, '45', '/repo', '/tmp')).toEqual({ ok: false, error: 'Could not read PR 45: exit 1' })
+})
