@@ -38,8 +38,10 @@ const ok = (stdout: string): Run => ({ exitCode: 0, stdout })
 
 const PR_RUNS: Record<string, Run> = {
   'gh pr view 123': ok(JSON.stringify(PR)),
+  'gh repo view --json nameWithOwner,url': ok(JSON.stringify({ nameWithOwner: 'o/r', url: 'https://github.com/o/r' })),
   'gh pr diff 123': ok(DIFF),
   'git rev-parse HEAD': ok(`${PR.headRefOid}\n`),
+  'git rev-parse FETCH_HEAD': ok(`${PR.headRefOid}\n`),
 }
 
 const slashes = (path: string) => path.replace(/\\/g, '/')
@@ -277,7 +279,7 @@ test('a brief that fails after a temp worktree was made removes the worktree', a
 
   expect(await adversary($, 'pr 123 --brief PROJ-12')).toBe('Jira not connected; paste the ticket with --brief "..."')
   expect(w.ran.filter(line => line.startsWith('git worktree'))).toEqual([
-    'git worktree add --detach C:/tmp/adversary-pr-123-abc1234 FETCH_HEAD',
+    'git worktree add --detach C:/tmp/adversary-pr-123-abc1234 abc1234def',
     'git worktree remove --force C:/tmp/adversary-pr-123-abc1234',
   ])
   expect(w.reviews).toEqual([])
@@ -590,9 +592,9 @@ test("a new review removes the previous review's temp worktree", async ($, on) =
   await adversary($, 'pr 123')
 
   expect(w.ran.filter(line => line.startsWith('git worktree'))).toEqual([
-    `git worktree add --detach ${worktree} FETCH_HEAD`,
+    `git worktree add --detach ${worktree} abc1234def`,
     `git worktree remove --force ${worktree}`,
-    `git worktree add --detach ${worktree} FETCH_HEAD`,
+    `git worktree add --detach ${worktree} abc1234def`,
   ])
 })
 
@@ -674,7 +676,7 @@ test('a review root that cannot be resolved refuses the review and removes its w
 
   expect(await adversary($, 'pr 123')).toBe(`Could not resolve the review root ${SPELLED_ROOT}`)
   expect(w.ran.filter(line => line.startsWith('git worktree'))).toEqual([
-    `git worktree add --detach ${SPELLED_ROOT} FETCH_HEAD`,
+    `git worktree add --detach ${SPELLED_ROOT} abc1234def`,
     `git worktree remove --force ${SPELLED_ROOT}`,
   ])
   expect(w.reviews).toEqual([])

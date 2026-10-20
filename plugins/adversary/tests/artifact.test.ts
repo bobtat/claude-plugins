@@ -18,11 +18,16 @@ function recording(responses: Parameters<typeof gh>[0]) {
   return { host, lines: () => calls.map(c => c.argv.join(' ')), calls }
 }
 
+const repo = (nameWithOwner: string, url: string) => ({ exitCode: 0, stdout: JSON.stringify({ nameWithOwner, url }) })
+const viewOf = (url: string) => ({ exitCode: 0, stdout: JSON.stringify({ ...JSON.parse(VIEW), url }) })
+
 const prResponses = (head: string, diff = 'the diff') => ({
   'gh pr view': { exitCode: 0, stdout: VIEW },
+  'gh repo view --json nameWithOwner,url': repo('o/r', 'https://github.com/o/r'),
   'gh pr diff': { exitCode: 0, stdout: diff },
   'git rev-parse HEAD': { exitCode: 0, stdout: `${head}\n` },
   'git fetch': { exitCode: 0, stdout: '' },
+  'git rev-parse FETCH_HEAD': { exitCode: 0, stdout: `${OID}\n` },
   'git worktree add': { exitCode: 0, stdout: '' },
 })
 
@@ -51,8 +56,56 @@ test('pr not at HEAD fetches and adds a detached worktree as the root', async ()
   expect(result.ok && result.artifact.root).toBe(path)
   expect(result.ok && result.artifact.worktree).toBe(path)
   expect(lines()).toContain('git fetch origin pull/45/head')
-  expect(lines()).toContain(`git worktree add --detach ${path} FETCH_HEAD`)
+  // The commit checked, not FETCH_HEAD, which another fetch may have moved since.
+  expect(lines()).toContain(`git worktree add --detach ${path} ${OID}`)
   expect(calls.every(c => c.cwd === '/repo')).toBe(true)
+})
+
+test('a pr from another repository is refused before anything is fetched', async () => {
+  const url = 'https://github.com/someone/fork/pull/45'
+  const { host, lines } = recording({ ...prResponses('0000000'), 'gh pr view': viewOf(url) })
+
+  const result = await prArtifact(host, url, '/repo', '/tmp')
+
+  expect(result).toEqual({ ok: false, error: `PR ${url} is not in this repository (o/r)` })
+  expect(lines().some(l => l.startsWith('gh pr diff') || l.startsWith('git '))).toBe(false)
+})
+
+test('the repository is matched ignoring case, on github.com and on an enterprise host', async () => {
+  const cased = recording({ ...prResponses(OID), 'gh repo view --json nameWithOwner,url': repo('O/R', 'https://GitHub.com/O/R') })
+  const enterprise = recording({
+    ...prResponses(OID),
+    'gh pr view': viewOf('https://ghe.example.org/team/svc/pull/45'),
+    'gh repo view --json nameWithOwner,url': repo('team/svc', 'https://ghe.example.org/team/svc'),
+  })
+
+  expect((await prArtifact(cased.host, '45', '/repo', '/tmp')).ok).toBe(true)
+  expect((await prArtifact(enterprise.host, '45', '/repo', '/tmp')).ok).toBe(true)
+})
+
+test('a pr with the same owner and name on another host is refused', async () => {
+  const { host } = recording({ ...prResponses(OID), 'gh pr view': viewOf('https://ghe.example.org/o/r/pull/45') })
+
+  const result = await prArtifact(host, '45', '/repo', '/tmp')
+
+  expect(result).toEqual({ ok: false, error: 'PR https://ghe.example.org/o/r/pull/45 is not in this repository (o/r)' })
+})
+
+test('a repository gh cannot name is refused', async () => {
+  const { host } = recording({ ...prResponses(OID), 'gh repo view --json nameWithOwner,url': { exitCode: 1, stdout: '', stderr: 'no git remotes found' } })
+
+  const result = await prArtifact(host, '45', '/repo', '/tmp')
+
+  expect(result).toEqual({ ok: false, error: 'Could not tell which repository this is: no git remotes found' })
+})
+
+test('a fetch that brings another commit than the pr head is refused and adds no worktree', async () => {
+  const { host, lines } = recording({ ...prResponses('0000000'), 'git rev-parse FETCH_HEAD': { exitCode: 0, stdout: '1111111\n' } })
+
+  const result = await prArtifact(host, '45', '/repo', '/tmp')
+
+  expect(result).toEqual({ ok: false, error: 'PR 45 changed while it was being fetched; try again' })
+  expect(lines().some(l => l.startsWith('git worktree'))).toBe(false)
 })
 
 test('gh missing gives the verbatim gh message', async () => {

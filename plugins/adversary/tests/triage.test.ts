@@ -82,6 +82,7 @@ const ok = (stdout: string): Run => ({ exitCode: 0, stdout })
 const PR = { number: 123, title: 'Fix the lock', body: 'Takes the lock first.', headRefOid: 'abc1234def', baseRefName: 'main', url: 'https://github.com/o/r/pull/123' }
 const PR_RUNS: Record<string, Run> = {
   'gh pr view 123': ok(JSON.stringify(PR)),
+  'gh repo view --json nameWithOwner,url': ok(JSON.stringify({ nameWithOwner: 'o/r', url: 'https://github.com/o/r' })),
   'gh pr diff 123': ok(DIFF),
   'git rev-parse HEAD': ok(`${PR.headRefOid}\n`),
 }

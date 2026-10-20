@@ -10,6 +10,28 @@ type Got = { ok: true; artifact: Artifact } | { ok: false; error: string }
 
 const isAuthFailure = (stderr: string) => /gh auth login|not logged in|authenticat/i.test(stderr)
 
+// `host/owner/repo` of a repository or PR web URL, lower-cased: GitHub names are
+// case-insensitive, and an enterprise host can hold the same owner/repo.
+function repositoryOf(url: string): string | undefined {
+  const match = /^https?:\/\/([^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/|$)/i.exec(url.trim())
+  return match ? `${match[1]}/${match[2]}/${match[3]}`.toLowerCase() : undefined
+}
+
+type Repository = { ok: true; key: string; name: string } | { ok: false; error: string }
+
+async function thisRepository(host: Host, cwd: string): Promise<Repository> {
+  const viewed = await host.run(['gh', 'repo', 'view', '--json', 'nameWithOwner,url'], { cwd })
+  if (viewed.exitCode !== 0) return { ok: false, error: `Could not tell which repository this is: ${failure(viewed)}` }
+  try {
+    const { nameWithOwner, url } = JSON.parse(viewed.stdout) as { nameWithOwner: string; url: string }
+    const key = repositoryOf(url)
+    // Never let an unreadable URL match an unreadable URL.
+    return { ok: true, key: key ?? '\0', name: nameWithOwner }
+  } catch {
+    return { ok: false, error: 'Could not tell which repository this is: unexpected gh output' }
+  }
+}
+
 export async function prArtifact(host: Host, target: string, cwd: string, tmpBase: string): Promise<Got> {
   const view = await host.run(['gh', 'pr', 'view', target, '--json', 'number,title,body,headRefOid,baseRefName,url'], { cwd })
   if (view.exitCode === 127 || (view.exitCode !== 0 && isAuthFailure(view.stderr))) return { ok: false, error: GH_UNAVAILABLE }
@@ -21,6 +43,12 @@ export async function prArtifact(host: Host, target: string, cwd: string, tmpBas
   } catch {
     return { ok: false, error: `Could not read PR ${target}: unexpected gh output` }
   }
+
+  // gh reads a PR URL from any repository, but the fetch below and Post both
+  // go to this one, under the same number.
+  const here = await thisRepository(host, cwd)
+  if (!here.ok) return here
+  if (repositoryOf(pr.url) !== here.key) return { ok: false, error: `PR ${pr.url} is not in this repository (${here.name})` }
 
   const diff = await host.run(['gh', 'pr', 'diff', target], { cwd })
   if (diff.exitCode !== 0) return { ok: false, error: `Could not read PR ${target}: ${failure(diff)}` }
@@ -38,7 +66,12 @@ export async function prArtifact(host: Host, target: string, cwd: string, tmpBas
   const failed = (ran: RunResult): Got => ({ ok: false, error: `Could not check out PR #${pr.number}: ${failure(ran)}` })
   const fetch = await host.run(['git', 'fetch', 'origin', `pull/${pr.number}/head`], { cwd })
   if (fetch.exitCode !== 0) return failed(fetch)
-  const add = await host.run(['git', 'worktree', 'add', '--detach', path, 'FETCH_HEAD'], { cwd })
+  // origin need not be the repository gh read (a fork's clone), and the PR can
+  // move between gh's answer and the fetch.
+  const fetched = await host.run(['git', 'rev-parse', 'FETCH_HEAD'], { cwd })
+  if (fetched.exitCode !== 0) return failed(fetched)
+  if (fetched.stdout.trim() !== pr.headRefOid) return { ok: false, error: `PR ${pr.number} changed while it was being fetched; try again` }
+  const add = await host.run(['git', 'worktree', 'add', '--detach', path, pr.headRefOid], { cwd })
   if (add.exitCode !== 0) return failed(add)
 
   return { ok: true, artifact: { text, root: path, worktree: path, pr: ref } }
