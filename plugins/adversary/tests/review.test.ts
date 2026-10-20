@@ -388,6 +388,16 @@ test('guard denies a reviewer Read outside the root and allows one inside', asyn
   expect(JSON.stringify(inside)).not.toContain('outside the review root')
 })
 
+test("guard keeps a reviewer working in the session's own checkout out of CLAUDE.md, .claude and .git", async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+
+  for (const file_path of [`${ROOT}/CLAUDE.md`, `${ROOT}/.claude/settings.local.json`, `${ROOT}/.git/config`]) {
+    expect(JSON.stringify(await call($, { tool: 'Read', file_path, agentId: AGENT }))).toContain('outside the review root')
+  }
+  expect(w.toolCalls).toEqual([])
+})
+
 test("guard leaves the main thread's Read alone", async ($, on) => {
   const w = world(on, { runs: PR_RUNS })
   await adversary($, 'pr 123')

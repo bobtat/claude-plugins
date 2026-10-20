@@ -203,6 +203,56 @@ test('a pattern or glob starting with ~, a drive or two slashes is denied withou
   }
 })
 
+test('CLAUDE.md, CLAUDE.local.md, .claude and .git under the root are denied to Read', async () => {
+  for (const file_path of [
+    'C:/repo/CLAUDE.md',
+    'C:/repo/src/CLAUDE.local.md',
+    'C:/repo/src/claude.md',
+    'C:/repo/.claude/settings.json',
+    'C:/repo/src/.claude/agents/x.md',
+    'C:/repo/.git/config',
+    'C:/repo/.GIT/HEAD',
+  ]) {
+    expect(await judgeCall(spelled().host, { tool: 'Read', file_path }, ROOT)).toBe('deny')
+  }
+})
+
+test('a link that resolves into .git is denied', async () => {
+  expect(await judgeCall(landing('C:/repo/.git/config').host, { tool: 'Read', file_path: 'C:/repo/notes.txt' }, ROOT)).toBe('deny')
+})
+
+test('only the part of the path below the root counts, and near names are allowed', async () => {
+  const root = 'C:/Users/me/.claude/worktrees/x'
+  for (const file_path of [`${root}/src/a.ts`, `${root}/.github/workflows/ci.yml`, `${root}/docs/CLAUDE.md.bak`, `${root}/.gitignore`]) {
+    expect(await judgeCall(spelled().host, { tool: 'Read', file_path }, root)).toBe('allow')
+  }
+})
+
+test('under a POSIX root the withheld names compare exactly', async () => {
+  const root = '/home/u/repo'
+  expect(await judgeCall(spelled().host, { tool: 'Read', file_path: '/home/u/repo/.git/config' }, root)).toBe('deny')
+  expect(await judgeCall(spelled().host, { tool: 'Read', file_path: '/home/u/repo/CLAUDE.md' }, root)).toBe('deny')
+  expect(await judgeCall(spelled().host, { tool: 'Read', file_path: '/home/u/repo/claude.md' }, root)).toBe('allow')
+})
+
+test('a Grep or Glob aimed at CLAUDE.md, .claude or .git is denied', async () => {
+  for (const call of [
+    { tool: 'Grep', pattern: 'x', path: 'C:/repo/.claude' },
+    { tool: 'Glob', pattern: '*', path: 'C:/repo/.git' },
+    { tool: 'Glob', pattern: '.claude/**' },
+    { tool: 'Glob', pattern: '**/CLAUDE.md' },
+    { tool: 'Glob', pattern: '**\\claude.local.md' },
+    { tool: 'Glob', pattern: 'src/{a,.git}/*' },
+    { tool: 'Grep', pattern: 'x', glob: '**/.git/*' },
+    { tool: 'Glob', pattern: 'C:/repo/.claude/*' },
+    { tool: 'Glob', pattern: 'C:/repo/**/CLAUDE.md' },
+  ]) {
+    expect(await judgeCall(spelled().host, call, ROOT)).toBe('deny')
+  }
+  expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '**/*.md' }, ROOT)).toBe('scope')
+  expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '.github/**' }, ROOT)).toBe('scope')
+})
+
 test('a relative pattern or glob climbing out with .. is denied', async () => {
   expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '../../secrets/*' }, ROOT)).toBe('deny')
   expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: 'src/{a,../../x}/*' }, ROOT)).toBe('deny')
