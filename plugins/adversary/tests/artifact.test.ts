@@ -26,6 +26,7 @@ const prResponses = (head: string, diff = 'the diff') => ({
   'gh repo view --json nameWithOwner,url': repo('o/r', 'https://github.com/o/r'),
   'gh pr diff': { exitCode: 0, stdout: diff },
   'git rev-parse HEAD': { exitCode: 0, stdout: `${head}\n` },
+  'git status --porcelain': { exitCode: 0, stdout: '' },
   'git fetch': { exitCode: 0, stdout: '' },
   'git rev-parse FETCH_HEAD': { exitCode: 0, stdout: `${OID}\n` },
   'git worktree add': { exitCode: 0, stdout: '' },
@@ -59,6 +60,19 @@ test('pr not at HEAD fetches and adds a detached worktree as the root', async ()
   // The commit checked, not FETCH_HEAD, which another fetch may have moved since.
   expect(lines()).toContain(`git worktree add --detach ${path} ${OID}`)
   expect(calls.every(c => c.cwd === '/repo')).toBe(true)
+})
+
+test('pr at local HEAD with uncommitted or untracked changes is reviewed in a temp worktree', async () => {
+  const path = '/tmp/adversary-pr-45-abcdef0'
+  const dirty = recording({ ...prResponses(OID), 'git status --porcelain': { exitCode: 0, stdout: ' M src/a.ts\n?? notes.md\n' } })
+  // A status that cannot be read cannot vouch for a clean tree either.
+  const unknown = recording({ ...prResponses(OID), 'git status --porcelain': { exitCode: 128, stdout: '', stderr: 'fatal' } })
+
+  for (const { host, lines } of [dirty, unknown]) {
+    const result = await prArtifact(host, '45', '/repo', '/tmp')
+    expect(result.ok && result.artifact.root).toBe(path)
+    expect(lines()).toContain(`git worktree add --detach ${path} ${OID}`)
+  }
 })
 
 test('a worktree left at the path by an earlier run is removed and pruned before the add', async () => {
