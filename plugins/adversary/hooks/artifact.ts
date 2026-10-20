@@ -1,6 +1,6 @@
 import type { PrRef } from '../types'
 import { GH_UNAVAILABLE } from './brief'
-import type { Host } from './host'
+import type { Host, RunResult } from './host'
 
 export const MAX_ARTIFACT_CHARS = 200_000
 
@@ -55,6 +55,6 @@ export async function docArtifact(host: Host, path: string, cwd: string): Promis
   return { ok: true, artifact: { text: await host.readFile(full), root: cwd } }
 }
 
-export async function removeWorktree(host: Host, cwd: string, path: string): Promise<void> {
-  await host.run(['git', 'worktree', 'remove', '--force', path], { cwd })
+export async function removeWorktree(host: Host, cwd: string, path: string): Promise<RunResult> {
+  return host.run(['git', 'worktree', 'remove', '--force', path], { cwd })
 }

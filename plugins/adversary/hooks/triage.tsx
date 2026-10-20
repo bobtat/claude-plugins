@@ -5,7 +5,7 @@ import type { Decision, Finding, Review, Severity } from '../types'
 import { removeWorktree } from './artifact'
 import { draftText, relativeTo, savedMarkdown, whereText } from './findings'
 import { hostFrom } from './host'
-import type { Host } from './host'
+import type { Host, RunResult } from './host'
 
 type Api = EngineInterface
 
@@ -24,7 +24,8 @@ const MARK: Record<Decision, string> = { send: '✓', drop: '✗', undecided: '�
 
 const claimOf = (finding: Finding) => finding.editedClaim ?? finding.claim
 const sends = (review: Review) => review.findings.filter(finding => finding.decision === 'send')
-const firstLine = (text: string) => text.trim().split(/\r?\n/)[0] ?? ''
+// What a failed process said: its stderr's first line, or its exit code when it said nothing.
+const failure = ({ exitCode, stderr }: RunResult) => stderr.trim().split(/\r?\n/)[0] || `exit ${exitCode}`
 
 export function paneTitle(review: Review): string {
   const target = review.kind === 'pr' ? `PR #${review.pr?.number ?? review.target}` : review.kind === 'plan' ? 'plan' : review.target
@@ -91,6 +92,8 @@ export type ReviewPayload = {
   comments: { path: string; line: number; side: 'RIGHT'; body: string }[]
 }
 
+export type StalePayload = { event: 'COMMENT'; body: string }
+
 export function reviewPayload(review: Review, headRefOid: string, lines: Map<string, Set<number>>): ReviewPayload {
   const comments: ReviewPayload['comments'] = []
   const rest: Finding[] = []
@@ -105,26 +108,53 @@ export function reviewPayload(review: Review, headRefOid: string, lines: Map<str
     }
     rest.push(finding)
   }
-  const listed = rest.flatMap((finding, index) => [
+  const listed = numbered(rest)
+  const body = [REVIEW_OPENING, ...(listed.length > 0 ? ['', ...listed] : [])].join('\n')
+  return { event: 'COMMENT', commit_id: headRefOid, body, comments }
+}
+
+// The PR moved on since the review (or its head could not be read): line
+// numbers from the reviewed commit may point at other code now, so nothing is
+// anchored to a commit or a line.
+export function staleReviewPayload(review: Review, reviewedOid: string): StalePayload {
+  const opening = `The PR has new commits since this review (reviewed ${reviewedOid.slice(0, 7)}).`
+  return { event: 'COMMENT', body: [opening, '', ...numbered(sends(review))].join('\n') }
+}
+
+const numbered = (findings: Finding[]) =>
+  findings.flatMap((finding, index) => [
     `${index + 1}. [${finding.severity.toUpperCase()}] ${whereText(finding.location)} — ${claimOf(finding)}`,
     `   Evidence: ${finding.evidence}`,
   ])
-  const body = [REVIEW_OPENING, ...(listed.length > 0 ? ['', ...listed] : [])].join('\n')
-  return { event: 'COMMENT', commit_id: headRefOid, body, comments }
+
+async function currentHead(host: Host, number: number, cwd: string): Promise<string | undefined> {
+  const viewed = await host.run(['gh', 'pr', 'view', String(number), '--json', 'headRefOid'], { cwd })
+  if (viewed.exitCode !== 0) return undefined
+  try {
+    const head = (JSON.parse(viewed.stdout) as { headRefOid?: unknown }).headRefOid
+    return typeof head === 'string' ? head : undefined
+  } catch {
+    return undefined
+  }
 }
 
 export async function postReview(host: Host, review: Review, cwd: string): Promise<string> {
   if (review.pr === undefined) return 'Post failed: not a pull request review'
   const { number, headRefOid } = review.pr
   try {
-    const diff = await host.run(['gh', 'pr', 'diff', String(number)], { cwd })
-    if (diff.exitCode !== 0) return `Post failed: ${firstLine(diff.stderr)}`
-    const payload = reviewPayload(review, headRefOid, diffLines(diff.stdout))
+    let payload: ReviewPayload | StalePayload
+    if ((await currentHead(host, number, cwd)) === headRefOid) {
+      const diff = await host.run(['gh', 'pr', 'diff', String(number)], { cwd })
+      if (diff.exitCode !== 0) return `Post failed: ${failure(diff)}`
+      payload = reviewPayload(review, headRefOid, diffLines(diff.stdout))
+    } else {
+      payload = staleReviewPayload(review, headRefOid)
+    }
     const posted = await host.run(['gh', 'api', `repos/{owner}/{repo}/pulls/${number}/reviews`, '-X', 'POST', '--input', '-'], {
       cwd,
       stdin: JSON.stringify(payload),
     })
-    if (posted.exitCode !== 0) return `Post failed: ${firstLine(posted.stderr)}`
+    if (posted.exitCode !== 0) return `Post failed: ${failure(posted)}`
     let url: unknown
     try {
       url = (JSON.parse(posted.stdout) as { html_url?: unknown }).html_url
@@ -214,7 +244,6 @@ async function changeSelected($: Api, change: (finding: Finding) => Finding): Pr
 
 export async function decide($: Api, decision: Decision): Promise<void> {
   await changeSelected($, finding => ({ ...finding, decision }))
-  $.ui.invalidate('ui.render')
 }
 
 export async function move($: Api, delta: 1 | -1): Promise<void> {
@@ -223,7 +252,6 @@ export async function move($: Api, delta: 1 | -1): Promise<void> {
   const index = await selectedIndex($, review)
   const next = Math.min(Math.max(index + delta, 0), Math.max(review.findings.length - 1, 0))
   await update($, selectedState, () => next)
-  $.ui.invalidate('ui.render')
 }
 
 // An empty edit, or one back to the reviewer's words, drops the edit.
@@ -231,12 +259,10 @@ export async function editClaim($: Api, text: string): Promise<void> {
   const claim = text.trim()
   await changeSelected($, ({ editedClaim: _old, ...finding }) => (claim === '' || claim === finding.claim ? finding : { ...finding, editedClaim: claim }))
   await update($, editingState, () => false)
-  $.ui.invalidate('ui.render')
 }
 
 async function startEdit($: Api): Promise<void> {
   await update($, editingState, () => true)
-  $.ui.invalidate('ui.render')
 }
 
 // The person's close mark raises ui.close too; register.tsx releases the
@@ -259,14 +285,20 @@ export async function post($: Api): Promise<void> {
   const review = await read($, reviewState)
   if (review?.kind !== 'pr') return
   if (sends(review).length === 0) return $.ui.toast(NOTHING_TO_SEND)
-  $.ui.toast(await postReview(hostFrom($), review, await $.session.root()))
+  try {
+    const cwd = await $.session.root()
+    $.ui.toast(await postReview(hostFrom($), review, cwd))
+  } catch (error) {
+    $.ui.toast(`Post failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
 }
 
 export async function save($: Api): Promise<void> {
   const review = await read($, reviewState)
   if (review === null) return
   try {
-    const path = await saveReview(hostFrom($), review, await $.session.root(), localDate(await $.clock.now()))
+    const cwd = await $.session.root()
+    const path = await saveReview(hostFrom($), review, cwd, localDate(await $.clock.now()))
     $.ui.toast(`Saved ${path}`)
   } catch (error) {
     $.ui.toast(`Save failed: ${error instanceof Error ? error.message : String(error)}`)
@@ -274,13 +306,24 @@ export async function save($: Api): Promise<void> {
 }
 
 // Removes the review's temp worktree, unless the reviewer is still reading it
-// and `isEnding` is false. A path already gone makes git fail, harmlessly; it
-// never throws, so a close or a session end is never held up by it.
+// and `isEnding` is false. It never throws, so a close or a session end is
+// never held up by it.
 export async function releaseWorktree($: Api, isEnding: boolean): Promise<void> {
   try {
     const review = await read($, reviewState)
     if (review?.worktree === undefined || (review.status === 'running' && !isEnding)) return
-    await removeWorktree(hostFrom($), await $.session.root(), review.worktree)
+    const host = hostFrom($)
+    const cwd = await $.session.root()
+    const removed = await removeWorktree(host, cwd, review.worktree)
+    if (removed.exitCode !== 0) {
+      // A worktree still on disk is kept on record so a later close or session
+      // end tries again; one already gone only leaves git's bookkeeping behind.
+      if (await host.exists(review.worktree)) {
+        $.ui.toast(`Could not remove the review worktree ${review.worktree}: ${failure(removed)}`)
+        return
+      }
+      await host.run(['git', 'worktree', 'prune'], { cwd })
+    }
     await update($, reviewState, current => {
       if (current?.worktree !== review.worktree) return current
       const { worktree: _gone, ...rest } = current
@@ -349,8 +392,8 @@ export async function renderPane($: Api, e: RenderInput<'Pane'>) {
         <Box flexDirection="column">
           <Text> </Text>
           <Text bold>Unparsed</Text>
-          {review.unparsed.map(entry => (
-            <Text dimColor>
+          {review.unparsed.map((entry, index) => (
+            <Text key={`unparsed-${index}`} dimColor>
               {entry.reason}: {entry.raw}
             </Text>
           ))}
