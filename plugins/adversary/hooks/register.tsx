@@ -16,6 +16,10 @@ const READ_ONLY = 'The reviewer may use Read, Grep and Glob only'
 const WITHHELD_MATCH = 'Grep matched CLAUDE.md, .claude or .git, which the reviewer may not read; narrow it with path or glob'
 const CHECK_FAILED = 'Grep was not run: it could not first be checked for matches in CLAUDE.md, .claude or .git'
 const SEARCH_TOOLS = ['Read', 'Grep', 'Glob']
+// SubagentHandback is the engine's tool for a subagent to deliver its report to
+// the spawner. It reads nothing, and the report reaches the mod as
+// turn.complete's answer. The engine's tool-name type does not list it.
+const ALLOWED_TOOLS: string[] = [...SEARCH_TOOLS, 'SubagentHandback']
 const REVIEW_DELIVERED = 'adversary: the review finished; its findings are in the triage pane (/adversary triage).'
 
 export const register: Register = on => {
@@ -73,7 +77,7 @@ export const register: Register = on => {
   // The agent spec already limits the reviewer's tools; this holds if a spawn
   // or a later engine widens them. Read, Grep and Glob are the hook above's.
   on('tool.call', async ($, e, next) => {
-    if (SEARCH_TOOLS.includes(e.tool) || (await reviewerScope($, e.agentId)) === undefined) return next(e)
+    if (ALLOWED_TOOLS.includes(e.tool) || (await reviewerScope($, e.agentId)) === undefined) return next(e)
     return { deny: READ_ONLY }
   }).catch(($, e, next) => (next.called || e.agentId === undefined ? next(e) : { deny: READ_ONLY }))
 

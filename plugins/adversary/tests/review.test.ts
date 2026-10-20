@@ -482,6 +482,21 @@ test('guard denies a reviewer any tool but Read, Grep and Glob', async ($, on) =
   expect(w.toolCalls.map(c => c.tool)).toEqual(['Read'])
 })
 
+test('guard lets a reviewer hand its report back', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+
+  const result = await call($, { tool: 'SubagentHandback', report: 'findings', agentId: AGENT })
+  w.faults.agentList = true
+  await call($, { tool: 'SubagentHandback', report: 'notes', agentId: STRAY })
+
+  expect(JSON.stringify(result)).not.toContain(READ_ONLY)
+  expect(w.toolCalls.map(c => [c.tool, c.agentId])).toEqual([
+    ['SubagentHandback', AGENT],
+    ['SubagentHandback', STRAY],
+  ])
+})
+
 test("guard leaves other agents' tools alone", async ($, on) => {
   const w = world(on, { runs: PR_RUNS })
   await adversary($, 'pr 123')
