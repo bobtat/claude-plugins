@@ -38,6 +38,23 @@ test('jira without a connected atlassian server returns the verbatim Jira not co
   expect(result).toEqual({ ok: false, error: 'Jira not connected; paste the ticket with --brief "..."' })
 })
 
+test('a jira call that rejects is a failed brief, not a throw', async () => {
+  const connected = atlassian({ 'PROJ-123': { summary: 'S', description: 'D' } })
+  const rejectAll = fakeHost({ ...connected, mcpCall: async () => Promise.reject(new Error('server disconnected')) })
+  const rejectIssue = fakeHost({
+    ...connected,
+    mcpCall: async (server, tool, args) => (tool === 'getJiraIssue' ? Promise.reject(new Error('timeout')) : connected.mcpCall(server, tool, args)),
+  })
+  const rejectTools = fakeHost({ ...connected, mcpTools: async () => Promise.reject(new Error('tool list unavailable')) })
+
+  expect(await fetchBrief(rejectAll, { kind: 'jira', key: 'PROJ-123' })).toEqual({ ok: false, error: 'Jira not connected; paste the ticket with --brief "..."' })
+  expect(await fetchBrief(rejectIssue, { kind: 'jira', key: 'PROJ-123' })).toEqual({
+    ok: false,
+    error: 'Could not read PROJ-123 from Jira; paste the ticket with --brief "..."',
+  })
+  expect(await fetchBrief(rejectTools, { kind: 'jira', key: 'PROJ-123' })).toEqual({ ok: false, error: 'Jira not connected; paste the ticket with --brief "..."' })
+})
+
 test('fetches a github issue through gh', async () => {
   const host = fakeHost(gh({ 'gh issue view 45 --json title,body': { exitCode: 0, stdout: JSON.stringify({ title: 'Crash on save', body: 'It crashes.' }) } }))
 

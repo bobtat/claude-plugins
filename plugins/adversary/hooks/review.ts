@@ -8,7 +8,7 @@ import type { Artifact } from './artifact'
 import { classifyBrief, fetchBrief } from './brief'
 import type { Brief } from './brief'
 import { parseFindings, sortBySeverity } from './findings'
-import { hostFrom } from './host'
+import { hostFrom, messageOf } from './host'
 import type { Host } from './host'
 import { hasOutwardLinks } from './links'
 import { fillTemplate, homeDir, resolveTemplate } from './templates'
@@ -97,16 +97,24 @@ async function promptFor(host: Host, args: Start, cwd: string, artifact: Artifac
   return { ok: true, artifact, brief, prompt: filled.prompt }
 }
 
+async function resolved(host: Host, args: Start, cwd: string, artifact: Artifact): Promise<Prepared> {
+  // The guard compares resolved targets, so the root must be resolved the same
+  // way (a short 8.3 name, a subst drive, a junction) or nothing is under it.
+  const root = await host.realPath(artifact.root)
+  if (root === undefined) return { ok: false, error: `Could not resolve the review root ${artifact.root}` }
+  return promptFor(host, args, cwd, { ...artifact, root })
+}
+
 async function prepare($: Api, host: Host, args: Start, cwd: string): Promise<Prepared> {
   const got = await acquire($, host, args, cwd)
   if (!got.ok) return got
-  // The guard compares resolved targets, so the root must be resolved the same
-  // way (a short 8.3 name, a subst drive, a junction) or nothing is under it.
-  const root = await host.realPath(got.artifact.root)
-  const prepared: Prepared =
-    root === undefined
-      ? { ok: false, error: `Could not resolve the review root ${got.artifact.root}` }
-      : await promptFor(host, args, cwd, { ...got.artifact, root })
+  let prepared: Prepared
+  try {
+    prepared = await resolved(host, args, cwd, got.artifact)
+  } catch (error) {
+    prepared = { ok: false, error: `Could not prepare the review: ${messageOf(error)}` }
+  }
+  // Nothing records a worktree until the review is stored, so it goes here.
   if (!prepared.ok && got.artifact.worktree !== undefined) await removeWorktree(host, cwd, got.artifact.worktree)
   return prepared
 }

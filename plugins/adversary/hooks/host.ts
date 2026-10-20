@@ -8,6 +8,8 @@ export type RunResult = { exitCode: number; stdout: string; stderr: string }
 export const failure = ({ exitCode, stderr }: Pick<RunResult, 'exitCode' | 'stderr'>) =>
   stderr.trim().split(/\r?\n/)[0] || `exit ${exitCode}`
 
+export const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error))
+
 // A symbolic link is kind `other`, whatever it leads to.
 export type Entry = { name: string; kind: 'file' | 'dir' | 'other'; isLink: boolean }
 

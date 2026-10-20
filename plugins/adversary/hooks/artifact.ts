@@ -1,6 +1,6 @@
 import type { PrRef } from '../types'
 import { GH_UNAVAILABLE } from './brief'
-import { failure } from './host'
+import { failure, messageOf } from './host'
 import type { Host, RunResult } from './host'
 
 export const MAX_ARTIFACT_CHARS = 200_000
@@ -94,7 +94,11 @@ export async function planArtifact(_host: Host, plan: string | null, cwd: string
 export async function docArtifact(host: Host, path: string, cwd: string): Promise<Got> {
   const full = /^([A-Za-z]:)?[\\/]/.test(path) ? path : `${cwd.replace(/[\\/]$/, '')}/${path}`
   if (!(await host.exists(full))) return { ok: false, error: `Document not found: ${path}` }
-  return { ok: true, artifact: { text: await host.readFile(full), root: cwd } }
+  try {
+    return { ok: true, artifact: { text: await host.readFile(full), root: cwd } }
+  } catch (error) {
+    return { ok: false, error: `Could not read ${path}: ${messageOf(error)}` }
+  }
 }
 
 export async function removeWorktree(host: Host, cwd: string, path: string): Promise<RunResult> {
