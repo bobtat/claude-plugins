@@ -204,7 +204,10 @@ review. The review lives in session state, so it survives closing the pane.
   as such a link. The reviewer gets "Grep/Glob disabled" and has Read only. Reading files by path
   still works and is still confined.
 - A denied Grep tells the reviewer that its pattern matched somewhere in `CLAUDE.md`, `.claude` or
-  `.git`. It learns that there is a match, but not the matching text or which file it is in.
+  `.git`. One denial shows neither the matching text nor the file, but a reviewer that keeps
+  probing, lengthening the pattern one character at a time or narrowing `path`, `glob` or `type`,
+  can rebuild withheld text and work out which file holds it. The guard keeps the reviewer from
+  being handed those files; it does not stop one determined to reconstruct them.
 - One review at a time, and only the last review is kept for `/adversary triage`.
 - The reviewer sees one artifact. A PR diff, document or plan over 200000 characters is refused
   rather than truncated.
