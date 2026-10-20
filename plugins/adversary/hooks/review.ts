@@ -3,7 +3,7 @@ import type { EngineInterface, TurnCompleteInput } from 'claude-code'
 
 import type { Review } from '../types'
 import type { Args } from './args'
-import { docArtifact, planArtifact, prArtifact, removeWorktree } from './artifact'
+import { MAX_ARTIFACT_CHARS, docArtifact, planArtifact, prArtifact, removeWorktree } from './artifact'
 import type { Artifact } from './artifact'
 import { classifyBrief, fetchBrief } from './brief'
 import type { Brief } from './brief'
@@ -105,9 +105,16 @@ async function resolved(host: Host, args: Start, cwd: string, artifact: Artifact
   return promptFor(host, args, cwd, { ...artifact, root })
 }
 
+// A PR's diff is measured, before anything is fetched, by prArtifact.
+const SIZED = { doc: 'Document', plan: 'Plan' } as const
+
 async function prepare($: Api, host: Host, args: Start, cwd: string): Promise<Prepared> {
   const got = await acquire($, host, args, cwd)
   if (!got.ok) return got
+  const { length } = got.artifact.text
+  if (args.sub !== 'pr' && length > MAX_ARTIFACT_CHARS) {
+    return { ok: false, error: `${SIZED[args.sub]} is ${length} characters; too large for one review (limit ${MAX_ARTIFACT_CHARS})` }
+  }
   let prepared: Prepared
   try {
     prepared = await resolved(host, args, cwd, got.artifact)
