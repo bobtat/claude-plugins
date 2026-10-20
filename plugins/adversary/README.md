@@ -65,18 +65,20 @@ reviewer here is a separate agent that starts with none of them:
 - Flag values with spaces go in double quotes. A quoted token is always a value, never a flag.
 - `--model` sets the reviewer's model. Without it the reviewer uses the session model.
 - `--focus` adds a "Focus" section to the reviewer's task.
-- A malformed command replies with the usage above.
+- A malformed command, including an empty target or flag value, replies with the usage above.
 - `plan` reviews the plan from the last `ExitPlanMode` in this session. With none it replies
   "No plan this session".
 - `doc <path>` is relative to the project root unless absolute. The reviewer can read the rest of
   the project (the review root is the project root), not just the one file.
 - Only one review runs at a time; starting another while the reviewer is alive replies "Review in
-  progress". The pane opens by itself when the review finishes or fails.
+  progress". The pane opens by itself when the review finishes or fails. A review whose reviewer is
+  no longer running (after a reload or a crash) shows in the pane as failed: "The reviewer is gone".
 
 ### Plan-ready band
 
 After you approve a plan, a line appears above the prompt: "Plan ready — /adversary plan to review
-it". It stays until you submit your next prompt.
+it". It stays until you send your next message, from the terminal or through Remote Control. A
+background task's notification or a scheduled prompt arriving in between leaves it up.
 
 ## Briefs
 
@@ -95,15 +97,22 @@ connected; paste the ticket with --brief "..."").
 
 Needs `gh`, logged in. The reviewer is given the PR number, title, body and diff.
 
-- If the project's checked-out `HEAD` is the PR's head commit, the reviewer reads the project
-  directory.
-- Otherwise the PR head is fetched and checked out detached in a temporary git worktree under the
-  system temp directory (`adversary-pr-<number>-<short sha>`), and that is the review root. The
-  worktree is removed when the pane closes or the session ends, and before the next review starts.
+- The PR must belong to the project's repository, as `gh repo view` names it (host, owner and name,
+  ignoring case). A URL of a PR in another repository is refused, since the checkout and Post would
+  go to this repository's PR of the same number.
+- If the project's checked-out `HEAD` is the PR's head commit and the working tree has no
+  uncommitted or untracked changes, the reviewer reads the project directory.
+- Otherwise the PR head is fetched from `origin` and checked out detached in a temporary git
+  worktree under the system temp directory (`adversary-pr-<number>-<short sha>`), and that is the
+  review root. If the fetch brings a different commit than the head `gh` reported (the PR moved, or
+  `origin` is not the repository `gh` read), the review is refused. A worktree left at that path by
+  an earlier session is removed first. The worktree is removed when the pane closes or the session
+  ends, and before the next review starts.
   While the reviewer is still running, closing the pane leaves the worktree in place until the
   session ends. If git cannot remove it, a toast names the path and the next close or session end
   tries again.
-- A diff over 200000 characters is refused; the reply gives its size.
+- A diff over 200000 characters is refused; the reply gives its size. The same limit applies to a
+  document or a plan.
 
 ## Templates
 
@@ -184,7 +193,8 @@ review. The review lives in session state, so it survives closing the pane.
   as such a link. The reviewer gets "Grep/Glob disabled" and has Read only. Reading files by path
   still works and is still confined.
 - One review at a time, and only the last review is kept for `/adversary triage`.
-- The reviewer sees one artifact. A diff over 200000 characters is refused rather than truncated.
+- The reviewer sees one artifact. A PR diff, document or plan over 200000 characters is refused
+  rather than truncated.
 
 ## Development
 
