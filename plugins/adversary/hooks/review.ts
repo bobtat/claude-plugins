@@ -33,6 +33,8 @@ export const REVIEWER = {
     'Work only from it and from the files under the directory it names, using Read, Grep and Glob.',
   ].join(' '),
   tools: ['Read', 'Grep', 'Glob'],
+  // A spawn's --model overrides it; without one the reply promises the session model.
+  model: 'inherit',
   background: true,
   omitClaudeMd: true,
 } as const
