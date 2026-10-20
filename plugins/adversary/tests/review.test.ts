@@ -135,6 +135,7 @@ function world(on: On, opts: Options = {}) {
     submitted.push(e.text)
     return { text: e.text }
   })
+  on('prompt.attachment', (_$, e) => ({ text: e.text }))
   on('state.set', (_$, e, next) => {
     if (e.key === 'review' && e.value) reviews.push(e.value as Review)
     return next(e)
@@ -776,4 +777,29 @@ test('a notice passes through when the agent list cannot be read', async ($, on)
   await deliver($, notification(STRAY, 'findings'))
 
   expect(w.submitted).toEqual([notification(STRAY, 'findings')])
+})
+
+// A notification delivered into a running turn reaches the model as an attachment instead.
+const queued = ($: Engine, text: string, type = 'queued_command') => $.prompt.attachment({ type, text, origin: { kind: 'engine' } })
+
+test("the reviewer's completion notice queued into a running turn is left out", async ($, on) => {
+  world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+
+  expect(await queued($, notification(AGENT, 'findings'))).toEqual({ text: null })
+})
+
+test('every other queued command or attachment is kept', async ($, on) => {
+  world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+
+  expect(await queued($, notification('shell-7', 'build ok'))).toEqual({ text: notification('shell-7', 'build ok') })
+  expect(await queued($, `${AGENT} said hi`, 'todo_reminder')).toEqual({ text: `${AGENT} said hi` })
+})
+
+test('a queued notice is kept when the agent list cannot be read', async ($, on) => {
+  const w = world(on)
+  w.faults.agentList = true
+
+  expect(await queued($, notification(STRAY, 'findings'))).toEqual({ text: notification(STRAY, 'findings') })
 })
