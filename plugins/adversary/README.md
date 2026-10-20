@@ -15,9 +15,11 @@ reviewer here is a separate agent that starts with none of them:
 - It has Read, Grep and Glob only, and a `tool.call` hook confines every call to the review root.
   A path that resolves outside the root (through `..`, a link, a drive-relative or UNC spelling) is
   denied. Inside the root, the contents of any `CLAUDE.md`, `CLAUDE.local.md`, `.claude` or `.git`
-  are withheld: Read of one is denied, and so is a Grep whose path or glob names one, or whose
-  results come from one (narrow it with `path` or `glob` and the search works again). A Glob with a
-  broad pattern such as `**/*` still lists the names of files under `.claude` and `.git`.
+  are withheld: Read of one is denied, and so is a Grep whose path or glob names one, or that
+  matches in one. Before a reviewer Grep runs, the same search is run once listing every file it
+  matches, with no output limit, and if any is withheld the Grep is denied (narrow it with `path` or
+  `glob` and it works again); if that listing fails, the Grep is denied too. A Glob with a broad
+  pattern such as `**/*` still lists the names of files under `.claude` and `.git`.
 - Nothing it finds goes anywhere on its own. The findings open in a pane where you send or drop each
   one, and only the ones you send are drafted into your prompt, posted to the PR, or both. The
   reviewer's completion notice, which carries its answer, is kept out of the session, whether it
@@ -111,10 +113,12 @@ Needs `gh`, logged in. The reviewer is given the PR number, title, body and diff
   worktree under the system temp directory (`adversary-pr-<number>-<short sha>-<session>`, the last
   part the first eight characters of the session id), and that is the review root. If the fetch
   brings a different commit than the head `gh` reported (the PR moved, or `origin` is not the
-  repository `gh` read), the review is refused. A worktree this session left at that path (after a
-  reload or a crash) is removed first; another session reviewing the same PR head has its own path
-  and is never touched. The worktree is removed when the pane closes or the session
-  ends, and before the next review starts.
+  repository `gh` read), the review is refused. A worktree left at that path is removed first, which
+  after a reload or a crash only happens if the session keeps its id; a session that comes back
+  under a new id (after `/clear`, for one) uses a new path, and the old checkout stays until you
+  remove it with `git worktree remove`. Another session reviewing the same PR head has its own path
+  and is never touched. The worktree is removed when the pane closes or the session ends, and
+  before the next review starts.
   While the reviewer is still running, closing the pane leaves the worktree in place until the
   session ends. If git cannot remove it, a toast names the path and the next close or session end
   tries again.
@@ -199,6 +203,8 @@ review. The review lives in session state, so it survives closing the pane.
   it, or more than 20000 entries; the scan runs once per review and counts anything it cannot settle
   as such a link. The reviewer gets "Grep/Glob disabled" and has Read only. Reading files by path
   still works and is still confined.
+- A denied Grep tells the reviewer that its pattern matched somewhere in `CLAUDE.md`, `.claude` or
+  `.git`. It learns that there is a match, but not the matching text or which file it is in.
 - One review at a time, and only the last review is kept for `/adversary triage`.
 - The reviewer sees one artifact. A PR diff, document or plan over 200000 characters is refused
   rather than truncated.
