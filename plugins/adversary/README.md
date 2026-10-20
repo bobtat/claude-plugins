@@ -9,14 +9,19 @@ code: a TypeScript hooks module that Claude Code loads and runs in the session.
 A review written inside the session that produced the work shares that session's assumptions. The
 reviewer here is a separate agent that starts with none of them:
 
-- It does not see the session transcript or memory, and it is not given `CLAUDE.md` and cannot open
+- It does not see the session transcript or memory, and it is not given `CLAUDE.md` and cannot read
   it. Its only input is one message: the template, the artifact, the optional brief and focus, and
   the output format.
 - It has Read, Grep and Glob only, and a `tool.call` hook confines every call to the review root.
   A path that resolves outside the root (through `..`, a link, a drive-relative or UNC spelling) is
-  denied, and so is any `CLAUDE.md`, `CLAUDE.local.md`, `.claude` or `.git` inside it.
+  denied. Inside the root, the contents of any `CLAUDE.md`, `CLAUDE.local.md`, `.claude` or `.git`
+  are withheld: Read of one is denied, and so is a Grep whose path or glob names one, or whose
+  results come from one (narrow it with `path` or `glob` and the search works again). A Glob with a
+  broad pattern such as `**/*` still lists the names of files under `.claude` and `.git`.
 - Nothing it finds goes anywhere on its own. The findings open in a pane where you send or drop each
-  one, and only the ones you send are drafted into your prompt, posted to the PR, or both.
+  one, and only the ones you send are drafted into your prompt, posted to the PR, or both. The
+  reviewer's completion notice, which carries its answer, is kept out of the session, whether it
+  arrives as a prompt or is queued into a running turn.
 
 ```
 /adversary pr|plan|doc ──► artifact (PR text + diff, plan, or file)
@@ -103,10 +108,12 @@ Needs `gh`, logged in. The reviewer is given the PR number, title, body and diff
 - If the project's checked-out `HEAD` is the PR's head commit and the working tree has no
   uncommitted or untracked changes, the reviewer reads the project directory.
 - Otherwise the PR head is fetched from `origin` and checked out detached in a temporary git
-  worktree under the system temp directory (`adversary-pr-<number>-<short sha>`), and that is the
-  review root. If the fetch brings a different commit than the head `gh` reported (the PR moved, or
-  `origin` is not the repository `gh` read), the review is refused. A worktree left at that path by
-  an earlier session is removed first. The worktree is removed when the pane closes or the session
+  worktree under the system temp directory (`adversary-pr-<number>-<short sha>-<session>`, the last
+  part the first eight characters of the session id), and that is the review root. If the fetch
+  brings a different commit than the head `gh` reported (the PR moved, or `origin` is not the
+  repository `gh` read), the review is refused. A worktree this session left at that path (after a
+  reload or a crash) is removed first; another session reviewing the same PR head has its own path
+  and is never touched. The worktree is removed when the pane closes or the session
   ends, and before the next review starts.
   While the reviewer is still running, closing the pane leaves the worktree in place until the
   session ends. If git cannot remove it, a toast names the path and the next close or session end
