@@ -33,7 +33,18 @@ export function isUnplaceable(path: string): boolean {
 export async function checkPath(host: Host, path: string, root: string): Promise<boolean> {
   if (isUnplaceable(path)) return false
   const realPath = await host.realPath(path)
-  return realPath !== undefined && isUnder(root, realPath)
+  return realPath !== undefined && isUnder(root, realPath) && !isWithheld(root, normalise(realPath).slice(normalise(root).length))
+}
+
+// The session's own instructions and settings and the repository's internals:
+// the reviewer is meant to start with none of the author session's context.
+const WITHHELD = ['.claude', '.git', 'CLAUDE.md', 'CLAUDE.local.md']
+
+// Whether any segment of `rest`, a path or pattern below the root, is withheld.
+function isWithheld(root: string, rest: string): boolean {
+  const fold = (text: string) => (isWindowsRoot(root) ? text.toLowerCase() : text)
+  const withheld = WITHHELD.map(fold)
+  return rest.split(/[\\/{},]/).some(segment => withheld.includes(fold(segment)))
 }
 
 export type ReviewerCall = { tool: string; file_path?: unknown; path?: unknown; pattern?: unknown; glob?: unknown }
@@ -65,7 +76,10 @@ export async function judgeCall(host: Host, call: ReviewerCall, root: string): P
   const pattern = call.tool === 'Glob' ? call.pattern : call.tool === 'Grep' ? call.glob : undefined
   if (typeof pattern === 'string') {
     if (pattern.includes('..')) return 'deny'
-    if (isAbsoluteSpelling(pattern)) places.push(anchor(pattern))
+    const absolute = isAbsoluteSpelling(pattern)
+    const fixed = absolute ? anchor(pattern) : ''
+    if (absolute) places.push(fixed)
+    if (isWithheld(root, pattern.slice(fixed.length))) return 'deny'
   }
 
   for (const place of places) {
