@@ -12,7 +12,10 @@ const JIRA_KEY = /^[A-Z][A-Z0-9]+-\d+$/
 const GITHUB_NUMBER = /^#(\d+)$/
 const GITHUB_ISSUE_URL = /^https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/issues\/(\d+)$/
 
+const BUNDLED_SERVER = 'atlassian'
+
 const JIRA_NOT_CONNECTED = 'Jira not connected; paste the ticket with --brief "..."'
+const JIRA_SIGN_IN = 'Atlassian needs you to sign in: run /mcp, or paste the ticket with --brief "..."'
 export const GH_UNAVAILABLE = 'gh is not available: run gh auth login'
 
 export function classifyBrief(value: string): BriefSource {
@@ -28,9 +31,20 @@ export async function fetchBrief(host: Host, source: BriefSource): Promise<Resul
   return source.kind === 'jira' ? fetchJira(host, source.key) : fetchGithub(host, source.ref)
 }
 
-// Servers cannot be listed, so the Atlassian one is found from the names of
-// the MCP tools the session carries (`mcp__<server>__<tool>`).
-async function atlassianServer(host: Host): Promise<string | undefined> {
+// The plugin bundles the Atlassian server in .mcp.json; `connect` answers with
+// the name to call it by, or with the name of the same server the session
+// already runs. Anything else falls back to the tool-name search below.
+async function atlassianServer(host: Host): Promise<{ server: string } | { error: string }> {
+  const bundled = await host.mcpConnect(BUNDLED_SERVER).catch(() => undefined)
+  if (bundled?.isConnected) return { server: bundled.server }
+  const running = await runningAtlassianServer(host)
+  if (running !== undefined) return { server: running }
+  return { error: bundled?.reason === 'auth' ? JIRA_SIGN_IN : JIRA_NOT_CONNECTED }
+}
+
+// Servers cannot be listed, so one the session runs is found from the names of
+// the MCP tools it carries (`mcp__<server>__<tool>`).
+async function runningAtlassianServer(host: Host): Promise<string | undefined> {
   const tools = await host.mcpTools().catch(() => [])
   for (const name of tools) {
     const match = /^mcp__(.+)__([^_]+)$/.exec(name)
@@ -57,8 +71,9 @@ const descriptionText = (description: unknown): string => {
 
 async function fetchJira(host: Host, key: string): Promise<Result> {
   const failed: Result = { ok: false, error: JIRA_NOT_CONNECTED }
-  const server = await atlassianServer(host)
-  if (server === undefined) return failed
+  const found = await atlassianServer(host)
+  if ('error' in found) return { ok: false, error: found.error }
+  const { server } = found
 
   const resources = await callJson(host, server, RESOURCES_TOOL, {})
   const cloudId = Array.isArray(resources) ? (resources[0] as { id?: string } | undefined)?.id : undefined

@@ -13,9 +13,12 @@ export const messageOf = (error: unknown) => (error instanceof Error ? error.mes
 // A symbolic link is kind `other`, whatever it leads to.
 export type Entry = { name: string; kind: 'file' | 'dir' | 'other'; isLink: boolean }
 
+export type McpConnection = { isConnected: true; server: string } | { isConnected: false; reason: string }
+
 export type Host = {
   run(argv: string[], opts?: { cwd?: string; stdin?: string }): Promise<RunResult>
   mcpTools(): Promise<string[]>
+  mcpConnect(key: string): Promise<McpConnection>
   mcpCall(server: string, tool: string, args: Record<string, unknown>): Promise<unknown>
   readFile(path: string): Promise<string>
   writeFile(path: string, text: string): Promise<void>
@@ -39,6 +42,10 @@ export function hostFrom($: EngineInterface): Host {
     },
     async mcpTools() {
       return (await $.tool.list()).filter(t => t.mcp).map(t => t.name)
+    },
+    async mcpConnect(key) {
+      const connected = await $.mcp.connect(key)
+      return connected.isConnected ? { isConnected: true, server: connected.server } : { isConnected: false, reason: connected.reason }
     },
     mcpCall: (server, tool, args) => $.mcp.call(server, tool, args),
     readFile: path => $.fs.read(path),
