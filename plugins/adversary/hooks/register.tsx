@@ -4,7 +4,7 @@ import { parseArgs } from './args'
 import { judgeCall } from './guard'
 import { hostFrom } from './host'
 import { registerPlanBand } from './plan'
-import { REVIEWER, reviewerScope, reviewerTurnEnded, startReview } from './review'
+import { namesReviewer, REVIEWER, reviewerScope, reviewerTurnEnded, startReview } from './review'
 import { homeDir, seedUserTemplates } from './templates'
 import { openTriage, releaseWorktree, renderPane } from './triage'
 
@@ -12,6 +12,7 @@ const OUTSIDE = 'outside the review root'
 // Spelled out, not imported from triage.tsx, so validate can list the pane hooks' matchers.
 const PANE_ID = 'adversary'
 const NO_SEARCH = 'Grep/Glob disabled: the review root contains links leading outside it; use Read'
+const REVIEW_DELIVERED = 'adversary: the review finished; its findings are in the triage pane (/adversary triage).'
 
 export const register: Register = on => {
   registerPlanBand(on)
@@ -45,6 +46,13 @@ export const register: Register = on => {
     if (verdict === 'deny') return { deny: OUTSIDE }
     return next(verdict === 'scope' ? { ...e, path: scope.root } : e)
   }).catch(($, e, next) => (next.called || e.agentId === undefined ? next(e) : { deny: OUTSIDE }))
+
+  // The reviewer runs in the background, so its answer would also come back to
+  // the author session as a task notification, findings and all, past triage.
+  on('prompt.submit', { origin: { kind: 'task-notification' } }, async ($, e, next) => {
+    if (e.origin.kind !== 'task-notification' || !(await namesReviewer($, e.text))) return next(e)
+    return { drop: REVIEW_DELIVERED }
+  }).catch(($, e, next) => next(e))
 
   on('turn.complete', async ($, e, next) => {
     await reviewerTurnEnded($, e)

@@ -58,6 +58,7 @@ function world(on: On, opts: Options = {}) {
   const agents: AgentInfo[] = []
   const ran: string[] = []
   const faults = { agentList: false }
+  const submitted: string[] = []
 
   const read = (path: string) => (shippedPath(path) ? SHIPPED_PR : files[path] ?? written[path])
 
@@ -116,6 +117,10 @@ function world(on: On, opts: Options = {}) {
     const { exitCode, stdout, stderr = '' } = opts.runs![key]
     return { value: { exitCode, stdout, stderr, isStdoutTruncated: false, isStderrTruncated: false } }
   })
+  on('prompt.submit', (_$, e) => {
+    submitted.push(e.text)
+    return { text: e.text }
+  })
   on('state.set', (_$, e, next) => {
     if (e.key === 'review' && e.value) reviews.push(e.value as Review)
     return next(e)
@@ -124,7 +129,7 @@ function world(on: On, opts: Options = {}) {
     toolCalls.push({ ...e })
     return { result: 'ran' }
   })
-  return { written, spawned, registered, reviews, reads, logs, toolCalls, agents, ran, faults }
+  return { written, spawned, registered, reviews, reads, logs, toolCalls, agents, ran, faults, submitted }
 }
 
 const PRESENTATION = { isFullscreen: false, columns: 120 }
@@ -529,4 +534,60 @@ test("a new review removes the previous review's temp worktree", async ($, on) =
     `git worktree remove --force ${worktree}`,
     `git worktree add --detach ${worktree} FETCH_HEAD`,
   ])
+})
+
+const DELIVERED = 'adversary: the review finished; its findings are in the triage pane (/adversary triage).'
+
+// A background task's completion as the engine queues it for the author session.
+const notification = (agentId: string, result: string) =>
+  `<task-notification>\n<task-id>${agentId}</task-id>\n<status>completed</status>\n<summary>Agent "adversarial review" completed</summary>\n<result>${result}</result>\n</task-notification>`
+
+const deliver = ($: Engine, text: string, kind: 'task-notification' | 'composer' = 'task-notification') =>
+  $.prompt.submit({ text, wait: false, origin: { kind }, ...(kind === 'composer' ? {} : { isMeta: true as const }) })
+
+test("the reviewer's completion notice never reaches the author session", async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+  const answer = json({ findings: [{ severity: 'high', location: { file: 'src/a.ts' }, claim: 'Deadlock.', evidence: 'lock()' }] })
+  await $.turn.complete(complete(answer))
+
+  const result = await deliver($, notification(AGENT, answer))
+
+  expect(result).toEqual({ drop: DELIVERED })
+  expect(w.submitted).toEqual([])
+})
+
+test('a notice from a reviewer that is not the stored one is kept out too', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+  w.agents.push(stray())
+
+  expect(await deliver($, notification(STRAY, 'findings'))).toEqual({ drop: DELIVERED })
+  expect(w.submitted).toEqual([])
+})
+
+test('every other prompt passes untouched', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+  w.agents.push({ id: 'shell-7', description: 'build', type: 'local_bash', status: 'completed' })
+  // An id that only starts with the reviewer's is another task's.
+  const prompts = [
+    deliver($, notification('shell-7', 'build ok')),
+    deliver($, notification(`${AGENT}0`, 'other')),
+    deliver($, `what did ${AGENT} find?`, 'composer'),
+  ]
+
+  const results = await Promise.all(prompts)
+
+  expect(results.map(r => r.drop)).toEqual([undefined, undefined, undefined])
+  expect(w.submitted).toEqual([notification('shell-7', 'build ok'), notification(`${AGENT}0`, 'other'), `what did ${AGENT} find?`])
+})
+
+test('a notice passes through when the agent list cannot be read', async ($, on) => {
+  const w = world(on)
+  w.faults.agentList = true
+
+  await deliver($, notification(STRAY, 'findings'))
+
+  expect(w.submitted).toEqual([notification(STRAY, 'findings')])
 })
