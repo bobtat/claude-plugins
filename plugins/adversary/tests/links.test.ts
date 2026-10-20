@@ -10,7 +10,8 @@ const file = (name: string): Entry => ({ name, kind: 'file', isLink: false })
 const dir = (name: string): Entry => ({ name, kind: 'dir', isLink: false })
 const link = (name: string): Entry => ({ name, kind: 'other', isLink: true })
 
-// A tree of directories, and where each link (or odd entry) lands.
+// A tree of directories, and where each link (or odd entry) lands; a listed
+// directory lands where it is spelled unless `lands` says otherwise.
 function tree(dirs: Record<string, Entry[]>, lands: Record<string, string> = {}) {
   const listed: string[] = []
   const host = fakeHost({
@@ -20,7 +21,7 @@ function tree(dirs: Record<string, Entry[]>, lands: Record<string, string> = {})
       if (entries === undefined) throw new Error(`ENOENT: ${path}`)
       return entries
     },
-    realPath: async path => lands[path],
+    realPath: async path => lands[path] ?? (dirs[path] === undefined ? undefined : path),
   })
   return { host, listed }
 }
@@ -55,6 +56,16 @@ test('an entry that is neither file nor directory is checked like a link', async
 
   expect(await hasOutwardLinks(tree({ [ROOT]: [junction] }, { [`${ROOT}/j`]: 'D:/elsewhere' }).host, ROOT)).toBe(true)
   expect(await hasOutwardLinks(tree({ [ROOT]: [junction] }, { [`${ROOT}/j`]: `${ROOT}/x` }).host, ROOT)).toBe(false)
+})
+
+test('a plain directory that resolves outside the root is outward and not walked', async () => {
+  const { host, listed } = tree(
+    { [ROOT]: [dir('vendor')], [`${ROOT}/vendor`]: [file('a.ts')] },
+    { [`${ROOT}/vendor`]: 'D:/shared/vendor' },
+  )
+
+  expect(await hasOutwardLinks(host, ROOT)).toBe(true)
+  expect(listed).toEqual([ROOT])
 })
 
 test('a link that cannot be resolved counts as outward', async () => {

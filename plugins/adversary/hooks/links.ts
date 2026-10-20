@@ -22,7 +22,11 @@ export async function hasOutwardLinks(host: Host, root: string, cap = MAX_SCANNE
       if (++seen > cap) return true
       const path = /[\\/]$/.test(dir) ? `${dir}${entry.name}` : `${dir}/${entry.name}`
       if (entry.kind === 'dir' && !entry.isLink) {
-        if (entry.name !== '.git') pending.push(path)
+        if (entry.name === '.git') continue
+        // A junction or mount point can list as a plain directory.
+        const realPath = await host.realPath(path)
+        if (realPath === undefined || !isUnder(root, realPath)) return true
+        pending.push(path)
       } else if (entry.isLink || entry.kind === 'other') {
         const realPath = await host.realPath(path)
         if (realPath === undefined || !isUnder(root, realPath)) return true
