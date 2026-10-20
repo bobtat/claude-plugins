@@ -12,6 +12,8 @@ Markdown and JSON only — no package manager, no test runner, no lint step, no 
 
 **`subagent-tree` is code too**, and takes the same two commands: after any change under `plugins/subagent-tree/`, run `claude plugin validate plugins/subagent-tree` and `claude plugin test plugins/subagent-tree` and don't commit until both pass. Its elapsed-time and token arithmetic fails as plausible wrong figures, not errors. See `plugins/subagent-tree/README.md`.
 
+**`adversary` is code as well**, with the same two commands: after any change under `plugins/adversary/`, run `claude plugin validate plugins/adversary` and `claude plugin test plugins/adversary` and don't commit until both pass. The reviewer's path guard and the findings parser fail silently rather than loudly: a guard bug lets the reviewer read outside the review root, a parser bug drops findings. See `plugins/adversary/README.md`.
+
 ## Editing a plugin
 
 ```
