@@ -14,6 +14,8 @@ const AGENT = 'reviewer-1'
 const WORKTREE = 'C:/tmp/adversary-pr-123-abc1234'
 const NOTHING = 'Nothing to send — mark findings with s first'
 const API = 'gh api repos/{owner}/{repo}/pulls/123/reviews -X POST --input -'
+const HEAD = 'gh pr view 123 --json headRefOid'
+const SAME_HEAD = { [HEAD]: { exitCode: 0, stdout: '{"headRefOid":"abc1234def"}\n' } }
 
 const finding = (id: number, over: Partial<Finding>): Finding => ({
   id,
@@ -144,23 +146,25 @@ function world(on: On, opts: Options = {}) {
     const { exitCode, stdout, stderr = '' } = opts.runs![key]
     return { value: { exitCode, stdout, stderr, isStdoutTruncated: false, isStderrTruncated: false } }
   })
-  // The session's state, held here so a test can start from a review of its own.
-  const state: Record<string, { value: unknown; version: number }> = {}
-  on('state.get', (_$, e) => ({ value: { value: state[e.key]?.value, version: state[e.key]?.version ?? 0 } }) as never)
-  on('state.set', (_$, e) => {
-    const version = state[e.key]?.version ?? 0
-    if (e.ifVersion !== undefined && e.ifVersion !== version) return { value: { isSet: false, version } }
-    state[e.key] = { value: e.value, version: version + 1 }
-    if (e.key === 'review' && e.value) reviews.push(e.value as Review)
-    return { value: { isSet: true, version: version + 1 } }
+  // The kit keeps the session's state, so a write redraws the pane as in a
+  // session. A seeded review stands in for a review not yet written there.
+  const seeded: { review?: Review } = {}
+  on('state.get', async (_$, e, next) => {
+    const held = (await next(e)) as unknown as { value: { value: unknown; version: number } }
+    if (e.key !== 'review' || held.value.value != null || seeded.review === undefined) return held as never
+    return { value: { value: seeded.review, version: held.value.version } } as never
   })
-  return { opened, toasts, fills, ran, written, reviews, agents, state }
+  on('state.set', (_$, e, next) => {
+    if (e.key === 'review' && e.value) reviews.push(e.value as Review)
+    return next(e)
+  })
+  return { opened, toasts, fills, ran, written, reviews, agents, seeded }
 }
 
 type World = ReturnType<typeof world>
 
 const seed = (w: World, review: Review) => {
-  w.state.review = { value: review, version: (w.state.review?.version ?? 0) + 1 }
+  w.seeded.review = review
 }
 
 const PANE_PROPS = {
@@ -297,7 +301,7 @@ test('Post is absent for plan and doc reviews', async ($, on) => {
 
 test('Post sends one review with inline comments and lineless findings in the body', async ($, on) => {
   const html = 'https://github.com/o/r/pull/123#pullrequestreview-9'
-  const w = world(on, { runs: { 'gh pr diff 123': ok(DIFF), [API]: ok(JSON.stringify({ id: 9, html_url: html })) } })
+  const w = world(on, { runs: { ...SAME_HEAD, 'gh pr diff 123': ok(DIFF), [API]: ok(JSON.stringify({ id: 9, html_url: html })) } })
   seed(w, {
     ...PR_REVIEW,
     findings: [
@@ -333,7 +337,7 @@ test('Post sends one review with inline comments and lineless findings in the bo
 })
 
 test('Post puts a finding on a line outside the diff in the body', async ($, on) => {
-  const w = world(on, { runs: { 'gh pr diff 123': ok(DIFF), [API]: ok('{"html_url":"u"}') } })
+  const w = world(on, { runs: { ...SAME_HEAD, 'gh pr diff 123': ok(DIFF), [API]: ok('{"html_url":"u"}') } })
   seed(w, { ...PR_REVIEW, findings: [{ ...FINDINGS[0], location: { file: 'src/Cache.cs', line: 200 }, decision: 'send' }] })
   const pane = await mount($)
 
@@ -345,7 +349,7 @@ test('Post puts a finding on a line outside the diff in the body', async ($, on)
 })
 
 test('Post reports gh failure without throwing', async ($, on) => {
-  const w = world(on, { runs: { 'gh pr diff 123': ok(DIFF), [API]: { exitCode: 1, stdout: '', stderr: 'HTTP 422: Unprocessable Entity\nline is outside the diff' } } })
+  const w = world(on, { runs: { ...SAME_HEAD, 'gh pr diff 123': ok(DIFF), [API]: { exitCode: 1, stdout: '', stderr: 'HTTP 422: Unprocessable Entity\nline is outside the diff' } } })
   seed(w, { ...PR_REVIEW, findings: [{ ...FINDINGS[0], decision: 'send' }] })
   const pane = await mount($)
 
@@ -355,14 +359,71 @@ test('Post reports gh failure without throwing', async ($, on) => {
 })
 
 test('Post reports a failed diff fetch without posting', async ($, on) => {
-  const w = world(on, { runs: { 'gh pr diff 123': { exitCode: 1, stdout: '', stderr: 'could not find pull request' } } })
+  const w = world(on, { runs: { ...SAME_HEAD, 'gh pr diff 123': { exitCode: 1, stdout: '', stderr: 'could not find pull request' } } })
   seed(w, { ...PR_REVIEW, findings: [{ ...FINDINGS[0], decision: 'send' }] })
   const pane = await mount($)
 
   await pane.press({ key: 'post' })
 
   expect(w.toasts).toEqual(['Post failed: could not find pull request'])
-  expect(w.ran.map(r => r.line)).toEqual(['gh pr diff 123'])
+  expect(w.ran.map(r => r.line)).toEqual([HEAD, 'gh pr diff 123'])
+})
+
+const STALE_FINDINGS: Finding[] = [
+  { ...FINDINGS[0], decision: 'send', editedClaim: 'Refresh re-inserts a stale entry.' },
+  { ...FINDINGS[1], decision: 'send' },
+  { ...FINDINGS[3], decision: 'drop' },
+]
+
+// Every send finding in the body, no commit to anchor to and no inline comment.
+const STALE_PAYLOAD = {
+  event: 'COMMENT',
+  body: [
+    'The PR has new commits since this review (reviewed abc1234).',
+    '',
+    '1. [CRITICAL] src/Cache.cs:88 — Refresh re-inserts a stale entry.',
+    '   Evidence: Refresh() reads _map before _lock.',
+    '2. [HIGH] src/Orders/Repo.cs:140 — Repo leaks a connection.',
+    '   Evidence: No using around Open().',
+  ].join('\n'),
+}
+
+test('Post after the PR head moved puts every send finding in the body against no commit', async ($, on) => {
+  const w = world(on, { runs: { [HEAD]: ok('{"headRefOid":"fff9999000"}'), 'gh pr diff 123': ok(DIFF), [API]: ok('{"html_url":"u"}') } })
+  seed(w, { ...PR_REVIEW, findings: STALE_FINDINGS })
+  const pane = await mount($)
+
+  await pane.press({ key: 'post' })
+
+  expect(w.ran.map(r => r.line)).toEqual([HEAD, API])
+  expect(JSON.parse(w.ran.find(r => r.line === API)!.stdin!)).toEqual(STALE_PAYLOAD)
+  expect(w.toasts).toEqual(['Review posted: u'])
+})
+
+for (const [name, head] of [
+  ['fails', { exitCode: 1, stdout: '', stderr: 'HTTP 502' }],
+  ['answers no head', ok('not json')],
+] as const) {
+  test(`Post when the head check ${name} puts every send finding in the body against no commit`, async ($, on) => {
+    const w = world(on, { runs: { [HEAD]: head, 'gh pr diff 123': ok(DIFF), [API]: ok('{"html_url":"u"}') } })
+    seed(w, { ...PR_REVIEW, findings: STALE_FINDINGS })
+    const pane = await mount($)
+
+    await pane.press({ key: 'post' })
+
+    expect(w.ran.map(r => r.line)).toEqual([HEAD, API])
+    expect(JSON.parse(w.ran.find(r => r.line === API)!.stdin!)).toEqual(STALE_PAYLOAD)
+  })
+}
+
+test('Post with an empty stderr reports the exit code', async ($, on) => {
+  const w = world(on, { runs: { ...SAME_HEAD, 'gh pr diff 123': ok(DIFF), [API]: { exitCode: 4, stdout: '' } } })
+  seed(w, { ...PR_REVIEW, findings: [{ ...FINDINGS[0], decision: 'send' }] })
+  const pane = await mount($)
+
+  await pane.press({ key: 'post' })
+
+  expect(w.toasts).toEqual(['Post failed: exit 4'])
 })
 
 test('Save writes the markdown to .claude/adversary/reviews/2026-10-15-pr-123.md', async ($, on) => {
@@ -473,8 +534,7 @@ test('/adversary triage opens the pane for the last review', async ($, on) => {
 })
 
 test('closing the pane removes the temp worktree', async ($, on) => {
-  // git fails here as it does for a worktree already gone: still harmless.
-  const w = world(on)
+  const w = world(on, { runs: { 'git worktree remove': ok('') } })
   seed(w, { ...PR_REVIEW, worktree: WORKTREE })
   const pane = await mount($)
 
@@ -482,6 +542,37 @@ test('closing the pane removes the temp worktree', async ($, on) => {
 
   expect(w.ran.map(r => r.line)).toEqual([`git worktree remove --force ${WORKTREE}`])
   expect('worktree' in latest(w)).toBe(false)
+  expect(w.toasts).toEqual([])
+})
+
+test('a worktree git could not remove and that is still there stays in state and is reported', async ($, on) => {
+  const w = world(on, {
+    runs: { 'git worktree remove': { exitCode: 128, stdout: '', stderr: 'fatal: cannot remove: Permission denied\nmore' } },
+    files: [WORKTREE],
+  })
+  seed(w, { ...PR_REVIEW, worktree: WORKTREE })
+  const pane = await mount($)
+
+  await pane.press({ key: 'close' })
+
+  expect(w.ran.map(r => r.line)).toEqual([`git worktree remove --force ${WORKTREE}`])
+  expect(w.reviews).toEqual([])
+  expect(w.toasts).toEqual([`Could not remove the review worktree ${WORKTREE}: fatal: cannot remove: Permission denied`])
+})
+
+test('a worktree git could not remove because it is already gone is pruned and cleared', async ($, on) => {
+  const w = world(on, { runs: { 'git worktree remove': { exitCode: 128, stdout: '', stderr: 'fatal: not a working tree' }, 'git worktree prune': ok('') } })
+  seed(w, { ...PR_REVIEW, worktree: WORKTREE })
+  const pane = await mount($)
+
+  await pane.press({ key: 'close' })
+
+  expect(w.ran.map(r => [r.line, r.cwd])).toEqual([
+    [`git worktree remove --force ${WORKTREE}`, ROOT],
+    ['git worktree prune', ROOT],
+  ])
+  expect('worktree' in latest(w)).toBe(false)
+  expect(w.toasts).toEqual([])
 })
 
 test('closing the pane while the review runs keeps the worktree', async ($, on) => {
@@ -522,6 +613,25 @@ test('diffLines reads new-side lines across hunks', () => {
   ].join('\n')
 
   expect([...diffLines(diff).get('a.ts')!].sort((a, b) => a - b)).toEqual([1, 2, 3, 20, 21, 22])
+})
+
+test('diffLines keys a renamed file by its new path', () => {
+  const diff = [
+    'diff --git a/src/old.ts b/src/new.ts',
+    'similarity index 90%',
+    'rename from src/old.ts',
+    'rename to src/new.ts',
+    '--- a/src/old.ts',
+    '+++ b/src/new.ts',
+    '@@ -3,2 +3,3 @@',
+    ' keep',
+    '+added',
+    ' keep',
+  ].join('\n')
+
+  const lines = diffLines(diff)
+  expect([...lines.keys()]).toEqual(['src/new.ts'])
+  expect([...lines.get('src/new.ts')!]).toEqual([3, 4, 5])
 })
 
 test('diffLines handles a new file, a deleted file and CRLF', () => {

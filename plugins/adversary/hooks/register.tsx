@@ -5,9 +5,11 @@ import { judgeCall } from './guard'
 import { hostFrom } from './host'
 import { REVIEWER, reviewerScope, reviewerTurnEnded, startReview } from './review'
 import { homeDir, seedUserTemplates } from './templates'
-import { openTriage, PANE, releaseWorktree, renderPane } from './triage'
+import { openTriage, releaseWorktree, renderPane } from './triage'
 
 const OUTSIDE = 'outside the review root'
+// Spelled out, not imported from triage.tsx, so validate can list the pane hooks' matchers.
+const PANE_ID = 'adversary'
 const NO_SEARCH = 'Grep/Glob disabled: the review root contains links leading outside it; use Read'
 
 export const register: Register = on => {
@@ -46,9 +48,9 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => renderPane($, e))
+  on('ui.render', { component: 'Pane', requestId: PANE_ID }, async ($, e) => renderPane($, e))
 
-  on('ui.close', { id: PANE }, async ($, e, next) => {
+  on('ui.close', { id: PANE_ID }, async ($, e, next) => {
     const result = await next(e)
     await releaseWorktree($, false)
     return result
