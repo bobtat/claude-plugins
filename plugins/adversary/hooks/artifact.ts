@@ -71,6 +71,11 @@ export async function prArtifact(host: Host, target: string, cwd: string, tmpBas
   const fetched = await host.run(['git', 'rev-parse', 'FETCH_HEAD'], { cwd })
   if (fetched.exitCode !== 0) return failed(fetched)
   if (fetched.stdout.trim() !== pr.headRefOid) return { ok: false, error: `PR ${pr.number} changed while it was being fetched; try again` }
+  // A crash or a lost state can leave a checkout of this same head behind.
+  if (await host.exists(path)) {
+    await removeWorktree(host, cwd, path)
+    await host.run(['git', 'worktree', 'prune'], { cwd })
+  }
   const add = await host.run(['git', 'worktree', 'add', '--detach', path, pr.headRefOid], { cwd })
   if (add.exitCode !== 0) return failed(add)
 
