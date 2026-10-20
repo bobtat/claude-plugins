@@ -161,6 +161,8 @@ test('registers the reviewer hidden from the model with the constrained spec', a
     description: expect.any(String),
     prompt: expect.any(String),
     tools: ['Read', 'Grep', 'Glob'],
+    // The session's model unless --model names one, not the subagent default.
+    model: 'inherit',
     background: true,
     omitClaudeMd: true,
   })
