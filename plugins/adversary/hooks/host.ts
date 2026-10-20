@@ -23,6 +23,7 @@ export type Host = {
   realPath(path: string): Promise<string | undefined>
   list(dir: string): Promise<Entry[]>
   env(name: EnvName): Promise<string | undefined>
+  sessionId(): Promise<string>
   pluginRoot: string
 }
 
@@ -66,6 +67,7 @@ export function hostFrom($: EngineInterface): Host {
           return $.env.get('TMPDIR')
       }
     },
+    sessionId: () => $.session.id(),
     pluginRoot: $.plugin.root,
   }
 }
