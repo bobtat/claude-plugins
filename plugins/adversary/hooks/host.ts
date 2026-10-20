@@ -4,6 +4,10 @@ export type EnvName = 'USERPROFILE' | 'HOME' | 'TEMP' | 'TMPDIR'
 
 export type RunResult = { exitCode: number; stdout: string; stderr: string }
 
+// What a failed process said: its stderr's first line, or its exit code when it said nothing.
+export const failure = ({ exitCode, stderr }: Pick<RunResult, 'exitCode' | 'stderr'>) =>
+  stderr.trim().split(/\r?\n/)[0] || `exit ${exitCode}`
+
 // A symbolic link is kind `other`, whatever it leads to.
 export type Entry = { name: string; kind: 'file' | 'dir' | 'other'; isLink: boolean }
 
