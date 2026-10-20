@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { checkPath, isUnder, isUnplaceable, judgeCall, normalise } from '../hooks/guard'
+import { checkPath, grepNamesWithheld, isUnder, isUnplaceable, judgeCall, normalise } from '../hooks/guard'
 import { fakeHost } from './support'
 
 const ROOT = 'C:/repo'
@@ -272,4 +272,47 @@ test('a relative pattern or glob climbing out with .. is denied', async () => {
   expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: '../../secrets/*' }, ROOT)).toBe('deny')
   expect(await judgeCall(spelled().host, { tool: 'Glob', pattern: 'src/{a,../../x}/*' }, ROOT)).toBe('deny')
   expect(await judgeCall(spelled().host, { tool: 'Grep', pattern: 'x', glob: '../*.env' }, ROOT)).toBe('deny')
+})
+
+const files = (...filenames: string[]) => ({ mode: 'files_with_matches', numFiles: filenames.length, filenames })
+const lines = (...content: string[]) => ({ mode: 'content', numFiles: 0, filenames: [], content: content.join('\n') })
+
+test('a Grep result naming CLAUDE.md, .claude or .git below the root, relative or absolute, is withheld', async () => {
+  for (const result of [
+    files('CLAUDE.md'),
+    files('src/a.ts', '.claude/settings.json'),
+    files('C:/repo/.git/config'),
+    files('C:\\repo\\src\\CLAUDE.local.md'),
+    files('c:/Repo/.Claude/agents/x.md'),
+    lines('src/a.ts:3:lock()', 'CLAUDE.md:12:the secret'),
+    lines('C:\\repo\\.claude\\notes.md:1:the secret'),
+    lines('.git/config:4:url = x'),
+    { mode: 'count', numFiles: 1, filenames: [], content: 'C:/repo/CLAUDE.md:2' },
+  ]) {
+    expect(grepNamesWithheld(ROOT, result)).toBe(true)
+  }
+})
+
+test('a Grep result naming only other files is not withheld, whatever the matched text says', async () => {
+  for (const result of [
+    files('src/a.ts', 'C:/repo/docs/CLAUDE.md.bak', '.github/ci.yml'),
+    lines('src/a.ts:3:see .claude/settings.json: x', 'src/a.ts-4-read CLAUDE.md', '--', 'C:/repo/b.ts:1:.git/config:'),
+    lines(''),
+    { mode: 'count', numFiles: 1, filenames: [], content: 'src/a.ts:3' },
+    'not a record',
+    undefined,
+  ]) {
+    expect(grepNamesWithheld(ROOT, result)).toBe(false)
+  }
+})
+
+test('in a Grep result only the part of a path below the root counts', async () => {
+  const root = 'C:/Users/me/.claude/worktrees/x'
+  expect(grepNamesWithheld(root, files(`${root}/src/a.ts`))).toBe(false)
+  expect(grepNamesWithheld(root, lines(`${root}/src/a.ts:1:x`))).toBe(false)
+  expect(grepNamesWithheld(root, files(`${root}/.claude/x`))).toBe(true)
+  // A path outside the root cannot be placed below it, so every segment counts.
+  expect(grepNamesWithheld(root, files('C:/elsewhere/.git/config'))).toBe(true)
+  expect(grepNamesWithheld('/home/u/repo', files('claude.md', '.GIT/x'))).toBe(false)
+  expect(grepNamesWithheld('/home/u/repo', files('/home/u/repo/CLAUDE.md'))).toBe(true)
 })

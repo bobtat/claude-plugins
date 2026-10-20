@@ -41,10 +41,42 @@ export async function checkPath(host: Host, path: string, root: string): Promise
 const WITHHELD = ['.claude', '.git', 'CLAUDE.md', 'CLAUDE.local.md']
 
 // Whether any segment of `rest`, a path or pattern below the root, is withheld.
-function isWithheld(root: string, rest: string): boolean {
+function isWithheld(root: string, rest: string, separators = /[\\/{},]/): boolean {
   const fold = (text: string) => (isWindowsRoot(root) ? text.toLowerCase() : text)
   const withheld = WITHHELD.map(fold)
-  return rest.split(/[\\/{},]/).some(segment => withheld.includes(fold(segment)))
+  return rest.split(separators).some(segment => withheld.includes(fold(segment)))
+}
+
+// A path a search reported, absolute or relative to where the tool ran. One
+// that is not under the root cannot be told apart from the root's own part, so
+// all of it counts.
+function isWithheldPath(root: string, path: string): boolean {
+  const rest = isAbsolute(path) && isUnder(root, path) ? normalise(path).slice(normalise(root).length) : path
+  return isWithheld(root, rest, /[\\/]/)
+}
+
+// ripgrep prints `path:line:text` for a match and `path-line-text` for context.
+// Context lines sit beside a match line of the same file, so the match lines
+// name every file; the text after the path is never read as one.
+function pathOfLine(line: string): string | undefined {
+  const drive = /^[A-Za-z]:/.test(line) ? 2 : 0
+  const colon = line.indexOf(':', drive)
+  return colon === -1 ? undefined : line.slice(0, colon)
+}
+
+// Whether a Grep result names a withheld file: its `filenames`, or the path
+// leading each line of its `content`.
+export function grepNamesWithheld(root: string, result: unknown): boolean {
+  if (typeof result !== 'object' || result === null) return false
+  const { filenames, content } = result as { filenames?: unknown; content?: unknown }
+  const named = Array.isArray(filenames) ? filenames.filter((name): name is string => typeof name === 'string') : []
+  if (typeof content === 'string') {
+    for (const line of content.split(/\r?\n/)) {
+      const path = pathOfLine(line)
+      if (path !== undefined) named.push(path)
+    }
+  }
+  return named.some(path => isWithheldPath(root, path))
 }
 
 export type ReviewerCall = { tool: string; file_path?: unknown; path?: unknown; pattern?: unknown; glob?: unknown }

@@ -34,6 +34,8 @@ type Options = {
   unresolvable?: string[]
   // Paths that exist but whose read fails.
   unreadable?: string[]
+  // What a tool call that reaches the bottom answers; `{ result: 'ran' }` unless given.
+  answer?: Record<string, unknown>
 }
 
 const ok = (stdout: string): Run => ({ exitCode: 0, stdout })
@@ -137,7 +139,7 @@ function world(on: On, opts: Options = {}) {
   })
   on('tool.call', (_$, e) => {
     toolCalls.push({ ...e })
-    return { result: 'ran' }
+    return (opts.answer ?? { result: 'ran' }) as never
   })
   return { written, spawned, registered, reviews, reads, logs, toolCalls, agents, ran, faults, submitted }
 }
@@ -495,6 +497,57 @@ test('guard scopes a pathless Grep to the root', async ($, on) => {
 
   expect(w.toolCalls).toHaveLength(1)
   expect(w.toolCalls[0]).toMatchObject({ tool: 'Grep', pattern: 'lock', path: ROOT })
+})
+
+const WITHHELD_MATCH = 'Grep matched CLAUDE.md, .claude or .git, which the reviewer may not read; narrow it with path or glob'
+const grepAnswer = (result: Record<string, unknown>) => ({ answer: { result } })
+
+test('guard withholds a reviewer Grep whose content lines come from CLAUDE.md', async ($, on) => {
+  const w = world(on, {
+    runs: PR_RUNS,
+    ...grepAnswer({ mode: 'content', numFiles: 0, filenames: [], content: `src/a.ts:3:lock()\n${ROOT}/CLAUDE.md:7:the secret` }),
+  })
+  await adversary($, 'pr 123')
+
+  const result = await call($, { tool: 'Grep', pattern: 'secret|lock', output_mode: 'content', agentId: AGENT })
+
+  expect(result).toEqual({ deny: WITHHELD_MATCH })
+  expect(w.toolCalls).toHaveLength(1)
+})
+
+test('guard withholds a reviewer Grep whose file list names a file under .claude', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS, ...grepAnswer({ mode: 'files_with_matches', numFiles: 2, filenames: ['src/a.ts', '.claude/x.md'] }) })
+  await adversary($, 'pr 123')
+
+  const result = await call($, { tool: 'Grep', pattern: 'x', glob: '*.md', agentId: AGENT })
+
+  expect(result).toEqual({ deny: WITHHELD_MATCH })
+  expect(w.toolCalls).toHaveLength(1)
+})
+
+test('guard passes a reviewer Grep with a clean result through unchanged', async ($, on) => {
+  const clean = { mode: 'files_with_matches', numFiles: 1, filenames: [`${ROOT}/src/a.ts`] }
+  world(on, { runs: PR_RUNS, ...grepAnswer(clean) })
+  await adversary($, 'pr 123')
+
+  const result = await call($, { tool: 'Grep', pattern: 'lock', agentId: AGENT })
+
+  expect(result).toMatchObject({ result: clean })
+})
+
+test('guard passes a denied reviewer Grep through unchanged', async ($, on) => {
+  world(on, { runs: PR_RUNS, answer: { deny: 'ripgrep failed' } })
+  await adversary($, 'pr 123')
+
+  expect(await call($, { tool: 'Grep', pattern: 'lock', agentId: AGENT })).toEqual({ deny: 'ripgrep failed' })
+})
+
+test("guard leaves the main thread's Grep results alone", async ($, on) => {
+  const leaky = { mode: 'files_with_matches', numFiles: 1, filenames: ['CLAUDE.md'] }
+  world(on, { runs: PR_RUNS, ...grepAnswer(leaky) })
+  await adversary($, 'pr 123')
+
+  expect(await call($, { tool: 'Grep', pattern: 'x' })).toMatchObject({ result: leaky })
 })
 
 test('guard denies a reviewer Glob whose absolute pattern leaves the root', async ($, on) => {
