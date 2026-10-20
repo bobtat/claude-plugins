@@ -55,14 +55,65 @@ function isWithheldPath(root: string, path: string): boolean {
   return isWithheld(root, rest, /[\\/]/)
 }
 
-// ripgrep prints `path:line:text` for a match and `path-line-text` for context.
-// Context lines sit beside a match line of the same file, so the match lines
-// name every file; the text after the path is never read as one.
-function pathOfLine(line: string): string | undefined {
-  const drive = /^[A-Za-z]:/.test(line) ? 2 : 0
-  const colon = line.indexOf(':', drive)
-  return colon === -1 ? undefined : line.slice(0, colon)
+// The part of `path` below the root, or all of it when it does not start there.
+function belowRoot(root: string, path: string): string {
+  const fold = (text: string) => (isWindowsRoot(root) ? text.toLowerCase() : text)
+  const base = normalise(root)
+  const target = normalise(path)
+  const rest = fold(target).startsWith(fold(base.endsWith('/') ? base : `${base}/`)) ? target.slice(base.length) : path
+  return rest.split(/[\\/]/).includes('..') ? path : rest
 }
+
+const LONGEST_WITHHELD = Math.max(...WITHHELD.map(name => name.length))
+const endsPath = (char: string | undefined) => char === ':' || char === '-'
+
+// A content line is `path:line:text` or `path-line-text`, or without -n
+// `path:text` and `path-text`, and a path may itself hold `:` or `-`. So the
+// path is taken to end at any `:` or `-`: the line names a withheld file if any
+// such prefix of it does. That can only refuse too much, never too little.
+function lineNamesWithheld(root: string, line: string): boolean {
+  const rest = belowRoot(root, line)
+  let lastEnd = -1
+  for (let i = rest.length - 1; i >= 0; i--) {
+    if (endsPath(rest[i])) {
+      lastEnd = i
+      break
+    }
+  }
+  let start = 0
+  for (const segment of rest.split(/[\\/]/)) {
+    const end = start + segment.length
+    // A whole segment, followed later by a place the path may end.
+    if (end < lastEnd && isWithheld(root, segment, /[\\/]/)) return true
+    // A segment the path ends inside: only a prefix as long as a withheld name can match.
+    for (let j = 1; j <= Math.min(segment.length, LONGEST_WITHHELD); j++) {
+      if (endsPath(segment[j]) && isWithheld(root, segment.slice(0, j), /[\\/]/)) return true
+    }
+    start = end + 1
+  }
+  return false
+}
+
+type GrepCall = { pattern: string; path?: string; glob?: string; type?: string; '-i'?: boolean; multiline?: boolean }
+
+// The same search as `call`, listing every file it matches: no context, no
+// head_limit (0 is unlimited) and no offset.
+export function grepPreflight(call: GrepCall) {
+  return {
+    tool: 'Grep' as const,
+    pattern: call.pattern,
+    ...(call.path === undefined ? {} : { path: call.path }),
+    ...(call.glob === undefined ? {} : { glob: call.glob }),
+    ...(call.type === undefined ? {} : { type: call.type }),
+    ...(call['-i'] === undefined ? {} : { '-i': call['-i'] }),
+    ...(call.multiline === undefined ? {} : { multiline: call.multiline }),
+    output_mode: 'files_with_matches' as const,
+    head_limit: 0,
+  }
+}
+
+export const isFileList = (result: unknown): boolean =>
+  typeof result === 'object' && result !== null && Array.isArray((result as { filenames?: unknown }).filenames)
 
 // Whether a Grep result names a withheld file: its `filenames`, or the path
 // leading each line of its `content`.
@@ -70,13 +121,8 @@ export function grepNamesWithheld(root: string, result: unknown): boolean {
   if (typeof result !== 'object' || result === null) return false
   const { filenames, content } = result as { filenames?: unknown; content?: unknown }
   const named = Array.isArray(filenames) ? filenames.filter((name): name is string => typeof name === 'string') : []
-  if (typeof content === 'string') {
-    for (const line of content.split(/\r?\n/)) {
-      const path = pathOfLine(line)
-      if (path !== undefined) named.push(path)
-    }
-  }
-  return named.some(path => isWithheldPath(root, path))
+  if (named.some(path => isWithheldPath(root, path))) return true
+  return typeof content === 'string' && content.split(/\r?\n/).some(line => lineNamesWithheld(root, line))
 }
 
 export type ReviewerCall = { tool: string; file_path?: unknown; path?: unknown; pattern?: unknown; glob?: unknown }

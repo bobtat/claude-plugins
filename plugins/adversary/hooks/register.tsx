@@ -1,7 +1,7 @@
 import type { Register } from 'claude-code'
 
 import { parseArgs } from './args'
-import { grepNamesWithheld, judgeCall } from './guard'
+import { grepNamesWithheld, grepPreflight, isFileList, judgeCall } from './guard'
 import { hostFrom } from './host'
 import { registerPlanBand } from './plan'
 import { namesReviewer, REVIEWER, reviewerScope, reviewerTurnEnded, startReview } from './review'
@@ -14,6 +14,7 @@ const PANE_ID = 'adversary'
 const NO_SEARCH = 'Grep/Glob disabled: the review root contains links leading outside it; use Read'
 const READ_ONLY = 'The reviewer may use Read, Grep and Glob only'
 const WITHHELD_MATCH = 'Grep matched CLAUDE.md, .claude or .git, which the reviewer may not read; narrow it with path or glob'
+const CHECK_FAILED = 'Grep was not run: it could not first be checked for matches in CLAUDE.md, .claude or .git'
 const SEARCH_TOOLS = ['Read', 'Grep', 'Glob']
 const REVIEW_DELIVERED = 'adversary: the review finished; its findings are in the triage pane (/adversary triage).'
 
@@ -48,16 +49,26 @@ export const register: Register = on => {
     const verdict = await judgeCall(hostFrom($), e, scope.root)
     if (verdict === 'deny') return { deny: OUTSIDE }
     // A 'scope' verdict only ever comes for Grep and Glob, the tools with a path to fill in.
-    const ran = await next(verdict === 'scope' && e.tool !== 'Read' ? { ...e, path: scope.root } : e)
+    const call = verdict === 'scope' && e.tool !== 'Read' ? { ...e, path: scope.root } : e
     // Grep's search covers every file under its path, and a glob or a regex
     // can reach the withheld files under spellings the checks above cannot see.
-    if (e.tool === 'Grep' && ran.deny === undefined && ran.isError !== true && grepNamesWithheld(scope.root, ran.result)) {
+    // The output can be cut to context lines (head_limit, offset), so the files
+    // it matched are listed in full first. That call carries no agentId: this
+    // hook is not run for it, and the handler below lets it through.
+    if (call.tool === 'Grep') {
+      const listed = await $.tool.call(grepPreflight(call))
+      if (listed.deny !== undefined || listed.isError === true || !isFileList(listed.result)) return { deny: CHECK_FAILED }
+      if (grepNamesWithheld(scope.root, listed.result)) return { deny: WITHHELD_MATCH }
+    }
+    const ran = await next(call)
+    if (call.tool === 'Grep' && ran.deny === undefined && ran.isError !== true && grepNamesWithheld(scope.root, ran.result)) {
       return { deny: WITHHELD_MATCH }
     }
     return ran
+  })
     // Past `next` a reviewer's result may hold what the check after it would
     // have withheld, so a subagent's call is denied rather than replayed.
-  }).catch(($, e, next) => (e.agentId === undefined ? next(e) : { deny: OUTSIDE }))
+    .catch(($, e, next) => (e.agentId === undefined ? next(e) : { deny: OUTSIDE }))
 
   // The agent spec already limits the reviewer's tools; this holds if a spawn
   // or a later engine widens them. Read, Grep and Glob are the hook above's.

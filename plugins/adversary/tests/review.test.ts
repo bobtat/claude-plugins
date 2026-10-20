@@ -37,7 +37,12 @@ type Options = {
   unreadable?: string[]
   // What a tool call that reaches the bottom answers; `{ result: 'ran' }` unless given.
   answer?: Record<string, unknown>
+  // What the guard's own unlimited files_with_matches Grep answers; no files unless given.
+  preflight?: Record<string, unknown>
 }
+
+const isPreflight = (e: Record<string, unknown>) =>
+  e.tool === 'Grep' && e.agentId === undefined && e.output_mode === 'files_with_matches' && e.head_limit === 0
 
 const ok = (stdout: string): Run => ({ exitCode: 0, stdout })
 
@@ -65,6 +70,7 @@ function world(on: On, opts: Options = {}) {
   const reads: string[] = []
   const logs: string[] = []
   const toolCalls: Record<string, unknown>[] = []
+  const preflights: Record<string, unknown>[] = []
   const agents: AgentInfo[] = []
   const ran: string[] = []
   const faults = { agentList: false, reviewStore: false }
@@ -142,10 +148,14 @@ function world(on: On, opts: Options = {}) {
     return next(e)
   })
   on('tool.call', (_$, e) => {
+    if (isPreflight(e)) {
+      preflights.push({ ...e })
+      return (opts.preflight ?? { result: { mode: 'files_with_matches', numFiles: 0, filenames: [] } }) as never
+    }
     toolCalls.push({ ...e })
     return (opts.answer ?? { result: 'ran' }) as never
   })
-  return { written, spawned, registered, reviews, reads, logs, toolCalls, agents, ran, faults, submitted }
+  return { written, spawned, registered, reviews, reads, logs, toolCalls, preflights, agents, ran, faults, submitted }
 }
 
 const PRESENTATION = { isFullscreen: false, columns: 120 }
@@ -560,12 +570,82 @@ test('guard passes a denied reviewer Grep through unchanged', async ($, on) => {
   expect(await call($, { tool: 'Grep', pattern: 'lock', agentId: AGENT })).toEqual({ deny: 'ripgrep failed' })
 })
 
-test("guard leaves the main thread's Grep results alone", async ($, on) => {
+test("guard leaves the main thread's Grep results alone and checks nothing first", async ($, on) => {
   const leaky = { mode: 'files_with_matches', numFiles: 1, filenames: ['CLAUDE.md'] }
-  world(on, { runs: PR_RUNS, ...grepAnswer(leaky) })
+  const w = world(on, { runs: PR_RUNS, ...grepAnswer(leaky), preflight: { deny: 'should not be asked' } })
   await adversary($, 'pr 123')
 
   expect(await call($, { tool: 'Grep', pattern: 'x' })).toMatchObject({ result: leaky })
+  expect(w.preflights).toEqual([])
+})
+
+const CHECK_FAILED = 'Grep was not run: it could not first be checked for matches in CLAUDE.md, .claude or .git'
+const preflightFinds = (...filenames: string[]) => ({ preflight: { result: { mode: 'files_with_matches', numFiles: filenames.length, filenames } } })
+
+test('guard first lists every file a reviewer Grep matches, unlimited, and runs the real call only when none is withheld', async ($, on) => {
+  const clean = { mode: 'content', numFiles: 0, filenames: [], content: 'src/a.ts:3:lock()' }
+  const w = world(on, { runs: PR_RUNS, ...grepAnswer(clean), ...preflightFinds(`${ROOT}/src/a.ts`) })
+  await adversary($, 'pr 123')
+  const input = { tool: 'Grep', pattern: 'lock', glob: '*.ts', type: 'ts', '-i': true, multiline: true, output_mode: 'content', '-B': 2, head_limit: 5, offset: 1 }
+
+  const result = await call($, { ...input, agentId: AGENT })
+
+  expect(result).toMatchObject({ result: clean })
+  expect(w.preflights).toHaveLength(1)
+  const { tool, pattern, glob, type, multiline } = input
+  expect(w.preflights[0]).toMatchObject({ tool, pattern, path: ROOT, glob, type, '-i': true, multiline, output_mode: 'files_with_matches', head_limit: 0 })
+  expect(['-B', 'offset'].filter(key => key in w.preflights[0]!)).toEqual([])
+  expect(w.toolCalls).toHaveLength(1)
+  expect(w.toolCalls[0]).toMatchObject({ ...input, path: ROOT, agentId: AGENT })
+})
+
+test('guard denies a reviewer Grep cut down to context lines when the full search matches CLAUDE.md', async ($, on) => {
+  const w = world(on, {
+    runs: PR_RUNS,
+    ...grepAnswer({ mode: 'content', numFiles: 0, filenames: [], content: 'CLAUDE.md-11-the secret' }),
+    ...preflightFinds(`${ROOT}/src/a.ts`, `${ROOT}/CLAUDE.md`),
+  })
+  await adversary($, 'pr 123')
+
+  const result = await call($, { tool: 'Grep', pattern: 'secret', output_mode: 'content', '-B': 40, head_limit: 40, agentId: AGENT })
+
+  expect(result).toEqual({ deny: WITHHELD_MATCH })
+  expect(w.toolCalls).toEqual([])
+})
+
+test('guard denies a reviewer Grep whose context lines after an offset come from CLAUDE.md', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS, ...grepAnswer({ mode: 'content', numFiles: 0, filenames: [], content: 'CLAUDE.md-13-the secret' }) })
+  await adversary($, 'pr 123')
+
+  const result = await call($, { tool: 'Grep', pattern: 'secret', output_mode: 'content', '-A': 40, offset: 1, agentId: AGENT })
+
+  expect(result).toEqual({ deny: WITHHELD_MATCH })
+  expect(w.toolCalls).toHaveLength(1)
+})
+
+test('guard denies a reviewer Grep whose unnumbered context lines come from .claude', async ($, on) => {
+  world(on, { runs: PR_RUNS, ...grepAnswer({ mode: 'content', numFiles: 0, filenames: [], content: '.claude/notes.md-the secret' }) })
+  await adversary($, 'pr 123')
+
+  const result = await call($, { tool: 'Grep', pattern: 'secret', output_mode: 'content', '-n': false, '-C': 3, agentId: AGENT })
+
+  expect(result).toEqual({ deny: WITHHELD_MATCH })
+})
+
+test('guard denies a reviewer Grep whose first check is denied', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS, preflight: { deny: 'ripgrep failed' } })
+  await adversary($, 'pr 123')
+
+  expect(await call($, { tool: 'Grep', pattern: 'lock', agentId: AGENT })).toEqual({ deny: CHECK_FAILED })
+  expect(w.toolCalls).toEqual([])
+})
+
+test('guard denies a reviewer Grep whose first check errors', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS, preflight: { result: 'rg: regex parse error', isError: true } })
+  await adversary($, 'pr 123')
+
+  expect(await call($, { tool: 'Grep', pattern: '(', agentId: AGENT })).toEqual({ deny: CHECK_FAILED })
+  expect(w.toolCalls).toEqual([])
 })
 
 test('guard denies a reviewer Glob whose absolute pattern leaves the root', async ($, on) => {
