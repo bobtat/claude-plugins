@@ -187,6 +187,18 @@ export async function reviewerTurnEnded($: Api, e: TurnCompleteInput): Promise<v
   else await failReview($, e.agentId, TURN_FAILURES[e.reason], e.answer)
 }
 
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const mentions = (text: string, id: string) => new RegExp(`(?<![\\w-])${escapeRegExp(id)}(?![\\w-])`).test(text)
+
+// Whether a task notification's text names a reviewer: `prompt.submit` carries
+// no task id of its own, so the id is looked for in the text the engine wrote.
+export async function namesReviewer($: Api, text: string): Promise<boolean> {
+  const stored = (await read($, reviewState))?.agentId
+  if (stored !== undefined && mentions(text, stored)) return true
+  const reviewers = (await $.agent.list()).filter(agent => agent.type === REVIEWER_TYPE)
+  return reviewers.some(agent => mentions(text, agent.id))
+}
+
 export type Confinement = { root: string; canSearch: boolean }
 
 // Where a subagent's file access is confined, or undefined for a call that is
