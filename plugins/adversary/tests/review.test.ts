@@ -398,6 +398,51 @@ test("guard keeps a reviewer working in the session's own checkout out of CLAUDE
   expect(w.toolCalls).toEqual([])
 })
 
+const READ_ONLY = 'The reviewer may use Read, Grep and Glob only'
+
+test('guard denies a reviewer any tool but Read, Grep and Glob', async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+  w.agents.push(stray())
+
+  for (const input of [
+    { tool: 'Bash', command: 'cat ~/.claude/CLAUDE.md', agentId: AGENT },
+    { tool: 'Write', file_path: `${ROOT}/x.ts`, content: '', agentId: AGENT },
+    { tool: 'mcp__claude_ai_Atlassian__getJiraIssue', issueIdOrKey: 'PROJ-1', agentId: STRAY },
+  ]) {
+    expect(JSON.stringify(await call($, input))).toContain(READ_ONLY)
+  }
+  await call($, { tool: 'Read', file_path: `${ROOT}/src/a.ts`, agentId: AGENT })
+
+  expect(w.toolCalls.map(c => c.tool)).toEqual(['Read'])
+})
+
+test("guard leaves other agents' tools alone", async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+  w.agents.push({ id: 'helper-1', description: 'explore', type: 'Explore', status: 'running' })
+
+  await call($, { tool: 'Bash', command: 'ls' })
+  await call($, { tool: 'Bash', command: 'ls', agentId: 'helper-1' })
+
+  expect(w.toolCalls.map(c => [c.tool, c.agentId])).toEqual([
+    ['Bash', undefined],
+    ['Bash', 'helper-1'],
+  ])
+})
+
+test("guard fails closed for a subagent's tool call when the agent list cannot be read", async ($, on) => {
+  const w = world(on, { runs: PR_RUNS })
+  await adversary($, 'pr 123')
+  w.faults.agentList = true
+
+  const result = await call($, { tool: 'Bash', command: 'ls', agentId: STRAY })
+  await call($, { tool: 'Bash', command: 'ls' })
+
+  expect(JSON.stringify(result)).toContain(READ_ONLY)
+  expect(w.toolCalls.map(c => c.agentId)).toEqual([undefined])
+})
+
 test("guard leaves the main thread's Read alone", async ($, on) => {
   const w = world(on, { runs: PR_RUNS })
   await adversary($, 'pr 123')

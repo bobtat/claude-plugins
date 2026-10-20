@@ -12,6 +12,8 @@ const OUTSIDE = 'outside the review root'
 // Spelled out, not imported from triage.tsx, so validate can list the pane hooks' matchers.
 const PANE_ID = 'adversary'
 const NO_SEARCH = 'Grep/Glob disabled: the review root contains links leading outside it; use Read'
+const READ_ONLY = 'The reviewer may use Read, Grep and Glob only'
+const SEARCH_TOOLS = ['Read', 'Grep', 'Glob']
 const REVIEW_DELIVERED = 'adversary: the review finished; its findings are in the triage pane (/adversary triage).'
 
 export const register: Register = on => {
@@ -46,6 +48,13 @@ export const register: Register = on => {
     if (verdict === 'deny') return { deny: OUTSIDE }
     return next(verdict === 'scope' ? { ...e, path: scope.root } : e)
   }).catch(($, e, next) => (next.called || e.agentId === undefined ? next(e) : { deny: OUTSIDE }))
+
+  // The agent spec already limits the reviewer's tools; this holds if a spawn
+  // or a later engine widens them. Read, Grep and Glob are the hook above's.
+  on('tool.call', async ($, e, next) => {
+    if (SEARCH_TOOLS.includes(e.tool) || (await reviewerScope($, e.agentId)) === undefined) return next(e)
+    return { deny: READ_ONLY }
+  }).catch(($, e, next) => (next.called || e.agentId === undefined ? next(e) : { deny: READ_ONLY }))
 
   // The reviewer runs in the background, so its answer would also come back to
   // the author session as a task notification, findings and all, past triage.
