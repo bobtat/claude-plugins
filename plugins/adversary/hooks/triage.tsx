@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, RenderInput } from 'claude-code'
+import type { AgentInfo, EngineInterface, RenderInput } from 'claude-code'
 
 import type { Decision, Finding, Review, Severity } from '../types'
 import { removeWorktree } from './artifact'
@@ -18,12 +18,34 @@ const editingState = atom({ plugin: 'adversary', key: 'editing' } as const, fals
 const NOTHING_TO_SEND = 'Nothing to send — mark findings with s first'
 const REVIEW_OPENING = 'An independent reviewer raised these findings.'
 const REVIEWS_DIR = '.claude/adversary/reviews'
+const REVIEWER_GONE = 'The reviewer is gone'
+const ENDED: string[] = ['completed', 'failed', 'killed']
 
 const SHORT: Record<Severity, string> = { critical: 'CRIT', high: 'HIGH', medium: 'MED', low: 'LOW' }
 const MARK: Record<Decision, string> = { send: '✓', drop: '✗', undecided: '·' }
 
 const claimOf = (finding: Finding) => finding.editedClaim ?? finding.claim
 const sends = (review: Review) => review.findings.filter(finding => finding.decision === 'send')
+
+export const isLive = (agent: AgentInfo) => !ENDED.includes(agent.status)
+
+// A running review whose agent is no longer live (after a reload or a crash)
+// will never settle. One with no agent id yet is still being started.
+async function isOrphaned($: Api, review: Review): Promise<boolean> {
+  if (review.status !== 'running' || review.agentId === undefined) return false
+  const agents = await $.agent.list()
+  return !agents.some(agent => agent.id === review.agentId && isLive(agent))
+}
+
+// The review as the pane shows it. Worked out on each read rather than
+// written back, since a render must not write state.
+async function shown($: Api, review: Review): Promise<Review> {
+  try {
+    return (await isOrphaned($, review)) ? { ...review, status: 'failed', error: REVIEWER_GONE } : review
+  } catch {
+    return review
+  }
+}
 
 export function paneTitle(review: Review): string {
   const target = review.kind === 'pr' ? `PR #${review.pr?.number ?? review.target}` : review.kind === 'plan' ? 'plan' : review.target
@@ -309,7 +331,8 @@ export async function save($: Api): Promise<void> {
 export async function releaseWorktree($: Api, isEnding: boolean): Promise<void> {
   try {
     const review = await read($, reviewState)
-    if (review?.worktree === undefined || (review.status === 'running' && !isEnding)) return
+    if (review?.worktree === undefined) return
+    if (review.status === 'running' && !isEnding && !(await isOrphaned($, review))) return
     const host = hostFrom($)
     const cwd = await $.session.root()
     const removed = await removeWorktree(host, cwd, review.worktree)
@@ -337,8 +360,9 @@ export async function renderPane($: Api, e: RenderInput<'Pane'>) {
   const { Box, Button, Text } = elements
   // Mobile draws no Input, so there the claim cannot be edited.
   const Input = 'Input' in elements ? elements.Input : undefined
-  const review = await read($, reviewState)
-  if (review === null) return <Text dimColor>No review yet</Text>
+  const stored = await read($, reviewState)
+  if (stored === null) return <Text dimColor>No review yet</Text>
+  const review = await shown($, stored)
 
   const title = <Text bold>{paneTitle(review)}</Text>
   const close = <Button key="close" label="Close" hotkey="c" role="dismiss" onPress={() => closePane($)} />

@@ -12,7 +12,7 @@ import { hostFrom, messageOf } from './host'
 import type { Host } from './host'
 import { hasOutwardLinks } from './links'
 import { fillTemplate, homeDir, resolveTemplate } from './templates'
-import { openTriage } from './triage'
+import { isLive, openTriage } from './triage'
 
 type Api = EngineInterface
 
@@ -39,8 +39,6 @@ export const REVIEWER = {
   omitClaudeMd: true,
 } as const
 
-const ENDED = ['completed', 'failed', 'killed']
-
 const TURN_FAILURES = {
   aborted: 'The reviewer was interrupted',
   error: 'The reviewer stopped on an API error',
@@ -60,13 +58,13 @@ export async function isBlocked($: Api): Promise<boolean> {
   const review = await read($, reviewState)
   if (review?.status !== 'running' || review.agentId === undefined) return false
   const agents = await $.agent.list()
-  return agents.some(agent => agent.id === review.agentId && !ENDED.includes(agent.status))
+  return agents.some(agent => agent.id === review.agentId && isLive(agent))
 }
 
 // A spawn can resolve without the started agent's id (the test kit drops it
 // from a plugin's own spawn); the agent list still names it by type.
 async function newestLiveReviewer($: Api): Promise<string | undefined> {
-  const live = (await $.agent.list()).filter(agent => agent.type === REVIEWER_TYPE && !ENDED.includes(agent.status))
+  const live = (await $.agent.list()).filter(agent => agent.type === REVIEWER_TYPE && isLive(agent))
   return live.at(-1)?.id
 }
 

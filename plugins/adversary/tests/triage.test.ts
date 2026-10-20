@@ -577,14 +577,45 @@ test('a worktree git could not remove because it is already gone is pruned and c
   expect(w.toasts).toEqual([])
 })
 
+const liveReviewer = (): AgentInfo => ({ id: AGENT, description: 'adversarial review', type: 'adversary:reviewer', status: 'running' })
+
 test('closing the pane while the review runs keeps the worktree', async ($, on) => {
   const w = world(on)
+  w.agents.push(liveReviewer())
+  seed(w, { ...PR_REVIEW, status: 'running', worktree: WORKTREE })
+  const pane = await mount($)
+
+  expect(await has(pane, 'Review running…')).toBe(true)
+  await pane.press({ key: 'close' })
+
+  expect(w.ran).toEqual([])
+})
+
+test('a running review whose reviewer is gone shows as failed without writing state', async ($, on) => {
+  const w = world(on)
+  // After a reload no agent is listed; after a crash it is listed as ended.
+  for (const agents of [[], [{ ...liveReviewer(), status: 'failed' as const }]]) {
+    w.agents.splice(0, w.agents.length, ...agents)
+    seed(w, { ...PR_REVIEW, status: 'running', findings: [], raw: '', worktree: WORKTREE })
+
+    const pane = await mount($)
+
+    expect(await has(pane, 'Review failed: The reviewer is gone')).toBe(true)
+    expect(await has(pane, 'Review running…')).toBe(false)
+    await pane.unmount()
+  }
+  expect(w.reviews).toEqual([])
+})
+
+test('closing the pane on a review whose reviewer is gone removes the worktree', async ($, on) => {
+  const w = world(on, { runs: { 'git worktree remove': ok('') } })
   seed(w, { ...PR_REVIEW, status: 'running', worktree: WORKTREE })
   const pane = await mount($)
 
   await pane.press({ key: 'close' })
 
-  expect(w.ran).toEqual([])
+  expect(w.ran.map(r => r.line)).toEqual([`git worktree remove --force ${WORKTREE}`])
+  expect('worktree' in latest(w)).toBe(false)
 })
 
 test('session end removes the temp worktree', async ($, on) => {
