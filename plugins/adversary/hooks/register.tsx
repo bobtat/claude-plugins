@@ -3,6 +3,7 @@ import type { Register } from 'claude-code'
 import { parseArgs } from './args'
 import { judgeCall } from './guard'
 import { hostFrom } from './host'
+import { registerPlanBand } from './plan'
 import { REVIEWER, reviewerScope, reviewerTurnEnded, startReview } from './review'
 import { homeDir, seedUserTemplates } from './templates'
 import { openTriage, releaseWorktree, renderPane } from './triage'
@@ -13,6 +14,8 @@ const PANE_ID = 'adversary'
 const NO_SEARCH = 'Grep/Glob disabled: the review root contains links leading outside it; use Read'
 
 export const register: Register = on => {
+  registerPlanBand(on)
+
   on('session.start', async ($, e, next) => {
     await $.agent.register(REVIEWER)
     await $.command.register({ name: 'adversary', description: 'Adversarial review of a PR, plan or document by an isolated reviewer' })
