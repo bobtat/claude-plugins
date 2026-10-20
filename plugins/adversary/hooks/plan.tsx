@@ -20,7 +20,10 @@ export const registerPlanBand: Register = on => {
     return ran
   }).catch(($, e, next) => next(e))
 
+  // Only the user's own message moves past the plan; a task notification or a
+  // scheduled prompt arriving meanwhile must leave the band up.
   on('prompt.submit', async ($, e, next) => {
+    if (e.isMeta || (e.origin.kind !== 'composer' && e.origin.kind !== 'bridge')) return next(e)
     try {
       await update($, pendingState, () => false)
     } catch {
