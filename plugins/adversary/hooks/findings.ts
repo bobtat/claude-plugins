@@ -30,7 +30,7 @@ const readLocation = (value: unknown, root: string): Location | string => {
   const { file, line, section } = value as Record<string, unknown>
   if (isText(section)) return { section }
   if (!isText(file)) return 'location needs a file or a section'
-  if (line === undefined) return { file: relativeTo(root, file) }
+  if (line === undefined || line === null) return { file: relativeTo(root, file) }
   if (typeof line !== 'number' || !Number.isInteger(line)) return 'location.line must be an integer'
   return { file: relativeTo(root, file), line }
 }
@@ -47,7 +47,7 @@ const readFinding = (value: unknown, id: number, root: string): Finding | string
 }
 
 const lastJsonBlock = (output: string): string | undefined => {
-  const blocks = [...output.matchAll(/```json[^\S\n]*\n([\s\S]*?)```/g)]
+  const blocks = [...output.matchAll(/```json[^\S\n]*\n([\s\S]*?)^```[^\S\n]*$/gm)]
   return blocks.at(-1)?.[1]
 }
 
