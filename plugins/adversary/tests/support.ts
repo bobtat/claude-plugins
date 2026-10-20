@@ -14,6 +14,7 @@ export function fakeHost(overrides: Partial<Host> = {}): Host {
   return {
     run: unexpected('run'),
     mcpTools: async () => [],
+    mcpConnect: async () => ({ isConnected: false, reason: 'unlisted' }),
     mcpCall: unexpected('mcpCall'),
     readFile: unexpected('readFile'),
     writeFile: unexpected('writeFile'),
@@ -44,13 +45,13 @@ export function gh(responses: Record<string, GhResponse>): Pick<Host, 'run'> {
 
 const text = (value: unknown) => ({ content: [{ type: 'text', text: JSON.stringify(value) }], isError: false })
 
-export function atlassian(issues: Issues | 'absent'): Pick<Host, 'mcpTools' | 'mcpCall'> {
+export function atlassian(issues: Issues | 'absent', server: string = ATLASSIAN_SERVER): Pick<Host, 'mcpTools' | 'mcpCall'> {
   return {
     async mcpTools() {
-      return issues === 'absent' ? [] : ['getAccessibleAtlassianResources', 'getJiraIssue'].map(tool => `mcp__${ATLASSIAN_SERVER}__${tool}`)
+      return issues === 'absent' ? [] : ['getAccessibleAtlassianResources', 'getJiraIssue'].map(tool => `mcp__${server}__${tool}`)
     },
-    async mcpCall(server, tool, args) {
-      if (issues === 'absent' || server !== ATLASSIAN_SERVER) return { content: [], isError: true }
+    async mcpCall(called, tool, args) {
+      if (issues === 'absent' || called !== server) return { content: [], isError: true }
       if (tool === 'getAccessibleAtlassianResources') return text([{ id: CLOUD_ID, name: 'site' }])
       const key = String(args.issueIdOrKey)
       const issue = args.cloudId === CLOUD_ID ? issues[key] : undefined
