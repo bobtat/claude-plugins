@@ -11,6 +11,7 @@ others are what make item 27 (availability of data and materials) answerable.
 │                            criteria, RoB instrument, figure budget, toolchain
 ├── search-log.md            per source: string, date, limits, counts, caps
 ├── records.csv              every record retrieved, before screening
+├── abstracts.json           abstracts keyed by record_id, captured at discovery
 ├── screening.csv            per record: both screeners, criterion, adjudication
 ├── prisma-flow.json         flow counts and κ, derived from the two CSVs by script
 ├── appraisals/<study_id>.md one per included study
