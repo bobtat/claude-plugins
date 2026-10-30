@@ -37,6 +37,9 @@ curl -sS -m 25 "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pu
 # Metadata for up to ~200 IDs at a time: title, pubdate, source (journal), and the DOI
 # inside articleids where idtype == "doi".
 curl -sS -m 25 "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=<id,id,…>&retmode=json"
+
+# Abstracts — esummary carries none. efetch returns <AbstractText> sections.
+curl -sS -m 25 "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=<id,id,…>&rettype=abstract&retmode=xml"
 ```
 
 Stay under about three requests a second without an NCBI key. Quote phrases in the
@@ -56,7 +59,14 @@ curl -sS -m 25 -L "https://arxiv.org/search/?query=<urlencoded>&searchtype=all&s
 - Each result is an `<li class="arxiv-result">` block holding the ID
   (`arxiv.org/abs/<id>`), the title in `<p class="title is-5 mathjax">`, author links
   inside `<p class="authors">`, and a `Submitted</span> <date>` line.
+- The full abstract is in `<span class="abstract-full">`, up to the paragraph's closing
+  `</p>`; drop the nested "Less" toggle link inside it. Capture it — screening needs it,
+  and it costs no extra request.
 - Page with `start=`. Leave a few seconds between requests.
+- **One level of parentheses only.** `"memory poisoning" AND (agent OR LLM)` works; the
+  same terms nested a second level deep return no results line at all, which reads as a
+  failure rather than as zero. If a string needs deeper nesting, the protocol splits it
+  into several flat strings.
 
 ### OpenAlex
 
@@ -78,10 +88,14 @@ and for backward snowballing only.
 
 | Direction | Route |
 |---|---|
-| Backward | `https://api.crossref.org/works/<DOI>` → `message.reference[]` (DOI where deposited) |
-| Backward | `https://api.openalex.org/works/doi:<DOI>` → `referenced_works[]` |
+| Backward, Crossref DOIs | `https://api.crossref.org/works/<DOI>` → `message.reference[]` (DOI where deposited) |
+| Backward, published works | `https://api.openalex.org/works/doi:<DOI>` → `referenced_works[]` |
+| Backward, **arXiv** | `https://arxiv.org/html/<id>` → each `<li class="ltx_bibitem">`; resolve by the arXiv ID it carries, else by title |
 | Forward, PubMed-indexed | `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=pubmed&db=pubmed&linkname=pubmed_pubmed_citedin&id=<PMID>&retmode=json` |
 | Forward, general | `https://api.openalex.org/works?filter=cites:<openalex id>` — key required in practice |
+
+**For an arXiv seed, use the HTML bibliography.** Its DOI is a DataCite DOI: Crossref
+returns 404, and neither DataCite nor OpenAlex returned references for one when tested.
 
 For each seed, record how many cited or citing works existed and how many you took, and
 the rule you used. A landmark paper can be cited tens of thousands of times; the cap is

@@ -80,11 +80,22 @@ until a pass yields no new inclusions or the protocol's iteration cap is reached
 
 | Direction | Route | Key? | Coverage |
 |---|---|---|---|
-| Backward | Crossref `works/<DOI>` → `message.reference` | No | Only where the publisher deposited references — common, not universal |
-| Backward | OpenAlex single work → `referenced_works` | No, for single lookups | Broad |
+| Backward | Crossref `works/<DOI>` → `message.reference` | No | Crossref-registered DOIs where the publisher deposited references. **Not arXiv** |
+| Backward | OpenAlex single work → `referenced_works` | No, for single lookups | Published works. Returned **no references** for an arXiv DOI when tested |
+| Backward | arXiv HTML full text → `<li class="ltx_bibitem">` | No | **arXiv works** with an HTML rendering — the route that works for preprints |
 | Backward | `arxiv-mcp-server` citation tools | No | arXiv works, when the server is present |
 | Forward | PubMed `elink` with `linkname=pubmed_pubmed_citedin` | No | **PubMed-indexed citing work only** |
 | Forward | OpenAlex `/works?filter=cites:<id>` | **In practice, yes** | Broad |
+
+### arXiv preprints need the bibliography route
+
+An arXiv DOI (`10.48550/arXiv.…`) is registered with DataCite, not Crossref: Crossref
+returns 404 for it, the DataCite record carries no references, and OpenAlex returned no
+`referenced_works` for one when tested. **None of the DOI-based backward routes work for
+an arXiv preprint.** Parse the reference list from the paper's HTML rendering instead:
+one tested paper had 237 `ltx_bibitem` entries, about 40% carrying an arXiv ID and
+almost none a DOI. Resolve those with an arXiv ID directly; resolve the rest by title,
+and record any reference that cannot be resolved rather than dropping it.
 
 Forward snowballing outside biomedicine needs an OpenAlex key. If the toolchain probe
 found none, forward citation searching for non-PubMed work did not happen — record that

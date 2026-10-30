@@ -140,6 +140,12 @@ The routes that answer without keys, tested:
 The arXiv **export API** returns HTTP 406 from environments like this one. Use the HTML
 search. `literature-review:citation-verifier` documents the same finding.
 
+**arXiv's HTML search takes one level of parentheses.** A second level returns no results
+line at all — not zero, nothing — so a string with nested `OR` groups silently fails.
+Write arXiv strings flat, and split a concept that needs nesting into several strings.
+Several strings against one source are combined as that source's result set; see the
+`literature-review:source-discovery` skill.
+
 ### Pilot counts
 
 Before the gate, run each string **count-only** and record the totals in section 13.
