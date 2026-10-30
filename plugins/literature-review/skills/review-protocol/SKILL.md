@@ -170,6 +170,17 @@ roughly how many full texts, and that each record is screened by two agents and 
 full text read at least three times (two screeners and the appraisal reader). Present
 volumes, not a cost figure you cannot back.
 
+**Estimate full texts from the criteria, not from instinct.** A criterion marked
+full-text-only cannot exclude anything at title/abstract, and the liberal rule advances
+a record when either screener is unsure. So when the criteria that do the real
+discriminating are full-text-only, nearly every screened record goes to full text. In
+this pipeline's first end-to-end run, 91% did, against an estimate that had assumed
+ordinary attrition. Look at which criteria are decidable at title/abstract, estimate
+the share of records they alone would remove, and say so: "about 60 of 70 will reach
+full text, because E2 and E5 need the methods section". If that number is too large,
+the fix is at this gate — a criterion that can be made decidable from an abstract, or a
+narrower string — not halfway through screening.
+
 ### Snowballing caps
 
 Forward snowballing from a heavily cited paper explodes — one landmark paper can be

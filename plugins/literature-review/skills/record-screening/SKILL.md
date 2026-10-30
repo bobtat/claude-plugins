@@ -52,6 +52,24 @@ Adjudicating a hundred disagreements caused by one vague criterion is the most e
 possible way to fix it. Calibration is standard practice for human teams for the same
 reason.
 
+### Project the full-text volume
+
+The pilot also measures how many records advance. Before the full run, project it:
+
+```
+projected full texts = (pilot records advanced ÷ pilot size) × records to screen
+```
+
+Compare it with the full-text estimate in `protocol.md` section 13. **If the projection
+is well above the estimate — half again or more — stop and raise it with the user**
+before screening the rest. Name the cause, which is usually a discriminating criterion
+that is full-text-only, and the choices: make that criterion decidable from an abstract
+(an amendment), narrow a string (an amendment), or accept the volume. In the first
+end-to-end run, nine records in ten advanced. A projection from the pilot is how to
+learn that before the full run rather than after it.
+
+Record the projection, the estimate and the decision in `search-log.md`.
+
 ## Stage 1 — Title and Abstract
 
 Both screeners answer `include`, `exclude` or `unsure` per record, citing an exclusion
