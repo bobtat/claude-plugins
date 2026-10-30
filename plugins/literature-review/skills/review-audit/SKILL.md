@@ -19,10 +19,10 @@ Establish which one applies before starting, and state it in the report.
 
 | | **Full artifact set** | **Document only** |
 |---|---|---|
-| Input | `review.md` plus `screening.csv`, `search-log.md`, `protocol.md`, `appraisals/`, `figures/` | One document |
+| Input | `review.md` plus `screening.csv`, `search-log.md`, `protocol.md`, `appraisals/`, `fulltext/`, `figures/` | One document |
 | Typical origin | This plugin's pipeline | Anywhere — a paper, a published review, a colleague's draft |
 | Available | Everything below | Steps 1–3, 5, 6, 7 |
-| Not available | — | Flow arithmetic against source data; per-claim provenance against extractions |
+| Not available | — | Flow arithmetic and quotations against source data; per-claim provenance against extractions |
 
 **In document-only mode, absence of an artifact is not a finding.** A review that never
 claimed to have a `screening.csv` is not defective for lacking one. Report the reduced
@@ -67,9 +67,11 @@ Three shapes come up:
   the cited works plausibly support the specific claims made, and report what you find.
 - **Tiers are stated and honest.** Say so. It is rare and worth naming.
 
-### 4. Flow arithmetic
+### 4. Against the source data
 
-Full-artifact mode only. Recompute from `screening.csv`:
+Full-artifact mode only.
+
+**Flow arithmetic.** Recompute from `screening.csv`:
 
 ```
 identified − duplicates − ineligible_by_automation = screened
@@ -81,6 +83,19 @@ assessed − excluded_with_reasons = included
 Check the figure, the prose and the CSV agree, and that full-text exclusions carry a
 reason and a count per reason. Any mismatch is high severity — the numbers are the one
 part of a review a reader checks by eye.
+
+**Quotations.** Re-run the check over every file that quotes a paper — do not rely on
+the pipeline's own reports in `checks/`:
+
+```
+python3 ${CLAUDE_SKILL_DIR}/../literature-review/scripts/verify_quotes.py --fulltext fulltext --map extraction.csv --report audit-quotes.md screening/ft-*.csv screening/adjudication*.csv appraisals/*.md rob.csv
+```
+
+Every `NOT FOUND` and `TRANSPLANT` is a high-severity finding: evidence the review
+relied on is not in the paper it names. List each, with the files that build on it —
+a transplanted risk-of-bias quote reaches `rob.csv` and from there the traffic-light
+figure. Also compare against `checks/`: a failure the pipeline reported and then
+shipped anyway is its own finding. Leave `audit-quotes.md` beside `audit.md`.
 
 ### 5. Prevalence sweep
 
@@ -175,7 +190,9 @@ State these in the report, because an audit reads as a stronger guarantee than i
 
 - **It does not check whether claims about papers are true.** That needs reading the
   papers, which is appraisal, not audit. A review can pass cleanly and still
-  misrepresent every source it cites correctly.
+  misrepresent every source it cites correctly. In full-artifact mode it confirms that
+  each quotation is in the paper it is attributed to — which says the words are real,
+  not that the conclusion drawn from them is right.
 - **It does not assess the studies.** Risk of bias belongs to appraisal.
 - **It does not judge whether the question was worth asking** or the search
   well-constructed.

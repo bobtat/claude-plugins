@@ -12,9 +12,15 @@ others are what make item 27 (availability of data and materials) answerable.
 ├── search-log.md            per source: string, date, limits, counts, caps
 ├── records.csv              every record retrieved, before screening
 ├── abstracts.json           abstracts keyed by record_id, captured at discovery
+├── fulltext/<record_id>.txt each full text, fetched once and title-checked; every
+│                            quotation in the review's files is checked against it
+├── retrieval.csv            per full text sought: retrieved or not, route, title match
+├── screening/               briefs, each screener's batch files, adjudications, and
+│                            rejected/ — batches discarded by the quote check
 ├── screening.csv            per record: both screeners, criterion, adjudication
 ├── prisma-flow.json         flow counts and κ, derived from the two CSVs by script
-├── appraisals/<study_id>.md one per included study
+├── appraisals/<study_id>.md one per included study; rejected/ holds replaced ones
+├── checks/                  quote-check reports from screening and appraisal
 ├── rob.csv                  risk-of-bias judgments, one row per study per domain
 ├── extraction.csv           study characteristics and data items, one row per study
 ├── figures/*.svg            one per figure in the budget
@@ -50,8 +56,8 @@ record_id,stage,screener_1,screener_1_criterion,screener_2,screener_2_criterion,
 `stage` is `title_abstract` or `full_text`, because PRISMA counts exclusions at each
 separately. `screener_*` values are `include` / `exclude` / `unsure`. `decided_by` is
 `automation` or `human` — the split the PRISMA template's footnote requires of any
-review using automation tools. `full_text_retrieved` feeds "Reports not retrieved", and
-`study_id` groups several reports of one study. Field rules are in the
+review using automation tools. `full_text_retrieved` feeds "Reports not retrieved" and
+is copied from `retrieval.csv`; `study_id` groups several reports of one study. Field rules are in the
 `literature-review:record-screening` skill.
 
 The flow counts are never assembled by hand. `screening_stats.py` derives
@@ -82,6 +88,15 @@ but they share training and therefore share systematic blind spots. Cohen's κ
 measures their agreement, and between two instances of one model it overstates what
 the same statistic means between two people.
 
+## Quotations
+Every quotation in the screening and appraisal files was checked by script against
+the saved full text of the paper it is attributed to: <N> checked, <N> verified.
+<N> screening batches and <N> appraisals failed the check and were redone by a fresh
+agent; the discarded files are kept in `screening/rejected/` and
+`appraisals/rejected/`. κ is computed on the redone decisions. The check confirms
+that quoted words are in the paper named; it does not check paraphrase, or that a
+quotation supports the judgment it is cited for.
+
 ## What a human must still do
 - [ ] Register the protocol (PROSPERO) — item 24a
 - [ ] Second independent human screen — item 8
@@ -92,6 +107,10 @@ the same statistic means between two people.
 The κ caveat is not optional. A high κ between two instances of one model is weaker
 evidence than the same number between two people, and a reader who does not know the
 screening was automated will read it as the stronger thing.
+
+Neither is the quotations section, even when nothing failed. Dropping it for a clean
+run leaves a reader unable to tell a check that found nothing from a check that never
+ran.
 
 ## Citations
 

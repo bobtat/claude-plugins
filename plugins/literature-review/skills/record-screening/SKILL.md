@@ -1,6 +1,6 @@
 ---
 name: record-screening
-description: The procedure for screening a review's records at title/abstract and at full text — two screener agents given identical inputs and no shared context, a calibration batch before the full run, adjudication of disagreements, the human/automation attribution the PRISMA template requires, and a script that derives the flow counts and Cohen's kappa straight from the CSVs. Used by /literature-review:review in Phase 3 and in each snowballing pass.
+description: The procedure for screening a review's records at title/abstract and at full text — two screener agents given identical inputs and no shared context, a calibration batch before the full run, each full text fetched once and title-checked before anyone reads it, every quotation checked by script against the saved text, adjudication of disagreements, the human/automation attribution the PRISMA template requires, and a script that derives the flow counts and Cohen's kappa straight from the CSVs. Used by /literature-review:review in Phase 3 and in each snowballing pass.
 ---
 
 # Screening
@@ -65,20 +65,79 @@ A criterion that needs the full text is answered `unsure` at this stage, never g
 
 ## Stage 2 — Full Text
 
-For each advanced record, retrieve the full text through open-access routes only. When
-it cannot be retrieved, record `full_text_retrieved=no` — that is the "Reports not
-retrieved" box, and it stays in the flow rather than disappearing.
+### Fetch once, before anyone reads
 
-Both screeners judge eligibility against the retrieved text. They read the sections that
-decide eligibility — methods, population, design — rather than the whole paper.
+Retrieve every advanced record's text **once**, before either screener starts, so both
+screeners, the adjudicator and later the appraisal reader all read the same file — and
+every quotation they make can be checked against it:
+
+```
+python3 ${CLAUDE_SKILL_DIR}/scripts/fetch_fulltext.py records.csv <record_id>... --out fulltext --log retrieval.csv
+```
+
+It saves `fulltext/<record_id>.txt` from the arXiv HTML rendering or Europe PMC's
+open-access XML, and **refuses to save a text that does not carry the record's title**.
+For each record the log says whether it was retrieved, by which route, and why not.
+
+For a record the script could not route — a DOI with no arXiv ID or PMID — try an
+open-access copy yourself. Check its title against the record before saving it as
+`fulltext/<record_id>.txt`, and update that record's `retrieval.csv` row with the route
+you used. Open-access routes only.
+
+`full_text_retrieved` in `screening.csv` comes from `retrieval.csv`, not from the
+screeners. A record with no saved text is `full_text_retrieved=no`. That is the "Reports
+not retrieved" box, and it stays in the flow rather than disappearing.
+
+### Judge
+
+Only records with a saved text go to the screeners. Both judge eligibility against the
+saved texts, given the `fulltext/` path, in **batches of about five**, each writing
+`screening/ft-<batch>-s1.csv` or `-s2.csv`. They read the sections that decide
+eligibility — methods, population, design — one paper at a time, and never fetch.
+
+Batches are small because the failure they prevent is real. In this pipeline's first
+end-to-end run, a screener with a large batch in view quoted a passage from one paper
+as evidence about another.
 
 - **Both agree** → that is the decision.
 - **They disagree** → `literature-review:screening-adjudicator` decides, citing the
   criterion and the passage, or escalates to the user when the criterion itself is
-  ambiguous.
+  ambiguous. It writes `screening/adjudication-<round>.csv`, where the round is the
+  main search or a snowballing iteration.
 
 Every full-text exclusion carries a criterion. The flow diagram lists exclusion reasons
 with a count each, and the count comes from this column.
+
+### Check every quotation
+
+As each screener's file returns, **before comparing it with the other's**:
+
+```
+python3 ${CLAUDE_SKILL_DIR}/../literature-review/scripts/verify_quotes.py --fulltext fulltext screening/ft-<batch>-s<n>.csv
+```
+
+It finds each quotation in the saved text of the record on its row. Any `NOT FOUND` or
+`TRANSPLANT` — real words from a different paper — fails the batch:
+
+1. **Discard that screener's whole batch**, not just the bad row. A screener that
+   misattributed one passage may have misjudged its neighbours, and its other decisions
+   were made in the same context.
+2. Move the file to `screening/rejected/` — it is evidence for the disclosure.
+3. Re-run that batch with a **fresh** screener instance, same brief, same records.
+4. If the fresh instance fails too, stop and tell the user. The batch or the brief is
+   the problem.
+
+κ is computed on the decisions that survived, so it measures the re-run, and the
+conduct disclosure says so with the number of batches replaced.
+
+Check the adjudicator's file the same way. Before the gate, make one final run over
+every surviving full-text file and the adjudications, with
+`--report checks/quote-check-screening.md`. `UNCHECKABLE` there means a quotation about
+a record with no saved text, which should not happen when screeners read only saved
+texts — find out why.
+
+Title/abstract rationales are not checked: they quote abstracts both screeners had in
+the brief, and an exclusion there needs both screeners to agree anyway.
 
 ### Reports and studies
 
@@ -146,7 +205,10 @@ there is a real choice:
 - Anything the adjudicator escalated
 - **Near-misses** — records that nearly met the criteria and why they were excluded.
   PRISMA item 16b asks for these by name
-- Reports not retrieved, which the user may be able to obtain
+- Reports not retrieved, which the user may be able to obtain. A text the user
+  supplies is saved as `fulltext/<record_id>.txt`, its `retrieval.csv` row marked
+  `route=user`, and the record screened like any other
+- The quote check: quotations checked, every failure, and the batches replaced
 - Reports grouped under one `study_id`
 
 Recommend, do not just list. **Appraisal does not start until the user approves the
@@ -159,4 +221,7 @@ inclusion set.** Any decision the user changes gets `decided_by=human`, and
 - **Never exclude at title/abstract on a criterion that needs the full text.**
 - **Never mark a decision human** that the user did not individually make.
 - **Never invoke Sci-Hub** for a full text.
+- **Never compare a screener's decisions before its quotations pass.**
+- **Never let an agent fetch a full text during screening.** Fetching is done once, by
+  script, before screening.
 - **Never drop an unretrieved report.** It is a box in the flow diagram.
