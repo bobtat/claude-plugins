@@ -35,6 +35,7 @@ Gates. Each blocks the review until its condition is met.
 | Gate | Rule |
 |---|---|
 | **Never cite unverified** | Every reference resolves to a real identifier **and title-matches** the work cited. Existence alone is not verification — a confident claim attached to a real-but-wrong paper passes it cleanly. |
+| **Never quote what was not read** | Every quotation is in the saved full text of the paper it is attributed to, checked by script. Real words from the wrong paper are the failure to catch, and an agent produced exactly that in this pipeline's first run. |
 | **Never inflate a tier** | An abstract read is tier C. A machine summary is tier B. The tier is set by the reader at the moment of retrieval and is never revised upward. |
 | **Never claim prevalence from snippets** | "most", "the field has converged", "no system does X" require having read the corpus. A bounded search supports "in the included studies". |
 | **Never fabricate a count** | A "records identified" total the tooling cannot supply is reported as unavailable, with the cap named. |
@@ -69,7 +70,7 @@ are the evidence that it was conducted rather than composed.
 | **0 Intake** | A question, an output directory, a citation style, a toolchain probe | `literature-review:review-protocol` |
 | **1 Protocol** | `protocol.md` — question, criteria, sources, strings, snowballing caps, RoB instrument, figure budget, pilot counts | `literature-review:review-protocol` |
 | **2 Discovery** | `search-log.md`, `records.csv` | `literature-review:source-discovery` |
-| **3 Screening** | `screening.csv`, `prisma-flow.json` with κ per stage | `literature-review:record-screening` |
+| **3 Screening** | `fulltext/`, `retrieval.csv`, `screening.csv`, `prisma-flow.json` with κ per stage | `literature-review:record-screening` |
 | **4 Appraisal** | `appraisals/<study_id>.md`, `rob.csv`, `extraction.csv` | `literature-review:source-appraisal` |
 | **5a Figures** | `figures/*.svg`, drawn from the data files before any prose | `literature-review:review-figures` |
 | **5b Synthesis** | `review.md`, `references.bib`, `prisma-checklist.md`, `conduct-disclosure.md` | `literature-review:review-synthesis` |
@@ -152,7 +153,11 @@ choose.
 - **`references/prisma.md`** — all 42 checklist rows against the published statement,
   the three-state marking, the flow diagram spec and its arithmetic, PRISMA-S.
 - **`references/provenance.md`** — the five tiers, assignment rules, the existence and
-  title-match checks, the prevalence rule, the retraction convention.
+  title-match checks, quote verification, the prevalence rule, the retraction
+  convention.
+- **`scripts/verify_quotes.py`** — checks every quotation in a review's working files
+  against the saved full text of the record it is attributed to; `examples/quote-check/`
+  exercises each verdict.
 - **`references/search-strategy.md`** — question frameworks, Boolean block
   construction, per-database syntax, controlled vocabulary, snowballing, stopping
   rules, the logging PRISMA-S requires.

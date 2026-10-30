@@ -97,6 +97,58 @@ than it is:
   technical reports, URLs. Name that residue explicitly and give its size.
 - It does not detect a reference that is real, correctly titled, and irrelevant.
 
+## Quotations
+
+A citation check proves the paper exists and is the one named. It says nothing about the
+words a review puts in that paper's mouth, and a model asked to support a judgment with
+a quotation will produce one. This pipeline's first end-to-end run showed the form the
+failure takes: a screener with several papers in view supported a decision about one
+with a sentence that was really in another. The words were genuine; the attribution was
+not. Fluent and specific, it would pass any reader who did not open both papers.
+
+So every quotation is checked by script, `scripts/verify_quotes.py`, against the saved
+text of the record it is attributed to.
+
+| Verdict | Meaning |
+|---|---|
+| `VERIFIED` | Found in the attributed record's saved text |
+| `NOT FOUND` | In no saved text at all — invented, or reworded inside quotation marks |
+| `TRANSPLANT` | Absent from the attributed record, present in another's — real words, wrong paper |
+| `UNCHECKABLE` | The attributed record has no saved text |
+
+The check works only because of three rules upstream of it:
+
+1. **Each full text is fetched once and saved** as `fulltext/<record_id>.txt`, after its
+   title is matched against the record. Every agent reads that file and none fetches its
+   own copy, so the check compares against the text that was actually read. A part
+   fetched later — an appendix, a supplement — is saved as
+   `fulltext/<record_id>.<part>.txt` and counts as the same record's text.
+2. **A quotation is copied, never reconstructed.** Double quotation marks mean these
+   words, in this order, are in this paper. Shortening uses `...`; a paraphrase carries
+   no quotation marks.
+3. **Every file names the records it quotes** — a `record_id` column, a `study_id`
+   column with a map to its reports, or a `- Records:` line in an appraisal.
+
+Matching tolerates what extraction does to text — Unicode forms, line-break
+hyphenation, curly and straight quotes, dash variants, bracketed citation markers — and
+nothing else. A failure **discards the whole unit**, a screener's batch or a reader's
+study, and a fresh agent redoes it: the decisions made alongside a misattributed passage
+were made in the same context. Replacements are counted in the conduct disclosure.
+
+`examples/quote-check/` exercises each verdict, a quotation split by an ellipsis, a
+supplement, and a `support_quote` cell without quotation marks. Run against it, the
+script reports twelve quotations: nine verified, and one each not found, transplanted
+and uncheckable.
+
+### What the quote check does not do
+
+- It does not check paraphrase. A claim stated without quotation marks is checked only
+  by a reader.
+- It does not check that the quotation supports the judgment it is cited for. Real words
+  can be quoted out of context.
+- It ignores quotations shorter than four words, which match by accident too easily to
+  mean anything.
+
 ## The Prevalence Rule
 
 These constructions require having read the corpus:
