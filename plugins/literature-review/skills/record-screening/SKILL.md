@@ -36,7 +36,8 @@ Write `screening/brief.md` once per stage and give both screeners the same path:
 - the question, verbatim from `protocol.md`
 - at title/abstract, each record's title and its abstract from `abstracts.json`; a
   record with no abstract is screened on its title and answered `unsure`
-- the criteria table, with codes and short labels
+- the criteria table from `protocol.md`, with codes and labels — screeners cite
+  exclusions exactly as the table writes them, E-codes only
 - which criteria are decidable at this stage
 - the decision rules below
 
@@ -53,8 +54,9 @@ reason.
 
 ## Stage 1 — Title and Abstract
 
-Both screeners answer `include`, `exclude` or `unsure` per record, citing a criterion
-code for every `exclude`.
+Both screeners answer `include`, `exclude` or `unsure` per record, citing an exclusion
+code for every `exclude`. A record failing inclusion criterion I<n> is excluded under
+its mirror E<n>.
 
 **The liberal rule:** a record advances to full text if **either** screener answers
 `include` or `unsure`. It is excluded only when both exclude. A title/abstract exclusion
@@ -176,7 +178,7 @@ preprint/published pair counted as one study.
 At the end of each screening round:
 
 ```
-python3 ${CLAUDE_SKILL_DIR}/scripts/screening_stats.py records.csv screening.csv --out prisma-flow.json
+python3 ${CLAUDE_SKILL_DIR}/scripts/screening_stats.py records.csv screening.csv --protocol protocol.md --out prisma-flow.json
 ```
 
 It emits the flow counts — the input to the figure phase's `prisma_flow.py` — and κ with
@@ -186,6 +188,12 @@ It checks the files first and **refuses to emit counts** from inconsistent data:
 record never screened, a screening row for a duplicate, a record advanced with no
 full-text row, a full-text exclusion with no reason. Fix the data; do not work around
 the check.
+
+`--protocol` renders each exclusion reason from the criteria table — `E2: Not adults`,
+not whatever a screener wrote — and counts sub-codes such as `E2a` under their parent.
+It refuses an I-code given as an exclusion reason, a code the table does not define,
+and a table missing labels or mirrors. Without it the reasons appear as written, and
+one criterion can split across several lines of the flow diagram; always pass it.
 
 κ for full text excludes reports that were never retrieved, since nobody could judge
 them.

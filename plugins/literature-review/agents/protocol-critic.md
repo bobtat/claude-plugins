@@ -29,8 +29,12 @@ count by severity and the most serious finding.
 2. **Criteria screeners cannot apply.** Two conditions in one criterion. A criterion
    marked decidable at title/abstract that plainly is not. Exclusions stated as "wrong
    X", which gives a screener nothing to check. Vague terms — "relevant", "recent",
-   "high quality" — with no operational definition. **These are the causes of low κ**,
-   and the highest-value findings you can make.
+   "high quality" — with no operational definition. A criterion with no label, or an
+   inclusion criterion I<n> with no mirror exclusion E<n> — a record failing it would
+   have no reason to be excluded with, and `screening_stats.py --protocol` will refuse
+   the table. Sub-codes such as E2a, which are two criteria sharing a number. **These
+   are the causes of low κ and unreadable flow diagrams**, and the highest-value
+   findings you can make.
 3. **A search built to confirm.** Criteria or strings that would exclude the work
    disagreeing with the question's premise. A review that cannot find its own
    counter-evidence is not a review.

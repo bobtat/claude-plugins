@@ -33,8 +33,12 @@ For each record, one of:
 
 - **include** — it meets every inclusion criterion decidable at this stage and no
   exclusion criterion applies.
-- **exclude** — a specific exclusion criterion applies. **Cite its code.** An exclusion
-  without a criterion is not a decision.
+- **exclude** — a specific exclusion criterion applies. **Cite its E-code and label**,
+  exactly as the brief gives them (`E2: Not adults`). An exclusion without a criterion
+  is not a decision. A record that fails an inclusion criterion is excluded under that
+  criterion's mirror — fails I2, cite E2 — never under the I-code. Do not invent
+  sub-codes; if no exclusion fits, the record is `include` or `unsure` and the criteria
+  have a gap.
 - **unsure** — the information needed is not in front of you.
 
 ### At title/abstract
