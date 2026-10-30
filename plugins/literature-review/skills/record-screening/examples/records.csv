@@ -1,0 +1,21 @@
+record_id,source_type,source_db,query_id,iteration,doi,arxiv_id,pmid,openalex_id,title,authors,year,venue,retrieved_date,pre_screen,duplicate_of
+R01,database,PubMed,Q1,0,10.1000/r01,,40000001,,Episodic memory in clinical dialogue agents,Ahn J; Brown K,2025,J Med Inform,2026-09-25,kept,
+R02,database,PubMed,Q1,0,10.1000/r02,,40000002,,Hippocampal replay in rodents,Chen L,2024,Neuron,2026-09-25,kept,
+R03,database,PubMed,Q1,0,10.1000/r03,,40000003,,Retrieval-augmented memory for LLM agents: a trial,Diaz M; Evans P,2025,JAMIA,2026-09-25,kept,
+R04,database,PubMed,Q1,0,10.1000/r04,,40000004,,Working memory training in older adults,Fox R,2023,Psychol Aging,2026-09-25,kept,
+R05,database,PubMed,Q1,0,10.1000/r05,,40000005,,Memory-augmented agents for paediatric triage,Gupta S,2025,Pediatrics,2026-09-25,kept,
+R06,database,PubMed,Q1,0,10.1000/r06,,40000006,,Commentary: should agents remember?,Hale T,2026,BMJ,2026-09-25,kept,
+R07,database,PubMed,Q1,0,10.1000/r07,,40000007,,Long-term memory in LLM assistants for chronic care,Ito Y; Jones A,2026,NPJ Digit Med,2026-09-25,kept,
+R08,database,PubMed,Q1,0,10.1000/r08,,40000008,,Agent memory for neonatal monitoring,Kim H,2025,J Perinatol,2026-09-25,kept,
+R09,database,arXiv,Q2,0,,2601.00009,,,Consolidation for language agents (preprint),Lee D; Moss C,2026,arXiv,2026-09-25,kept,
+R10,database,arXiv,Q2,0,10.1000/r10,2601.00010,,,Consolidation for language agents,Lee D; Moss C,2026,TMLR,2026-09-25,kept,
+R11,database,arXiv,Q2,0,,2601.00011,,,A survey of agent memory,Nair V,2026,arXiv,2026-09-25,kept,
+R12,database,arXiv,Q2,0,,2601.00012,,,Forgetting curves for agent stores,Ortiz F,2026,arXiv,2026-09-25,kept,
+R13,database,arXiv,Q2,0,,2601.00013,,,[Withdrawn] Agent memory benchmark,Park Q,2026,arXiv,2026-09-25,automation_ineligible,
+R14,database,arXiv,Q2,0,10.1000/r03,,,,Retrieval-augmented memory for LLM agents: a trial,Diaz M; Evans P,2025,JAMIA,2026-09-25,duplicate,R03
+R15,other,Citation searching (backward),S1,1,10.1000/r15,,,,Memory in expert systems,Quinn B,1998,AI Mag,2026-09-25,kept,
+R16,other,Citation searching (backward),S1,1,10.1000/r16,,,,Case-based reasoning revisited,Ross E,2004,KER,2026-09-25,kept,
+R17,other,Citation searching (backward),S1,1,10.1000/r17,,,,Generative agents with reflective memory,Sato N,2025,UIST,2026-09-25,kept,
+R18,other,Citation searching (backward),S1,1,10.1000/r18,,,,Neural Turing machines,Tan W,2014,arXiv,2026-09-25,kept,
+R19,other,Citation searching (backward),S1,1,10.1000/r19,,,,Memory networks for dialogue,Uno G,2016,ACL,2026-09-25,kept,
+R20,other,Citation searching (backward),S1,1,10.1000/r07,,,,Long-term memory in LLM assistants for chronic care,Ito Y; Jones A,2026,NPJ Digit Med,2026-09-25,duplicate,R07
