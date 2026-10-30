@@ -1,0 +1,5 @@
+Benchmarking Memory Defences
+
+Appendix B.1. Our robustness numbers come from controlled transformations of each
+benchmark rather than evaluations under native leaderboard protocols, so they bound
+rather than measure deployed performance.

@@ -1,0 +1,11 @@
+record_id,screener_decision,criterion,note
+R1,include,I1,"§3: ""inject adversarial records into the agent's long-term memory store"""
+R1,include,I3,"§5: ""the attack success rate exceeds 80% with fewer than ten poisoned entries"""
+R1,include,I3,"§3: ""As shown in prior work the retriever ranks poisoned entries highly"""
+R1,include,I3,"§5: ""across all settings … perplexity filtering removes only a minority of them"""
+R1,exclude,E3,"Appendix B.1: ""controlled transformations of each benchmark rather than evaluations under native leaderboard protocols"""
+R1,include,I3,"§5: ""defences reduce attack success to below one percent in every setting"""
+R3,exclude,E2,"§2: ""some quoted words from a paper nobody saved"""
+R1,include,I2,"The paper's threat model names the ""memory store"" only briefly"
+R1,include,I1,Methods §3: 'we evaluate on three agent benchmarks with persistent memory'
+R1,include,I1,“inject adversarial records into the agent's long-term memory”

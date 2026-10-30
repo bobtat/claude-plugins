@@ -1,0 +1,10 @@
+Memory Poisoning Against Tool-Using Agents
+
+3 Method. We inject adversarial records into the agent's long-term memory store before
+the victim's first session. We evaluate on three agent benchmarks with persistent memory.
+As shown in prior work [12] the retriever ranks poisoned entries highly when they share
+surface vocabulary with the query.
+
+5 Results. Across all settings the attack suc-
+cess rate exceeds 80% with fewer than ten poisoned entries, and perplexity filtering
+removes only a minority of them.
