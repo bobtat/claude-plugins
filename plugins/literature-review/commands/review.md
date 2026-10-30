@@ -1,6 +1,6 @@
 ---
 description: Conduct a systematic literature review to PRISMA 2020 — protocol, search, dual independent screening, appraisal, figures, synthesis and audit — with evidence tiers on every claim and two approval gates
-argument-hint: <question> [--output <dir>] [--style apa|vancouver|ieee|chicago]
+argument-hint: <question> [--output <dir>] [--style apa|vancouver|ieee|chicago] [--unattended]
 allowed-tools: Agent, AskUserQuestion, Read, Write, Edit, Grep, Glob, Bash, WebFetch, TodoWrite, Skill
 ---
 
@@ -64,6 +64,56 @@ the last completed phase from what exists — an approved `protocol.md`, a
 where it stopped, and resume from there. Never overwrite an approved protocol or an
 existing `screening.csv` without asking.
 
+A `gate-<n>.md` with no recorded decision means a run stopped at that gate for the user.
+If the user's new invocation answers it, record the answer in the file and continue.
+
+### Spawn agents in the foreground
+
+Every agent this command spawns runs in the foreground (`run_in_background: false`).
+For parallel work, put several Agent calls in one message: they run concurrently and
+the turn resumes when all have returned. A background agent's results arrive only if
+the session outlives it. In print mode (`claude -p`) the session ends with the last
+turn, and its background work is stopped. The first end-to-end run of this pipeline
+was cut off partway through this way.
+
+### When no one can answer a gate
+
+In print mode, or wherever `AskUserQuestion` is unavailable, a gate cannot be put to
+the user. Then:
+
+- **By default, stop.** Write `gate-<n>.md` in the output directory with everything the
+  gate would have presented and your recommendation. End the run, saying where the
+  file is and that invoking the command again with the same `--output` resumes from it.
+- **With `--unattended`, proceed** on your own recommendation. Still write
+  `gate-<n>.md`, with the decision taken and `Decided by: pre-authorized (unattended
+  run)`. Set the protocol's Approved by to `pre-authorized`. Every screening decision
+  stays `decided_by=automation`: nobody made it individually. The conduct disclosure
+  states that **both approval gates were passed without human review**, and the
+  checklist cannot mark anything `met` on the strength of a gate approval.
+
+The same rule covers every other point where a skill says to stop for the user — a
+full-text projection well above the estimate, an escalated adjudication, a reader
+reporting an ineligible study. Unattended, take the conservative choice (keep the
+record, accept the volume, follow the protocol as written), and log each decision in
+the gate file for the phase it falls in.
+
+`--unattended` is for test runs and for users who will review the artifacts afterwards.
+It is never assumed: without the flag, or an explicit instruction in the invocation to
+proceed through gates, stop.
+
+### Long headless runs
+
+A headless run of this command takes hours. In print mode, Claude Code stops
+background tasks still running after the last turn once a time ceiling passes, unless
+told to wait indefinitely:
+
+```
+CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 claude -p "/literature-review:review <question> --output <dir> --unattended"
+```
+
+Foreground agents avoid the problem for this command's own work. Set the variable
+anyway, because a tool or a skill may still start a background task.
+
 ---
 
 ## Phase 0 — Intake
@@ -77,7 +127,8 @@ this file expands a path.
 Follow `literature-review:review-protocol`: draft `protocol.md`, run pilot counts,
 spawn `literature-review:protocol-critic` (two rounds at most), then present the gate.
 
-**Do not retrieve a single record until the user approves the protocol.** This is the
+**Do not retrieve a single record until the user approves the protocol** — or, in an
+unattended run, until `gate-1.md` records the pre-authorized decision. This is the
 cheapest point in the whole run to change direction, and where a missing OpenAlex key or
 rasterizer is raised while it can still be fixed.
 
@@ -88,7 +139,9 @@ source, in parallel. Merge into `records.csv`, deduplicate, and write `search-lo
 
 ## Phase 3 — Screening
 
-Load `literature-review:record-screening`. Calibrate on a pilot batch, then two
+Load `literature-review:record-screening`. Calibrate on a pilot batch and project the
+full-text volume from it; a projection well above the protocol's estimate goes to the
+user before the full run. Then two
 `literature-review:screener` agents per batch with identical inputs and no shared
 context. Before full text, fetch every advanced record once with `fetch_fulltext.py`;
 agents read the saved texts and never fetch their own. Check each screener's
@@ -114,8 +167,8 @@ pass that found nothing.
 Present as the `literature-review:record-screening` skill describes: flow counts, κ,
 adjudications, escalations, near-misses, unretrieved reports, grouped reports, and the
 quote check with any batches replaced.
-**Appraisal does not start until the user approves.** Re-run `screening_stats.py` if they
-change anything.
+**Appraisal does not start until the user approves** — or `gate-2.md` records the
+pre-authorized decision. Re-run `screening_stats.py` if they change anything.
 
 ## Phase 4 — Appraisal
 
@@ -185,6 +238,7 @@ Point at `review.md` for the rest.
 ## Rules That Hold in Every Phase
 
 - **Never search before Gate 1, or appraise before Gate 2.**
+- **Never treat a gate as passed by a human** unless a human answered it.
 - **Never change the protocol silently.** Every change after approval is an amendment,
   dated, with a reason.
 - **Never let one screener see the other's decisions.**

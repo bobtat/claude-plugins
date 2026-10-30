@@ -50,7 +50,7 @@ user can still fix it or change scope — not discovered after the review is wri
 ```markdown
 # Protocol — <short title>
 
-**Drafted:** <date> · **Approved:** <date, filled at the gate> · **Status:** draft | approved
+**Drafted:** <date> · **Approved:** <date, filled at the gate> · **Approved by:** user | pre-authorized · **Status:** draft | approved
 
 ## 1. Question
 <The question, verbatim as agreed.>
@@ -225,7 +225,9 @@ Present, with `AskUserQuestion` where there is a real choice:
 - Anything the critic raised that you did not resolve
 
 Recommend, do not just list. **Do not search until the user approves.** On approval,
-set Status to approved and fill the date.
+set Status to approved and fill the date and who approved it — `user`, or
+`pre-authorized` when the run was started with `--unattended` and no one reviewed this
+gate. The `/literature-review:review` command describes unattended runs.
 
 ## After the Gate
 
