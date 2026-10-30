@@ -34,6 +34,8 @@ worth taking:
 Write `screening/brief.md` once per stage and give both screeners the same path:
 
 - the question, verbatim from `protocol.md`
+- at title/abstract, each record's title and its abstract from `abstracts.json`; a
+  record with no abstract is screened on its title and answered `unsure`
 - the criteria table, with codes and short labels
 - which criteria are decidable at this stage
 - the decision rules below

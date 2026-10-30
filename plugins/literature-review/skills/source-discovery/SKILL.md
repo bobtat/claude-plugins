@@ -29,6 +29,7 @@ they are independent. Give each:
 
 A slice of records and a `search-log.md` entry carrying, per PRISMA-S:
 
+- an abstract for each record where the route provides one,
 - the string exactly as run, the interface and its version, the date searched,
 - **total matched** as reported by the source, and **retrieved** — kept apart,
 - whether a cap was hit, and for a relevance-ranked source, that the cap kept the top
@@ -38,6 +39,19 @@ The difference between total matched and retrieved is the thing a flow diagram m
 often misstates. PubMed and arXiv both report a true total without a key; record it
 even when you retrieve fewer.
 
+### Several strings against one source
+
+A protocol often runs several strings against one source. **Their union is that source's
+result set**: a record returned by three arXiv strings is one arXiv record, and "Records
+identified from arXiv" counts unique records across all its strings. Overlap *between
+sources* is what the "Duplicate records removed" box counts.
+
+Log each string's own total and retrieved count, and the size of the overlap between
+them, in `search-log.md`. This is equivalent to running one combined `OR` search, and
+fixing it here matters for reproducibility: logging per string-and-record pair instead
+would put the overlap in the duplicates box, and two runs of the same protocol would
+draw different flow diagrams.
+
 ### Merge into `records.csv`
 
 ```csv
@@ -45,10 +59,25 @@ record_id,source_type,source_db,query_id,iteration,doi,arxiv_id,pmid,openalex_id
 ```
 
 - `source_type` — `database`, `register`, or `other`. Snowballing is `other`.
+- `query_id` — **every** string that returned the record, semicolon-separated, in
+  protocol order (`ax-1;ax-4`). The first is the one credited for any cap allocation.
 - `iteration` — `0` for this pass; `1`, `2`, … for snowballing passes.
 - `pre_screen` — `kept`, `duplicate`, `automation_ineligible`, or `other:<reason>`.
   These feed the "Records removed before screening" box directly.
 - `duplicate_of` — the kept record's `record_id`, for duplicates.
+
+### Abstracts
+
+Title/abstract screening needs abstracts, and `records.csv` has no column for them.
+Write them to **`abstracts.json`**, an object keyed by `record_id`:
+
+```json
+{"ax-2609.29647": "Memory poisoning and decomposition attacks distribute…"}
+```
+
+The arXiv result page already carries each full abstract, and PubMed's `efetch` returns
+them, so capture them here rather than fetching again at screening. A record with no
+abstract has no key; screeners see its title alone and answer `unsure`.
 
 **Every retrieved record gets a row, duplicates included.** The identification count is
 computed from this file, so a duplicate deleted rather than marked makes the flow

@@ -103,9 +103,13 @@ not optional.
 
 ## What You Write
 
-The records slice, in the schema from the `literature-review:source-discovery` skill,
-with every retrieved record as a row and `pre_screen` left as `kept` — deduplication
-happens at merge, not here.
+The records slice, in the schema from the `literature-review:source-discovery` skill —
+one row per unique record from this source, with `query_id` listing every string that
+returned it, and `pre_screen` left as `kept`. Deduplication *across* sources happens at
+merge, not here.
+
+An abstracts file for the same records, keyed by `record_id`, wherever the route gave
+you one.
 
 The log entry:
 
@@ -117,6 +121,7 @@ The log entry:
 - Limits: <date range, language, type>
 - Total matched: <N, as reported by the source — or "not reported by this route">
 - Retrieved: <n>
+- Overlap with this source's other strings: <n records also returned by them>
 - Cap: none | hit at <n> (<ranking rule>)
 - Notes: <anything a reader re-running this would need>
 ```
