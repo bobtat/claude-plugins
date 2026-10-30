@@ -1,0 +1,6 @@
+Supplementary Material
+
+S1. Hyperparameters
+
+All poisoning experiments use a retrieval depth of five and a memory capacity
+of 2,000 entries, matching the deployed configuration described in Section 3.

@@ -20,6 +20,10 @@ texts), 2 on bad input. A check that silently covered nothing must not pass.
 Records are found from a record_id column, from a study_id column expanded with
 --map (a CSV with study_id and semicolon-separated report_ids), or in Markdown
 from a line such as "- Records: R09, R10".
+
+A record's text is fulltext/<record_id>.txt plus any fulltext/<record_id>.<part>.txt
+(a supplement or appendix saved later). A support_quote column is a quotation in
+its entirety, with or without quotation marks around it.
 """
 import argparse, csv, glob, os, re, sys, unicodedata
 
@@ -65,9 +69,10 @@ def quotes_in(text, min_words):
 
 def load_texts(d):
     texts = {}
-    for p in glob.glob(os.path.join(d, "*.txt")):
+    for p in sorted(glob.glob(os.path.join(d, "*.txt"))):
+        rid = os.path.basename(p)[:-4].split(".")[0]   # R09.supplement.txt -> R09
         with open(p, encoding="utf-8", errors="replace") as f:
-            texts[os.path.splitext(os.path.basename(p))[0]] = normalize(f.read())
+            texts[rid] = (texts[rid] + " " if rid in texts else "") + normalize(f.read())
     return texts
 
 
@@ -95,7 +100,11 @@ def items_from(path, smap, min_words):
                 for col, val in row.items():
                     if col in ("record_id", "study_id") or not val:
                         continue
-                    for q in quotes_in(val, min_words):
+                    qs = quotes_in(val, min_words)
+                    if not qs and col == "support_quote":
+                        q = val.strip().strip('"“”').strip()
+                        qs = [q] if fragments(q, min_words) else []
+                    for q in qs:
                         yield f"{path}:{n}:{col}", ids, q
     else:
         text = open(path, encoding="utf-8", errors="replace").read()
