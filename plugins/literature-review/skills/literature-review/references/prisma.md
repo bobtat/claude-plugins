@@ -202,7 +202,9 @@ Two honesty requirements specific to a machine-run search:
   identified total.
 - **Exclusions at the "Reports excluded" step need a reason and a count per reason.**
   "Excluded: 11" is not compliant. `screening.csv` carries the criterion per record
-  precisely so this box can be filled.
+  precisely so this box can be filled, and `screening_stats.py --protocol` renders
+  each reason from the protocol's criteria table, so the box reads "E2: Not adults
+  (n = 4)" rather than a bare code or a screener's wording.
 
 ## PRISMA-S
 

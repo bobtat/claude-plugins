@@ -31,8 +31,9 @@ For each record:
    the same file both screeners read. **Never fetch another copy.** Decide from the
    text, not from which rationale is more persuasive. Settle one record before opening
    the next paper's text.
-3. Decide `include` or `exclude`, citing the criterion code and the passage with its
-   location.
+3. Decide `include` or `exclude`, citing the exclusion's E-code and label exactly as the
+   brief gives them, and the passage with its location. Never an I-code, never an
+   invented sub-code.
 
 **Escalate** — decision `escalate` — when the disagreement comes from the criterion,
 not the paper: both screeners read the same passage correctly and applied a criterion

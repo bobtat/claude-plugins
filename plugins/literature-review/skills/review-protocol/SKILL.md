@@ -58,12 +58,13 @@ Framework: PICO | PICOS | PECO | SPIDER | PIRD | Objective/Intervention/Outcome 
 <Each component, one line.>
 
 ## 2. Eligibility criteria
-Numbered, so every screening decision can cite one.
+Numbered, so every screening decision can cite one. E<n> is the mirror of I<n>;
+exclusions beyond the mirrors continue the numbering.
 
-| Code | Criterion | Decidable at title/abstract? |
-|---|---|---|
-| I1 | … | yes |
-| E1 | … | no — full text |
+| Code | Label | Criterion | Decidable at title/abstract? |
+|---|---|---|---|
+| I1 | … | … | yes |
+| E1 | Not … | … | yes |
 
 ## 3. Information sources
 | Source | Interface | Date range | Why this source |
@@ -115,9 +116,17 @@ for someone who has only a title and an abstract.
   title/abstract stage.
 - **Exclusions are stated positively.** "E2: Population is not adults" — not "E2:
   Wrong population", which gives the screener nothing to check.
-- **Short labels travel.** Each criterion's code and a short label (`E2: Not adults`)
-  become the exclusion reasons in the flow diagram. Keep the label under about five
-  words.
+- **Every inclusion criterion has a mirror exclusion.** I2 "adult population" pairs
+  with E2 "Not adults", so a record that fails I2 has a reason to be excluded with.
+  Screeners cite exclusion codes only; an inclusion code is not a reason a reader can
+  act on, and `screening_stats.py` refuses one. Exclusions with no inclusion
+  counterpart, such as "Not primary research", take the numbers after the mirrors.
+- **Short labels travel.** Each criterion's code and label (`E2: Not adults`) become
+  the exclusion reasons in the flow diagram, rendered from this table by script — not
+  from whatever wording a screener used. Keep the label under about five words.
+- **No sub-codes.** If E2 needs splitting into E2a and E2b, it is two criteria; give
+  them separate numbers and labels. A sub-code a screener invents anyway is counted
+  under its parent.
 
 Ambiguous criteria are the cause of low κ, and low κ is fixed by rewriting criteria,
 not by adjudicating forty records one at a time.
