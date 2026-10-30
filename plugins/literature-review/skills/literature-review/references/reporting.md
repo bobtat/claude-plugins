@@ -77,6 +77,7 @@ independent human reviewers, and the differences are below.
 ## What was automated
 | Stage | How | PRISMA item |
 |---|---|---|
+| Approval gates | By the user, on <dates> — or pre-authorized for an unattended run, with no human review | — |
 | Screening | Two agents, identical inputs, no shared context. κ = 0.81 | 8 |
 | Extraction | One agent per study, structured template | 9 |
 | Risk of bias | One agent per study, <instrument> | 11 |
@@ -98,6 +99,7 @@ that quoted words are in the paper named; it does not check paraphrase, or that 
 quotation supports the judgment it is cited for.
 
 ## What a human must still do
+- [ ] Review both approval gates, if the run was unattended — `gate-1.md`, `gate-2.md`
 - [ ] Register the protocol (PROSPERO) — item 24a
 - [ ] Second independent human screen — item 8
 - [ ] Adjudicate risk of bias — item 11

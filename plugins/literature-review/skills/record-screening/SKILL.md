@@ -238,7 +238,8 @@ there is a real choice:
 - Reports grouped under one `study_id`
 
 Recommend, do not just list. **Appraisal does not start until the user approves the
-inclusion set.** Any decision the user changes gets `decided_by=human`, and
+inclusion set** — or, in an unattended run, until `gate-2.md` records the decision taken
+in their place, as the `/literature-review:review` command describes. Any decision the user changes gets `decided_by=human`, and
 `screening_stats.py` is re-run.
 
 ## Never
