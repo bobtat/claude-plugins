@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 """Derive PRISMA flow counts and screening agreement from records.csv and screening.csv.
 
-    python3 screening_stats.py records.csv screening.csv --out prisma-flow.json
+    python3 screening_stats.py records.csv screening.csv --protocol protocol.md --out prisma-flow.json
 
 The JSON is the input to review-figures' prisma_flow.py, so no number in the flow
 diagram is transcribed by hand. Standard library only.
+
+With --protocol, exclusion reasons are rendered from the protocol's criteria table
+("E2: Not adults"), whatever form the screeners wrote them in. A sub-code (E2a,
+E2(b)) is counted under its parent; an inclusion criterion cited as an exclusion
+reason, or a code the table does not define, is refused.
+The table must give every inclusion criterion I<n> its mirror exclusion E<n>.
 
 The files are checked for consistency first — an unscreened record, a screening
 row for a duplicate, an exclusion with no reason — and the script refuses to emit
 counts from inconsistent data, for the same reason the generator refuses to draw
 a flow whose arithmetic does not close.
 """
-import csv, json, sys, argparse
+import csv, json, re, sys, argparse
 from collections import Counter, OrderedDict
 
 COL_A = {"database", "register"}
@@ -25,6 +31,51 @@ REMOVED_LABELS = {
 def load(path):
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
+
+
+CODE_RE = re.compile(r"^\s*([IE])(\d+)(?:[a-z]|\([a-z0-9]+\))?(?=\W|$)", re.I)
+
+
+def load_criteria(path):
+    """Code -> label from the protocol's criteria table (a header with Code and Label)."""
+    labels, errs, cols = OrderedDict(), [], None
+    for line in open(path, encoding="utf-8"):
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if not line.lstrip().startswith("|"):
+            if cols and labels:
+                break                          # the table has ended
+            cols = None
+            continue
+        low = [c.lower() for c in cells]
+        if "code" in low and "label" in low:
+            cols = (low.index("code"), low.index("label"))
+            continue
+        if cols and len(cells) > max(cols) and re.fullmatch(r"[IE]\d+", cells[cols[0]], re.I):
+            code, label = cells[cols[0]].upper(), cells[cols[1]].strip("` ")
+            if not label or label in ("…", "..."):
+                errs.append(f"{code}: no label in the criteria table")
+            labels[code] = label
+    if not labels:
+        errs.append(f"{path}: no criteria table with Code and Label columns")
+    for code in labels:
+        if code.startswith("I") and "E" + code[1:] not in labels:
+            errs.append(f"{code} has no mirror exclusion E{code[1:]}, so a record failing it "
+                        f"has no reason to be excluded with")
+    return labels, errs
+
+
+def reason(raw, labels):
+    """Render a final_criterion as 'E2: label'. Returns (text, error)."""
+    m = CODE_RE.match(raw)
+    if not m:
+        return None, f"{raw!r} names no criterion code"
+    code = m.group(1).upper() + m.group(2)
+    if code.startswith("I"):
+        return None, (f"{raw!r} cites inclusion criterion {code}; an exclusion cites "
+                      f"its mirror, E{code[1:]}")
+    if code not in labels:
+        return None, f"{raw!r}: {code} is not in the protocol's criteria table"
+    return f"{code}: {labels[code]}", None
 
 
 def kappa(pairs):
@@ -41,7 +92,7 @@ def kappa(pairs):
     return (po - pe) / (1 - pe)
 
 
-def validate(records, screening):
+def validate(records, screening, labels=None):
     errs = []
     by_id = {r["record_id"]: r for r in records}
     if len(by_id) != len(records):
@@ -69,6 +120,10 @@ def validate(records, screening):
         if s["stage"] == "full_text" and s["final"] == "exclude" \
                 and s.get("full_text_retrieved") == "yes" and not s["final_criterion"].strip():
             errs.append(f"{s['record_id']}: excluded at full text with no reason")
+        if labels is not None and s["final"] == "exclude" and s["final_criterion"].strip():
+            _, e = reason(s["final_criterion"], labels)
+            if e:
+                errs.append(f"{s['record_id']} {s['stage']}: {e}")
     for rid in kept:
         if (rid, "title_abstract") not in rows:
             errs.append(f"{rid}: kept but never screened at title/abstract")
@@ -80,8 +135,8 @@ def validate(records, screening):
     return errs, by_id, rows
 
 
-def derive(records, screening):
-    errs, by_id, rows = validate(records, screening)
+def derive(records, screening, labels=None):
+    errs, by_id, rows = validate(records, screening, labels)
     if errs:
         return None, errs
 
@@ -124,7 +179,9 @@ def derive(records, screening):
         ft = stage_rows(column, "full_text")
         nr = [s for s in ft if s.get("full_text_retrieved") != "yes"]
         assessed = [s for s in ft if s.get("full_text_retrieved") == "yes"]
-        reasons = Counter(s["final_criterion"].strip() for s in assessed if s["final"] == "exclude")
+        reasons = Counter(reason(s["final_criterion"], labels)[0] if labels is not None
+                          else s["final_criterion"].strip()
+                          for s in assessed if s["final"] == "exclude")
         return len(ft), len(nr), len(assessed), OrderedDict(sorted(reasons.items(), key=lambda kv: -kv[1]))
 
     out["sought"], out["not_retrieved"], out["assessed"], out["excluded_with_reasons"] = fulltext("A")
@@ -163,6 +220,9 @@ def derive(records, screening):
             ("kappa", round(k, 3) if k is not None else None),
         ])
     out["screening_agreement"] = stats
+    if labels is None:
+        notes.append("Exclusion reasons are as written in screening.csv. Pass --protocol "
+                     "to render them from the criteria table.")
     out["notes"] = notes
     return out, []
 
@@ -172,9 +232,18 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("records")
     ap.add_argument("screening")
+    ap.add_argument("--protocol", help="protocol.md, for exclusion-reason labels")
     ap.add_argument("--out", help="write JSON here instead of stdout")
     a = ap.parse_args()
-    out, errs = derive(load(a.records), load(a.screening))
+    labels = None
+    if a.protocol:
+        labels, perrs = load_criteria(a.protocol)
+        if perrs:
+            print("The protocol's criteria table cannot label exclusion reasons:", file=sys.stderr)
+            for e in perrs:
+                print(f"  - {e}", file=sys.stderr)
+            return 2
+    out, errs = derive(load(a.records), load(a.screening), labels)
     if errs:
         print("Screening data is inconsistent; no counts emitted:", file=sys.stderr)
         for e in errs:
