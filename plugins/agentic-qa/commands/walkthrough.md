@@ -120,7 +120,7 @@ Spawn `agentic-qa:step-planner` with the resolved `behavior-spec.md` and `intake
 
 1. The step plan's coverage — advisory, not a hard gate. A gap found here is no different from one found later; both are just a follow-up.
 2. Every `Added` row (from either agent) with its citation, for an explicit strike if it doesn't belong — the only place that happens.
-3. Any step still `blocked` — put its question to `AskUserQuestion` directly. This is the one part of this gate that isn't skippable.
+3. Any step still `blocked` on a question — put it to `AskUserQuestion` directly. This is the one part of this gate that isn't skippable. A step blocked on a missing browser driver or an unlisted target has no question to answer: show the count and the cause, so the person can fix the environment or proceed knowing what won't be covered.
 4. The irreversible steps, `contained` vs. `escapes`, with their citations. Offer the blanket pre-authorization for `contained` steps as a single choice; `escapes` never gets covered by it.
 5. Every `cli` step, and every step whose `Target` isn't the base URL's host, with its actual action, whether reversible or not. These reach further than the system the ticket describes, so a person sees the command before it runs.
 

@@ -49,7 +49,7 @@ A rerun is a new run, in a new directory, and any grant it holds was given witho
 
 ### Evidence, fixed by surface, not judgment
 
-- **browser** — a screenshot, every time, pass or fail, never skipped as unnecessary, ending up at `evidence/s<n>-<short-name>.png`; a screenshot left wherever the driver put it is one the report can't find. With `playwright`, call `browser_take_screenshot` **without** a `filename`: the server saves into its own output directory and returns the path, and you copy that file into `evidence/` with Bash, then delete the original. That directory is shared by every run and nothing else cleans it, so also delete each snapshot or other file the server reports creating, by the path it gave you, once you've used it. Never delete anything else there: another run may be using it. Never pass `filename` — the server resolves an explicit name against the session's working root, which is the user's repository, and refuses any path outside its allowed roots, which the run's working directory is.
+- **browser** — a screenshot, every time, pass or fail, never skipped as unnecessary, ending up at `evidence/s<n>-<short-name>.png`; a screenshot left wherever the driver put it is one the report can't find. With `playwright`, call `browser_take_screenshot` **without** a `filename`: the server saves into its own output directory and returns the path, and you copy that file into `evidence/` with Bash, then delete the original. That directory is shared by every run and nothing else cleans it, so also delete each snapshot or other file the server reports creating, by the path it gave you, once you've used it. Never delete anything else there: another run may be using it. Never pass `filename` — the server resolves an explicit name against the session's working root, which is the user's repository, and refuses any path outside its allowed roots, which the run's working directory is. With `claude-in-chrome`, pass `save_to_disk: true` on the `computer` tool's `screenshot` action and copy the file from the path it returns. If no file comes back, that is an environment failure, not a step without evidence.
 - **api** — the response body as text.
 - **cli** — the command output as text.
 
@@ -91,7 +91,7 @@ Evidence is copied to the report destination and embedded in the HTML before any
 |---|---|---|
 | `pass` | Observed matches Expected | Recorded, walkthrough continues |
 | `fail` | Step ran; observed doesn't match Expected | Recorded with evidence, walkthrough continues — this is QA finding what it exists to find, not an interruption to it |
-| `blocked` | Already marked so in `step-plan.md` — an Unspecified question or Conflict was never resolved | Never reached unresolved in interactive mode (the User Gate settles it first); agent-invoked, skip it and any step cascading from it, record the question, keep running the rest of the plan |
+| `blocked` | Already marked so in `step-plan.md` — an Unspecified question or Conflict was never resolved | Interactively the User Gate settles a question first, so what still reaches here has no answer to give: no browser driver, or a target off the allowlist. Skip it and any step cascading from it, record the question or cause, and keep running the rest of the plan |
 | `skipped` | A step this one depends on failed or was declined, so its output never existed | Cascades automatically; the `Reason` names the *specific* upstream failure, not just a step number — `skipped — depends on S2, which failed: SQS message contract mismatch (expected orderId, got order_id)` |
 | `not verified` | No judgment was possible: the step was declined, the run was stopped, or an irreversible step's outcome could not be determined | Recorded with its `Reason`, never rounded up to a pass or down to a fail. It always makes the report `Incomplete` |
 
@@ -99,7 +99,7 @@ Every verdict cites the specific evidence backing it — never a bare "looks rig
 
 ### Environment failure — a fifth thing, not a verdict
 
-Only these count as an environment failure: a connection that never completed (refused, reset, DNS failure), a gateway status — `502`, `503`, `504` — or the browser tool itself crashing. Any other 5xx, a `500` above all, is the application under test answering, and that is a result: judge it against Expected like any other. An intermittent 500 is exactly the kind of defect a walkthrough exists to catch, and retrying it until it passes erases the evidence.
+Only these count as an environment failure: a connection that never completed (refused, reset, DNS failure), a request that timed out with no answer, a gateway status — `502`, `503`, `504` — or the browser tool itself crashing. Any other 5xx, a `500` above all, is the application under test answering, and that is a result: judge it against Expected like any other. An intermittent 500 is exactly the kind of defect a walkthrough exists to catch, and retrying it until it passes erases the evidence.
 
 An environment failure gets a retry of the identical action, not a different approach:
 
@@ -113,7 +113,7 @@ Three retries, four attempts total. If all four fail, this is a trigger for the 
 
 **Every attempt is recorded.** `step-results.md`'s `Attempts` field lists each one with what happened — `1: 503; 2: 200`. A step that passes after a failed attempt is still a `pass`, but the failed attempt is disclosed, and the report surfaces it under `Findings` as intermittent, never absorbed into a clean result.
 
-**Backoff is for failures that might pass on the next attempt.** A failure that is deterministic fails identically four times and wastes ninety seconds proving it. An expired browser session is one (see below). A stale element reference — the handle came from a page snapshot the page has since re-rendered past — is the other: take a fresh snapshot and re-run the same action. Re-reading a page that moved is not a `Deviation`.
+**Backoff is for failures that might pass on the next attempt.** A failure that is deterministic fails identically four times and wastes ninety seconds proving it. An expired browser session is one (see below). A stale element reference — the handle came from a page snapshot the page has since re-rendered past — is the other: take a fresh snapshot and re-run the same action. Re-reading a page that moved doesn't change the verdict; it is disclosed in `Deviation`, as below.
 
 A fresh snapshot assigns new references, so "the same element" cannot be an identity check and must not be left to judgment. Use this test:
 
