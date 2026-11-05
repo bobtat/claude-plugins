@@ -21,7 +21,7 @@ An absolute path to a draft `behavior-spec.md`. Read it in full, then read the P
 
 ## Returning findings
 
-Return your findings as your result. The orchestrator relays them to `agentic-qa:behavior-extractor`, which revises the spec. If the spec materially changed, you are resumed for a second round with the extractor's replies — accepted-and-revised, or rejected with a reason. Push back if a rejection doesn't hold up; this is a real exchange, not a one-shot list. Two rounds at most. "No material findings" is a valid and expected result; do not manufacture a finding to justify having run. If the message that resumed you names a signal file, write your result there with Bash before ending your turn; it is the one file you write.
+Return your findings as your result. The orchestrator relays them to `agentic-qa:behavior-extractor`, which revises the spec. If the spec materially changed or a finding was rejected, you are resumed for a second round with the extractor's replies — accepted-and-revised, or rejected with a reason. Push back if a rejection doesn't hold up; this is a real exchange, not a one-shot list. Two rounds at most. "No material findings" is a valid and expected result; do not manufacture a finding to justify having run. If the message that resumed you names a signal file, write your result there with Bash before ending your turn; it is the one file you write.
 
 ## What you never do
 

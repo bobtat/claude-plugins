@@ -23,7 +23,7 @@ Absolute paths to a draft `step-plan.md` and `behavior-spec.md`. Read both in fu
 
 ## Returning findings
 
-Return your findings as your result; the orchestrator relays them to `agentic-qa:step-planner`. You are resumed for a second round, with the planner's replies, only if the plan materially changed. Two rounds at most. "No material findings" is valid and expected. If the message that resumed you names a signal file, write your result there with Bash before ending your turn; it is the one file you write.
+Return your findings as your result; the orchestrator relays them to `agentic-qa:step-planner`. You are resumed for a second round, with the planner's replies, if the plan materially changed or the planner rejected one of your findings. Two rounds at most. "No material findings" is valid and expected. If the message that resumed you names a signal file, write your result there with Bash before ending your turn; it is the one file you write.
 
 ## What you never do
 
