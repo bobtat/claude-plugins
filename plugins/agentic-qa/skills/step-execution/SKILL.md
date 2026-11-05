@@ -1,6 +1,6 @@
 ---
 name: step-execution
-description: Use when running an approved step plan against a live system — spawning agentic-qa:step-executor to drive the browser, API, and CLI. Governs the four verdicts (pass/fail/blocked/skipped), which evidence is required by surface, the choice between the claude-in-chrome and playwright browser drivers, the backoff retry policy for environment failures, the irreversible-step check, and the rule against adapting an action to force a pass. Invoked by /agentic-qa:walkthrough after the User Gate, alongside agentic-qa:qa-reporting.
+description: Use when running an approved step plan against a live system — spawning agentic-qa:step-executor to drive the browser, API, and CLI. Governs the five verdicts (pass/fail/blocked/skipped/not verified), which evidence is required by surface, the choice between the claude-in-chrome and playwright browser drivers, the backoff retry policy for environment failures, the irreversible-step check, and the rule against adapting an action to force a pass. Invoked by /agentic-qa:walkthrough after the User Gate, alongside agentic-qa:qa-reporting.
 ---
 
 ## Overview
@@ -17,10 +17,33 @@ Before each step, read `step-results.md` for any output value an earlier step pr
 
 The executor ends its turn in exactly one of two ways, and the orchestrator acts on which:
 
-- **`ESCALATION: <what's needed, for which step>`** — a trigger from `agentic-qa:agentic-qa`'s escalation mechanism fired. Record the pending step's state in `step-results.md` first. The executor is resumed with the answer and continues from that step; it cannot wait for the answer in place.
+- **`ESCALATION: <what's needed, for which step>`** — a trigger from `agentic-qa:agentic-qa`'s escalation mechanism fired. Record the pending step's state in `step-results.md` first, as a `pending` entry. The executor is resumed with the answer and continues from that step; it cannot wait for the answer in place.
 - **`COMPLETE`**, with the verdict counts — every step has a verdict.
 
 If the message that resumed you names a signal file, write this result there before ending your turn. Your orchestrator may be unable to receive it any other way.
+
+### Answers to an escalation
+
+An answer does more than say "go ahead". Each of these is a complete answer, and none of them needs a follow-up:
+
+- **Proceed** — with whatever the escalation asked for: an approval, a completed login, a target that's back up.
+- **Decline this step** — record `not verified — declined by <who>`, with `Authorization: declined`. Steps depending on it become `skipped`. Carry on with the rest of the plan.
+- **Stop the run** — record every step without a verdict as `not verified — run stopped: <reason>`, and end your turn with `COMPLETE`. A stopped run still gets its report.
+- **For an unknown outcome** — someone checked: it landed (judge it against Expected), or it provably did not (it may be attempted again, on a fresh authorization). If nobody can tell, record `not verified — outcome unknown`, and treat it as having landed for everything that follows.
+
+An answer you can't place among these is not a licence to guess: end your turn with another escalation saying what you need.
+
+### Before an irreversible action, write down that you're about to send it
+
+Append a `pending` entry to `step-results.md` naming the exact action **before** sending it — `Verdict: pending`, `Action sent: <what>`. If the session dies between the request and its result, that entry is the only record that a real side effect may have happened. A later entry for the same step supersedes an earlier one: the file stays append-only, and the last entry for a step is its result.
+
+### When the executor ends some other way
+
+A context limit, a crash, or a result that is neither `ESCALATION:` nor `COMPLETE` is an abnormal end. The orchestrator resumes it by ID once, asking only which of those it is. If that doesn't produce one, it sends the reporter `final: run ended abnormally — <reason>` and tells whoever it answers to. It **never** spawns a new executor to carry on: a new one would have no memory of what the old one sent.
+
+### Rerunning after an interrupted run
+
+A rerun is a new run, in a new directory, and any grant it holds was given without knowledge of what the earlier run already did. So when a person or the brief's `previous_run` names an earlier working directory, Intake copies into `intake.md`'s `Earlier run` field every irreversible action that directory's `step-results.md` shows as sent, `pending` entries above all. A step matching one is not covered by any grant: escalate it individually, saying what was already sent.
 
 ### Evidence, fixed by surface, not judgment
 
@@ -40,14 +63,15 @@ Evidence is copied to the report destination and embedded in the HTML before any
 
 `Observed` never quotes a secret either — describe it (`a 40-character token was returned`) instead.
 
-### Four verdicts
+### Five verdicts
 
 | Verdict | When | What happens |
 |---|---|---|
 | `pass` | Observed matches Expected | Recorded, walkthrough continues |
 | `fail` | Step ran; observed doesn't match Expected | Recorded with evidence, walkthrough continues — this is QA finding what it exists to find, not an interruption to it |
 | `blocked` | Already marked so in `step-plan.md` — an Unspecified question or Conflict was never resolved | Never reached unresolved in interactive mode (the User Gate settles it first); agent-invoked, skip it and any step cascading from it, record the question, keep running the rest of the plan |
-| `skipped` | A step this one depends on failed, so its output never existed | Cascades automatically; the `Reason` names the *specific* upstream failure, not just a step number — `skipped — depends on S2, which failed: SQS message contract mismatch (expected orderId, got order_id)` |
+| `skipped` | A step this one depends on failed or was declined, so its output never existed | Cascades automatically; the `Reason` names the *specific* upstream failure, not just a step number — `skipped — depends on S2, which failed: SQS message contract mismatch (expected orderId, got order_id)` |
+| `not verified` | No judgment was possible: the step was declined, the run was stopped, or an irreversible step's outcome could not be determined | Recorded with its `Reason`, never rounded up to a pass or down to a fail. It always makes the report `Incomplete` |
 
 Every verdict cites the specific evidence backing it — never a bare "looks right."
 
@@ -102,7 +126,7 @@ Either way, `step-results.md`'s `Authorization` field records how it was cleared
 Two drivers can run a browser step. Which one this run uses was settled at Intake and is recorded in `intake.md`'s `Browser driver` field — read it, don't re-derive it. Intake checked what this session can actually drive, or was told by the brief's `browser_driver`, and a run whose evidence came from one driver for some steps and the other for the rest can't be compared against itself.
 
 - **`claude-in-chrome`** — preferred when available. It drives the user's own Chrome, which is why the interactive session story below is as short as it is.
-- **`playwright`** — the fallback, shipped configured with this plugin. Nothing else about this phase changes: the same four verdicts, the same evidence rules, the same escalations.
+- **`playwright`** — the fallback, shipped configured with this plugin. Nothing else about this phase changes: the same five verdicts, the same evidence rules, the same escalations.
 - **`none`** — every browser step arrived already marked `blocked — no browser driver` by `agentic-qa:step-planning`. Skip them and their cascade exactly as you would any other blocked step. Nothing escalates for it — the User Gate showed the count interactively, and the report carries it in `Status` and `Blocked`.
 
 Driving Playwright, work from `browser_snapshot` and act on the element references it returns — not from screenshot coordinates. This matters for more than ergonomics: a reference that no longer resolves is an unambiguous failure attributable to the page, where a coordinate click that lands on the wrong element produces a screenshot that looks like a product bug. Screenshots are still captured for every browser step, but as evidence, not as the thing actions are aimed at.
@@ -127,11 +151,12 @@ Agent-invoked, load the brief's `browser_session` (a pre-established storage sta
 # Step Results: <title>
 
 ## S1 — <short name>
-- **Verdict:** pass | fail | blocked | skipped
+- **Verdict:** pass | fail | blocked | skipped | not verified | pending
+- **Action sent:** <the exact action — on a `pending` entry for an irreversible step, written before it is sent>
 - **Evidence:** evidence/s1-response.json
 - **Observed:** <what happened, citing the evidence>
 - **Outputs:** order_id: ORD-8842
-- **Authorization:** n/a (reversible) | confirmed live | pre-authorized (contained)
+- **Authorization:** n/a (reversible) | confirmed live | pre-authorized (contained) | declined
 - **Attempts:** 1 | <each attempt and its outcome, e.g. `1: 503; 2: 200`>
 - **Sensitive:** yes — only when evidence could not be masked; omit otherwise
 - **Deviation:** none | <what diverged from the plan and why, never absorbed silently into a pass>
@@ -144,5 +169,11 @@ Agent-invoked, load the brief's `browser_session` (a pre-established storage sta
 ## S8 — <short name>
 - **Verdict:** skipped
 - **Reason:** depends on S2, which failed: SQS message contract mismatch (expected orderId, got order_id)
+- **Evidence:** none — not executed
+
+## S9 — <short name>
+- **Verdict:** not verified
+- **Reason:** declined by the person at the escalation — real payment, no sandbox available
+- **Authorization:** declined
 - **Evidence:** none — not executed
 ```

@@ -31,7 +31,11 @@ Send the reporter `final` once `step-executor` returns `COMPLETE`, then wait on 
 5. Render `walkthrough-report.html` from the finished `walkthrough-report.md`.
 6. Write the HTML report's absolute path to `signals/report-done.txt`, as its last act on the run, then return `done: <absolute path to walkthrough-report.html>`. The file is the signal that the report is finished — Phase 5 waits on it, because a returned result does not reliably reach the orchestrator (see `agentic-qa:agentic-qa`'s Agent messaging).
 
-A run with any `blocked` or `skipped` step states that in the `Status` line itself, not just as a nonzero count buried in `Summary` — `⚠️ Incomplete — 2 blocked, 1 skipped`, not a report that reads as done when it isn't.
+A run with any `blocked`, `skipped` or `not verified` step states that in the `Status` line itself, not just as a nonzero count buried in `Summary` — `⚠️ Incomplete — 2 blocked, 1 skipped, 1 not verified`, not a report that reads as done when it isn't.
+
+**If the self-check fails,** fix what the files allow. Anything still wrong goes in the report under `Findings` and in `Status` — `⚠️ Incomplete — self-check failed: S3's evidence is missing` — and finalization continues. **If the HTML can't be rendered,** say so in `Status`, write `walkthrough-report.md`'s path to `signals/report-done.txt` instead, and return `done: <that path> (HTML not rendered: <reason>)`. The orchestrator always gets an ending.
+
+**On `final: run ended abnormally — <reason>`,** finalize the same way, from whatever `step-results.md` holds. A step with no entry shows as `not verified — run ended`. A step whose last entry is `pending` shows as `not verified — outcome unknown, the request may have landed`, with its `Action sent`, and goes first under `Findings`, because someone may need to check it. Put the reason in `Status`.
 
 ## Rendering `walkthrough-report.html`
 
@@ -53,7 +57,7 @@ A lightweight inline-SVG step-status summary is worth adding when a run has enou
 **Environment:** staging — https://staging.example.com
 **Browser driver:** playwright  (omit this line when the run has no browser steps)
 **Status:** ⏳ In progress — 4 of 7 steps run | ⚠️ Incomplete — 2 blocked, 1 skipped | ✅ Complete
-**Summary:** 3 passed, 1 failed, 2 blocked, 1 skipped
+**Summary:** 3 passed, 1 failed, 2 blocked, 1 skipped, 0 not verified
 
 ## Traceability
 | Step | Behavior | Verdict |
@@ -63,6 +67,7 @@ A lightweight inline-SVG step-status summary is worth adding when a run has enou
 | S3 | B3 — cancelling a paid booking refunds it | ✅ Pass (irreversible, contained — pre-authorized) |
 | S4 | B6 — cancellation exactly at the 24h boundary | ⏳ blocked — Unspecified Q2 |
 | S8 | A1 — loyalty credit also reverses on refund | ⏭ skipped — depends on S2, which failed |
+| S9 | B7 — refund notifies the card issuer | ❔ not verified — declined at escalation |
 
 ## S1 — <short name>
 - Behaviors: B1
