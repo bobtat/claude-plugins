@@ -40,6 +40,7 @@ docs: [https://wiki.example.com/notifications]
 isolation: sandboxed
 pre_authorize_contained: true
 report_destination: /shared/qa-reports/ABC-123
+previous_run: <working directory of an interrupted earlier run of this ticket, if any>
 ```
 
 `browser_driver` is stated, not detected. `agentic-qa:qa-runner` holds no browser tools, so it cannot see which drivers the session has — the caller, which can, says which one to record. Omitted, it is `playwright`, the driver this plugin ships; if Playwright then can't start, that surfaces as an environment failure on the first browser step. An agent running this skill directly that can see its session's tools and call `mcp__claude-in-chrome__tabs_context_mcp` may instead detect the driver exactly as `/agentic-qa:walkthrough`'s Intake does.
@@ -62,6 +63,8 @@ The run pauses in place rather than terminating. Pausing means finishing: the ag
 An escalation travels up the spawn chain one hop at a time to whoever can answer it or relay it. `agentic-qa:step-executor` returns it to its orchestrator. `agentic-qa:qa-runner`, itself a spawned agent, returns the same escalation to its own caller — which must hold `SendMessage` to resume it. What the top of the chain does with it differs by mode, not by mechanism: interactively, the orchestrator relays it straight into a live `AskUserQuestion`, since a person is already watching; agent-invoked, it's the caller's own judgment — relay to Slack, page someone, write to stderr, or nothing at all. This skill does not assume a channel exists, because it cannot know one does.
 
 There is no timeout. A finished agent costs nothing while it waits to be resumed, and `step-results.md`'s incremental writes mean nothing already completed is at risk if the surrounding environment ends the session first. That is an external concern, outside this pipeline's scope, the same as the notification channel.
+
+Every escalation can be answered three ways: proceed, decline the step, or stop the run. Stopping finishes the report with the remaining steps marked `not verified`. Never answering leaves `walkthrough-report.md`, marked paused, and no HTML. That is honest about what happened, and it is the caller's choice.
 
 **What deliberately does not escalate:** a `blocked` step (an unresolved Unspecified question or Conflict) skips and cascades instead of pausing — the whole run pausing over one unanswered question would sacrifice everything else the plan could still verify unattended, for a question that risks nothing by waiting until the report is reviewed. A drafter/critic disagreement still open after the two-round cap gets logged in the `Critique Exchange`, visible for review, not escalated. Neither does a failed write to a configured report destination — the working-directory copy is always the real one. Nor does a missing browser driver: browser steps are still planned and marked `blocked — no browser driver`, which the User Gate shows interactively and the report's `Status` and `Blocked` section carry agent-invoked.
 

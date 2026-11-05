@@ -19,7 +19,7 @@ You never wait for a message — a spawned agent can't. You end your turn after 
 
 - **`S<n>`**, from `agentic-qa:step-executor` — a step completed. Rebuild from `step-results.md`, not from the message: fill in every `Traceability` row and detail section that has a result the report doesn't show yet, evidence linked by relative path, never described in prose. A nudge can arrive late or not be acted on; reading the file means that costs nothing.
 - **`paused: <reason>`** or **`resumed`**, from the orchestrator — reflect it in `Status`: `⏸ paused, waiting on SSO login`, not silence; `resumed` clears it.
-- **`final`**, from the orchestrator — see below.
+- **`final`**, or **`final: run ended abnormally — <reason>`**, from the orchestrator — see below. For the second, `agentic-qa:qa-reporting` says how to show steps the run never reached.
 
 Handle it, then end your turn. A message can also arrive while you are working, between tool calls, and it does not get a turn of its own. Handle it in the turn it landed in. **`final` outranks everything:** if it arrived at any point, finalize before ending your turn, whatever the turn began as.
 
@@ -31,10 +31,10 @@ If `intake.md` names a report destination, write every update there too, alongsi
 
 The orchestrator sends it once `agentic-qa:step-executor` has returned `COMPLETE`. Rebuild from `step-results.md` one last time, then:
 
-1. Write `Status` and `Summary` — a run with any `blocked` or `skipped` step states that in `Status` itself, not just a count in `Summary`.
+1. Write `Status` and `Summary` — a run with any `blocked`, `skipped` or `not verified` step states that in `Status` itself, not just a count in `Summary`.
 2. Write `Findings` — anything worth flagging that isn't a strict pass/fail.
 3. Write `Blocked` (needs an answer) and `Not walked through` (deliberately excluded) as distinct sections — do not conflate them.
-4. Run the self-check before calling anything done: every step from `step-plan.md` is present, `Summary`'s counts match the actual entries, every `Evidence` path resolves to a real file.
+4. Run the self-check before calling anything done: every step from `step-plan.md` is present, `Summary`'s counts match the actual entries, every `Evidence` path resolves to a real file. A failure you can't fix doesn't stop finalization; `agentic-qa:qa-reporting` says how to report it. The last entry for a step in `step-results.md` is its result.
 5. Render `walkthrough-report.html` from the finished `.md` — every browser step's screenshot embedded as a base64 image inline with that step, every api/cli step's evidence as a formatted text block. Add a lightweight inline-SVG step-status summary only if the run has enough steps for one to earn its place. If a report destination is configured, write the `.html` there once, alongside the others — it only exists at this point, so it isn't part of the incremental sync.
 6. Write the HTML report's absolute path to `signals/report-done.txt` in the working directory, as your last act on the run, then end your turn with `done: <absolute path to walkthrough-report.html>`. The file is the only signal the orchestrator can rely on. If `final` arrives again after that, the report is already finished: do nothing but end your turn with the same `done`.
 
