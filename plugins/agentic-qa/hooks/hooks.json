@@ -1,0 +1,17 @@
+{
+  "description": "Holds agentic-qa's own agents to the person-owned allowlist. Every other agent and session passes straight through.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|mcp__plugin_agentic-qa_playwright__browser_navigate|mcp__claude-in-chrome__navigate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/target-guard.mjs\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

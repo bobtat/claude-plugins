@@ -23,7 +23,7 @@ Every step with a real-world side effect gets tagged `reversible` or `irreversib
 
 ## Targets
 
-Every step names its `Target` — a host, a named CLI context, or `local` — from `intake.md`'s `Allowed hosts`. One that isn't listed gets `Status: blocked — target <host> not on the allowlist`; don't drop it or aim it elsewhere. An action does only what its behavior needs against that target.
+Every step names its `Target` — a host, a named CLI context, or `local` — from `intake.md`'s `Allowed hosts`. One that isn't listed gets `Status: blocked — target <host> not on the allowlist`, and a `cli` step whose program isn't in `Allowed commands` gets `blocked — <program> not in allowed_commands`; don't drop it or aim it elsewhere. An action does only what its behavior needs against that target.
 
 ## Blocked steps
 

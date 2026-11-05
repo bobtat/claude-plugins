@@ -70,6 +70,8 @@ allowed_hosts:
   - "*.preview.example.com"
 identity_hosts:
   - login.example.com
+allowed_commands:
+  - mytool
 ---
 ```
 
@@ -90,6 +92,7 @@ Write `intake.md`, following this template exactly:
 **Base URL:** https://staging.example.com
 **Allowed hosts:** <`allowed_hosts` as read at Intake, plus localhost>
 **Identity hosts:** <`identity_hosts` as read at Intake, or none — login only, never a step target>
+**Allowed commands:** <`allowed_commands` as read at Intake, or none — programs a `cli` step may start>
 **Deployed build:** <version or commit, and how it was determined> | unverified
 **Test account:** qa-test-1
 **Credentials:** env:QA_API_TOKEN | file:/absolute/path | none (a reference only — never the value)
