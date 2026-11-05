@@ -53,7 +53,7 @@ These situations can't proceed without a human. All of them use one mechanism:
 
 | Trigger | Stage | Mode |
 |---|---|---|
-| Brief fails a validity gate — thin ticket, PR not merged, target unreachable, target host not on the allowlist | Intake | Agent-invoked only — interactive just asks again live, Intake isn't a spawned agent |
+| Brief fails a validity gate — thin ticket, PR not merged, target unreachable, target host not on the allowlist, deployed build lacks the merge | Intake | Agent-invoked only — interactive just asks again live, Intake isn't a spawned agent |
 | An irreversible step, `contained` or `escapes`, has no pre-authorization covering it | Execute Steps | Both — same mechanism either way |
 | Browser session isn't authenticated and SSO/MFA needs a human to complete it | Execute Steps | Both |
 | Backoff retry exhausted (four attempts) on an apparent environment failure | Execute Steps | Both |
