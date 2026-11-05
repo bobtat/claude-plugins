@@ -165,7 +165,7 @@ Any other ending is an **abnormal end**: follow `agentic-qa:step-execution`'s ru
 
 ## Phase 5 — Wrap-up
 
-Once `signals/report-done.txt` exists, or the report failed to finalize, delete `runtime-secrets/` from the working directory. Then tell the user: where the working directory is, where the report destination copy landed if one was configured, and the `walkthrough-report.html` path — that's the deliverable, open it directly.
+Once `signals/report-done.txt` exists, or the report failed to finalize, delete `runtime-secrets/` from the working directory. Then tell the user: the report's `Status` and `Summary`, where the working directory is, where the report destination copy landed if one was configured, and the `walkthrough-report.html` path — that's the deliverable, open it directly.
 
 ---
 
