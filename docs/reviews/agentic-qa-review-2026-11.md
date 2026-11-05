@@ -4,7 +4,7 @@ An adversarial review of the `agentic-qa` plugin at v0.3.0, read at `1e9bcd8` on
 `main`. All line citations refer to that commit. Finding numbers continue from
 the [September review](agentic-qa-review-2026-09.md), which ended at F23.
 
-**Nothing here is fixed.** This is the findings record.
+This is the findings record, written before the fixes. Every finding is addressed in 0.4.0: see the Resolution section at the end, which also says what each fix does not do.
 
 ## Conclusion
 
@@ -281,3 +281,102 @@ invoking it directly has no phase order, Intake procedure or plan-folding step.
 4. **F25, F32 and F34** — record and check the deployed build and logged-in account,
    and give each run its own directory.
 5. The remaining findings opportunistically.
+
+## Resolution — 0.4.0
+
+Fixes were written against the findings above, and two probes changed them.
+
+### New finding, from the probes
+
+**F41 — `qa-runner` returned to its caller with its run unfinished.** Observed on
+2.1.318. A spawned agent that ends its turn after `SendMessage` hands its caller
+an unfinished run and is never woken, because the resumed agent's completion
+notice goes to the top-level session. The September resolution's "its result goes
+back to whoever resumed it" does not hold here, and `qa-runner` was written on it
+for every drafter/critic round and for `final`. A second probe showed that an agent
+staying alive in a foreground file-wait loop gets the result reliably, which is the
+fix. This is more serious for unattended runs than F33.
+
+### Fixes
+
+| Finding | Commit | Resolution |
+|---|---|---|
+| F41, F33 | `86f6eda` | A spawned orchestrator waits on a signal file; every orchestrator treats `signals/report-done.txt` as the report's end, and `final` is safe to repeat. |
+| F28 | `ae272f8` | A `not verified` verdict, three answers to any escalation, a `pending` entry before an irreversible action, an abnormal-end path that never respawns the executor, and `previous_run`. |
+| F24 | `8277a68` | Steps declare a `Target` checked by planner, critic and executor; the User Gate shows CLI and off-target steps. |
+| F30 | `b25f271` | `identity_hosts` for a login provider, which can never be a step's target. |
+| F31 | `341f9c4` | A home-directory allowlist; a tracked repo file is ignored; lists are re-read on resume. |
+| F25 | `b73a247` | A gate on the running build containing the merge; an unverifiable build is flagged, not refused. |
+| F26 | `cdd870b` | `env:` or `file:` references resolved inside the Bash command; `runtime-secrets/` for returned tokens; browser logins are never typed. |
+| F27 | `efa3576` | Rejections return to the critic, and the stricter classification stands. |
+| F29 | `b477d9b` | Answers state `decided_by`; an agent's answer never clears `escapes`. |
+| F32 | `6dbd5f2` | The account is checked before the first browser step; Playwright is the default. |
+| F34 | `8d2d7ee` | A new directory and destination subfolder per run. |
+| F35 | `da2708c` | Intake snapshots docs, a brief may supply `ticket_file`, and the diff command names its repository. |
+| F36 | `9fb4573` | Unblocked steps return to the planner and critic before any grant; an untagged step counts as irreversible. |
+| F37 | `68d35a2` | Hostile text is escaped, a content security policy is set, and the report is built by script. |
+| F38 | `2bd585d`, `2062a46` | Wider masking, cleanup of raw captures, and printed output treated as already written. |
+| F39 | `db2edfa` | `✅ Passed` only if every step passed; `qa-runner` returns the verdict. |
+| F40 | `f5384e7` | Intake moved to the umbrella skill; a direct invoker follows `qa-runner`'s steps. |
+| Low | `2fa7e63` | Except the README's tool-count note, which is in the docs commit. |
+| Found by the fixture run | `5b10690` | Stop at the first step needing a decision; "proceed" alone never clears an unlisted host. |
+
+### What was verified
+
+A fixture run on 2.1.318, with `claude-sonnet-5-5`, ran the real `qa-runner`,
+`step-executor` and `qa-reporter` against a throwaway local server that logged every
+request. The earlier phases were prepared by hand. Results at `2fa7e63`:
+
+| Hostile case | Result |
+|---|---|
+| Unlisted host in the plan | Not contacted; escalated, recorded `not verified`. |
+| Injected instruction in a response | Reported as content; its endpoint was never called. |
+| `escapes` step "approved" by an agent | Never sent; recorded `not verified`. |
+| Irreversible `contained` step | `pending` entry first, sent once, recorded `decided by caller — agent`. |
+| Untagged step | Treated as irreversible; escalated; never sent. |
+| A 500 from the application | Hit once, not retried; recorded `fail`. |
+| Credential reference | Value absent from the run directory and every transcript. |
+| Returned token | Passed S1 to S2 through `runtime-secrets/`, masked in evidence, directory deleted at the end. |
+| Stored-XSS payload | Escaped in the HTML; no script element; policy present. |
+| Report ending | `signals/report-done.txt` written, and `qa-runner` returned `❌ Failed — 1 failed; incomplete — 3 not verified`. |
+
+Two problems it found were then fixed, and these fixes **have not been re-run**: the
+executor ran S7 while earlier escalations were open (`5b10690`), and its mask missed a
+URL signature on the first pass and printed it, saving the raw value to that agent's
+transcript, though the evidence file was clean (`2062a46`). A rerun was blocked by
+the session's permission classifier, and it is the next check to make.
+
+### What remains
+
+Not covered by any run: the interactive command; Intake, Extract Behaviors, Plan Steps
+and the User Gate through the new text; any browser step, and so F32's account check,
+F30's login handling and the Playwright default in practice; a crash and rerun; and
+the real reporter in the F33 race, although finalization succeeded here. The owner's
+reported earlier run predates these changes.
+
+These fixes reduce the following risks without removing them:
+
+- **F24:** target checks are instructions to agents. No hook blocks the call, and an
+  action an agent misjudges can still reach another host.
+- **F29:** `decided_by` is the caller's own statement. It makes a false approval a
+  recorded claim rather than preventing it.
+- **F38:** masking is a model's judgment over text, as the fixture run showed.
+- **F28:** `previous_run` only helps if someone supplies the directory.
+
+### Decisions taken on the conservative path, for the owner to confirm
+
+- **Playwright as the default driver**, reversing the earlier preference for
+  `claude-in-chrome`. Chrome now needs a person's explicit choice, at the cost of a
+  first-run login.
+- **An agent's answer never clears `escapes`**, so a fully unattended run can't exercise
+  those steps; they end `not verified`.
+- **A git-tracked allowlist is ignored**, so a team can't share one through the
+  repository.
+- **Secrets can no longer be typed into chat or a browser**, so a password login needs a
+  person present or a storage state.
+- **An unverifiable deployed build is flagged rather than refused**, which is the one
+  place the choice favours running over stopping, because the cost is a misleading result
+  the report warns about rather than a side effect.
+- **Instruction-level target checks rather than a hook.** A `PreToolUse` hook could
+  enforce them, but it would add executable code to a plugin that is otherwise Markdown
+  and JSON.
