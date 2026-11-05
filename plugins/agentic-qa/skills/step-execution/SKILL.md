@@ -72,8 +72,10 @@ Intake checked one URL. A plan can reach further, and text in a ticket can ask i
 What the guard permits:
 
 - **Programs:** basic file and text tools (`cat`, `sed`, `grep`, `jq`, `cp`, `rm` and the like) and `curl`. Anything else, interpreters and your CLI under test included, must be in `allowed_commands`, because a person listing it is the only thing that can say a run may start it.
-- **`curl`:** `-q` as the first argument, so no config file applies, then every URL literal and on an allowed host, with no redirects (`-L`), proxies, or server-named output files (`-O`, `-J`). To test a redirect, read its `Location` and judge that host yourself.
-- **Writes:** a redirect, or `cp`, `mv`, `tee`, `touch`, `mkdir`, `sed -i` and `curl -o`, must name a literal path, with no variable or glob. Nothing may touch the allowlist files, `.curlrc`, `.netrc`, shell startup files, `settings.json`, the hook itself, or anything under `.claude` except the session's scratchpad and the plugin's data directory.
+- **`curl`:** `-q` as the first argument, so no config file applies, then every URL literal and on an allowed host. Options come from a fixed list of the common ones: `-sS`, `-H`, `-d`, `-X`, `-o`, `-w`, `-m` and their relatives. That list has no redirects (`-L`), proxies, or server-named output files (`-O`, `-J`). To test a redirect, read its `Location` and judge that host yourself.
+- **`sed` and `sort`:** only their common options. A `sed` script may use `s`, `p`, `d`, `q` and `n` and nothing else, and must be literal.
+- **Shell:** every expansion in double quotes, since the shell can split an unquoted one into extra arguments. No variable set in front of a command, and no assigning to a variable that's already exported.
+- **Writes:** a redirect, or `cp`, `mv`, `tee`, `touch`, `mkdir`, `uniq`, `sort -o`, `sed -i` and `curl -o`, must name a literal path, with no variable or glob. Nothing may touch the allowlist files, `.curlrc`, `.netrc`, shell startup files, `.git`, `.gitconfig`, `CLAUDE.md`, `AGENTS.md`, `settings.json`, the hook itself, credential directories such as `.ssh` and `.aws`, or anything under `.claude` except the session's scratchpad and the plugin's data directory.
 - **Browser navigation:** allowed hosts and `about:blank`. Not `identity_hosts`: a login page is reached by being redirected there.
 
 The checks:

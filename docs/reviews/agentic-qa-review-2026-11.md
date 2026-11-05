@@ -319,6 +319,7 @@ fix. This is more serious for unattended runs than F33.
 | F39 | `db2edfa` | `✅ Passed` only if every step passed; `qa-runner` returns the verdict. |
 | F40 | `f5384e7` | Intake moved to the umbrella skill; a direct invoker follows `qa-runner`'s steps. |
 | F24, enforcement | see below | A `PreToolUse` hook, added once the owner confirmed unattended use. |
+| PR #38 review of the guard | see "Review of the guard" | All ten findings fixed, by moving options to allowlists. |
 | Low | `2fa7e63` | Except the README's tool-count note, which is in the docs commit. |
 | Found by the fixture run | `5b10690` | Stop at the first step needing a decision; "proceed" alone never clears an unlisted host. |
 
@@ -347,6 +348,33 @@ URL signature on the first pass and printed it, saving the raw value to that age
 transcript, though the evidence file was clean (`2062a46`). A rerun was blocked by
 the session's permission classifier, and it is the next check to make.
 
+### Review of the guard
+
+A separate code review of PR #38 raised ten findings against `hooks/target-guard.mjs`, and
+each was reproduced before fixing. Most shared two causes: option checks were denylists,
+and an unquoted `$VAR` was modelled as one word though the shell can split it.
+
+| # | Finding | Resolution |
+|---|---|---|
+| 1 | `sort -o` wrote to a runtime-computed path | `sort` options are a list, and `-o` must be literal. `uniq`'s output argument, found alongside, too. |
+| 2 | An unquoted `$VAR` injected an extra URL or a proxy flag | Unquoted expansions are refused in any argument. |
+| 3 | `sed -e'…'` scripts were never scanned | `sed` options are a list, and scripts are parsed. |
+| 4 | Abbreviated long options evaded checks | No long options for `sed` or `sort`; `curl`'s are a list, so abbreviations and unknown options fail. |
+| 5 | `AWS_PROFILE=prod mytool` and similar | Any variable set in front of a command is refused, as is assigning to an exported one. |
+| 6 | `printf -v PATH .` | `printf`'s first argument must be a literal format. |
+| 7 | `.git/`, `.gitconfig` and `CLAUDE.md` were writable | Added, with `AGENTS.md` and credential directories. |
+| 8 | A settings key like `constructor` denied every call | `Object.hasOwn`. |
+| 9 | `jq .profile`, `/api/settings.json` and `sed 1~2p` were refused | Protected names are checked only where a path can appear, and must match a whole path segment. |
+| 10 | `curl -o.claude/x` bypassed the path check | Attached values go through the same checks. |
+
+The same class turned up three more, which were also fixed: a quoted variable could become a
+`sort` option or a `sed` script, and `curl -w '%output{…}'` can write a file.
+
+A one-off comparison ran scripts the `sed` parser accepted under real GNU sed, looking for
+any that ran a command or wrote a file. None did, but only 39 of 1,091 generated scripts
+reached it, so this is weak evidence. These changes have unit tests only: the real
+executor last ran through the hook at `626fe13`.
+
 ### What remains
 
 Not covered by any run: the interactive command; Intake, Extract Behaviors, Plan Steps
@@ -368,7 +396,9 @@ These fixes reduce the following risks without removing them:
   disabled by the agent it guarded: the executor could write the allowlist, `~/.curlrc`,
   a shell startup file or the hook. Those routes are closed for the routes tested, but the
   files still belong to the OS user the agents run as, so this limits an agent and does not
-  contain one. It can't see where a click or a server redirect
+  contain one. A code review of the PR then found ten more bypasses and false refusals; see
+  "Review of the guard". Two rounds of review each finding real bypasses is itself the
+  result to weigh: a guard that parses shell text is incomplete by nature. It can't see where a click or a server redirect
   lands, a program on `allowed_commands` is unconstrained, and `qa-runner` itself is not
   restricted. A network boundary is the real control for unattended use.
 - **F29:** `decided_by` is the caller's own statement. It makes a false approval a
