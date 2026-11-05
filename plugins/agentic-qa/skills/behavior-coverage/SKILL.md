@@ -33,7 +33,7 @@ A finding about the ticket's own clarity (an ambiguous criterion, no stated pass
 
 The two agents never message each other: neither holds the other's ID, and neither can wait for a reply. See `agentic-qa:agentic-qa`'s Agent messaging.
 
-**Round cap:** two rounds at most. Re-run only if a behavior or an `Added` row actually changed as a result of the previous round — a reworded justification or an accepted-but-unchanged finding is not grounds for another round. "No material findings" is a valid and expected terminal result, not a failure to look hard enough.
+**Round cap:** two rounds at most. Re-run only if a behavior or an `Added` row actually changed as a result of the previous round, or the extractor rejected a finding — a critic can't answer a rejection it never sees. A reworded justification or an accepted-but-unchanged finding is not grounds for another round. "No material findings" is a valid and expected terminal result, not a failure to look hard enough.
 
 ## `behavior-spec.md` format
 

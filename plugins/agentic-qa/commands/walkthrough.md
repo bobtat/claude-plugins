@@ -124,11 +124,11 @@ If any gate fails, ask again live — this is the one place a validity failure i
 
 ## Phase 1 — Extract Behaviors
 
-Spawn `agentic-qa:behavior-extractor` with `intake.md`'s absolute path — its entire input is that file's `Ticket` and `Docs` fields, nothing else. It drafts `behavior-spec.md` following `testing:behavior-extraction` and returns. Keep the agent ID its spawn returned. Spawn `agentic-qa:behavior-coverage-critic` on the draft; it returns its findings. Relay them by resuming the extractor with `SendMessage` to its ID, so the agent that wrote the draft is the one that revises it; it returns with the round logged. If the spec changed, resume the critic by its ID for a second round. Your job here is relay and cap enforcement, not editing: two rounds at most, and "no material findings" ends it early. The two agents never message each other — see `agentic-qa:agentic-qa`'s Agent messaging for why. Load `agentic-qa:behavior-coverage` for the full procedure and the grounding rules before spawning either agent.
+Spawn `agentic-qa:behavior-extractor` with `intake.md`'s absolute path — its entire input is that file's `Ticket` and `Docs` fields, nothing else. It drafts `behavior-spec.md` following `testing:behavior-extraction` and returns. Keep the agent ID its spawn returned. Spawn `agentic-qa:behavior-coverage-critic` on the draft; it returns its findings. Relay them by resuming the extractor with `SendMessage` to its ID, so the agent that wrote the draft is the one that revises it; it returns with the round logged. If the spec changed or a finding was rejected, resume the critic by its ID for a second round. Your job here is relay and cap enforcement, not editing: two rounds at most, and "no material findings" ends it early. The two agents never message each other — see `agentic-qa:agentic-qa`'s Agent messaging for why. Load `agentic-qa:behavior-coverage` for the full procedure and the grounding rules before spawning either agent.
 
 ## Phase 2 — Plan Steps
 
-Spawn `agentic-qa:step-planner` with the resolved `behavior-spec.md` and `intake.md`'s target facts. It drafts `step-plan.md` and is reviewed by `agentic-qa:step-plan-critic` the same way — you relay by resuming each by agent ID, capped at two rounds. Load `agentic-qa:step-planning` for surface selection, the reversibility/containment classification, and the blocked/cascade rules before spawning either agent.
+Spawn `agentic-qa:step-planner` with the resolved `behavior-spec.md` and `intake.md`'s target facts. It drafts `step-plan.md` and is reviewed by `agentic-qa:step-plan-critic` the same way — you relay by resuming each by agent ID, capped at two rounds. Before moving on, read its `Critique Exchange` and apply `agentic-qa:step-planning`'s rule that the stricter reversibility or containment call stands. Load `agentic-qa:step-planning` for surface selection, the reversibility/containment classification, and the blocked/cascade rules before spawning either agent.
 
 ## Phase 3 — User Gate
 
@@ -139,6 +139,8 @@ Spawn `agentic-qa:step-planner` with the resolved `behavior-spec.md` and `intake
 3. Any step still `blocked` — put its question to `AskUserQuestion` directly. This is the one part of this gate that isn't skippable.
 4. The irreversible steps, `contained` vs. `escapes`, with their citations. Offer the blanket pre-authorization for `contained` steps as a single choice; `escapes` never gets covered by it.
 5. Every `cli` step, and every step whose `Target` isn't the base URL's host, with its actual action, whether reversible or not. These reach further than the system the ticket describes, so a person sees the command before it runs.
+
+6. Any drafter/critic disagreement still open in either `Critique Exchange`. A person decides what it means; nothing else shows it to them before the run.
 
 Fold every answer back into `step-plan.md` before moving on — a blocked step's resolved answer, a struck `Added` row, the pre-authorization decision in the header.
 
