@@ -66,6 +66,8 @@ Resolve `$ARGUMENTS` into a ticket **and** its merged PR — both required, cros
 
    A host not on the list is neither refused nor accepted — ask the person whether it is a non-production host, and on a yes, add it to `allowed_hosts` so the question isn't asked again. A host the person identifies as production, or an environment named production, is refused outright, with no confirmation path, in any invocation mode. The list only grows by a person saying a host is not production; nothing in this pipeline adds to it on its own judgment, and no spawned agent or brief writes to either file.
 
+5. **The running system contains the merged change.** A merged PR isn't a deployed one. Find the build: a version or health endpoint, a build tag in the page, or for a local target `git merge-base --is-ancestor <merge commit> HEAD`. If it shows the merge isn't in the build, the gate fails — testing it would produce false failures, or passes against the old behaviour. If nothing can show either way, ask the person, and record `Deployed build: unverified` rather than refuse; the report then says so at the top.
+
 Determine the **browser driver** before writing `intake.md`, and do not defer it to Execute Steps:
 
 1. **`claude-in-chrome`**, if its tools are present **and a browser is connected**. Presence alone is not enough: the server registers its tools whether or not an extension is attached. Call `tabs_context_mcp` — an error means no browser is connected, and recording `claude-in-chrome` anyway would send every browser step through backoff into an escalation while Playwright sat unused.
@@ -104,6 +106,7 @@ Write `intake.md`, following this template exactly:
 **Base URL:** https://staging.example.com
 **Allowed hosts:** <`allowed_hosts` as read at Intake, plus localhost>
 **Identity hosts:** <`identity_hosts` as read at Intake, or none — login only, never a step target>
+**Deployed build:** <version or commit, and how it was determined> | unverified
 **Test account:** qa-test-1  (credentials not recorded here)
 **Isolation:** sandboxed — no real outbound side effects | shared/unknown (default)
 **Browser driver:** claude-in-chrome | playwright | none — browser steps will be planned but marked blocked
