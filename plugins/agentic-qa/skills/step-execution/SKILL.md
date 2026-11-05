@@ -145,8 +145,8 @@ Either way, `step-results.md`'s `Authorization` field records how it was cleared
 
 Two drivers can run a browser step. Which one this run uses was settled at Intake and is recorded in `intake.md`'s `Browser driver` field — read it, don't re-derive it. Intake checked what this session can actually drive, or was told by the brief's `browser_driver`, and a run whose evidence came from one driver for some steps and the other for the rest can't be compared against itself.
 
-- **`claude-in-chrome`** — preferred when available. It drives the user's own Chrome, which is why the interactive session story below is as short as it is.
-- **`playwright`** — the fallback, shipped configured with this plugin. Nothing else about this phase changes: the same five verdicts, the same evidence rules, the same escalations.
+- **`playwright`** — the default, shipped configured with this plugin. Its browser is isolated from the user's own.
+- **`claude-in-chrome`** — only when a person chose it. It drives their own Chrome, so what's logged in there is what the run acts as. Nothing else about this phase changes: the same five verdicts, the same evidence rules, the same escalations.
 - **`none`** — every browser step arrived already marked `blocked — no browser driver` by `agentic-qa:step-planning`. Skip them and their cascade exactly as you would any other blocked step. Nothing escalates for it — the User Gate showed the count interactively, and the report carries it in `Status` and `Blocked`.
 
 Driving Playwright, work from `browser_snapshot` and act on the element references it returns — not from screenshot coordinates. This matters for more than ergonomics: a reference that no longer resolves is an unambiguous failure attributable to the page, where a coordinate click that lands on the wrong element produces a screenshot that looks like a product bug. Screenshots are still captured for every browser step, but as evidence, not as the thing actions are aimed at.
@@ -157,7 +157,7 @@ A driver recorded at Intake can still fail when it first reaches for a browser b
 
 ### Browser session and SSO
 
-Before the first browser step, verify the session is authenticated.
+Before the first browser step, verify the session is authenticated **as `intake.md`'s `Test account`**. `contained` means inside the test account, so every containment call in the plan rests on this. Read the identity the application shows — a profile menu, an account page, a `who am I` endpoint — and add `Browser account: <as shown>` to the first browser step's entry. A different account, or none you can determine, is an escalation: name what you found, and act on nothing until it's answered. A logged-in browser is not evidence of the right login; the `playwright` profile keeps whichever login came last, and `claude-in-chrome` holds the person's own.
 
 Interactively with `claude-in-chrome`, the user's browser is already logged in — if it isn't, navigate to the login page and escalate, asking the person to complete SSO/MFA live; there is no credential to know, only a session to wait for.
 
@@ -178,6 +178,7 @@ Agent-invoked, load the brief's `browser_session` (a pre-established storage sta
 - **Outputs:** order_id: ORD-8842 | auth_token: runtime-secrets/s1-auth_token  (a path, never a secret)
 - **Authorization:** n/a (reversible) | confirmed live | decided by caller — <decided_by, as stated> | pre-authorized (contained) | declined
 - **Attempts:** 1 | <each attempt and its outcome, e.g. `1: 503; 2: 200`>
+- **Browser account:** <identity the application shows> — on the first browser step
 - **Sensitive:** yes — only when evidence could not be masked; omit otherwise
 - **Deviation:** none | <what diverged from the plan and why, never absorbed silently into a pass>
 
