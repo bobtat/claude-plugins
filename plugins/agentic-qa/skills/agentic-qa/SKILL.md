@@ -49,7 +49,7 @@ A brief that fails a validity gate triggers the same escalation as everything el
 
 ## Escalation: pause, notify, resume
 
-These situations can't proceed without a human. All of them use one mechanism:
+These situations need a decision the pipeline can't make for itself. All of them use one mechanism:
 
 | Trigger | Stage | Mode |
 |---|---|---|
@@ -61,7 +61,7 @@ These situations can't proceed without a human. All of them use one mechanism:
 | A step reached, or was redirected to, a host not on the allowlist | Execute Steps | Both |
 The run pauses in place rather than terminating. Pausing means finishing: the agent that hit the trigger ends its turn with an `ESCALATION:` result stating exactly what it needs, and whoever spawned it resumes it later by agent ID with the answer (see Agent messaging, below). A resumed agent keeps its full context and continues from exactly where it stopped; nothing is re-derived or re-run.
 
-An escalation travels up the spawn chain one hop at a time to whoever can answer it or relay it. `agentic-qa:step-executor` returns it to its orchestrator. `agentic-qa:qa-runner`, itself a spawned agent, returns the same escalation to its own caller — which must hold `SendMessage` to resume it. What the top of the chain does with it differs by mode, not by mechanism: interactively, the orchestrator relays it straight into a live `AskUserQuestion`, since a person is already watching; agent-invoked, it's the caller's own judgment — relay to Slack, page someone, write to stderr, or nothing at all. This skill does not assume a channel exists, because it cannot know one does.
+An escalation travels up the spawn chain one hop at a time to whoever can answer it or relay it. `agentic-qa:step-executor` returns it to its orchestrator. `agentic-qa:qa-runner`, itself a spawned agent, returns the same escalation to its own caller — which must hold `SendMessage` to resume it. What the top of the chain does with it differs by mode, not by mechanism: interactively, the orchestrator relays it straight into a live `AskUserQuestion`, since a person is already watching; agent-invoked, it's the caller's own judgment — relay to Slack, page someone, write to stderr, or nothing at all. This skill does not assume a channel exists, because it cannot know one does. An agent caller can answer for itself, with two limits that hold whatever it says: its answer never clears an `escapes` step, and it never adds to the allowlist. Every answer states `decided_by: person (<role>)` or `decided_by: agent`, the report records it as stated, and a missing one counts as `agent`.
 
 There is no timeout. A finished agent costs nothing while it waits to be resumed, and `step-results.md`'s incremental writes mean nothing already completed is at risk if the surrounding environment ends the session first. That is an external concern, outside this pipeline's scope, the same as the notification channel.
 
@@ -76,7 +76,7 @@ An irreversible step is not one thing. Split it:
 | Classification | Meaning | Can it be pre-authorized? |
 |---|---|---|
 | `contained` | Effect stays inside the target environment and test account — deleting a test order, resetting seeded data | Yes, as a single blanket grant covering every contained step in the run |
-| `escapes` | Effect reaches something real outside that boundary — an email that actually delivers, a real payment, a shared or cross-team resource | Never. Always stops individually, in every mode, regardless of any grant |
+| `escapes` | Effect reaches something real outside that boundary — an email that actually delivers, a real payment, a shared or cross-team resource | Never. Always stops individually for a person's decision, in every mode, regardless of any grant |
 
 `agentic-qa:step-plan-critic` has the last word when it is the stricter of the two, grounded against `intake.md`'s `Isolation` claim and the actual code — and can override the claim if the code disagrees; a hardcoded production mail relay is `escapes` even if the isolation claim said sandboxed.
 

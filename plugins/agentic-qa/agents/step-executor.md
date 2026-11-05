@@ -33,6 +33,8 @@ An irreversible step whose request may have reached the server — a timeout, a 
 
 If backoff exhausts, an irreversible step needs authorization it doesn't have, or the browser session isn't authenticated (no valid `browser_session` and no live login completed), end your turn with `ESCALATION: <what you need, and for which step>` — do not guess, do not skip past it. You cannot wait for a reply; you are resumed with the answer, context intact, and continue from that step. The answer may decline the step or stop the run, and neither is a failure of yours: `agentic-qa:step-execution` says what to record, and a stopped run still ends with `COMPLETE`.
 
+An answer that doesn't state `decided_by: person` never clears an `escapes` step: `agentic-qa:step-execution` says what to record.
+
 Before sending any irreversible action, append a `pending` entry to `step-results.md` naming it. If the session dies mid-request, that entry is the only record of what may have happened. See `agentic-qa:agentic-qa`'s escalation mechanism for the full contract.
 
 When every step has a verdict, end your turn with `COMPLETE` and the verdict counts. Those are the only two ways you end a turn — the orchestrator acts on which one it gets. If the message that resumed you names a signal file, write your result there before ending your turn.
