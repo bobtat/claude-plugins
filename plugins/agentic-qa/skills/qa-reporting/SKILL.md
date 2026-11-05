@@ -31,7 +31,7 @@ Send the reporter `final` once `step-executor` returns `COMPLETE`, then wait on 
 5. Render `walkthrough-report.html` from the finished `walkthrough-report.md`.
 6. Write the HTML report's absolute path to `signals/report-done.txt`, as its last act on the run, then return `done: <absolute path to walkthrough-report.html>`. The file is the signal that the report is finished — Phase 5 waits on it, because a returned result does not reliably reach the orchestrator (see `agentic-qa:agentic-qa`'s Agent messaging).
 
-A run with any `blocked`, `skipped` or `not verified` step states that in the `Status` line itself, not just as a nonzero count buried in `Summary` — `⚠️ Incomplete — 2 blocked, 1 skipped, 1 not verified`, not a report that reads as done when it isn't.
+A run with any `blocked`, `skipped` or `not verified` step states that in the `Status` line itself, not just as a nonzero count buried in `Summary` — `⚠️ Incomplete — 2 blocked, 1 skipped, 1 not verified`, not a report that reads as done when it isn't. A run with any `fail` leads with that: `❌ Failed — 1 failed; incomplete — 2 blocked`. `✅ Passed` means every planned step passed, and nothing less; someone reading only this line should not be misled.
 
 **If the self-check fails,** fix what the files allow. Anything still wrong goes in the report under `Findings` and in `Status` — `⚠️ Incomplete — self-check failed: S3's evidence is missing` — and finalization continues. **If the HTML can't be rendered,** say so in `Status`, write `walkthrough-report.md`'s path to `signals/report-done.txt` instead, and return `done: <that path> (HTML not rendered: <reason>)`. The orchestrator always gets an ending.
 
@@ -61,7 +61,7 @@ A lightweight inline-SVG step-status summary is worth adding when a run has enou
 **Environment:** staging — https://staging.example.com
 **Deployed build:** <from intake.md> (when `unverified`, also say so in `Status`: these results may describe a build without this change)
 **Browser driver:** playwright — logged in as <`Browser account` from step-results.md>  (omit this line when the run has no browser steps)
-**Status:** ⏳ In progress — 4 of 7 steps run | ⚠️ Incomplete — 2 blocked, 1 skipped | ✅ Complete
+**Status:** ⏳ In progress — 4 of 7 steps run | ❌ Failed — 1 failed | ⚠️ Incomplete — 2 blocked, 1 skipped | ✅ Passed — every step passed
 **Summary:** 3 passed, 1 failed, 2 blocked, 1 skipped, 0 not verified
 
 ## Traceability

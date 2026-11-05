@@ -31,7 +31,7 @@ If `intake.md` names a report destination, write every update there too, alongsi
 
 The orchestrator sends it once `agentic-qa:step-executor` has returned `COMPLETE`. Rebuild from `step-results.md` one last time, then:
 
-1. Write `Status` and `Summary` — a run with any `blocked`, `skipped` or `not verified` step states that in `Status` itself, not just a count in `Summary`.
+1. Write `Status` and `Summary` — a run with any `fail` leads `Status` with `❌ Failed`, a run with any `blocked`, `skipped` or `not verified` step states that in `Status` itself, not just a count in `Summary`, and `✅ Passed` means every planned step passed.
 2. Write `Findings` — anything worth flagging that isn't a strict pass/fail.
 3. Write `Blocked` (needs an answer) and `Not walked through` (deliberately excluded) as distinct sections — do not conflate them.
 4. Run the self-check before calling anything done: every step from `step-plan.md` is present, `Summary`'s counts match the actual entries, every `Evidence` path resolves to a real file. A failure you can't fix doesn't stop finalization; `agentic-qa:qa-reporting` says how to report it. The last entry for a step in `step-results.md` is its result.
