@@ -144,7 +144,9 @@ Spawn `agentic-qa:step-planner` with the resolved `behavior-spec.md` and `intake
 
 6. Any drafter/critic disagreement still open in either `Critique Exchange`. A person decides what it means; nothing else shows it to them before the run.
 
-Fold every answer back into `step-plan.md` before moving on — a blocked step's resolved answer, a struck `Added` row, the pre-authorization decision in the header.
+**Settle item 3 before presenting items 4 and 5.** A blocked step has no action and no classification yet, so an answer can't simply be folded in, and a grant offered first would cover steps nobody has classified. Resume `agentic-qa:step-planner` with the answers to write those steps, and `agentic-qa:step-plan-critic` once to check them; this is outside the round cap, since these steps are new. Then present the rest, including them.
+
+Fold the remaining answers back into `step-plan.md` before moving on — a struck `Added` row, the pre-authorization decision in the header.
 
 ## Phase 4 — Execute Steps & Write Report
 
