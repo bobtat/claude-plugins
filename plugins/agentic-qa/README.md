@@ -19,6 +19,19 @@ Requires the **`testing`** plugin — Extract Behaviors runs `testing:behavior-e
 
 Requires `gh` for ticket/PR resolution.
 
+### Running unattended
+
+An unattended run needs these in place first, because nobody is there to supply them:
+
+- `allowed_hosts`, and any `identity_hosts` and `allowed_commands`, in `~/.claude/agentic-qa.local.md`. A fresh checkout holds no gitignored file, and an unlisted host stops the run until a person adds it.
+- A `browser_session` storage state for any browser step, since a live login needs a person.
+- A caller holding `SendMessage`, and a brief with `pre_authorize_contained` if `contained` steps should run without one escalation each.
+- Permission for `Bash` in `qa-runner` and the executor. A permission mode that prompts will hang, and a classifier may refuse broad grants: check this in your environment before relying on it.
+
+Steps classified `escapes` never run unattended. They finish as `not verified`, and need a person.
+
+### How the agents communicate
+
 The pipeline's agents hand work to each other with `SendMessage`, resuming one another by agent ID. That needs no agent-teams setting: subagents were offered `SendMessage` with no flag set on Claude Code 2.1.318, where this was last checked. On that version a resumed agent's result doesn't wake a spawned agent that resumed it, so `qa-runner` stays alive by waiting on signal files in a Bash loop. An unattended run needs permission for that.
 
 Credentials are given as a reference, never a value: `env:NAME`, or `file:/absolute/path` outside the repository. The value is read inside the command that uses it, because Claude Code saves conversations, spawn prompts and tool calls to transcripts on disk. Don't paste a password into the conversation. A browser login is done live by you, or comes from a storage state.
@@ -48,7 +61,17 @@ A walkthrough only accepts a ticket **with real acceptance criteria** and its **
 
 That refusal is enforced by an allowlist, not by guessing from a hostname. A target is accepted only if its host — after following redirects — is in `allowed_hosts` in `.claude/agentic-qa.local.md`; `localhost` is always allowed. The first time you point a walkthrough at a new host, it asks whether the host is non-production and saves your answer. An agent-invoked run never adds to the list: an unlisted host escalates to its caller, and a brief can't carry its own allowlist.
 
-The list applies to every step, not only the first URL. Each step declares its target, and the planner, critic and executor each check it. A CLI step names the context it uses, which is confirmed before it runs. These checks are instructions to the agents: no hook blocks the call, so treat them as strong guidance and not a sandbox.
+The list applies to every step, not only the first URL. Each step declares its target, and the planner, critic and executor each check it. A `PreToolUse` hook, `hooks/target-guard.mjs`, enforces it for the executor: `Bash` runs only basic file and text tools and `curl`, every `curl` URL must be a literal allowed host with no redirects or proxies, browser navigation must go to an allowed host, and any other program must be listed by you in `allowed_commands`, including the CLI you're testing. It acts only on this plugin's own agents, and adds a short Node process to `Bash` calls in any session where the plugin is enabled.
+
+**Know what the hook doesn't do.** It isn't a sandbox:
+
+- It can't see where a click or a server redirect lands in the browser. That rule is still an instruction to the agent. Point Playwright at a host that can't reach production if that matters to you.
+- A program you list in `allowed_commands` can do anything, including reach the network, and the hook only checks that its name is on the list. A CLI's ambient context (`kubectl`, `aws`) is confirmed by instruction only.
+- It doesn't limit file access, and the same machine may hold other credentials.
+- `qa-runner` itself isn't restricted, since it must run `gh` and check reachability. The reporter and the critics are only barred from named network tools.
+- It relies on Node, which `npx` already requires. If the hook can't start at all, Claude Code treats that as non-blocking.
+
+For an unattended run against anything that matters, also run it somewhere whose network can't reach production: a container or CI runner with egress limited to staging. That is the real boundary, and this hook is a second layer.
 
 A login provider is handled separately. Staging behind single sign-on usually redirects to a production identity provider, so Intake asks whether that host is the login provider and records it in `identity_hosts`, where it can only ever be somewhere a login happens.
 
@@ -70,6 +93,8 @@ allowed_hosts:
   - "*.preview.example.com"
 identity_hosts:
   - login.example.com
+allowed_commands:
+  - mytool
 ---
 ```
 

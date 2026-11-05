@@ -14,6 +14,16 @@ Markdown and JSON only — no package manager, no test runner, no lint step, no 
 
 **`adversary` is code as well**, with the same two commands: after any change under `plugins/adversary/`, run `claude plugin validate plugins/adversary` and `claude plugin test plugins/adversary` and don't commit until both pass. The reviewer's path guard and the findings parser fail silently rather than loudly: a guard bug lets the reviewer read outside the review root, a parser bug drops findings. See `plugins/adversary/README.md`.
 
+## Code exception: plugins/agentic-qa/hooks
+
+`plugins/agentic-qa/hooks/target-guard.mjs` is the plugin's `PreToolUse` guard, in dependency-free Node. After any change to it, run its tests and don't commit until they pass:
+
+```
+cd plugins/agentic-qa/hooks && node --test target-guard.test.mjs
+```
+
+It runs on `Bash` calls in every session where the plugin is enabled, so it must stay fast and must pass straight through for anything but this plugin's agents. A new hostile input gets a test. The "nothing to build" rule above applies everywhere else.
+
 ## Editing a plugin
 
 ```

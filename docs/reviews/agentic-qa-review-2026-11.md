@@ -318,6 +318,7 @@ fix. This is more serious for unattended runs than F33.
 | F38 | `2bd585d`, `2062a46` | Wider masking, cleanup of raw captures, and printed output treated as already written. |
 | F39 | `db2edfa` | `✅ Passed` only if every step passed; `qa-runner` returns the verdict. |
 | F40 | `f5384e7` | Intake moved to the umbrella skill; a direct invoker follows `qa-runner`'s steps. |
+| F24, enforcement | see below | A `PreToolUse` hook, added once the owner confirmed unattended use. |
 | Low | `2fa7e63` | Except the README's tool-count note, which is in the docs commit. |
 | Found by the fixture run | `5b10690` | Stop at the first step needing a decision; "proceed" alone never clears an unlisted host. |
 
@@ -356,8 +357,13 @@ reported earlier run predates these changes.
 
 These fixes reduce the following risks without removing them:
 
-- **F24:** target checks are instructions to agents. No hook blocks the call, and an
-  action an agent misjudges can still reach another host.
+- **F24:** `hooks/target-guard.mjs` now refuses the executor's `Bash` calls and browser
+  navigation that leave the person-owned lists. Probes on 2.1.318 confirmed that a plugin
+  hook sees the subagent's `agent_type`, including when nested under `qa-runner`-style
+  spawns, and that its deny stops the call. It has unit tests over hostile inputs, but no
+  run of the real executor through it. It can't see where a click or a server redirect
+  lands, a program on `allowed_commands` is unconstrained, and `qa-runner` itself is not
+  restricted. A network boundary is the real control for unattended use.
 - **F29:** `decided_by` is the caller's own statement. It makes a false approval a
   recorded claim rather than preventing it.
 - **F38:** masking is a model's judgment over text, as the fixture run showed.
@@ -377,6 +383,8 @@ These fixes reduce the following risks without removing them:
 - **An unverifiable deployed build is flagged rather than refused**, which is the one
   place the choice favours running over stopping, because the cost is a misleading result
   the report warns about rather than a side effect.
-- **Instruction-level target checks rather than a hook.** A `PreToolUse` hook could
-  enforce them, but it would add executable code to a plugin that is otherwise Markdown
-  and JSON.
+- **`allowed_commands` fails closed.** Interpreters and any CLI under test are refused
+  until a person lists them, so a `cli` step needs that setup first. This is the price of a
+  check a shell can't simply route around.
+- **`browser_evaluate` is removed from the executor,** because a page script can reach any
+  host. A behavior needing script evaluation can't be walked through.
