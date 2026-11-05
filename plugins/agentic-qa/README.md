@@ -61,13 +61,13 @@ A walkthrough only accepts a ticket **with real acceptance criteria** and its **
 
 That refusal is enforced by an allowlist, not by guessing from a hostname. A target is accepted only if its host — after following redirects — is in `allowed_hosts` in `.claude/agentic-qa.local.md`; `localhost` is always allowed. The first time you point a walkthrough at a new host, it asks whether the host is non-production and saves your answer. An agent-invoked run never adds to the list: an unlisted host escalates to its caller, and a brief can't carry its own allowlist.
 
-The list applies to every step, not only the first URL. Each step declares its target, and the planner, critic and executor each check it. A `PreToolUse` hook, `hooks/target-guard.mjs`, enforces it for the executor: `Bash` runs only basic file and text tools and `curl`, every `curl` URL must be a literal allowed host with no redirects or proxies, browser navigation must go to an allowed host, and any other program must be listed by you in `allowed_commands`, including the CLI you're testing. It acts only on this plugin's own agents, and adds a short Node process to `Bash` calls in any session where the plugin is enabled.
+The list applies to every step, not only the first URL. Each step declares its target, and the planner, critic and executor each check it. A `PreToolUse` hook, `hooks/target-guard.mjs`, enforces it for the executor: `Bash` runs only basic file and text tools and `curl`, every `curl` must start with `-q` and use only literal allowed hosts with no redirects or proxies, browser navigation must go to an allowed host, and any other program must be listed by you in `allowed_commands`, including the CLI you're testing. It acts only on this plugin's own agents, and adds a short Node process to `Bash` and file-write calls in any session where the plugin is enabled.
 
 **Know what the hook doesn't do.** It isn't a sandbox:
 
 - It can't see where a click or a server redirect lands in the browser. That rule is still an instruction to the agent. Point Playwright at a host that can't reach production if that matters to you.
 - A program you list in `allowed_commands` can do anything, including reach the network, and the hook only checks that its name is on the list. A CLI's ambient context (`kubectl`, `aws`) is confirmed by instruction only.
-- It doesn't limit file access, and the same machine may hold other credentials.
+- It stops this plugin's agents writing to the allowlist files, `.curlrc`, `.netrc`, shell startup files, `settings.json`, the hook and anything under `.claude`, and closes the routes it knows of. It's not a file sandbox: those files belong to the same OS user the agents run as, other files aren't protected, and a program on `allowed_commands` can write anywhere. For unattended runs, mount `~/.claude/agentic-qa.local.md` read-only if you can.
 - `qa-runner` itself isn't restricted, since it must run `gh` and check reachability. The reporter and the critics are only barred from named network tools.
 - It relies on Node, which `npx` already requires. If the hook can't start at all, Claude Code treats that as non-blocking.
 

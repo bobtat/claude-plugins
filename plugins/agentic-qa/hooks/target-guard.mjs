@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 
+const PLUGIN_AGENT = 'agentic-qa:';
 const EXECUTOR = 'agentic-qa:step-executor';
 const NETWORK_RESTRICTED = new Set([
   'agentic-qa:qa-reporter',
@@ -26,13 +27,37 @@ const EXECUTOR_COMMANDS = new Set([
 const NETWORK_TOOLS = new Set([
   'curl', 'wget', 'nc', 'ncat', 'netcat', 'socat', 'ssh', 'scp', 'sftp', 'rsync', 'telnet', 'ftp',
 ]);
-const CURL_FORBIDDEN = /^(-K|--config|-x|--proxy|--preproxy|--socks\S*|--connect-to|--resolve|--doh-url|--unix-socket|--abstract-unix-socket|--interface|--dns-servers|-L|--location|--location-trusted|--proto-redir|--next|-:)(=.*)?$/;
+const CURL_FORBIDDEN = /^(--config|--proxy|--preproxy|--socks\S*|--connect-to|--resolve|--doh-url|--unix-socket|--abstract-unix-socket|--interface|--dns-servers|--location|--location-trusted|--proto-redir|--next|--netrc|--netrc-file|--netrc-optional|--remote-name|--remote-name-all|--remote-header-name)(=.*)?$/;
+const CURL_FORBIDDEN_SHORT = new Set(['K', 'x', 'L', ':', 'n', 'O', 'J']);
+const CURL_SHORT_WITH_VALUE = new Set(['H', 'd', 'X', 'o', 'm', 'w', 'A', 'e', 'b', 'c', 'F', 'T', 'u', 'D']);
+const CURL_WRITES_FILE = new Set(['-o', '--output', '-D', '--dump-header', '-c', '--cookie-jar']);
 const CURL_VALUE_FLAGS = new Set([
   '-H', '--header', '-d', '--data', '--data-raw', '--data-binary', '--data-urlencode', '--json',
   '-X', '--request', '-o', '--output', '-m', '--max-time', '--connect-timeout', '-w', '--write-out',
   '-A', '--user-agent', '-e', '--referer', '-b', '--cookie', '-c', '--cookie-jar', '-F', '--form',
   '-T', '--upload-file', '-u', '--user', '-D', '--dump-header', '--retry', '--retry-delay', '--cacert',
 ]);
+
+// What decides this guard's behaviour, or what runs later, must not be writable
+// by the agents it guards. The list of names is matched anywhere in a word, so
+// that a false refusal is the failure mode rather than a missed spelling.
+const PROTECTED_NAME = /agentic-qa\.local|[._]curlrc|[._]netrc|\.bashrc|\.bash_profile|\.bash_login|\.profile|\.zshrc|\.zshenv|\.zprofile|\.ssh([/\\]|$)|\.mcp\.json|settings(\.local)?\.json|target-guard|hooks\.json/i;
+const CLAUDE_DIR = /(^|[/\\])\.claude([/\\]|$)/i;
+// A run's own files can legitimately live here: the session scratchpad and
+// Playwright's output directory.
+const CLAUDE_DIR_EXEMPT = /(^|[/\\])\.claude[/\\](jobs|plugins[/\\]data)[/\\]/i;
+
+export function protectedPath(text) {
+  if (PROTECTED_NAME.test(text)) return `"${text}" touches a file that controls this guard or what runs later`;
+  // Windows short names reach a protected file without spelling it.
+  if (/[^/\\\s]~\d/.test(text)) return `"${text}" looks like a Windows short name`;
+  if (CLAUDE_DIR.test(text) && (!CLAUDE_DIR_EXEMPT.test(text) || /(^|[/\\])\.\.([/\\]|$)/.test(text))) {
+    return `"${text}" is inside .claude`;
+  }
+  return null;
+}
+
+const unsafeDestination = word => word.dynamic || /[*?[\]{}]/.test(word.text);
 
 export function parseSettings(text) {
   const out = {allowed_hosts: [], allowed_commands: []};
@@ -164,8 +189,15 @@ export function parseShell(src) {
       i += m[0].length;
       continue;
     }
+    const redirect = /^(?:&>>?|>&|>>?\|?|<&|<>|<<<|<)/.exec(src.slice(i));
+    if (redirect) {
+      if (f.word && !f.word.dynamic && /^\d+$/.test(f.word.text)) f.word = null;
+      else endWord();
+      f.words.push({text: redirect[0], dynamic: false, redirect: true});
+      i += redirect[0].length;
+      continue;
+    }
     if (c === '\n' || c === ';' || c === '|' || c === '&' || c === '(' || c === ')') {
-      if (c === '&' && (src[i - 1] === '>' || src[i + 1] === '>')) { start().text += c; i++; continue; }
       endCommand();
       if (c === '\n' && heredocs.length) i = skipHeredocs(src, i + 1, heredocs, commands) - 1;
       if (c === '\n') heredocs = [];
@@ -209,31 +241,48 @@ function skipHeredocs(src, start, heredocs, commands) {
 }
 
 const isAssignment = word => /^[A-Za-z_][A-Za-z0-9_]*=/.test(word.text);
-const isRedirect = text => /^(\d*>>?|\d*>&\d*|&>>?|<|\d*<)/.test(text);
 
-function dropRedirects(words) {
-  const out = [];
-  for (let i = 0; i < words.length; i++) {
-    const t = words[i].text;
-    if (isRedirect(t)) {
-      if (/^(\d*>>?|&>>?|<|\d*<)$/.test(t)) i++;
-      continue;
-    }
-    out.push(words[i]);
+function splitRedirects(raw) {
+  const words = [];
+  const writes = [];
+  for (let i = 0; i < raw.length; i++) {
+    if (!raw[i].redirect) { words.push(raw[i]); continue; }
+    const target = raw[++i];
+    if (target && /^(&>>?|>>?\|?|>&|<>)$/.test(raw[i - 1].text)) writes.push(target);
   }
-  return out;
+  return {words, writes};
 }
 
 const commandName = text => text.replace(/\\/g, '/').split('/').pop().toLowerCase().replace(/\.exe$/, '');
 
 function checkCurl(args, allowedHosts) {
+  // curl reads ~/.curlrc unless told not to, and that file can set a proxy.
+  const first = args[0]?.text;
+  if (first !== '-q' && first !== '--disable') return 'curl must start with -q, so no config file can redirect it';
   let urls = 0;
-  for (let i = 0; i < args.length; i++) {
+  for (let i = 1; i < args.length; i++) {
     const {text, dynamic} = args[i];
     if (dynamic && text.startsWith('-')) return `"${text}" hides which curl option is used`;
-    if (CURL_FORBIDDEN.test(text) || /^-[a-zA-Z]*[Lx:K]/.test(text) && !text.startsWith('--')) {
-      return `curl ${text} is not allowed: it can reach a host the allowlist never sees. Read a redirect's Location and judge it yourself`;
+    const refusal = `curl ${text} is not allowed: it can reach a host the allowlist never sees, or write a file named by a server. Read a redirect's Location and judge it yourself`;
+    if (CURL_FORBIDDEN.test(text)) return refusal;
+    if (/^-[^-]/.test(text)) {
+      let takesNext = false;
+      for (let k = 1; k < text.length; k++) {
+        if (CURL_FORBIDDEN_SHORT.has(text[k])) return refusal;
+        if (CURL_SHORT_WITH_VALUE.has(text[k])) {
+          if (k === text.length - 1) takesNext = true;
+          if ('oDc'.includes(text[k]) && k < text.length - 1 && /[*?[\]{}#]/.test(text.slice(k + 1))) return 'curl\'s output file must be a literal path';
+          break;
+        }
+      }
+      if (takesNext) {
+        const value = args[i + 1];
+        if (value && 'oDc'.includes(text[text.length - 1]) && unsafeDestination(value)) return 'curl\'s output file must be a literal path';
+        i++;
+      }
+      continue;
     }
+    if (CURL_WRITES_FILE.has(text) && args[i + 1] && unsafeDestination(args[i + 1])) return 'curl\'s output file must be a literal path';
     if (text === '--url') {
       const r = checkUrl(args[++i]?.text ?? '', allowedHosts);
       if (r) return r;
@@ -253,6 +302,19 @@ function checkCurl(args, allowedHosts) {
 
 // GNU sed can run programs through its `e` command, the `e` flag of `s`, and
 // write files with `w`.
+function checkSedInPlace(args) {
+  if (!args.some(a => /^(-[a-zA-Z]*i|--in-place)/.test(a.text))) return null;
+  let scriptSeen = args.some(a => /^(-e|--expression)/.test(a.text));
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (/^(-e|--expression)$/.test(a.text)) { i++; continue; }
+    if (a.text.startsWith('-')) continue;
+    if (!scriptSeen) { scriptSeen = true; continue; }
+    if (unsafeDestination(a)) return `sed -i on "${a.text}" must name a literal file`;
+  }
+  return null;
+}
+
 function checkSed(args) {
   const address = String.raw`(?:\d+(?:~\d+)?|\$|\/(?:\\.|[^/])*\/[IM]*)`;
   const command = new RegExp(String.raw`(?:^|[;{}\s])(?:${address}(?:\s*,\s*(?:${address}|[+~]\d+))?)?\s*!?\s*[ew](?:\s|$)`);
@@ -274,7 +336,14 @@ export function checkExecutorBash(command, settings) {
   }
   const extra = new Set(settings.allowed_commands);
   for (const raw of commands) {
-    const words = dropRedirects(raw);
+    const {words, writes} = splitRedirects(raw);
+    for (const word of raw) {
+      const reason = word.redirect ? null : protectedPath(word.text);
+      if (reason) return reason;
+    }
+    for (const target of writes) {
+      if (unsafeDestination(target)) return `a redirect to "${target.text}" must name a literal path`;
+    }
     let n = 0;
     while (n < words.length && isAssignment(words[n])) {
       // These change where curl connects or which program a name finds, without
@@ -295,12 +364,17 @@ export function checkExecutorBash(command, settings) {
     if (!EXECUTOR_COMMANDS.has(name)) {
       return `${name} is not in allowed_commands, so a person hasn't said this run may start it`;
     }
+    if (name === 'cd' && args.some(a => a.dynamic)) return 'cd must name a literal directory';
+    if (['cp', 'mv', 'tee', 'touch', 'mkdir'].includes(name)) {
+      const unsafe = args.find(unsafeDestination);
+      if (unsafe) return `${name} on "${unsafe.text}" must name literal paths`;
+    }
     if (name === 'curl') {
       const r = checkCurl(args, settings.allowed_hosts);
       if (r) return r;
     }
     if (name === 'sed') {
-      const r = checkSed(args);
+      const r = checkSed(args) ?? checkSedInPlace(args);
       if (r) return r;
     }
     if (name === 'sort' && args.some(a => /^--compress-program/.test(a.text))) {
@@ -318,17 +392,43 @@ export function checkRestrictedBash(command) {
     commands = command.split(/[\s;|&()`]+/).map(text => [{text, dynamic: false}]);
   }
   for (const raw of commands) {
-    const words = dropRedirects(raw);
-    for (const word of words) {
-      if (NETWORK_TOOLS.has(commandName(word.text))) return `${commandName(word.text)} is not available to this agent`;
-      break;
+    for (const word of raw) {
+      const reason = word.redirect ? null : protectedPath(word.text);
+      if (reason) return reason;
+    }
+    const {words} = splitRedirects(raw);
+    if (words[0] && NETWORK_TOOLS.has(commandName(words[0].text))) {
+      return `${commandName(words[0].text)} is not available to this agent`;
     }
   }
   return null;
 }
 
+function checkFileTool(file) {
+  if (!file) return 'a file tool call must name its path';
+  const direct = protectedPath(file);
+  if (direct) return direct;
+  // A link planted earlier would otherwise hide the real destination.
+  let resolved = path.resolve(file);
+  for (;;) {
+    try {
+      resolved = fs.realpathSync(resolved);
+      break;
+    } catch {
+      const parent = path.dirname(resolved);
+      if (parent === resolved) break;
+      resolved = parent;
+    }
+  }
+  return protectedPath(resolved);
+}
+
 export function decide(input, settings) {
   const {agent_type: agent, tool_name: tool, tool_input: args = {}} = input;
+  if (!agent?.startsWith(PLUGIN_AGENT)) return null;
+  if (tool === 'Write' || tool === 'Edit' || tool === 'NotebookEdit') {
+    return checkFileTool(args.file_path ?? args.notebook_path ?? '');
+  }
   if (NETWORK_RESTRICTED.has(agent)) {
     return tool === 'Bash' ? checkRestrictedBash(args.command ?? '') : null;
   }
@@ -347,7 +447,7 @@ function main() {
     } catch {
       return;
     }
-    if (input.agent_type !== EXECUTOR && !NETWORK_RESTRICTED.has(input.agent_type)) return;
+    if (!input.agent_type?.startsWith(PLUGIN_AGENT)) return;
     let reason;
     try {
       const settings = loadSettings(process.env.CLAUDE_PROJECT_DIR || input.cwd);
