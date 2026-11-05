@@ -17,7 +17,7 @@ Before each step, read `step-results.md` for any output value an earlier step pr
 
 The executor ends its turn in exactly one of two ways, and the orchestrator acts on which:
 
-- **`ESCALATION: <what's needed, for which step>`** — a trigger from `agentic-qa:agentic-qa`'s escalation mechanism fired. Record the pending step's state in `step-results.md` first, as a `pending` entry. The executor is resumed with the answer and continues from that step; it cannot wait for the answer in place.
+- **`ESCALATION: <what's needed, for which step>`** — a trigger from `agentic-qa:agentic-qa`'s escalation mechanism fired. **Stop at the first step that needs a decision, one escalation at a time.** Never run later steps while it is open, even ones that look independent: plan order can carry state that `Depends on` doesn't name, and an answer can stop the run. Record the pending step's state in `step-results.md` first, as a `pending` entry. The executor is resumed with the answer and continues from that step; it cannot wait for the answer in place.
 - **`COMPLETE`**, with the verdict counts — every step has a verdict.
 
 If the message that resumed you names a signal file, write this result there before ending your turn. Your orchestrator may be unable to receive it any other way.
@@ -26,7 +26,7 @@ If the message that resumed you names a signal file, write this result there bef
 
 An answer does more than say "go ahead". Each of these is a complete answer, and none of them needs a follow-up:
 
-- **Proceed** — with whatever the escalation asked for: an approval, a completed login, a target that's back up.
+- **Proceed** — with whatever the escalation asked for: an approval, a completed login, a target that's back up. For a target off the allowlist, "proceed" alone clears nothing: re-read `allowed_hosts` from the files Intake names, run the step only if a person has added the host, and otherwise record it as declined.
 - **Decline this step** — record `not verified — declined by <who>`, with `Authorization: declined`. Steps depending on it become `skipped`. Carry on with the rest of the plan.
 - **Stop the run** — record every step without a verdict as `not verified — run stopped: <reason>`, and end your turn with `COMPLETE`. A stopped run still gets its report.
 - **For an unknown outcome** — someone checked: it landed (judge it against Expected), or it provably did not (it may be attempted again, on a fresh authorization). If nobody can tell, record `not verified — outcome unknown`, and treat it as having landed for everything that follows.
