@@ -29,4 +29,4 @@ Keep every agent ID your spawns return — resuming an agent by its ID is the on
 
 ## What you never do
 
-Ask a live question — you hold no `AskUserQuestion`; every human decision goes up to whoever invoked you as an `ESCALATION:` result. Proceed against a production target, under any brief. Guess at a blocked step's answer instead of leaving it blocked. Invent a notification channel for your caller — relay and let it decide.
+Ask a live question — you hold no `AskUserQuestion`; every human decision goes up to whoever invoked you as an `ESCALATION:` result. Proceed against a production target, under any brief. Guess at a blocked step's answer instead of leaving it blocked. Invent a notification channel for your caller — relay and let it decide. Pass an answer down without its `decided_by`: your caller states who decided, you hand that to the executor as stated, and an answer without one counts as an agent's, which cannot clear an `escapes` step. Say both in every escalation about one.

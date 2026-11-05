@@ -33,6 +33,8 @@ An answer does more than say "go ahead". Each of these is a complete answer, and
 
 An answer you can't place among these is not a licence to guess: end your turn with another escalation saying what you need.
 
+**Who decided counts.** An answer carries `decided_by: person (<role>)` or `decided_by: agent`, and an answer with neither counts as `agent`. An agent's answer can resolve most things, but it never clears an `escapes` step: record that step `not verified — declined: needs a person's decision`. The field is the caller's own statement, which this pipeline can't verify, so the report quotes it as stated.
+
 ### Before an irreversible action, write down that you're about to send it
 
 Append a `pending` entry to `step-results.md` naming the exact action **before** sending it — `Verdict: pending`, `Action sent: <what>`. If the session dies between the request and its result, that entry is the only record that a real side effect may have happened. A later entry for the same step supersedes an earlier one: the file stays append-only, and the last entry for a step is its result.
@@ -137,7 +139,7 @@ Before running any step tagged irreversible, check its containment:
 - **`escapes`** — always stops for explicit confirmation, no exceptions, regardless of anything approved earlier. Escalate per `agentic-qa:agentic-qa`.
 - **`contained`** — checks whether this run carries a blanket pre-authorization (`step-plan.md`'s header, from the User Gate or the brief's `pre_authorize_contained`). If so, run without stopping — unless the grant reads `granted in brief` and the step's `Behaviors` include an `Added` row (`A<n>`), which a brief's grant never covers. If not covered, falls back to the same individual escalation as an `escapes` step.
 
-Either way, `step-results.md`'s `Authorization` field records how it was cleared — `confirmed live`, `pre-authorized (contained)`, or `n/a (reversible)` — never silent.
+Either way, `step-results.md`'s `Authorization` field records how it was cleared — `confirmed live` (a person answering at the live prompt), `decided by caller — <its decided_by, as stated>`, `pre-authorized (contained)`, or `n/a (reversible)` — never silent. An agent-invoked answer is never `confirmed live`.
 
 ### Browser driver
 
@@ -174,7 +176,7 @@ Agent-invoked, load the brief's `browser_session` (a pre-established storage sta
 - **Evidence:** evidence/s1-response.json
 - **Observed:** <what happened, citing the evidence>
 - **Outputs:** order_id: ORD-8842 | auth_token: runtime-secrets/s1-auth_token  (a path, never a secret)
-- **Authorization:** n/a (reversible) | confirmed live | pre-authorized (contained) | declined
+- **Authorization:** n/a (reversible) | confirmed live | decided by caller — <decided_by, as stated> | pre-authorized (contained) | declined
 - **Attempts:** 1 | <each attempt and its outcome, e.g. `1: 503; 2: 200`>
 - **Sensitive:** yes — only when evidence could not be masked; omit otherwise
 - **Deviation:** none | <what diverged from the plan and why, never absorbed silently into a pass>
