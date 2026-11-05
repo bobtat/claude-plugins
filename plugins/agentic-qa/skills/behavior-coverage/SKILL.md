@@ -1,6 +1,6 @@
 ---
 name: behavior-coverage
-description: Use when turning a validated ticket into a behavior spec for a live walkthrough — spawning agentic-qa:behavior-extractor to draft it and agentic-qa:behavior-coverage-critic to pair with it live, arguing findings out directly rather than reporting back. Governs the grounding split between what the acceptance criteria asked for and everything else, the round cap, and the Critique Exchange log. Invoked as the Extract Behaviors phase by /agentic-qa:walkthrough, between Intake and Plan Steps.
+description: Use when turning a validated ticket into a behavior spec for a live walkthrough — spawning agentic-qa:behavior-extractor to draft it and agentic-qa:behavior-coverage-critic to review it, with the orchestrator relaying each round. Governs the grounding split between what the acceptance criteria asked for and everything else, the round cap, and the Critique Exchange log. Invoked as the Extract Behaviors phase by /agentic-qa:walkthrough, between Intake and Plan Steps.
 ---
 
 ## Overview

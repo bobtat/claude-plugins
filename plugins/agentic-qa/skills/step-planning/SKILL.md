@@ -1,6 +1,6 @@
 ---
 name: step-planning
-description: Use when turning a resolved behavior spec into an ordered, executable step plan — spawning agentic-qa:step-planner to draft it and agentic-qa:step-plan-critic to pair with it live. Governs surface selection (browser vs. API vs. CLI), the reversibility and containment classification, blocked/cascade marking, and the Critique Exchange log. Invoked by /agentic-qa:walkthrough between Extract Behaviors and the User Gate.
+description: Use when turning a resolved behavior spec into an ordered, executable step plan — spawning agentic-qa:step-planner to draft it and agentic-qa:step-plan-critic to review it, with the orchestrator relaying each round. Governs surface selection (browser vs. API vs. CLI), the reversibility and containment classification, blocked/cascade marking, and the Critique Exchange log. Invoked by /agentic-qa:walkthrough between Extract Behaviors and the User Gate.
 ---
 
 ## Overview

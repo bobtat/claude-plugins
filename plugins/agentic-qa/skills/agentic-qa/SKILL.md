@@ -94,9 +94,18 @@ Three harness facts shape every hand-off between agents in this pipeline. Each w
 
 1. **`SendMessage` addresses an agent only by the ID its spawn returned.** A type name is not an address: `SendMessage` to `agentic-qa:qa-reporter` fails with "No agent named … is reachable." An agent that must message another has to be handed that ID in its spawn prompt.
 2. **A spawned agent cannot wait for a message.** A message reaches an agent only at its next tool call, and an agent with nothing left to do ends its turn. Nothing in this pipeline "waits for a reply" — it ends its turn and is resumed.
-3. **A finished agent resumes when messaged by ID, context intact — and its result goes back to whoever resumed it.** Nobody else hears it.
+3. **A finished agent resumes when messaged by ID, context intact — but its result does not wake a spawned agent that resumed it.** The completion notice goes to the top-level session. A spawned agent that ends its turn after `SendMessage` returns to its own caller with the resumed agent still running, and is never woken. One that stays alive by making tool calls receives the notice at its next one.
+4. **A message sent to an agent that is still running joins its current turn.** It does not start a new one, and only one completion notice follows, so a `final` can land inside a turn a nudge began.
 
-So the orchestrator — `/agentic-qa:walkthrough`, `agentic-qa:qa-runner`, or an agent running this skill directly — keeps every agent ID its spawns return, and does every resume whose result it needs. Agents never hold a conversation with each other directly. The one peer message in the pipeline is `agentic-qa:step-executor`'s per-step nudge to `agentic-qa:qa-reporter`, which is fire-and-forget by design: the reporter rebuilds from `step-results.md` on every wake, so a nudge it never acts on loses nothing.
+So the orchestrator — `/agentic-qa:walkthrough`, `agentic-qa:qa-runner`, or an agent running this skill directly — keeps every agent ID its spawns return, and does every resume whose result it needs. Agents never hold a conversation with each other directly. The one peer message in the pipeline is `agentic-qa:step-executor`'s per-step nudge to `agentic-qa:qa-reporter`, which is fire-and-forget by design: the reporter rebuilds from `step-results.md` on every wake, so a nudge it never acts on loses nothing. Its completion notices carry nothing the orchestrator needs; ignore them.
+
+### Signal files
+
+Facts 3 and 4 make a file the only signal that holds in every position in the chain. Create `signals/` in the working directory at the start of the run.
+
+- **An orchestrator that is itself a spawned agent** — `agentic-qa:qa-runner`, or an agent running this skill directly from inside a spawn — spawns every agent in the foreground, and names a signal file in every resume whose result it needs: `<message> — when finished, write your end-of-turn result to <absolute path>/signals/<agent>-<n>.txt, then end your turn.` It then stays alive by waiting with a foreground Bash call, with a 600000 ms timeout: `until [ -f <path> ]; do sleep 2; done`. It reads the result from that file and never ends its own turn while an agent it resumed is running.
+- **The top-level session** is woken by the completion notice, so `/agentic-qa:walkthrough` needs no signal file for a drafter/critic round or for resuming the executor. It uses one for `final`, like everyone else, because a notice cannot say whether `final` was acted on.
+- **Giving up.** A wait that times out is reissued. Three timeouts in a row with nothing new written — no signal file, no change to `step-results.md` — means the agent has stopped: treat it as an abnormal end (see `agentic-qa:step-execution`). A run in progress keeps changing `step-results.md`, so a long executor run is not mistaken for a dead one.
 
 ## Namespacing
 

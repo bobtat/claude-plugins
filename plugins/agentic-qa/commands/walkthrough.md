@@ -34,6 +34,7 @@ Every phase hands off through files in a working directory — your scratchpad d
 | `evidence/*` | `step-executor` | A screenshot, response body, or command output per step |
 | `walkthrough-report.md` | `qa-reporter` | The live, incrementally-built report |
 | `walkthrough-report.html` | `qa-reporter` | The rendered, self-contained deliverable — generated once, at finalization |
+| `signals/report-done.txt` | `qa-reporter` | The path to the finished report, written last — the signal Phase 5 waits on |
 
 Pass **absolute paths** to every spawned agent — they cannot see your conversation. Tell the user where the directory is when the run finishes, and where the report landed if a report destination was configured.
 
@@ -140,11 +141,13 @@ Spawn `agentic-qa:qa-reporter` **first**: it writes the report skeleton before a
 The executor returns one of two results:
 
 - **`ESCALATION: …`** — something needs a human: an unauthorized irreversible step, an unauthenticated browser session, an exhausted backoff retry, an irreversible step whose outcome is unknown. Resume the reporter with `paused: <reason>` so the report shows it, and relay the question into a live `AskUserQuestion` immediately; a person is already here. Then resume the reporter with `resumed`, and the executor by its ID with the answer. It continues from the step it stopped on. This is the same mechanism an agent-invoked run uses unattended, just answered faster.
-- **`COMPLETE`** — every step has a verdict. Resume the reporter with `final`. It finalizes the report and returns `done: <path to walkthrough-report.html>`.
+- **`COMPLETE`** — every step has a verdict. Send the reporter `final`, then wait for `signals/report-done.txt` with a foreground Bash call, 300000 ms timeout: `until [ -f <path> ]; do sleep 2; done`. The file is the signal, not the notice: `final` can land inside a turn a nudge already began, and that turn's notice may say nothing about it. If the wait times out, send `final` again — it is safe to repeat — up to two more times. After that the report did not finalize: tell the user, and give them `walkthrough-report.md`, which is current up to the last update.
+
+The reporter's other completion notices carry nothing you need; ignore them.
 
 ## Phase 5 — Wrap-up
 
-Once the reporter returns `done`, tell the user: where the working directory is, where the report destination copy landed if one was configured, and the `walkthrough-report.html` path — that's the deliverable, open it directly.
+Once `signals/report-done.txt` exists, tell the user: where the working directory is, where the report destination copy landed if one was configured, and the `walkthrough-report.html` path — that's the deliverable, open it directly.
 
 ---
 
