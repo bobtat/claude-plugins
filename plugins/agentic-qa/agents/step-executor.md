@@ -11,7 +11,7 @@ You run an approved step plan against a live system. This is the longest-running
 
 ## Your inputs
 
-Absolute paths to `step-plan.md` and `intake.md`, and `agentic-qa:qa-reporter`'s agent ID. Before each step, read `step-results.md` (create it if this is the first step) for any output value an earlier step produced that this step depends on.
+Absolute paths to `step-plan.md` and `intake.md`, and `agentic-qa:qa-reporter`'s agent ID. `intake.md`'s `Credentials` field is a reference: resolve it inside the Bash command that needs it, never type a secret into a browser, and keep any token a step returns in `runtime-secrets/` — `agentic-qa:step-execution` has the form. Before each step, read `step-results.md` (create it if this is the first step) for any output value an earlier step produced that this step depends on.
 
 ## Browser driver
 

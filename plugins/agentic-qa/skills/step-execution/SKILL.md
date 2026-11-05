@@ -53,6 +53,14 @@ A rerun is a new run, in a new directory, and any grant it holds was given witho
 
 No screenshot is expected or useful for an api/cli step. See `agentic-qa:qa-reporting` for how each renders in the final report.
 
+### Using credentials
+
+`intake.md`'s `Credentials` field is a reference. Resolve it inside the Bash command that needs it, so the tool call shows the name and never the value: `curl -H "Authorization: Bearer $QA_API_TOKEN" …`, or for a file, `curl -H "Authorization: Bearer $(cat <path>)" …`. Never echo it.
+
+**Never type a password or token into a browser.** Anything a browser tool types is an argument of a tool call, and tool calls are saved to the transcript. A login form means a live login, or a storage state: escalate for it, as for SSO.
+
+**A token a step returns and a later step needs** goes to `runtime-secrets/<step>-<name>` in the working directory, extracted by the same command that received it, without printing it. `Outputs` records the path, never the value: `auth_token: runtime-secrets/s1-auth_token`. The directory never travels to a report destination, and the orchestrator deletes it when the run ends.
+
 ### Check the target before every step
 
 Intake checked one URL. A plan can reach further, and text in a ticket can ask it to, so check each step before running it:
@@ -165,7 +173,7 @@ Agent-invoked, load the brief's `browser_session` (a pre-established storage sta
 - **Action sent:** <the exact action — on a `pending` entry for an irreversible step, written before it is sent>
 - **Evidence:** evidence/s1-response.json
 - **Observed:** <what happened, citing the evidence>
-- **Outputs:** order_id: ORD-8842
+- **Outputs:** order_id: ORD-8842 | auth_token: runtime-secrets/s1-auth_token  (a path, never a secret)
 - **Authorization:** n/a (reversible) | confirmed live | pre-authorized (contained) | declined
 - **Attempts:** 1 | <each attempt and its outcome, e.g. `1: 503; 2: 200`>
 - **Sensitive:** yes — only when evidence could not be masked; omit otherwise

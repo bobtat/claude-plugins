@@ -27,7 +27,7 @@ Every phase hands off through files in a working directory — your scratchpad d
 
 | File | Written by | Holds |
 |---|---|---|
-| `intake.md` | Intake | The validated ticket snapshot, target facts, no credentials |
+| `intake.md` | Intake | The validated ticket snapshot, target facts, a reference to the credentials and never the credentials |
 | `behavior-spec.md` | `behavior-extractor` | The behavior spec, plus its own `Critique Exchange` log with the Coverage Critic |
 | `step-plan.md` | `step-planner` | The step plan, plus its own `Critique Exchange` log with the plan critic |
 | `step-results.md` | `step-executor` | One append-only entry per executed step |
@@ -76,7 +76,7 @@ Determine the **browser driver** before writing `intake.md`, and do not defer it
 
 Record the answer, including `none`. A driver chosen here can still fail when it first reaches for a browser binary; that is an environment failure for backoff to handle, not something this check can predict.
 
-Ask what's needed to reach the system: base URL, environment (local/staging), test-account credentials, whether it's sandboxed or shared (default shared/unknown if unanswered), optionally any docs/wiki links (skippable, and note if a given link is unreachable rather than treating that the same as none given), and optionally a report destination — a shared drive or folder path. Offer to save the environment answers and report destination to `.claude/agentic-qa.local.md` for next time, as YAML frontmatter alongside the allowlist:
+Ask what's needed to reach the system: base URL, environment (local/staging), a test account and a **reference** to its credentials (`env:NAME`, or `file:/absolute/path` outside the repository — ask for where the value is, and if the person starts to paste it, tell them transcripts are saved to disk), whether it's sandboxed or shared (default shared/unknown if unanswered), optionally any docs/wiki links (skippable, and note if a given link is unreachable rather than treating that the same as none given), and optionally a report destination — a shared drive or folder path. Offer to save the environment answers and report destination to `.claude/agentic-qa.local.md` for next time, as YAML frontmatter alongside the allowlist:
 
 ```markdown
 ---
@@ -107,7 +107,8 @@ Write `intake.md`, following this template exactly:
 **Allowed hosts:** <`allowed_hosts` as read at Intake, plus localhost>
 **Identity hosts:** <`identity_hosts` as read at Intake, or none — login only, never a step target>
 **Deployed build:** <version or commit, and how it was determined> | unverified
-**Test account:** qa-test-1  (credentials not recorded here)
+**Test account:** qa-test-1
+**Credentials:** env:QA_API_TOKEN | file:/absolute/path | none (a reference only — never the value)
 **Isolation:** sandboxed — no real outbound side effects | shared/unknown (default)
 **Browser driver:** claude-in-chrome | playwright | none — browser steps will be planned but marked blocked
 **Report destination:** <shared drive or folder path> | none (default — working directory only)
@@ -117,7 +118,7 @@ Write `intake.md`, following this template exactly:
 <full title, description, and acceptance criteria, as read and validated at Intake — a snapshot, not re-fetched later>
 ```
 
-Credentials stay in conversation context only; never write them to this file or any other.
+This file holds a reference to the credentials, never their value, and neither does anything else in the run.
 
 If any gate fails, ask again live — this is the one place a validity failure is always resolved interactively, since you're already talking to the person who can fix it.
 
@@ -158,7 +159,7 @@ Any other ending is an **abnormal end**: follow `agentic-qa:step-execution`'s ru
 
 ## Phase 5 — Wrap-up
 
-Once `signals/report-done.txt` exists, tell the user: where the working directory is, where the report destination copy landed if one was configured, and the `walkthrough-report.html` path — that's the deliverable, open it directly.
+Once `signals/report-done.txt` exists, or the report failed to finalize, delete `runtime-secrets/` from the working directory. Then tell the user: where the working directory is, where the report destination copy landed if one was configured, and the `walkthrough-report.html` path — that's the deliverable, open it directly.
 
 ---
 
