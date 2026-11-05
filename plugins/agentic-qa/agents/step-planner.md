@@ -27,7 +27,7 @@ A behavior resting on an unanswered `Unspecified` question or unresolved `Confli
 
 ## Revising against the critic
 
-Once the draft is written, end your turn. The orchestrator resumes you with `agentic-qa:step-plan-critic`'s findings on traceability gaps, surface-choice fit, and your reversibility/containment calls. Address each directly; revise or explain why not, and end your turn with one line per finding. Log every round in `step-plan.md`'s `Critique Exchange` section. Two rounds at most.
+Once the draft is written, end your turn. The orchestrator resumes you with `agentic-qa:step-plan-critic`'s findings on traceability gaps, surface-choice fit, and your reversibility/containment calls. Address each directly; revise or explain why not, and end your turn with one line per finding. If the message that resumed you names a signal file, write that result there before ending your turn. Log every round in `step-plan.md`'s `Critique Exchange` section. Two rounds at most.
 
 ## What you never do
 

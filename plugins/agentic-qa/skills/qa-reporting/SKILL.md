@@ -7,7 +7,7 @@ description: Use when building the walkthrough report — spawning agentic-qa:qa
 
 This is Phase 4's other half: `agentic-qa:qa-reporter` is spawned **just before** `agentic-qa:step-executor`, not after it finishes. Give it the absolute paths to `step-plan.md`, `behavior-spec.md`, and `intake.md` up front. It writes a skeleton `walkthrough-report.md` before a single step has run — the `Traceability` table with every planned step and its behavior, verdicts marked pending — and returns. Keep its agent ID: the executor needs it, and so do you.
 
-From then on the reporter is resumed by message, never left waiting — a spawned agent can't wait (see `agentic-qa:agentic-qa`'s Agent messaging). The executor nudges it with `S<n>` after each step; you send `paused: <reason>`, `resumed`, and `final`.
+From then on the reporter is resumed by message, never left waiting — a spawned agent can't wait (see `agentic-qa:agentic-qa`'s Agent messaging). The executor nudges it with `S<n>` after each step except the last; you send `paused: <reason>`, `resumed`, and `final`. A message can land inside a turn already running; `final` is honoured wherever it lands.
 
 ## Incremental updates
 
@@ -19,7 +19,7 @@ A step marked `Sensitive: yes` in `step-results.md` has evidence that shows a cr
 
 ## Finalization
 
-Resume the reporter with `final` once `step-executor` returns `COMPLETE`. It rebuilds from `step-results.md` one last time, then:
+Send the reporter `final` once `step-executor` returns `COMPLETE`, then wait on `signals/report-done.txt`; repeating `final` after a timed-out wait is safe. It rebuilds from `step-results.md` one last time, then:
 
 1. Write `Status` and `Summary`.
 2. Write the `Findings` section — anything worth flagging that isn't a strict pass/fail: a confusing-but-correct error message, an ambiguity resolved mid-run, a UX rough edge. Every step whose `Attempts` field shows a failed attempt before its verdict goes here as intermittent, with the attempt history — a pass on the second try is not the same evidence as a pass on the first.
@@ -29,7 +29,7 @@ Resume the reporter with `final` once `step-executor` returns `COMPLETE`. It reb
    - The `Summary` counts match the actual entries.
    - Every `Evidence` path points to a file that actually exists.
 5. Render `walkthrough-report.html` from the finished `walkthrough-report.md`.
-6. Return `done: <absolute path to walkthrough-report.html>`. That result reaches the orchestrator because the orchestrator is the one that resumed it, and it is the only signal that the report is finished — Phase 5 waits on it.
+6. Write the HTML report's absolute path to `signals/report-done.txt`, as its last act on the run, then return `done: <absolute path to walkthrough-report.html>`. The file is the signal that the report is finished — Phase 5 waits on it, because a returned result does not reliably reach the orchestrator (see `agentic-qa:agentic-qa`'s Agent messaging).
 
 A run with any `blocked` or `skipped` step states that in the `Status` line itself, not just as a nonzero count buried in `Summary` — `⚠️ Incomplete — 2 blocked, 1 skipped`, not a report that reads as done when it isn't.
 

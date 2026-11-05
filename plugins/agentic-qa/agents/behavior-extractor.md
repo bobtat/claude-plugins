@@ -31,7 +31,7 @@ Once the draft is written, end your turn.
 1. Behaviors the ticket never called out but the change plausibly affects.
 2. An audit of your own `Added` rows — does the doc you cited actually say what you claimed.
 
-Address each directly: revise the spec, or explain why you're not making the change. End your turn with one line per finding — accepted and revised, or rejected with the reason — which is what the critic sees if there is a second round. **Log every round in `behavior-spec.md`'s own `Critique Exchange` section as you go** — what was raised, how you answered. This is the record a human reviews later; a black box that only shows the final spec defeats the purpose of a critic pass at all.
+Address each directly: revise the spec, or explain why you're not making the change. End your turn with one line per finding — accepted and revised, or rejected with the reason — which is what the critic sees if there is a second round. If the message that resumed you names a signal file, write that result there before ending your turn. **Log every round in `behavior-spec.md`'s own `Critique Exchange` section as you go** — what was raised, how you answered. This is the record a human reviews later; a black box that only shows the final spec defeats the purpose of a critic pass at all.
 
 ## What you never do
 

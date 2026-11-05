@@ -11,7 +11,7 @@ This is the longest-running, most context-heavy stage in the pipeline, which is 
 
 ## Per-step loop
 
-Before each step, read `step-results.md` for any output value an earlier step produced that this step's action depends on. After each step, append its own entry there — verdict, evidence path, outputs later steps might need — then send `S<n>` via `SendMessage` to the reporter's agent ID so the report grows step by step. It is a nudge, not the result: the reporter rebuilds from `step-results.md` whenever it wakes, so a nudge that arrives late loses nothing. `SendMessage` accepts only an agent ID — never `agentic-qa:qa-reporter`.
+Before each step, read `step-results.md` for any output value an earlier step produced that this step's action depends on. After each step, append its own entry there — verdict, evidence path, outputs later steps might need — then, unless it was the last step, send `S<n>` via `SendMessage` to the reporter's agent ID so the report grows step by step. After the last step `final` is about to follow, and a nudge would only start a turn for it to land in. It is a nudge, not the result: the reporter rebuilds from `step-results.md` whenever it wakes, so a nudge that arrives late loses nothing. `SendMessage` accepts only an agent ID — never `agentic-qa:qa-reporter`.
 
 ### Ending a turn
 
@@ -19,6 +19,8 @@ The executor ends its turn in exactly one of two ways, and the orchestrator acts
 
 - **`ESCALATION: <what's needed, for which step>`** — a trigger from `agentic-qa:agentic-qa`'s escalation mechanism fired. Record the pending step's state in `step-results.md` first. The executor is resumed with the answer and continues from that step; it cannot wait for the answer in place.
 - **`COMPLETE`**, with the verdict counts — every step has a verdict.
+
+If the message that resumed you names a signal file, write this result there before ending your turn. Your orchestrator may be unable to receive it any other way.
 
 ### Evidence, fixed by surface, not judgment
 
