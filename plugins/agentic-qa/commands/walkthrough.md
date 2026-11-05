@@ -23,7 +23,7 @@ Extract Behaviors runs `testing:behavior-extraction` directly. If that plugin is
 
 ### Artifacts
 
-Every phase hands off through files in a working directory — your scratchpad directory if you have one, otherwise a temp directory you create for this run:
+Every phase hands off through files in a working directory **new to this run**: `walkthrough-<ticket>-<UTC timestamp>` inside your scratchpad directory if you have one, otherwise inside a temp directory. Use only letters, digits and hyphens from the ticket key in that name; it comes from a ticket. Never reuse one, or a second ticket picks up the first one's verdicts from `step-results.md`.
 
 | File | Written by | Holds |
 |---|---|---|
@@ -111,7 +111,7 @@ Write `intake.md`, following this template exactly:
 **Credentials:** env:QA_API_TOKEN | file:/absolute/path | none (a reference only — never the value)
 **Isolation:** sandboxed — no real outbound side effects | shared/unknown (default)
 **Browser driver:** claude-in-chrome | playwright | none — browser steps will be planned but marked blocked
-**Report destination:** <shared drive or folder path> | none (default — working directory only)
+**Report destination:** <configured path>/<this run's directory name> | none (default — working directory only)
 **Earlier run:** none | <directory> — irreversible actions already sent: <list>
 
 ## Ticket

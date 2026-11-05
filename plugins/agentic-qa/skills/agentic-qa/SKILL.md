@@ -86,7 +86,7 @@ The grant, when given, comes from one of two places and is recorded once, in `st
 
 ## Working directory and artifacts
 
-Every phase hands off through files — pass absolute paths to every spawned agent, since they cannot see conversation context:
+Every phase hands off through files, in a working directory new to this run, named for the ticket and a UTC timestamp, never reused. The configured report destination gets a subfolder of the same name, recorded in `intake.md`, so one run can't overwrite another's report. Pass absolute paths to every spawned agent, since they cannot see conversation context:
 
 `intake.md` → `behavior-spec.md` → `step-plan.md` → `step-results.md` + `evidence/*` → `walkthrough-report.md` / `walkthrough-report.html`
 
