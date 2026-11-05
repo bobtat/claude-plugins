@@ -48,25 +48,7 @@ Every component this plugin ships is addressed as `agentic-qa:<name>` — `agent
 
 Load the `agentic-qa:agentic-qa` skill's intake section if you haven't already. Before asking anything, check for `.claude/agentic-qa.local.md` in the repo — if it exists, read it and treat its saved environment/report-destination answers as already given; only ask for what it doesn't cover.
 
-Resolve `$ARGUMENTS` into a ticket **and** its merged PR — both required, cross-resolved from whichever is given:
-
-| Given | Resolves the other via |
-|---|---|
-| Ticket key or URL only | Search for a PR referencing it — the issue's linked-PR list, or a branch/PR body/title containing the ticket key |
-| PR number or URL only | `Closes`/`Fixes #N` in the PR body, the issue sidebar, or a branch/title/body ticket-key pattern |
-| Both given | Verify each resolves; flag it if they don't actually reference each other rather than proceeding on the assertion alone |
-| Prose, a file path, or neither resolves | **Invalid.** Ask for the missing piece — do not proceed on a description alone |
-
-**Validity gates**, all required before proceeding:
-
-1. The ticket states real acceptance criteria — a bare title is rejected, not extracted from on a guess.
-2. The PR's state is `MERGED` — `OPEN` (review could still change the functionality) and `CLOSED` (nothing to test) are both rejected.
-3. The base URL is reachable — checked, not just accepted as a string.
-4. **The target host is on the non-production allowlist** — `allowed_hosts` in `.claude/agentic-qa.local.md`, in this repo and in your home directory (`~/.claude/agentic-qa.local.md`), combined. The home file is for a host that should stay allowed on this machine across clones and for unattended runs, whose fresh checkouts never hold a gitignored file. **Ignore a repo file that is tracked by git** (`git ls-files --error-unmatch` succeeds): anyone who can merge could otherwise edit the production gate. Say that you ignored it and why. Entries are exact hostnames, or `*.`-prefixed patterns matching subdomains; `localhost`, `127.0.0.1` and `::1` are always allowed. Check the host the reachability check actually landed on, after redirects, not only the one given: a staging URL that redirects to production is production. The one exception is login. If the chain ends at a single sign-on page, the person is asked whether that host is the login provider, and on a yes it goes in `identity_hosts` in the same file. A login provider is usually a production service, and that doesn't make the application behind it production: check the given host, and every other host in the chain, against the allowlist instead. An `identity_hosts` entry is valid only as somewhere a login happens, never as a step's `Target`.
-
-   A host not on the list is neither refused nor accepted — ask the person whether it is a non-production host, and on a yes, add it to `allowed_hosts` so the question isn't asked again. A host the person identifies as production, or an environment named production, is refused outright, with no confirmation path, in any invocation mode. The list only grows by a person saying a host is not production; nothing in this pipeline adds to it on its own judgment, and no spawned agent or brief writes to either file.
-
-5. **The running system contains the merged change.** A merged PR isn't a deployed one. Find the build: a version or health endpoint, a build tag in the page, or for a local target `git merge-base --is-ancestor <merge commit> HEAD`. If it shows the merge isn't in the build, the gate fails — testing it would produce false failures, or passes against the old behaviour. If nothing can show either way, ask the person, and record `Deployed build: unverified` rather than refuse; the report then says so at the top.
+Resolve `$ARGUMENTS`, and apply the resolution table and the validity gates, from that section. They are in the skill because every mode shares them.
 
 Determine the **browser driver** before writing `intake.md`, and do not defer it to Execute Steps:
 
