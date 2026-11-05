@@ -62,7 +62,7 @@ Resolve `$ARGUMENTS` into a ticket **and** its merged PR — both required, cros
 1. The ticket states real acceptance criteria — a bare title is rejected, not extracted from on a guess.
 2. The PR's state is `MERGED` — `OPEN` (review could still change the functionality) and `CLOSED` (nothing to test) are both rejected.
 3. The base URL is reachable — checked, not just accepted as a string.
-4. **The target host is on the non-production allowlist** — `allowed_hosts` in `.claude/agentic-qa.local.md`. Entries are exact hostnames, or `*.`-prefixed patterns matching subdomains; `localhost`, `127.0.0.1` and `::1` are always allowed. Check the host the reachability check actually landed on, after redirects, not only the one given: a staging URL that redirects to production is production.
+4. **The target host is on the non-production allowlist** — `allowed_hosts` in `.claude/agentic-qa.local.md`. Entries are exact hostnames, or `*.`-prefixed patterns matching subdomains; `localhost`, `127.0.0.1` and `::1` are always allowed. Check the host the reachability check actually landed on, after redirects, not only the one given: a staging URL that redirects to production is production. The one exception is login. If the chain ends at a single sign-on page, the person is asked whether that host is the login provider, and on a yes it goes in `identity_hosts` in the same file. A login provider is usually a production service, and that doesn't make the application behind it production: check the given host, and every other host in the chain, against the allowlist instead. An `identity_hosts` entry is valid only as somewhere a login happens, never as a step's `Target`.
 
    A host not on the list is neither refused nor accepted — ask the person whether it is a non-production host, and on a yes, add it to `allowed_hosts` so the question isn't asked again. A host the person identifies as production, or an environment named production, is refused outright, with no confirmation path, in any invocation mode. The list only grows by a person saying a host is not production; nothing in this pipeline adds to it on its own judgment.
 
@@ -84,6 +84,8 @@ report_destination: /shared/qa-reports
 allowed_hosts:
   - staging.example.com
   - "*.preview.example.com"
+identity_hosts:
+  - login.example.com
 ---
 ```
 
@@ -101,6 +103,7 @@ Write `intake.md`, following this template exactly:
 **Environment:** staging | local
 **Base URL:** https://staging.example.com
 **Allowed hosts:** <`allowed_hosts` as read at Intake, plus localhost>
+**Identity hosts:** <`identity_hosts` as read at Intake, or none — login only, never a step target>
 **Test account:** qa-test-1  (credentials not recorded here)
 **Isolation:** sandboxed — no real outbound side effects | shared/unknown (default)
 **Browser driver:** claude-in-chrome | playwright | none — browser steps will be planned but marked blocked
