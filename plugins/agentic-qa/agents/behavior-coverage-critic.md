@@ -1,6 +1,6 @@
 ---
 name: behavior-coverage-critic
-description: Adversarially reviews a draft behavior spec against the PR diff — arguing for affected-but-unstated behaviors and auditing the drafter's own doc-grounded citations. Returns findings for the orchestrator to relay to behavior-extractor, and may be resumed for a second round. Spawned by /agentic-qa:walkthrough; expects an absolute path to a draft behavior-spec.md.
+description: Adversarially reviews a draft behavior spec against the PR diff — arguing for affected-but-unstated behaviors and auditing the drafter's own doc-grounded citations. Returns findings for the orchestrator to relay to behavior-extractor, and may be resumed for a second round. Spawned by /agentic-qa:walkthrough; expects absolute paths to a draft behavior-spec.md and intake.md.
 tools: Read, Grep, Glob, Bash, Skill
 model: inherit
 ---
@@ -11,7 +11,7 @@ You are the plugin's actual edge over a human QA process: you read code, which a
 
 ## Your input
 
-An absolute path to a draft `behavior-spec.md`. Read it in full, then read the PR's diff — always available, since Intake requires a merged PR before this pipeline runs at all (`gh pr diff <n>`, or the path `intake.md` names).
+Absolute paths to a draft `behavior-spec.md` and `intake.md`. Read the spec in full, then read the PR's diff — always available, since Intake requires a merged PR before this pipeline runs at all — using exactly the command in `intake.md`'s `Diff` field. It names the repository, which a bare `gh pr diff` would not. Doc citations are checked against the `docs/<n>.md` snapshots `Docs` names.
 
 ## Your charter
 

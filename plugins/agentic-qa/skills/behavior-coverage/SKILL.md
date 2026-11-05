@@ -11,7 +11,7 @@ This is Phase 1: turning `intake.md`'s validated ticket into `behavior-spec.md`.
 
 ## Step 1 — Spawn the drafter
 
-Spawn `agentic-qa:behavior-extractor` with the absolute path to `intake.md`. Its entire input is that file's `Ticket` and `Docs` fields — no `Diff`, no environment, no credentials, nothing else. It follows `testing:behavior-extraction` to draft a numbered Given/When/Then behavior spec, each behavior anchored to a quote from the ticket. It returns once the draft is written; keep the agent ID its spawn returned.
+Spawn `agentic-qa:behavior-extractor` with the absolute path to `intake.md`. Its entire input is that file's `Ticket` and `Docs` fields and the `docs/<n>.md` snapshots they name — no `Diff`, no environment, no credentials, nothing else. It follows `testing:behavior-extraction` to draft a numbered Given/When/Then behavior spec, each behavior anchored to a quote from the ticket. It returns once the draft is written; keep the agent ID its spawn returned.
 
 The grounding model is two categories, not the four-tier confidence ladder `testing:behavior-extraction` uses elsewhere in this repo:
 
@@ -22,7 +22,7 @@ A doc that actively disagrees with the acceptance criteria goes in `behavior-spe
 
 ## Step 2 — Spawn the critic and relay the rounds
 
-Spawn `agentic-qa:behavior-coverage-critic` with the absolute path to the draft `behavior-spec.md`. It reads the PR's diff — always available, since Intake requires a merged PR — and argues two things:
+Spawn `agentic-qa:behavior-coverage-critic` with the absolute paths to the draft `behavior-spec.md` and `intake.md`. It reads the PR's diff — always available, since Intake requires a merged PR — and argues two things:
 
 1. **Blast radius** — behaviors the ticket never called out but the change plausibly affects, each requiring a real code-location citation.
 2. **Citation audit** — does each of the drafter's own `Added` rows actually say what it claims, not just whether a citation exists.
