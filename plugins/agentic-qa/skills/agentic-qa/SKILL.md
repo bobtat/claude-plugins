@@ -43,7 +43,7 @@ report_destination: /shared/qa-reports/ABC-123
 previous_run: <working directory of an interrupted earlier run of this ticket, if any>
 ```
 
-`browser_driver` is stated, not detected. `agentic-qa:qa-runner` holds no browser tools, so it cannot see which drivers the session has — the caller, which can, says which one to record. Omitted, it is `playwright`, the driver this plugin ships; if Playwright then can't start, that surfaces as an environment failure on the first browser step. An agent running this skill directly that can see its session's tools and call `mcp__claude-in-chrome__tabs_context_mcp` may instead detect the driver exactly as `/agentic-qa:walkthrough`'s Intake does.
+`browser_driver` is stated, not detected. `agentic-qa:qa-runner` holds no browser tools, so it cannot see which drivers the session has — the caller, which can, says which one to record. Omitted, it is `playwright`, the driver this plugin ships; if Playwright then can't start, that surfaces as an environment failure on the first browser step. `claude-in-chrome` acts as whoever is logged in to the user's own Chrome, so name it only when the person who owns that browser has chosen it.
 
 A brief that fails a validity gate triggers the same escalation as everything else that needs a human — see below — rather than erroring out and forcing the caller to reconstruct a new brief from scratch.
 
@@ -55,7 +55,7 @@ These situations need a decision the pipeline can't make for itself. All of them
 |---|---|---|
 | Brief fails a validity gate — thin ticket, PR not merged, target unreachable, target host not on the allowlist, deployed build lacks the merge | Intake | Agent-invoked only — interactive just asks again live, Intake isn't a spawned agent |
 | An irreversible step, `contained` or `escapes`, has no pre-authorization covering it | Execute Steps | Both — same mechanism either way |
-| Browser session isn't authenticated and SSO/MFA needs a human to complete it | Execute Steps | Both |
+| Browser session isn't authenticated and SSO/MFA needs a human to complete it, or it is authenticated as something other than the test account | Execute Steps | Both |
 | Backoff retry exhausted (four attempts) on an apparent environment failure | Execute Steps | Both |
 | An irreversible step's request may have landed but no answer came back — its outcome is unknown, so it is never retried | Execute Steps | Both |
 | A step reached, or was redirected to, a host not on the allowlist | Execute Steps | Both |

@@ -56,7 +56,7 @@ A lightweight inline-SVG step-status summary is worth adding when a run has enou
 **Ticket:** <key/URL>   **PR:** <#, merged>
 **Environment:** staging — https://staging.example.com
 **Deployed build:** <from intake.md> (when `unverified`, also say so in `Status`: these results may describe a build without this change)
-**Browser driver:** playwright  (omit this line when the run has no browser steps)
+**Browser driver:** playwright — logged in as <`Browser account` from step-results.md>  (omit this line when the run has no browser steps)
 **Status:** ⏳ In progress — 4 of 7 steps run | ⚠️ Incomplete — 2 blocked, 1 skipped | ✅ Complete
 **Summary:** 3 passed, 1 failed, 2 blocked, 1 skipped, 0 not verified
 

@@ -70,8 +70,8 @@ Resolve `$ARGUMENTS` into a ticket **and** its merged PR — both required, cros
 
 Determine the **browser driver** before writing `intake.md`, and do not defer it to Execute Steps:
 
-1. **`claude-in-chrome`**, if its tools are present **and a browser is connected**. Presence alone is not enough: the server registers its tools whether or not an extension is attached. Call `tabs_context_mcp` — an error means no browser is connected, and recording `claude-in-chrome` anyway would send every browser step through backoff into an escalation while Playwright sat unused.
-2. Otherwise **`playwright`**, which this plugin ships configured. Its server can still be starting when the session begins, and its tools may be deferred — listed by name only — so if none appear, search for `playwright` with `ToolSearch` before concluding it is absent.
+1. **`playwright`**, which this plugin ships configured. It runs an isolated browser, so a hostile page or a mistaken step can reach only what that browser holds. Its server can still be starting when the session begins, and its tools may be deferred — listed by name only — so if none appear, search for `playwright` with `ToolSearch` before concluding it is absent.
+2. **`claude-in-chrome`**, only if the person chooses it, after being told what it means: the run acts as whoever is logged in to their own Chrome, next to every other site they're signed in to. Offer it if Playwright is absent, or if they ask. It also needs a browser **connected**, which its tools being present doesn't show: the server registers them whether or not an extension is attached, so call `tabs_context_mcp`, where an error means none is connected.
 3. Otherwise **`none`**.
 
 Record the answer, including `none`. A driver chosen here can still fail when it first reaches for a browser binary; that is an environment failure for backoff to handle, not something this check can predict.
