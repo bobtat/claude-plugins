@@ -72,7 +72,8 @@ Intake checked one URL. A plan can reach further, and text in a ticket can ask i
 What the guard permits:
 
 - **Programs:** basic file and text tools (`cat`, `sed`, `grep`, `jq`, `cp`, `rm` and the like) and `curl`. Anything else, interpreters and your CLI under test included, must be in `allowed_commands`, because a person listing it is the only thing that can say a run may start it.
-- **`curl`:** every URL literal, on an allowed host, with no redirects (`-L`), proxies or config files. To test a redirect, read its `Location` and judge that host yourself.
+- **`curl`:** `-q` as the first argument, so no config file applies, then every URL literal and on an allowed host, with no redirects (`-L`), proxies, or server-named output files (`-O`, `-J`). To test a redirect, read its `Location` and judge that host yourself.
+- **Writes:** a redirect, or `cp`, `mv`, `tee`, `touch`, `mkdir`, `sed -i` and `curl -o`, must name a literal path, with no variable or glob. Nothing may touch the allowlist files, `.curlrc`, `.netrc`, shell startup files, `settings.json`, the hook itself, or anything under `.claude` except the session's scratchpad and the plugin's data directory.
 - **Browser navigation:** allowed hosts and `about:blank`. Not `identity_hosts`: a login page is reached by being redirected there.
 
 The checks:

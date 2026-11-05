@@ -364,7 +364,11 @@ These fixes reduce the following risks without removing them:
   the real `step-executor` ran through the installed hook: `localhost` passed, an unlisted
   host and `python` were refused before running, and the main session was unaffected.
   Browser navigation through it has only unit tests, and no full walkthrough has run
-  with it. It can't see where a click or a server redirect
+  with it. An automated security review then found that the first version could be
+  disabled by the agent it guarded: the executor could write the allowlist, `~/.curlrc`,
+  a shell startup file or the hook. Those routes are closed for the routes tested, but the
+  files still belong to the OS user the agents run as, so this limits an agent and does not
+  contain one. It can't see where a click or a server redirect
   lands, a program on `allowed_commands` is unconstrained, and `qa-runner` itself is not
   restricted. A network boundary is the real control for unattended use.
 - **F29:** `decided_by` is the caller's own statement. It makes a false approval a

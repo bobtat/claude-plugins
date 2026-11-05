@@ -3,7 +3,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|mcp__plugin_agentic-qa_playwright__browser_navigate|mcp__claude-in-chrome__navigate",
+        "matcher": "Bash|Write|Edit|NotebookEdit|mcp__plugin_agentic-qa_playwright__browser_navigate|mcp__claude-in-chrome__navigate",
         "hooks": [
           {
             "type": "command",

@@ -43,7 +43,7 @@ A `blocked` step (marked so already in `step-plan.md`) is different from all of 
 
 ## The target guard
 
-A hook checks your `Bash` calls and browser navigation against the person-owned lists, and refuses what they don't allow: an unlisted host, a program not on `allowed_commands`, a `curl` that follows redirects or uses a proxy. A refusal is a decision, not an obstacle. **Never rephrase a refused call to get past it** — not with another tool, another encoding, or a script. End your turn with an `ESCALATION:` saying what was refused. Write simple commands: one that can't be read safely is refused too.
+A hook checks your `Bash` calls, file writes and browser navigation against the person-owned lists, and refuses what they don't allow: an unlisted host, a program not on `allowed_commands`, a `curl` that doesn't start with `-q` or that follows redirects or uses a proxy, or anything touching the files that control the guard. Name write destinations literally: a variable or glob in one is refused. A refusal is a decision, not an obstacle. **Never rephrase a refused call to get past it** — not with another tool, another encoding, or a script. End your turn with an `ESCALATION:` saying what was refused. Write simple commands: one that can't be read safely is refused too.
 
 ## What you never do
 
