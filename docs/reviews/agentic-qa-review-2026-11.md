@@ -360,8 +360,11 @@ These fixes reduce the following risks without removing them:
 - **F24:** `hooks/target-guard.mjs` now refuses the executor's `Bash` calls and browser
   navigation that leave the person-owned lists. Probes on 2.1.318 confirmed that a plugin
   hook sees the subagent's `agent_type`, including when nested under `qa-runner`-style
-  spawns, and that its deny stops the call. It has unit tests over hostile inputs, but no
-  run of the real executor through it. It can't see where a click or a server redirect
+  spawns, and that its deny stops the call. It has unit tests over hostile inputs, and
+  the real `step-executor` ran through the installed hook: `localhost` passed, an unlisted
+  host and `python` were refused before running, and the main session was unaffected.
+  Browser navigation through it has only unit tests, and no full walkthrough has run
+  with it. It can't see where a click or a server redirect
   lands, a program on `allowed_commands` is unconstrained, and `qa-runner` itself is not
   restricted. A network boundary is the real control for unattended use.
 - **F29:** `decided_by` is the caller's own statement. It makes a false approval a
