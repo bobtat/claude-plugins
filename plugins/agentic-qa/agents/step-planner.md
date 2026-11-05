@@ -21,6 +21,10 @@ Default to wherever a real user actually meets the behavior — browser (or CLI,
 
 Every step with a real-world side effect gets tagged `reversible` or `irreversible`. An irreversible step also needs a `Containment` call — `contained` (stays inside the target environment and test account) or `escapes` (reaches something real outside it) — with a citation: the API contract, the code path, a doc, or `intake.md`'s `Isolation` claim.
 
+## Targets
+
+Every step names its `Target` — a host, a named CLI context, or `local` — from `intake.md`'s `Allowed hosts`. One that isn't listed gets `Status: blocked — target <host> not on the allowlist`; don't drop it or aim it elsewhere. An action does only what its behavior needs against that target.
+
 ## Blocked steps
 
 A behavior resting on an unanswered `Unspecified` question or unresolved `Conflict` gets `Status: blocked`, never a guessed action. Cascade that status to any step whose `Depends on` traces back to it.

@@ -100,6 +100,7 @@ Write `intake.md`, following this template exactly:
 
 **Environment:** staging | local
 **Base URL:** https://staging.example.com
+**Allowed hosts:** <`allowed_hosts` as read at Intake, plus localhost>
 **Test account:** qa-test-1  (credentials not recorded here)
 **Isolation:** sandboxed — no real outbound side effects | shared/unknown (default)
 **Browser driver:** claude-in-chrome | playwright | none — browser steps will be planned but marked blocked
@@ -130,6 +131,7 @@ Spawn `agentic-qa:step-planner` with the resolved `behavior-spec.md` and `intake
 2. Every `Added` row (from either agent) with its citation, for an explicit strike if it doesn't belong — the only place that happens.
 3. Any step still `blocked` — put its question to `AskUserQuestion` directly. This is the one part of this gate that isn't skippable.
 4. The irreversible steps, `contained` vs. `escapes`, with their citations. Offer the blanket pre-authorization for `contained` steps as a single choice; `escapes` never gets covered by it.
+5. Every `cli` step, and every step whose `Target` isn't the base URL's host, with its actual action, whether reversible or not. These reach further than the system the ticket describes, so a person sees the command before it runs.
 
 Fold every answer back into `step-plan.md` before moving on — a blocked step's resolved answer, a struck `Added` row, the pre-authorization decision in the header.
 
