@@ -1,7 +1,7 @@
 ---
 description: Walk through a finished feature or fix — a ticket and its merged PR — against a live browser, API, and CLI, with a human decision before anything irreversible runs
 argument-hint: <ticket key/URL> <PR number/URL> | <PR number/URL> | <ticket key/URL>
-allowed-tools: Agent, AskUserQuestion, Read, Write, Edit, Grep, Glob, Bash, SendMessage, Skill, ToolSearch, mcp__claude-in-chrome__tabs_context_mcp
+allowed-tools: Agent, AskUserQuestion, Read, Write, Edit, Grep, Glob, Bash, SendMessage, Skill, ToolSearch, WebFetch, mcp__claude-in-chrome__tabs_context_mcp
 ---
 
 ## Context
@@ -93,14 +93,16 @@ identity_hosts:
 
 Saved values are defaults, not a pass: an allowlisted host still gets the reachability and redirect checks on every run. The file holds per-machine settings, so if the repo's `.gitignore` doesn't already cover it, add `.claude/*.local.md` before saving, or save to the home-directory file instead — a committed file is ignored.
 
+**Read the ticket and docs now, with whatever this session has** — `gh`, `WebFetch`, or an MCP tool for the tracker or wiki. The agents that use them can't: save each doc's text to `docs/<n>.md` in the working directory, and record any you can't read as unreachable. A ticket you can't read is a failed gate, not something to work around. Name the PR's repository explicitly in `Diff`: a bare `gh pr diff <n>` resolves against the current checkout, which silently gives a different PR if yours is from another repository. If it is from another repository, say so, because code citations from this checkout won't describe it.
+
 Write `intake.md`, following this template exactly:
 
 ```markdown
 # Intake: <title>
 
 **Source:** <ticket + merged PR reference>
-**Diff:** gh pr diff <n>
-**Docs:** <links given, or "none provided"> — <url> (unreachable — no MCP connected)
+**Diff:** gh pr diff <n> --repo <owner/repo>
+**Docs:** <each link given, and the snapshot of it: url → docs/1.md>, or "none provided" — <url> (unreachable)
 
 **Environment:** staging | local
 **Base URL:** https://staging.example.com

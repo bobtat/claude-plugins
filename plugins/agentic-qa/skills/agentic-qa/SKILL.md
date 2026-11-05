@@ -29,6 +29,7 @@ Either way, everything Intake would otherwise ask for arrives up front as a brie
 
 ```yaml
 ticket: ABC-123
+ticket_file: <path to the ticket's full text — needed when qa-runner can't read the tracker, since it holds no MCP tools>
 pr: 456
 environment: staging
 base_url: https://staging.example.com
