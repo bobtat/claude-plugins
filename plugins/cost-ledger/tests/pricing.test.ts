@@ -139,6 +139,39 @@ test('a subagent request on Haiku 5.5 is priced on the card for its own prompt l
   expect(toasts[0]).toMatch(/wrote 60k tokens .*≈ \$0\.04 on claude-haiku-5-5/)
 })
 
+test('a model with no price raises one toast, the first time it is seen', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  mock.store(on)
+  const toasts = engine(on, [usage(1_000, 1_000), usage(2_000, 0)], 'claude-opus-9')
+
+  await runStep($, 't1')
+  await runStep($, 't1')
+
+  expect(toasts).toHaveLength(1)
+  expect(toasts[0]).toMatch(/no price for claude-opus-9/)
+  expect(toasts[0]).toMatch(/rates setting/)
+})
+
+test('a model seen without a price in an earlier session is not announced again', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  mock.store(on, { unpricedModels: ['claude-opus-9'] })
+  const toasts = engine(on, [usage(1_000, 1_000)], 'claude-opus-9')
+
+  await runStep($, 't1')
+
+  expect(toasts).toEqual([])
+})
+
+test('Fable 5.2 is priced, so it raises no notice', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  mock.store(on)
+  const toasts = engine(on, [usage(1_000, 1_000)], 'claude-fable-5-2')
+
+  await runStep($, 't1')
+
+  expect(toasts).toEqual([])
+})
+
 const BAND = {
   plugin: 'cost-ledger',
   surface: 'terminal',
