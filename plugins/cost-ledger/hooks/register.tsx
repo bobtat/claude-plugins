@@ -60,7 +60,7 @@ import {
   writeRate,
 } from './pricing'
 import type { CacheTtl, RateTable, Usage } from './pricing'
-import { checkPing, coldEstimate, impliedTtl, pingDelay, pingHit, TTL_MS } from './keepalive'
+import { checkPing, coldEstimate, impliedTtl, pingDelay, pingHit, SUBAGENT_TTL, TTL_MS } from './keepalive'
 import type { ColdEstimate, PricedRequest } from './keepalive'
 
 const PANE = 'cost-ledger'
@@ -350,7 +350,7 @@ type Step = { turnId: string; agentId?: string; startedAt: number }
 
 async function recordStep($: EngineInterface, settings: Settings, usage: Usage & { model: string }, step: Step) {
   const isMainThread = step.agentId === undefined
-  const ttl = await cacheTtl($, settings)
+  const ttl = isMainThread ? await cacheTtl($, settings) : SUBAGENT_TTL
   const rates = ratesFor(settings.table, usage.model, promptTokens(usage))
   const priced = priceUsage(usage, rates, ttl)
   if (rates === undefined) await noteUnpricedModel($, usage.model)
