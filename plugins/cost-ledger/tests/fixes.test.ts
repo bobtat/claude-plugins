@@ -247,27 +247,27 @@ test('days past retention are dropped, and an entry with none left goes', async 
 test('an override for an older version does not claim a newer one', async () => {
   const table = rateTable('{"claude-opus-5": {"input": 99, "output": 99, "cacheRead": 9}}')
 
-  expect(ratesFor(table, 'claude-opus-5-5')?.input).toBe(4)
-  expect(ratesFor(table, 'claude-opus-5')?.input).toBe(99)
-  expect(ratesFor(table, 'us.anthropic.claude-opus-5-v1:0')?.input).toBe(99)
+  expect(ratesFor(table, 'claude-opus-5-5', 0)?.input).toBe(4)
+  expect(ratesFor(table, 'claude-opus-5', 0)?.input).toBe(99)
+  expect(ratesFor(table, 'us.anthropic.claude-opus-5-v1:0', 0)?.input).toBe(99)
 })
 
 test('a dated model id still finds its family', async () => {
-  expect(ratesFor(rateTable(''), 'claude-sonnet-4-6-20260101')?.input).toBe(3)
+  expect(ratesFor(rateTable(''), 'claude-sonnet-4-6-20260101', 0)?.input).toBe(3)
 })
 
 test('malformed rates never fail the mod and are named in the error', async () => {
   for (const json of ['null', '[]', '"cheap"', '{"opus-6": null}', '{"opus-6": {"input": 1}}']) {
     const table = rateTable(json)
     expect(table.error).toBeDefined()
-    expect(ratesFor(table, 'claude-opus-5-5')?.input).toBe(4)
+    expect(ratesFor(table, 'claude-opus-5-5', 0)?.input).toBe(4)
   }
 })
 
 test('tokens from a model with no rate are counted as unpriced, not as free', async () => {
   const priced = priceUsage(
     { input_tokens: 10, output_tokens: 20, cache_read_input_tokens: 30, cache_creation_input_tokens: 40 },
-    ratesFor(rateTable(''), 'claude-opus-4-5'),
+    ratesFor(rateTable(''), 'claude-opus-9', 0),
     '5m',
   )
 
