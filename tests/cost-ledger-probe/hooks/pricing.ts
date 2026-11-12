@@ -12,9 +12,13 @@ const listRates = (input: number, output: number, cacheRead: number): Rates => (
   cacheWrite1h: input * 2,
 })
 
+// Haiku 5.5 is left out: its price depends on each request's prompt length,
+// which this one-rate table cannot say, and the probe is run on the main model.
 const LIST_RATES: readonly [string, Rates][] = [
+  ['mythos-5-2', listRates(8, 40, 0.2)],
   ['mythos-5-1', listRates(10, 50, 0.25)],
   ['mythos-5', listRates(10, 50, 1)],
+  ['fable-5-2', listRates(8, 40, 0.2)],
   ['fable-5-1', listRates(10, 50, 0.25)],
   ['fable-5', listRates(10, 50, 1)],
   ['opus-5-5', listRates(4, 20, 0.2)],
@@ -22,9 +26,14 @@ const LIST_RATES: readonly [string, Rates][] = [
   ['opus-4-8', listRates(5, 25, 0.5)],
   ['opus-4-7', listRates(5, 25, 0.5)],
   ['opus-4-6', listRates(5, 25, 0.5)],
-  ['sonnet-5-5', listRates(2, 10, 0.2)],
+  ['opus-4-5', listRates(5, 25, 0.5)],
+  ['opus-4-1', listRates(15, 75, 1.5)],
+  ['opus-4', listRates(15, 75, 1.5)],
+  ['sonnet-5-5', listRates(2, 10, 0.1)],
   ['sonnet-5', listRates(2, 10, 0.2)],
   ['sonnet-4-6', listRates(3, 15, 0.3)],
+  ['sonnet-4-5', listRates(3, 15, 0.3)],
+  ['sonnet-4', listRates(3, 15, 0.3)],
   ['haiku-4-5', listRates(1, 5, 0.1)],
 ]
 
