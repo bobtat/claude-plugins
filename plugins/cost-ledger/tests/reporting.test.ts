@@ -4,7 +4,7 @@ import { addSpend, addUsage, budgetAlert, cacheMinutesLeft, exportCsv, projectNa
 import { priceUsage, rateTable, ratesFor } from '../hooks/pricing'
 
 const NOW = new Date(2026, 9, 6, 12).getTime()
-const OPUS = ratesFor(rateTable(''), 'claude-opus-5-5')
+const OPUS = ratesFor(rateTable(''), 'claude-opus-5-5', 0)
 
 const priced = (cacheWrite: number) =>
   priceUsage(

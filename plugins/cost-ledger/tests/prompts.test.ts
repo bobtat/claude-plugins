@@ -4,7 +4,7 @@ import { addStepToTurn, finishTurn, keepTopTurns, startTurn } from '../hooks/ins
 import { priceUsage, rateTable, ratesFor } from '../hooks/pricing'
 import { complete, DAY, engine, measure, NOW, PANE, ROOT, runStep, usage } from './support'
 
-const OPUS = ratesFor(rateTable(''), 'claude-opus-5-5')
+const OPUS = ratesFor(rateTable(''), 'claude-opus-5-5', 0)
 
 test('a long prompt is kept as one shortened line', async () => {
   const turn = startTurn('t', `fix   the\n${'x'.repeat(200)}`, NOW)

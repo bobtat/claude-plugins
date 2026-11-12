@@ -28,8 +28,8 @@ export const PANE = {
 } as const
 
 // The engine beneath the plugin. Model requests are answered with the given
-// usages in order, as the API would; toasts are collected.
-export function engine(on: On, steps: ReturnType<typeof usage>[] = []) {
+// usages in order, as the API would, by the given model; toasts are collected.
+export function engine(on: On, steps: ReturnType<typeof usage>[] = [], model = 'claude-opus-5-5') {
   const toasts: string[] = []
   on('turn.step', async function* (_$, e) {
     return {
@@ -38,7 +38,7 @@ export function engine(on: On, steps: ReturnType<typeof usage>[] = []) {
       answer: '',
       toolUses: [],
       stopReason: 'end_turn',
-      usage: { ...(steps.shift() ?? usage(0, 0)), model: 'claude-opus-5-5' },
+      usage: { ...(steps.shift() ?? usage(0, 0)), model },
     }
   })
   on('ui.toast', (_$, e) => {

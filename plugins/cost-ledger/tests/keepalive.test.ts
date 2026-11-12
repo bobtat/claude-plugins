@@ -7,7 +7,7 @@ import { rateTable, ratesFor } from '../hooks/pricing'
 import { NOW, ROOT } from './support'
 
 // Figures from the probe runs on a Pro account (tests/cost-ledger-probe).
-const OPUS = ratesFor(rateTable(''), 'claude-opus-5-5')!
+const OPUS = ratesFor(rateTable(''), 'claude-opus-5-5', 0)!
 const MIN = 60_000
 const usage = (input: number, cacheRead: number, cacheWrite: number, output: number) => ({
   input_tokens: input,

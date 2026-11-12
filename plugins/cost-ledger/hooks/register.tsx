@@ -53,6 +53,7 @@ import {
   CATEGORIES,
   hitRate,
   priceUsage,
+  promptTokens,
   rateTable,
   ratesFor,
   totalUsd,
@@ -160,8 +161,10 @@ function rateLimitText(limits: readonly RateLimit[]): string {
   return limits.map(l => `${RATE_LIMIT_NAMES[l.kind] ?? l.kind} ${Math.round(l.percentUsed)}%`).join(' · ')
 }
 
+// The context is what the next request sends, so its size is that request's
+// prompt length.
 function perStepText(ctx: Context, settings: Settings): string {
-  const rates = ratesFor(settings.table, ctx.model)
+  const rates = ratesFor(settings.table, ctx.model, ctx.tokens)
   return rates ? ` ≈${formatUsd((ctx.tokens * rates.cacheRead) / 1_000_000)}/step` : ''
 }
 
@@ -173,7 +176,7 @@ function nudgeText(ctx: Context, settings: Settings): string {
 // at the rates in use; undefined for a model with no rate. The shared opening
 // is this session's, else the last one any session measured.
 async function coldCost($: EngineInterface, settings: Settings, ctx: Context, ttl: CacheTtl): Promise<ColdEstimate | undefined> {
-  const rates = ratesFor(settings.table, ctx.model)
+  const rates = ratesFor(settings.table, ctx.model, ctx.tokens)
   if (rates === undefined) return undefined
   const prefix = (await read($, sharedPrefix)) ?? Number((await $.store.get(SHARED_PREFIX_KEY)) ?? 0)
   return coldEstimate(ctx.tokens, prefix, writeRate(rates, ttl))
@@ -348,13 +351,13 @@ type Step = { turnId: string; agentId?: string; startedAt: number }
 async function recordStep($: EngineInterface, settings: Settings, usage: Usage & { model: string }, step: Step) {
   const isMainThread = step.agentId === undefined
   const ttl = await cacheTtl($, settings)
-  const rates = ratesFor(settings.table, usage.model)
+  const rates = ratesFor(settings.table, usage.model, promptTokens(usage))
   const priced = priceUsage(usage, rates, ttl)
   if (rates === undefined) await noteUnpricedModel($, usage.model)
 
   const measured = turnCosts.get(step.turnId)
   if (measured !== undefined) {
-    const listRates = ratesFor(LIST_TABLE, usage.model)
+    const listRates = ratesFor(LIST_TABLE, usage.model, promptTokens(usage))
     if (listRates === undefined) measured.isSpoiled = true
     else measured.requests.push({ usage, rates: listRates })
   }
@@ -733,7 +736,7 @@ async function keepAlivePing($: EngineInterface, settings: Settings) {
 }
 
 async function recordPing($: EngineInterface, settings: Settings, usage: Usage, model: string) {
-  const priced = priceUsage(usage, ratesFor(settings.table, model), '5m')
+  const priced = priceUsage(usage, ratesFor(settings.table, model, promptTokens(usage)), '5m')
   const now = await $.clock.now()
   const project = await $.session.root()
   const key = SESSION_PREFIX + (await $.session.id())
@@ -870,7 +873,7 @@ export const register: Register = (on, options) => {
     await $.store.set(LEARNED_TTL_SOURCE_KEY, 'claude-code')
     await $.store.set(LEARNED_PRICING_KEY, e.pricing)
     if (e.prompt_cache_warm && e.context_tokens > 0) {
-      const rates = ratesFor(settings.table, e.to_model)
+      const rates = ratesFor(settings.table, e.to_model, e.context_tokens)
       const usd = rates
         ? (e.context_tokens * writeRate(rates, e.cache_ttl)) / 1_000_000
         : e.estimated_cache_write_usd
