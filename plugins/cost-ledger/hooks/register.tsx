@@ -404,9 +404,18 @@ async function recordStep($: EngineInterface, settings: Settings, usage: Usage &
   await updateStatus($, settings)
 }
 
+// Said once per model, the first time any session meets it: a model released
+// after this table was written would otherwise drop out of the breakdown
+// with nothing to show for it but a line in the pane.
 async function noteUnpricedModel($: EngineInterface, model: string) {
   const seen = ((await $.store.get(UNPRICED_MODELS_KEY)) as string[] | undefined) ?? []
-  if (!seen.includes(model)) await $.store.set(UNPRICED_MODELS_KEY, [...seen, model].slice(-20))
+  if (seen.includes(model)) return
+  await $.store.set(UNPRICED_MODELS_KEY, [...seen, model].slice(-20))
+  $.ui.toast(
+    `cost-ledger has no price for ${model}, so its tokens are left out of the cost breakdown; the totals are not affected. ` +
+      'Update the plugin, or name the model in the rates setting.',
+    { timeoutMs: 15_000 },
+  )
 }
 
 // A turn becomes the prompt's record at its first main-thread request, since
