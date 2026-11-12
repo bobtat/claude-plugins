@@ -13,6 +13,11 @@ export const usage = (input: number, cacheRead: number, cacheWrite: number, outp
   cache_creation_input_tokens: cacheWrite,
 })
 
+// The engine hands a path on in the platform's own spelling, which on Windows
+// turns LOG into C:\home\someone\...; files are kept under the one spelling
+// the tests name them by.
+const portable = (path: string) => path.replace(/\\/g, '/').replace(/^[A-Za-z]:/, '')
+
 // The engine beneath the probe: each main-thread request answers 100k tokens of
 // context, each fork answers with the next of `forks` (a cache hit by
 // default), the running cost climbs by a cent per fork, and the log file is
@@ -30,10 +35,10 @@ export function engine(on: On, clock: MockClock, forks: ReturnType<typeof usage>
     value: { startedAt: NOW, context: { window: 1_000_000 }, rateLimits: [{ kind: 'five_hour', percentUsed: 12.5 }], cost: { usd: costUsd } },
   }))
   on('session.measure', (_$, e) => ({ changed: e.changed }))
-  on('fs.exists', (_$, e) => ({ value: files.has(e.path) }))
-  on('fs.read', (_$, e) => ({ value: files.get(e.path) ?? '' }))
+  on('fs.exists', (_$, e) => ({ value: files.has(portable(e.path)) }))
+  on('fs.read', (_$, e) => ({ value: files.get(portable(e.path)) ?? '' }))
   on('fs.write', (_$, e) => {
-    files.set(e.path, e.text)
+    files.set(portable(e.path), e.text)
     return { value: undefined }
   })
   on('ui.status', () => ({ value: undefined }))
