@@ -6,6 +6,12 @@ import type { CacheTtl, Rates, Usage } from './pricing'
 
 export const TTL_MS: Record<CacheTtl, number> = { '5m': 5 * 60_000, '1h': 60 * 60_000 }
 
+// A subagent's requests write to the five-minute cache whatever lifetime the
+// conversation that spawned it is on. Each API response says which cache its
+// written tokens went to (usage.cache_creation), which is where this was
+// observed; a request as the mod sees it carries only the total.
+export const SUBAGENT_TTL: CacheTtl = '5m'
+
 // Below this many tokens written, a turn's other charges swamp the write and
 // its cost says nothing about which write rate was charged.
 const MIN_WRITE_FOR_TTL = 1_000
