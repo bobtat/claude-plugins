@@ -149,7 +149,15 @@ test('the band counts the cache down and then shows it cold', async ($, on) => {
     plugin: 'cost-ledger',
     surface: 'terminal',
     component: 'AbovePrompt',
-    props: { hasSurvey: false, isWorking: false, maxRows: 3, bodyColumns: 120, scroll: { offset: 0, bodyRows: 3 }, view: {} },
+    props: {
+      hasSurvey: false,
+      isCollapsed: false,
+      isWorking: false,
+      maxRows: 3,
+      bodyColumns: 120,
+      scroll: { offset: 0, bodyRows: 3 },
+      view: {},
+    },
   })
   expect(await band.find({ text: /cache warm 5m/ })).toBeDefined()
 
