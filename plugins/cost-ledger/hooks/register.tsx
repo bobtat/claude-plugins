@@ -601,8 +601,17 @@ async function runDoctor($: EngineInterface, settings: Settings): Promise<string
   else say(true, 'Baseline', `session at ${formatUsd(usd)}, recorded up to ${formatUsd(recorded)}${usd - recorded >= 0.005 ? '; the rest is recorded after the next turn' : ''}`)
 
   if (settings.table.error) say(false, 'Rates', settings.table.error)
-  const unpriced = ((await $.store.get(UNPRICED_MODELS_KEY)) as string[] | undefined) ?? []
-  say(unpriced.length === 0, 'Models', unpriced.length === 0 ? 'every model seen has a rate' : `no rate for ${unpriced.join(', ')}; add them to the rates setting`)
+  // The list remembers every model once met without a rate; one that a later
+  // version of the table or the rates setting has since priced is no longer news.
+  const everUnpriced = ((await $.store.get(UNPRICED_MODELS_KEY)) as string[] | undefined) ?? []
+  const unpriced = everUnpriced.filter(model => ratesFor(settings.table, model, 0) === undefined)
+  say(
+    unpriced.length === 0,
+    'Models',
+    unpriced.length === 0
+      ? 'every model seen has a rate'
+      : `no rate for ${unpriced.join(', ')}; update the plugin or add them to the rates setting`,
+  )
 
   say(null, 'Resume', 'cannot be checked from here: compare /costs before and after a /resume of a session with known spend')
   return lines.join('\n')
