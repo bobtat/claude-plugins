@@ -68,7 +68,9 @@ All warnings are informational: nothing is ever blocked.
   requests are priced at list rates with five-minute and with one-hour cache writes, and
   whichever matches what the turn moved Claude Code's running total by is the lifetime it
   charged. A model switch's report also sets it. Under managed rates, which list prices
-  cannot match, only the report does.
+  cannot match, only the report does. That lifetime is the conversation's. A subagent's
+  requests write to the five-minute cache whatever the conversation is on, so their writes
+  are priced at the five-minute rate.
 - **The cost of a cold cache** is the context's tokens at the cache write rate, less the
   opening other sessions keep cached: the system prompt and tool definitions, measured as
   what a new conversation's first request reads from the cache. That opening stays cached
@@ -130,7 +132,7 @@ Set in `/config` under `cost-ledger`.
 | `billing` | `api` | `subscription` labels figures as API-equivalent and adds the 5-hour and 7-day rate-limit percentages |
 | `statusLine`, `band` | on | Show the summary in the status line and in the band |
 | `rates` | empty | JSON of USD per million tokens by model family, overriding list prices for some or all fields, for example `{"opus-5-5": {"input": 4, "output": 20, "cacheRead": 0.2, "cacheWrite5m": 5, "cacheWrite1h": 8}}`. A family matches any model id that contains it and does not continue with another version number, so Bedrock ids such as `us.anthropic.claude-opus-5-5-v1:0` resolve. A family with no list price needs `input`, `output` and `cacheRead`. A `longPrompt` object inside a family overrides, field by field in the same way, the rates for requests whose prompt is longer than its `above` tokens: `{"haiku-5-5": {"longPrompt": {"input": 0.55}}}` changes Haiku 5.5's rate past 100,000 tokens, and `{"sonnet-4-5": {"longPrompt": {"above": 200000, "input": 6, "output": 22.5, "cacheRead": 0.6}}}` gives a model a long-prompt rate it does not list |
-| `cacheTtl` | `auto` | Prompt-cache lifetime used for the countdown, the idle warning, the keep-alive and write pricing. `auto` learns it from Claude Code's pricing of each turn or from a model switch, and uses 5 minutes until then |
+| `cacheTtl` | `auto` | The conversation's prompt-cache lifetime, used for the countdown, the idle warning, the keep-alive and the pricing of its writes (a subagent's are always priced at five minutes). `auto` learns it from Claude Code's pricing of each turn or from a model switch, and uses 5 minutes until then |
 | `keepAlive` | `off` | `on` keeps the prompt cache warm while the session is idle (see above) |
 | `keepAliveMaxIdleMinutes` | 180 | Stop pinging once the session has had no prompt for this long |
 | `keepAliveMinContextTokens` | 20000 | Send no pings while the context is smaller than this |
@@ -159,14 +161,17 @@ until an update of the mod or the `rates` setting names it. The totals do not de
   session ends; a process that is killed outright loses it.
 - The keep-alive's timer lives in the running process: a computer that sleeps, a closed
   terminal or a reload of the mod drops it until the next turn arms it again.
-- A turn whose interval also holds other spend (a background subagent, managed rates)
-  matches neither write rate and teaches nothing about the cache lifetime.
+- A turn in which a subagent made a request teaches nothing about the cache lifetime, and
+  neither does one whose interval holds other spend the mod cannot see or that was priced at
+  managed rates: what it moved the running total by is not the conversation's requests alone.
 - Fast mode costs twice the standard rates, and a request does not say which speed it ran
   at, so the category breakdown prices a fast-mode request at the standard rates and shows
   about half of what it cost. The totals are not affected.
 - The breakdown is priced as each request is recorded and is not priced again when the rates
   change. Figures recorded before 0.6.1 stay as they were: Fable 5.2 and Haiku 5.5 tokens
-  unpriced, and Sonnet 5.5 cache reads at twice their price.
+  unpriced, and Sonnet 5.5 cache reads at twice their price. Those recorded before 0.6.2
+  have subagents' cache writes at the conversation's rate, 60% too high where that is the
+  one-hour rate.
 
 ## Development
 
