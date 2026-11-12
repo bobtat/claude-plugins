@@ -355,10 +355,14 @@ async function recordStep($: EngineInterface, settings: Settings, usage: Usage &
   const priced = priceUsage(usage, rates, ttl)
   if (rates === undefined) await noteUnpricedModel($, usage.model)
 
-  const measured = turnCosts.get(step.turnId)
+  // A turn is measured by the conversation's own requests. A subagent's
+  // request landing in it moves Claude Code's total by an amount those do not
+  // account for, which could pass for the other write rate, so that turn
+  // teaches nothing.
+  const measured = isMainThread ? turnCosts.get(step.turnId) : runningTurn === null ? undefined : turnCosts.get(runningTurn)
   if (measured !== undefined) {
     const listRates = ratesFor(LIST_TABLE, usage.model, promptTokens(usage))
-    if (listRates === undefined) measured.isSpoiled = true
+    if (!isMainThread || listRates === undefined) measured.isSpoiled = true
     else measured.requests.push({ usage, rates: listRates })
   }
 
@@ -928,6 +932,10 @@ export const register: Register = (on, options) => {
   })
 
   on('turn.start', async ($, e, next) => {
+    // A subagent's run is a turn of its own. The keep-alive, the prompt's
+    // record and the lifetime measurement follow the conversation alone, and
+    // nothing would clear what a subagent's start left behind.
+    if (e.agentId !== undefined) return next(e)
     runningTurn = e.turnId
     cancelKeepAlive()
     const at = await $.clock.now()
