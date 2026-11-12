@@ -26,7 +26,7 @@ Claude to read.
 | `/costs export` | Writes `~/claude-costs/claude-costs-<date>.csv`: one row per day and project with the total, tokens and estimated cost per category, and subagent cost |
 | `/costs doctor` | Checks the assumptions the totals rest on (see below) |
 | `/costs keepalive [on\|off]` | Turns the keep-alive on or off for this session, overriding the `keepAlive` setting; with no argument, says whether it is on, the pings so far and when the next is due |
-| Toasts | Before a prompt is sent once the cache has likely expired, and on resuming a session whose cache has likely expired, with what re-caching will cost; when the keep-alive stops; before a model switch that drops a warm cache; after one request writes a large amount to the cache; after a prompt whose cost passes a threshold; at 80% and 100% of a budget |
+| Toasts | Before a prompt is sent once the cache has likely expired, and on resuming a session whose cache has likely expired, with what re-caching will cost; when the keep-alive stops; before a model switch that drops a warm cache; after one request writes a large amount to the cache; after a prompt whose cost passes a threshold; at 80% and 100% of a budget; the first time a model the mod has no price for is used |
 
 All warnings are informational: nothing is ever blocked.
 
@@ -48,7 +48,10 @@ All warnings are informational: nothing is ever blocked.
   setting.
 - **The category breakdown** (input, output, cache write, cache read) is estimated by the mod
   from each request's token counts, at Anthropic list prices or at the rates you give it.
-  Token counts and the cache-hit percentage are exact; the dollars are estimates.
+  Token counts and the cache-hit percentage are exact; the dollars are estimates. Each
+  request is priced on its own: Haiku 5.5, which costs more per token once a request's prompt
+  (its input, cache reads and cache writes together) passes 100,000 tokens, is priced at the
+  rates its prompt length selects.
 - **The cost of a prompt** is the estimated cost of every request made between the prompt and
   its answer, its subagents' included, with the first 80 characters of the prompt. The month's
   ten most expensive are kept. Prompt text stays in the local store; it is not exported.
@@ -126,7 +129,7 @@ Set in `/config` under `cost-ledger`.
 |---|---|---|
 | `billing` | `api` | `subscription` labels figures as API-equivalent and adds the 5-hour and 7-day rate-limit percentages |
 | `statusLine`, `band` | on | Show the summary in the status line and in the band |
-| `rates` | empty | JSON of USD per million tokens by model family, overriding list prices for some or all fields, for example `{"opus-5-5": {"input": 4, "output": 20, "cacheRead": 0.2, "cacheWrite5m": 5, "cacheWrite1h": 8}}`. A family matches any model id that contains it and does not continue with another version number, so Bedrock ids such as `us.anthropic.claude-opus-5-5-v1:0` resolve. A family with no list price needs `input`, `output` and `cacheRead` |
+| `rates` | empty | JSON of USD per million tokens by model family, overriding list prices for some or all fields, for example `{"opus-5-5": {"input": 4, "output": 20, "cacheRead": 0.2, "cacheWrite5m": 5, "cacheWrite1h": 8}}`. A family matches any model id that contains it and does not continue with another version number, so Bedrock ids such as `us.anthropic.claude-opus-5-5-v1:0` resolve. A family with no list price needs `input`, `output` and `cacheRead`. A `longPrompt` object inside a family overrides, field by field in the same way, the rates for requests whose prompt is longer than its `above` tokens: `{"haiku-5-5": {"longPrompt": {"input": 0.55}}}` changes Haiku 5.5's rate past 100,000 tokens, and `{"sonnet-4-5": {"longPrompt": {"above": 200000, "input": 6, "output": 22.5, "cacheRead": 0.6}}}` gives a model a long-prompt rate it does not list |
 | `cacheTtl` | `auto` | Prompt-cache lifetime used for the countdown, the idle warning, the keep-alive and write pricing. `auto` learns it from Claude Code's pricing of each turn or from a model switch, and uses 5 minutes until then |
 | `keepAlive` | `off` | `on` keeps the prompt cache warm while the session is idle (see above) |
 | `keepAliveMaxIdleMinutes` | 180 | Stop pinging once the session has had no prompt for this long |
@@ -136,8 +139,11 @@ Set in `/config` under `cost-ledger`.
 | `dailyBudget`, `weeklyBudget`, `monthlyBudget` | 0 | USD; toast at 80% and 100%; 0 turns each off |
 | `expensiveTurnUsd` | 2 | Toast when one prompt, its subagents included, costs at least this much (estimated); 0 turns it off |
 
-Models with no list price in the bundled reference (Opus 4.5, Opus 4.1, Sonnet 4.5) are not
-guessed at: their tokens are reported as unpriced in the pane until `rates` names them.
+The list prices are the ones on Anthropic's pricing page, from Opus 4 and Sonnet 4 onward. A
+model that is not among them, such as one released after this version of the mod, is not
+guessed at from its neighbours, whose prices have differed from one version to the next: a
+toast says so the first time it is used, and its tokens are reported as unpriced in the pane
+until an update of the mod or the `rates` setting names it. The totals do not depend on this.
 
 ## Known limits
 
@@ -155,6 +161,12 @@ guessed at: their tokens are reported as unpriced in the pane until `rates` name
   terminal or a reload of the mod drops it until the next turn arms it again.
 - A turn whose interval also holds other spend (a background subagent, managed rates)
   matches neither write rate and teaches nothing about the cache lifetime.
+- Fast mode costs twice the standard rates, and a request does not say which speed it ran
+  at, so the category breakdown prices a fast-mode request at the standard rates and shows
+  about half of what it cost. The totals are not affected.
+- The breakdown is priced as each request is recorded and is not priced again when the rates
+  change. Figures recorded before 0.6.1 stay as they were: Fable 5.2 and Haiku 5.5 tokens
+  unpriced, and Sonnet 5.5 cache reads at twice their price.
 
 ## Development
 
