@@ -72,7 +72,15 @@ test('a ping that wrote only the tail kept the cache; one that wrote the convers
 // The engine beneath the plugin: Claude Code's running total grows by each
 // request's list price at the given write rate, and every fork answers with
 // the next of `forks`.
-function engine(on: On, clock: MockClock, opts: { step?: ReturnType<typeof usage>; forks?: ReturnType<typeof usage>[] } = {}) {
+type EngineOptions = {
+  step?: ReturnType<typeof usage>
+  forks?: ReturnType<typeof usage>[]
+  // What a request adds to Claude Code's running total, where it is not the
+  // request's list price with one-hour writes.
+  stepUsd?: (agentId: string | undefined) => number
+}
+
+function engine(on: On, clock: MockClock, opts: EngineOptions = {}) {
   const session = { usd: 0 }
   const toasts: string[] = []
   const forked: number[] = []
@@ -96,7 +104,7 @@ function engine(on: On, clock: MockClock, opts: { step?: ReturnType<typeof usage
   on('turn.complete', () => ({ text: '' }))
   on('turn.step', async function* (_$, e) {
     const u = opts.step ?? TURN
-    session.usd += price(u, OPUS.cacheWrite1h)
+    session.usd += opts.stepUsd ? opts.stepUsd(e.agentId) : price(u, OPUS.cacheWrite1h)
     return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: { ...u, model: 'claude-opus-5-5' } }
   })
   on('model.fork', () => {
@@ -203,6 +211,48 @@ test('a prompt sent before a ping is due cancels it', { options: { keepAlive: 'o
   await clock.advance(60 * MIN)
 
   expect(forked).toEqual([])
+})
+
+test(
+  'a subagent run that starts while the conversation is idle neither cancels the next ping nor holds it back',
+  { options: { keepAlive: 'on', cacheTtl: '1h' } },
+  async ($, on) => {
+    const clock = mock.clock(on, { now: NOW })
+    mock.store(on)
+    const { forked } = engine(on, clock, { step: usage(2, 61_084, 1_000, 1_446) })
+    await start($)
+    await turn($, 't1')
+    const asked = clock.now()
+
+    await clock.advance(10 * MIN)
+    await $.turn.start({ turnId: 'a1', text: 'carry on in the background', agentId: 'agent-1' })
+    await clock.advance(50 * MIN)
+
+    expect(forked).toEqual([asked + 54 * MIN])
+  },
+)
+
+test("a subagent's spend during a turn is not mistaken for the conversation's cache writes", async ($, on) => {
+  const clock = mock.clock(on, { now: NOW })
+  mock.store(on)
+  // The conversation is on the five-minute cache, and a subagent's request
+  // happens to cost what one-hour writes would have added to the turn.
+  const written = TURN.cache_creation_input_tokens
+  const fiveMinuteTurn = (TURN.input_tokens * OPUS.input + TURN.cache_read_input_tokens * OPUS.cacheRead + TURN.output_tokens * OPUS.output + written * OPUS.cacheWrite5m) / 1e6
+  const difference = (written * (OPUS.cacheWrite1h - OPUS.cacheWrite5m)) / 1e6
+  engine(on, clock, { stepUsd: agentId => (agentId === undefined ? fiveMinuteTurn : difference) })
+  await start($)
+
+  await $.turn.start({ turnId: 't1', text: 'read the billing module' })
+  for await (const _ of $.turn.step({ turnId: 't1', index: 0, model: 'claude-opus-5-5', messageCount: 1 })) {
+    // the response's chunks are not under test
+  }
+  for await (const _ of $.turn.step({ turnId: 'a1', index: 0, model: 'claude-opus-5-5', messageCount: 1, agentId: 'agent-1' })) {
+    // the response's chunks are not under test
+  }
+  await $.turn.complete({ answer: '', durationMs: 0, isAborted: false, turnId: 't1', reason: 'answer' })
+
+  expect(await costs($, 'keepalive')).toMatch(/cache lifetime 5m/)
 })
 
 test('the idle warning prices a cold re-cache without the opening other sessions keep warm', { options: { cacheTtl: '1h' } }, async ($, on) => {
