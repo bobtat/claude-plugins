@@ -74,7 +74,11 @@ All warnings are informational: nothing is ever blocked.
   showed, since Claude Code picks it by the kind of session and can change it part-way (a
   subscription that runs into overage drops to five minutes). Until a session has seen its
   own, it starts from what earlier sessions of its kind last learned, interactive sessions
-  and headless ones (`claude -p`, the SDK) each having their own, or from five minutes.
+  and headless ones (`claude -p`, the SDK) each having their own, or from five minutes. A
+  turn's writes are priced as its requests come in, at the lifetime believed then. When the
+  turn's own total then shows the other lifetime, they are priced again at that one as the
+  turn ends, so a session's first turn is not left at a wrong assumption. The per-tool
+  figures under what filled the context are not adjusted.
 - **The cost of a cold cache** is the context's tokens at the cache write rate, less the
   opening other sessions keep cached: the system prompt and tool definitions, measured as
   what a new conversation's first request reads from the cache. That opening stays cached
@@ -196,6 +200,9 @@ totals do not depend on any of this.
 - A turn in which a subagent made a request teaches nothing about the cache lifetime, and
   neither does one whose interval holds other spend the mod cannot see or that was priced at
   managed rates: what it moved the running total by is not the conversation's requests alone.
+  Such a turn's cache writes stay priced at the lifetime assumed while it ran. Figures
+  recorded before 0.9.2 were never priced again at a turn's end, so a session's first turn
+  can stand at the five-minute rate where it was charged the one-hour rate.
 - Fast mode costs twice the standard rates, and a request does not say which speed it ran
   at, so the category breakdown prices a fast-mode request at the standard rates and shows
   about half of what it cost. The totals are not affected.
