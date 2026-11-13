@@ -70,7 +70,11 @@ All warnings are informational: nothing is ever blocked.
   charged. A model switch's report also sets it. Under managed rates, which list prices
   cannot match, only the report does. That lifetime is the conversation's. A subagent's
   requests write to the five-minute cache whatever the conversation is on, so their writes
-  are priced at the five-minute rate.
+  are priced at the five-minute rate. Each session keeps the lifetime its own requests
+  showed, since Claude Code picks it by the kind of session and can change it part-way (a
+  subscription that runs into overage drops to five minutes). Until a session has seen its
+  own, it starts from what earlier sessions of its kind last learned, interactive sessions
+  and headless ones (`claude -p`, the SDK) each having their own, or from five minutes.
 - **The cost of a cold cache** is the context's tokens at the cache write rate, less the
   opening other sessions keep cached: the system prompt and tool definitions, measured as
   what a new conversation's first request reads from the cache. That opening stays cached
@@ -156,7 +160,7 @@ Set in `/config` under `cost-ledger`.
 | `billing` | `api` | `subscription` labels figures as API-equivalent and adds the 5-hour and 7-day rate-limit percentages |
 | `statusLine`, `band` | on | Show the summary in the status line and in the band |
 | `rates` | empty | JSON of USD per million tokens by model family, overriding list prices for some or all fields, for example `{"opus-5-5": {"input": 4, "output": 20, "cacheRead": 0.2, "cacheWrite5m": 5, "cacheWrite1h": 8}}`. A family matches any model id that contains it and does not continue with another version number, so Bedrock ids such as `us.anthropic.claude-opus-5-5-v1:0` resolve. A family with no list price needs `input`, `output` and `cacheRead`. A `longPrompt` object inside a family overrides, field by field in the same way, the rates for requests whose prompt is longer than its `above` tokens: `{"haiku-5-5": {"longPrompt": {"input": 0.55}}}` changes Haiku 5.5's rate past 100,000 tokens, and `{"sonnet-4-5": {"longPrompt": {"above": 200000, "input": 6, "output": 22.5, "cacheRead": 0.6}}}` gives a model a long-prompt rate it does not list |
-| `cacheTtl` | `auto` | The conversation's prompt-cache lifetime, used for the countdown, the idle warning, the keep-alive and the pricing of its writes (a subagent's are always priced at five minutes). `auto` learns it from Claude Code's pricing of each turn or from a model switch, and uses 5 minutes until then |
+| `cacheTtl` | `auto` | The conversation's prompt-cache lifetime, used for the countdown, the idle warning, the keep-alive and the pricing of its writes (a subagent's are always priced at five minutes). `auto` learns it per session from Claude Code's pricing of each turn or from a model switch; until then it uses what earlier sessions of the same kind learned, or 5 minutes |
 | `keepAlive` | `off` | `on` keeps the prompt cache warm while the session is idle (see above) |
 | `keepAliveMaxIdleMinutes` | 180 | Stop pinging once the session has had no prompt for this long |
 | `keepAliveMinContextTokens` | 20000 | Send no pings while the context is smaller than this |
