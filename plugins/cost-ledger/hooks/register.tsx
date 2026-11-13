@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, PluginOptions, Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
 import type { Breakdown, Context, KeepAlive, LearnedTtl, RateLimit, ToolUse, Totals } from '../types'
 import {
@@ -63,7 +63,6 @@ import {
   hitRate,
   priceUsage,
   promptTokens,
-  rateTable,
   ratesFor,
   sameRates,
   totalUsd,
@@ -71,9 +70,11 @@ import {
 } from './pricing'
 import { judgeQuote, keptQuotes, rateText, withQuote, writeQuote } from './pricecheck'
 import type { QuoteVerdict, WriteQuote } from './pricecheck'
-import type { CacheTtl, RateTable, Usage } from './pricing'
+import type { CacheTtl, Usage } from './pricing'
 import { checkPing, coldEstimate, impliedTtl, pingDelay, pingHit, repricedWrites, SUBAGENT_TTL, TTL_MS } from './keepalive'
 import type { ColdEstimate, PricedRequest, PricedWrite } from './keepalive'
+import { isTtlSet, LIST_TABLE, readSettings } from './settings'
+import type { Settings } from './settings'
 
 const PANE = 'cost-ledger'
 const SESSION_PREFIX = 'session:'
@@ -110,53 +111,11 @@ const keepAlive = atom({ plugin: 'cost-ledger', key: 'keepAlive' } as const, NO_
 const sharedPrefix = atom({ plugin: 'cost-ledger', key: 'sharedPrefix' } as const, null)
 const learnedTtl = atom({ plugin: 'cost-ledger', key: 'learnedTtl' } as const, null)
 
-// Claude Code prices at list rates unless an administrator set managed rates,
-// so the cache lifetime it charged is read against list prices, never the
-// rates setting.
-const LIST_TABLE = rateTable('')
-
 // Short, tool-free and asking for one word, so a ping's output stays at a
 // handful of tokens.
 const PING_PROMPT =
   'This is an automated prompt-cache keep-alive check, not a request from the user. ' +
   'Do not use any tools. Reply with exactly: ok'
-
-type Settings = {
-  isSubscription: boolean
-  hasStatusLine: boolean
-  table: RateTable
-  hasCustomRates: boolean
-  ttlSetting: string
-  largeWriteTokens: number
-  contextNudgeTokens: number
-  budgets: { day: number; week: number; month: number }
-  expensiveTurnUsd: number
-  keepAlive: boolean
-  keepAliveMaxIdleMs: number
-  keepAliveMinTokens: number
-}
-
-function readSettings(options: PluginOptions): Settings {
-  const rates = typeof options.rates === 'string' ? options.rates : ''
-  return {
-    isSubscription: options.billing === 'subscription',
-    hasStatusLine: options.statusLine === true,
-    table: rateTable(rates),
-    hasCustomRates: rates.trim() !== '',
-    ttlSetting: typeof options.cacheTtl === 'string' ? options.cacheTtl : 'auto',
-    largeWriteTokens: typeof options.largeWriteTokens === 'number' ? options.largeWriteTokens : 0,
-    contextNudgeTokens: typeof options.contextNudgeTokens === 'number' ? options.contextNudgeTokens : 0,
-    budgets: {
-      day: typeof options.dailyBudget === 'number' ? options.dailyBudget : 0,
-      week: typeof options.weeklyBudget === 'number' ? options.weeklyBudget : 0,
-      month: typeof options.monthlyBudget === 'number' ? options.monthlyBudget : 0,
-    },
-    expensiveTurnUsd: typeof options.expensiveTurnUsd === 'number' ? options.expensiveTurnUsd : 0,
-    keepAlive: options.keepAlive === 'on',
-    keepAliveMaxIdleMs: (typeof options.keepAliveMaxIdleMinutes === 'number' ? options.keepAliveMaxIdleMinutes : 0) * 60_000,
-    keepAliveMinTokens: typeof options.keepAliveMinContextTokens === 'number' ? options.keepAliveMinContextTokens : 0,
-  }
-}
 
 // An entry another process removed between the listing and the read comes
 // back undefined and is left out.
@@ -183,9 +142,6 @@ async function ledgerEntries($: EngineInterface): Promise<SessionEntry[]> {
 // interactive session learned says nothing for a headless one, and the other
 // way round: each kind has its own stored lifetime.
 const storedTtlKey = () => (isHeadless ? HEADLESS_TTL_KEY : LEARNED_TTL_KEY)
-
-const isTtlSet = (settings: Settings): settings is Settings & { ttlSetting: CacheTtl } =>
-  settings.ttlSetting === '5m' || settings.ttlSetting === '1h'
 
 // What this session's own requests showed comes first. Sessions of different
 // kinds run side by side on one machine, so the stored lifetime is only where
