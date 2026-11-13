@@ -395,7 +395,19 @@ function storeKeysOf(text: string): string[] | undefined {
 
 // Each check reports what it saw; nothing here changes the ledger except the
 // probe key, which is removed again.
-async function runDoctor($: EngineInterface, settings: Settings): Promise<string> {
+// What the doctor reports of the session's own state. The module that holds
+// that state reads it and hands it over.
+type SessionReadings = {
+  ttl: CacheTtl
+  ownTtl: LearnedTtl | null
+  storedTtlKey: string
+  isHeadless: boolean
+  keepAlive: KeepAlive
+  isKeepAliveOn: boolean
+  recordedUsd: number | null
+}
+
+async function runDoctor($: EngineInterface, settings: Settings, session: SessionReadings): Promise<string> {
   const lines = ['cost-ledger self-check', '']
   const say = (isOk: boolean | null, label: string, detail: string) =>
     lines.push(`${isOk === null ? 'ℹ' : isOk ? '✓' : '⚠'} ${label}: ${detail}`)
@@ -476,16 +488,16 @@ async function runDoctor($: EngineInterface, settings: Settings): Promise<string
     )
   }
 
-  const own = await read($, learnedTtl)
-  const stored = await $.store.get(storedTtlKey())
-  const kind = isHeadless ? 'headless' : 'interactive'
+  const own = session.ownTtl
+  const stored = await $.store.get(session.storedTtlKey)
+  const kind = session.isHeadless ? 'headless' : 'interactive'
   const learned =
     own !== null
       ? `this session: ${own.ttl}, ${own.from === 'pricing' ? "from Claude Code's pricing of a turn" : 'reported by Claude Code'}`
       : stored === '5m' || stored === '1h'
         ? `not learned in this session yet; earlier ${kind} sessions: ${stored}`
         : 'not learned yet'
-  say(null, 'Cache lifetime', `using ${await cacheTtl($, settings)} (setting: ${settings.ttlSetting}; ${learned})`)
+  say(null, 'Cache lifetime', `using ${session.ttl} (setting: ${settings.ttlSetting}; ${learned})`)
   const prefix = await $.store.get(SHARED_PREFIX_KEY)
   say(
     null,
@@ -494,15 +506,15 @@ async function runDoctor($: EngineInterface, settings: Settings): Promise<string
       ? `${formatTokens(prefix)} tokens stay cached between sessions; cold-resume estimates leave them out of the likely cost`
       : 'not measured yet; it is read from the first request of a new conversation',
   )
-  const ka = await read($, keepAlive)
+  const ka = session.keepAlive
   say(
     null,
     'Keep-alive',
-    `${(await isKeepAliveOn($, settings)) ? 'on' : 'off'}${ka.override === null ? '' : ' for this session'}; ${ka.pings} ping${ka.pings === 1 ? '' : 's'} this session${ka.stopped ? `, stopped: ${ka.stopped}` : ''}`,
+    `${session.isKeepAliveOn ? 'on' : 'off'}${ka.override === null ? '' : ' for this session'}; ${ka.pings} ping${ka.pings === 1 ? '' : 's'} this session${ka.stopped ? `, stopped: ${ka.stopped}` : ''}`,
   )
 
   const usd = (await $.session.usage()).cost?.usd ?? 0
-  const recorded = await read($, lastUsd)
+  const recorded = session.recordedUsd
   if (recorded === null) say(false, 'Baseline', 'not set; spend is recorded from the next measurement')
   else if (recorded > usd + 0.005) say(false, 'Baseline', `recorded up to ${formatUsd(recorded)}, above the session's ${formatUsd(usd)}`)
   else say(true, 'Baseline', `session at ${formatUsd(usd)}, recorded up to ${formatUsd(recorded)}${usd - recorded >= 0.005 ? '; the rest is recorded after the next turn' : ''}`)
@@ -788,6 +800,18 @@ async function keepAliveCommand($: EngineInterface, settings: Settings, arg: str
   return lines.join('\n')
 }
 
+async function sessionReadings($: EngineInterface, settings: Settings): Promise<SessionReadings> {
+  return {
+    ttl: await cacheTtl($, settings),
+    ownTtl: await read($, learnedTtl),
+    storedTtlKey: storedTtlKey(),
+    isHeadless,
+    keepAlive: await read($, keepAlive),
+    isKeepAliveOn: await isKeepAliveOn($, settings),
+    recordedUsd: await read($, lastUsd),
+  }
+}
+
 export const register: Register = (on, options) => {
   const settings = readSettings(options)
   const { isSubscription } = settings
@@ -966,7 +990,7 @@ export const register: Register = (on, options) => {
   on('command.run', { command: 'costs' }, async ($, e) => {
     const args = e.args.trim()
     if (args === 'export') return { text: await writeExport($) }
-    if (args === 'doctor') return { text: await runDoctor($, settings) }
+    if (args === 'doctor') return { text: await runDoctor($, settings, await sessionReadings($, settings)) }
     if (args === 'keepalive' || args.startsWith('keepalive ')) return { text: await keepAliveCommand($, settings, args.slice(9).trim()) }
 
     const usage = await $.session.usage()
