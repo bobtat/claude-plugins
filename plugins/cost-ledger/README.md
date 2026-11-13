@@ -127,6 +127,12 @@ repository root.
   cache lifetime, fast mode, or requests the mod does not see. No comparison is made on less
   than $1 of spend, and none is held against you where the two are priced differently on
   purpose (your own `rates`, or your organisation's managed pricing).
+- **Turns**: the same comparison split in two, which says what kind of gap it is. At the end
+  of each turn the mod keeps what the turn moved Claude Code's total by, beside what it
+  priced that turn's requests at. Within turns it sees every request, so a gap there means a
+  price, the cache lifetime or fast mode is off. Spend outside turns with nothing priced
+  against it is requests the mod does not see. Only sessions recorded from their start by
+  0.8.0 or later are counted, so the line appears once there is $1 of such spend this month.
 
 It cannot check the `/resume` accounting: for that, compare `/costs` before and after
 resuming a session whose spend you know.
