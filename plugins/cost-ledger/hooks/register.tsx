@@ -88,6 +88,12 @@ const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 const HEAT = ['', '#0e4429', '#006d32', '#26a641', '#39d353'] as const
 const CATEGORY_NAMES = { input: 'Input', output: 'Output', cacheWrite: 'Cache write', cacheRead: 'Cache read' }
 
+// Everything that reads or writes these stays in this module. Claude Code
+// checks each $.state access against an atom declared in the module that
+// makes it, and refuses to load one that uses an atom it imported. Code
+// elsewhere that needs a value from here is handed it as an argument, as the
+// doctor is; the pane, the keep-alive and the recording of spend use the
+// state throughout, which is why they have not moved out with the rest.
 const totals = atom({ plugin: 'cost-ledger', key: 'totals' } as const, null)
 const lastUsd = atom({ plugin: 'cost-ledger', key: 'lastUsd' } as const, null)
 const monthOffset = atom({ plugin: 'cost-ledger', key: 'monthOffset' } as const, 0)

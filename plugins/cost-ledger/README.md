@@ -228,6 +228,22 @@ in `hooks/pricing.ts`, the comparison of the price list with Claude Code's quote
 and the cache-lifetime, cold-cost and keep-alive rules in `hooks/keepalive.ts`; all five are
 free of engine calls so they can be tested directly.
 
+The code that does call the engine is split by what it works on:
+
+| File | Holds |
+|---|---|
+| `hooks/register.tsx` | The event hooks, the session's state and everything that reads or writes it: recording spend and requests, the keep-alive, the status line and the pane |
+| `hooks/settings.ts` | The settings as the code reads them |
+| `hooks/store.ts` | The store's keys, reading and saving the ledger's entries, archiving old sessions, the CSV export |
+| `hooks/prices.ts` | The notices about a model with no rate and about a price Claude Code quotes differently |
+| `hooks/wording.ts` | The text of the status line, the band and the cache notices |
+| `hooks/doctor.ts` | The `/costs doctor` report |
+
+`register.tsx` is the one module that touches `$.state`. Claude Code checks each state access
+against an atom declared in the module that makes it and will not load a module that uses an
+atom it imported, so state cannot be shared between modules: code outside `register.tsx`
+that needs a value from the session is handed it as an argument.
+
 ```
 claude plugin validate plugins/cost-ledger
 claude plugin test plugins/cost-ledger
