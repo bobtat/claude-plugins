@@ -64,6 +64,10 @@ export type KeepAlive = {
 
 export type Shading = 'total' | 'cacheWrite'
 
+// The prompt-cache lifetime this session's own requests showed, and whether
+// Claude Code reported it or it was read from the pricing of a turn.
+export type LearnedTtl = { ttl: '5m' | '1h'; from: 'claude-code' | 'pricing' }
+
 declare module 'claude-code' {
   interface PluginState {
     'cost-ledger': {
@@ -78,6 +82,7 @@ declare module 'claude-code' {
       loops: Record<string, LoopContext>
       keepAlive: KeepAlive
       sharedPrefix: number | null
+      learnedTtl: LearnedTtl | null
     }
   }
 }

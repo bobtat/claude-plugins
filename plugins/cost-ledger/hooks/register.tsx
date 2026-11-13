@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, PluginOptions, Register } from 'claude-code'
 
-import type { Breakdown, Context, KeepAlive, RateLimit, ToolUse, Totals } from '../types'
+import type { Breakdown, Context, KeepAlive, LearnedTtl, RateLimit, ToolUse, Totals } from '../types'
 import {
   addStepToTurn,
   addToolResult,
@@ -78,7 +78,7 @@ const PANE = 'cost-ledger'
 const SESSION_PREFIX = 'session:'
 const ARCHIVE_PREFIX = 'archive:'
 const LEARNED_TTL_KEY = 'learnedCacheTtl'
-const LEARNED_TTL_SOURCE_KEY = 'learnedCacheTtlSource'
+const HEADLESS_TTL_KEY = 'learnedCacheTtlHeadless'
 const SHARED_PREFIX_KEY = 'sharedPrefixTokens'
 const LEARNED_PRICING_KEY = 'learnedPricing'
 const UNPRICED_MODELS_KEY = 'unpricedModels'
@@ -107,6 +107,7 @@ const loops = atom({ plugin: 'cost-ledger', key: 'loops' } as const, {})
 const NO_KEEP_ALIVE: KeepAlive = { override: null, idleSince: null, pings: 0, usd: 0, stopped: null }
 const keepAlive = atom({ plugin: 'cost-ledger', key: 'keepAlive' } as const, NO_KEEP_ALIVE)
 const sharedPrefix = atom({ plugin: 'cost-ledger', key: 'sharedPrefix' } as const, null)
+const learnedTtl = atom({ plugin: 'cost-ledger', key: 'learnedTtl' } as const, null)
 
 // Claude Code prices at list rates unless an administrator set managed rates,
 // so the cache lifetime it charged is read against list prices, never the
@@ -177,10 +178,24 @@ async function ledgerEntries($: EngineInterface): Promise<SessionEntry[]> {
   })
 }
 
+// Claude Code picks the lifetime by the kind of session, so what an
+// interactive session learned says nothing for a headless one, and the other
+// way round: each kind has its own stored lifetime.
+const storedTtlKey = () => (isHeadless ? HEADLESS_TTL_KEY : LEARNED_TTL_KEY)
+
+// What this session's own requests showed comes first. Sessions of different
+// kinds run side by side on one machine, so the stored lifetime is only where
+// a session starts from until it has seen its own.
 async function cacheTtl($: EngineInterface, settings: Settings): Promise<CacheTtl> {
   if (settings.ttlSetting === '5m' || settings.ttlSetting === '1h') return settings.ttlSetting
-  const learned = await $.store.get(LEARNED_TTL_KEY)
-  return learned === '1h' ? '1h' : '5m'
+  const own = await read($, learnedTtl)
+  if (own !== null) return own.ttl
+  return (await $.store.get(storedTtlKey())) === '1h' ? '1h' : '5m'
+}
+
+async function noteTtl($: EngineInterface, learned: LearnedTtl) {
+  await update($, learnedTtl, () => learned)
+  if ((await $.store.get(storedTtlKey())) !== learned.ttl) await $.store.set(storedTtlKey(), learned.ttl)
 }
 
 // The breakdown can be held to the total only where both are at list prices:
@@ -705,13 +720,16 @@ async function runDoctor($: EngineInterface, settings: Settings): Promise<string
     )
   }
 
-  const learnedTtl = await $.store.get(LEARNED_TTL_KEY)
-  const learnedFrom = (await $.store.get(LEARNED_TTL_SOURCE_KEY)) === 'pricing' ? "from Claude Code's pricing of a turn" : 'reported by Claude Code'
-  say(
-    null,
-    'Cache lifetime',
-    `using ${await cacheTtl($, settings)} (setting: ${settings.ttlSetting}; ${typeof learnedTtl === 'string' ? `${learnedFrom}: ${learnedTtl}` : 'not learned yet'})`,
-  )
+  const own = await read($, learnedTtl)
+  const stored = await $.store.get(storedTtlKey())
+  const kind = isHeadless ? 'headless' : 'interactive'
+  const learned =
+    own !== null
+      ? `this session: ${own.ttl}, ${own.from === 'pricing' ? "from Claude Code's pricing of a turn" : 'reported by Claude Code'}`
+      : stored === '5m' || stored === '1h'
+        ? `not learned in this session yet; earlier ${kind} sessions: ${stored}`
+        : 'not learned yet'
+  say(null, 'Cache lifetime', `using ${await cacheTtl($, settings)} (setting: ${settings.ttlSetting}; ${learned})`)
   const prefix = await $.store.get(SHARED_PREFIX_KEY)
   say(
     null,
@@ -796,6 +814,7 @@ async function noteSharedPrefix($: EngineInterface, tokens: number) {
 let keepAliveTimer: { cancel: () => void } | null = null
 let runningTurn: string | null = null
 let warnedColdAt: number | null = null
+let isHeadless = false
 const turnCosts = new Map<string, { startUsd: number; requests: PricedRequest[]; isSpoiled: boolean }>()
 
 // Steps of parallel subagents finish concurrently, and a keep-alive ping can
@@ -813,6 +832,7 @@ function resetModuleState() {
   keepAliveTimer = null
   runningTurn = null
   warnedColdAt = null
+  isHeadless = false
   turnCosts.clear()
   queue = Promise.resolve()
 }
@@ -855,8 +875,7 @@ async function learnTtl($: EngineInterface, measured: { requests: PricedRequest[
   if ((await $.store.get(LEARNED_PRICING_KEY)) === 'configured') return
   const ttl = impliedTtl(movedUsd, measured.requests)
   if (ttl === undefined) return
-  if ((await $.store.get(LEARNED_TTL_KEY)) !== ttl) await $.store.set(LEARNED_TTL_KEY, ttl)
-  if ((await $.store.get(LEARNED_TTL_SOURCE_KEY)) !== 'pricing') await $.store.set(LEARNED_TTL_SOURCE_KEY, 'pricing')
+  await noteTtl($, { ttl, from: 'pricing' })
 }
 
 async function isKeepAliveOn($: EngineInterface, settings: Settings): Promise<boolean> {
@@ -996,6 +1015,7 @@ export const register: Register = (on, options) => {
   resetModuleState()
 
   on('session.start', async ($, e, next) => {
+    isHeadless = !e.isInteractive
     await $.command.register({
       name: 'costs',
       description:
@@ -1067,8 +1087,7 @@ export const register: Register = (on, options) => {
   })
 
   on('classic.PreModelSwitch', async ($, e, next) => {
-    await $.store.set(LEARNED_TTL_KEY, e.cache_ttl)
-    await $.store.set(LEARNED_TTL_SOURCE_KEY, 'claude-code')
+    await noteTtl($, { ttl: e.cache_ttl, from: 'claude-code' })
     await $.store.set(LEARNED_PRICING_KEY, e.pricing)
     // Only a quote at list prices says anything about the list: a managed
     // price is meant to differ, and the default tier is a guess at the model.
@@ -1091,8 +1110,7 @@ export const register: Register = (on, options) => {
   })
 
   on('classic.PostModelSwitch', async ($, e, next) => {
-    await $.store.set(LEARNED_TTL_KEY, e.cache_ttl)
-    await $.store.set(LEARNED_TTL_SOURCE_KEY, 'claude-code')
+    await noteTtl($, { ttl: e.cache_ttl, from: 'claude-code' })
     await $.store.set(LEARNED_PRICING_KEY, e.pricing)
     return next(e)
   })

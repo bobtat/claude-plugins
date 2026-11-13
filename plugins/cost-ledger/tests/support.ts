@@ -86,3 +86,20 @@ export const spentSession = (total: number, estimated: number): SessionEntry =>
     ROOT,
     false,
   )
+
+// The plugin's store as a map the test can also read and write, the way
+// another session sharing the store file would.
+export function memoryStore(on: On, entries: Record<string, unknown> = {}) {
+  const store = new Map<string, unknown>(Object.entries(entries))
+  on('store.get', (_$, e) => ({ value: store.get(e.key) }))
+  on('store.keys', () => ({ value: [...store.keys()] }))
+  on('store.delete', (_$, e) => {
+    store.delete(e.key)
+    return { value: undefined }
+  })
+  on('store.set', (_$, e) => {
+    store.set(e.key, e.value)
+    return { value: undefined }
+  })
+  return store
+}
