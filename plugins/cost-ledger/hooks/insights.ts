@@ -192,3 +192,24 @@ export function weekOverWeek(
   }
   return { thisWeek, lastWeek, change: lastWeek > 0 ? (thisWeek - lastWeek) / lastWeek : null }
 }
+
+// ---- The estimate against the total -----------------------------------------
+
+// Below this much spend one unseen request is a large share of the total, and
+// the comparison says nothing.
+const MIN_TO_COMPARE_USD = 1
+const IN_STEP_WITHIN = 0.1
+
+export type Reconciliation = { totalUsd: number; estimatedUsd: number; share: number | null }
+
+// How much of Claude Code's own total the per-request estimate accounts for.
+// The two are reached separately, the total from Claude Code's running figure
+// and the estimate from each request's tokens at the mod's prices, so a gap
+// between them is the sign of a wrong price or of spend the mod never saw.
+export function reconcile(totalUsd: number, estimatedUsd: number): Reconciliation {
+  return { totalUsd, estimatedUsd, share: totalUsd >= MIN_TO_COMPARE_USD ? estimatedUsd / totalUsd : null }
+}
+
+export function isOutOfStep(share: number): boolean {
+  return Math.abs(share - 1) > IN_STEP_WITHIN
+}

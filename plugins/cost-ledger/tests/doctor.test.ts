@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-import { engine, NOW } from './support'
+import { engine, NOW, spentSession } from './support'
 
 function doctorEngine(on: On, hostTime: (now: number) => string, stored: Record<string, unknown> = {}) {
   const store = new Map<string, unknown>(Object.entries(stored))
@@ -101,3 +101,61 @@ test(
     expect(await doctor($)).toMatch(/✓ Models: every model seen has a rate/)
   },
 )
+
+test("/costs doctor confirms a breakdown that accounts for the month's total", async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp, { 'session:earlier': spentSession(10, 9.5) })
+
+  expect(await doctor($)).toMatch(/✓ Breakdown: accounts for 95% of this month's \$10\.00 total/)
+})
+
+test('/costs doctor flags a breakdown out of step with the total, and says what can cause it', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp, { 'session:earlier': spentSession(10, 5) })
+
+  const report = await doctor($)
+
+  expect(report).toMatch(/⚠ Breakdown: adds up to \$5\.00 against this month's \$10\.00 total \(50%\)/)
+  expect(report).toMatch(/a price that has changed, .*fast mode.*requests the mod does not see/)
+})
+
+test('/costs doctor counts unpriced tokens as the first cause of a low breakdown', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  const unpriced = spentSession(10, 5)
+  const day = Object.keys(unpriced.cache ?? {})[0] ?? ''
+  const stored = { ...unpriced, cache: { [day]: { ...unpriced.cache?.[day], unpricedTokens: 2_000_000 } } }
+  doctorEngine(on, localStamp, { 'session:earlier': stored })
+
+  expect(await doctor($)).toMatch(/⚠ Breakdown: adds up to \$5\.00 against this month's \$10\.00 total \(50%\): 2\.0M tokens this month are from models with no rate/)
+})
+
+test('/costs doctor makes no comparison on too little spend', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp, { 'session:earlier': spentSession(0.4, 0.1) })
+
+  expect(await doctor($)).toMatch(/ℹ Breakdown: too little spend this month to compare with the total/)
+})
+
+test(
+  '/costs doctor does not hold a breakdown at your own rates to the total',
+  { options: { rates: '{"opus-5-5": {"input": 2}}' } },
+  async ($, on) => {
+    mock.clock(on, { now: NOW })
+    engine(on)
+    doctorEngine(on, localStamp, { 'session:earlier': spentSession(10, 5) })
+
+    expect(await doctor($)).toMatch(/ℹ Breakdown: adds up to \$5\.00 against this month's \$10\.00 total \(50%\); it is priced at your rates and the total at Claude Code's/)
+  },
+)
+
+test("/costs doctor does not hold a list-price breakdown to a total at your organisation's rates", async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp, { 'session:earlier': spentSession(10, 5), learnedPricing: 'configured' })
+
+  expect(await doctor($)).toMatch(/ℹ Breakdown: adds up to \$5\.00 against this month's \$10\.00 total \(50%\); it is priced at list rates and the total at your organisation's/)
+})
