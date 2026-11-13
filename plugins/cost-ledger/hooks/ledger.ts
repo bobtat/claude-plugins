@@ -9,11 +9,21 @@ export type SessionEntry = {
   subagentCache?: Record<string, Breakdown>
   turns?: TurnRecord[]
   tools?: Record<string, Record<string, ToolUse>>
+  // By day, what Claude Code's total moved during the conversation's turns and
+  // what was priced for the requests made in them. Present from a session's
+  // first record or not at all: a session an earlier version began, and an
+  // archive, have none, and are left out of the split it serves.
+  inTurns?: Record<string, TurnMoves>
   // On a project's archive only: the store key of each session folded into it
   // and when, kept until that session's own entry is known to be gone.
   folded?: Record<string, number>
   updatedAt: number
 }
+
+export type TurnMoves = { usd: number; estimatedUsd: number }
+
+// What the split in and out of turns comes to over a set of sessions.
+export type TurnSplit = { totalUsd: number; estimatedUsd: number; turnsUsd: number; turnsEstimatedUsd: number }
 
 export type Summary = {
   today: number
@@ -62,6 +72,10 @@ export function spendSince(previous: number | null, usd: number): number {
   return usd - previous
 }
 
+// The entry to add to: the one there is, or a new session's, which is tracked
+// turn by turn from this first record.
+const begun = (entry: SessionEntry | undefined): SessionEntry => entry ?? { days: {}, inTurns: {}, updatedAt: 0 }
+
 export function addSpend(
   entry: SessionEntry | undefined,
   now: number,
@@ -71,7 +85,36 @@ export function addSpend(
   const day = dayKey(now)
   const days = { ...entry?.days }
   days[day] = (days[day] ?? 0) + usd
-  return { ...entry, project, days, updatedAt: now }
+  return { ...begun(entry), project, days, updatedAt: now }
+}
+
+// One turn's part in the split: what it moved Claude Code's total by, and what
+// its requests were priced at. A session without the record from its start is
+// left as it is, since its earlier turns would be missing from the sum.
+export function addTurnMoves(entry: SessionEntry | undefined, now: number, usd: number, estimatedUsd: number): SessionEntry {
+  const tracked = begun(entry)
+  if (tracked.inTurns === undefined) return tracked
+  const day = dayKey(now)
+  const before = tracked.inTurns[day] ?? { usd: 0, estimatedUsd: 0 }
+  const inTurns = { ...tracked.inTurns, [day]: { usd: before.usd + usd, estimatedUsd: before.estimatedUsd + estimatedUsd } }
+  return { ...tracked, inTurns, updatedAt: now }
+}
+
+// The month's total and estimate over the sessions tracked turn by turn, and
+// the part of each that fell within turns.
+export function turnSplit(entries: readonly SessionEntry[], monthKey: string): TurnSplit {
+  const split = { totalUsd: 0, estimatedUsd: 0, turnsUsd: 0, turnsEstimatedUsd: 0 }
+  const inMonth = <T>(days: Record<string, T> | undefined) => Object.entries(days ?? {}).filter(([day]) => day.startsWith(monthKey))
+  for (const entry of entries) {
+    if (entry.inTurns === undefined) continue
+    for (const [, usd] of inMonth(entry.days)) split.totalUsd += usd
+    for (const [, usage] of inMonth(entry.cache)) split.estimatedUsd += CATEGORIES.reduce((sum, c) => sum + usage.usd[c], 0)
+    for (const [, moves] of inMonth(entry.inTurns)) {
+      split.turnsUsd += moves.usd
+      split.turnsEstimatedUsd += moves.estimatedUsd
+    }
+  }
+  return split
 }
 
 export function addUsage(
@@ -86,18 +129,18 @@ export function addUsage(
   cache[day] = addBreakdown(cache[day], usage)
   const subagentCache = { ...entry?.subagentCache }
   if (isSubagent) subagentCache[day] = addBreakdown(subagentCache[day], usage)
-  return { days: {}, ...entry, project, cache, subagentCache, updatedAt: now }
+  return { ...begun(entry), project, cache, subagentCache, updatedAt: now }
 }
 
 export function addTurn(entry: SessionEntry | undefined, now: number, turn: TurnRecord): SessionEntry {
-  return { days: {}, ...entry, turns: keepTopTurns([...(entry?.turns ?? []), turn]), updatedAt: now }
+  return { ...begun(entry), turns: keepTopTurns([...(entry?.turns ?? []), turn]), updatedAt: now }
 }
 
 export function addTools(entry: SessionEntry | undefined, now: number, tools: Record<string, ToolUse>): SessionEntry {
   const day = dayKey(now)
   const all = { ...entry?.tools }
   all[day] = mergeToolMaps(all[day], tools)
-  return { days: {}, ...entry, tools: all, updatedAt: now }
+  return { ...begun(entry), tools: all, updatedAt: now }
 }
 
 export function shouldArchive(entry: SessionEntry, now: number): boolean {
@@ -156,6 +199,7 @@ export function daysFrom(entry: SessionEntry, fromDay: string): SessionEntry | u
     subagentCache: keep(entry.subagentCache),
     tools: keep(entry.tools),
     turns: (entry.turns ?? []).filter(turn => dayKey(turn.at) >= fromDay),
+    ...(entry.inTurns && { inTurns: keep(entry.inTurns) }),
   }
   const isEmpty =
     [kept.days, kept.cache, kept.subagentCache, kept.tools].every(d => Object.keys(d).length === 0) && kept.turns.length === 0
