@@ -9,6 +9,9 @@ export type SessionEntry = {
   subagentCache?: Record<string, Breakdown>
   turns?: TurnRecord[]
   tools?: Record<string, Record<string, ToolUse>>
+  // On a project's archive only: the store key of each session folded into it
+  // and when, kept until that session's own entry is known to be gone.
+  folded?: Record<string, number>
   updatedAt: number
 }
 
@@ -120,27 +123,48 @@ export function mergeEntries(archive: SessionEntry | undefined, entry: SessionEn
     subagentCache: mergeDays(archive?.subagentCache, entry.subagentCache, addBreakdown),
     turns: keepTopTurns([...(archive?.turns ?? []), ...(entry.turns ?? [])]),
     tools: mergeDays(archive?.tools, entry.tools, mergeToolMaps),
+    ...(archive?.folded && { folded: archive.folded }),
     updatedAt: Math.max(archive?.updatedAt ?? 0, entry.updatedAt),
   }
 }
 
-// Drops the days past retention; undefined once nothing is left.
-export function pruneDays(entry: SessionEntry, now: number): SessionEntry | undefined {
-  const cutoff = dayKey(now - RETENTION_MS)
+// How long an archive remembers a fold after the session's entry has gone:
+// longer than any process can hold a view of the store that still has it.
+const FOLD_MEMORY_MS = DAY_MS
+
+export function markFolded(archive: SessionEntry, key: string, at: number): SessionEntry {
+  return { ...archive, folded: { ...archive.folded, [key]: at } }
+}
+
+export function isFoldForgettable(at: number, now: number): boolean {
+  return now - at > FOLD_MEMORY_MS
+}
+
+export function forgetFolds(archive: SessionEntry, keys: readonly string[]): SessionEntry {
+  if (keys.length === 0) return archive
+  return { ...archive, folded: Object.fromEntries(Object.entries(archive.folded ?? {}).filter(([key]) => !keys.includes(key))) }
+}
+
+// The entry's days from `fromDay` on; undefined once nothing is left.
+export function daysFrom(entry: SessionEntry, fromDay: string): SessionEntry | undefined {
   const keep = <T>(days: Record<string, T> | undefined) =>
-    Object.fromEntries(Object.entries(days ?? {}).filter(([day]) => day >= cutoff))
-  const pruned = {
+    Object.fromEntries(Object.entries(days ?? {}).filter(([day]) => day >= fromDay))
+  const kept = {
     ...entry,
     days: keep(entry.days),
     cache: keep(entry.cache),
     subagentCache: keep(entry.subagentCache),
     tools: keep(entry.tools),
-    turns: (entry.turns ?? []).filter(turn => dayKey(turn.at) >= cutoff),
+    turns: (entry.turns ?? []).filter(turn => dayKey(turn.at) >= fromDay),
   }
   const isEmpty =
-    [pruned.days, pruned.cache, pruned.subagentCache, pruned.tools].every(d => Object.keys(d).length === 0) &&
-    pruned.turns.length === 0
-  return isEmpty ? undefined : pruned
+    [kept.days, kept.cache, kept.subagentCache, kept.tools].every(d => Object.keys(d).length === 0) && kept.turns.length === 0
+  return isEmpty ? undefined : kept
+}
+
+// Drops the days past retention; undefined once nothing is left.
+export function pruneDays(entry: SessionEntry, now: number): SessionEntry | undefined {
+  return daysFrom(entry, dayKey(now - RETENTION_MS))
 }
 
 // Adds one request's usage to the drawn totals in place of a full store scan,
