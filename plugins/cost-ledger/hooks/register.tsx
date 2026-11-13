@@ -25,6 +25,7 @@ import {
   addSpend,
   addTools,
   addTurn,
+  addTurnMoves,
   addUsage,
   applyTools,
   applyTurn,
@@ -50,6 +51,7 @@ import {
   spendSince,
   summarize,
   sumMonth,
+  turnSplit,
   UNKNOWN_PROJECT,
   weekStartKey,
 } from './ledger'
@@ -503,13 +505,15 @@ async function addToActiveTurn(
   if (current !== null) await update($, activeTurn, turn => (turn === null ? turn : addStepToTurn(turn, priced, !isMainThread)))
 }
 
-async function finishActiveTurn($: EngineInterface, settings: Settings, turnId: string) {
+// Closes the prompt's record and answers what its requests were priced at: 0
+// for a turn that made none the mod saw.
+async function finishActiveTurn($: EngineInterface, settings: Settings, turnId: string): Promise<number> {
   const turn = await read($, activeTurn)
   await update($, turnPrompts, prompts => {
     const { [turnId]: _done, ...rest } = prompts
     return rest
   })
-  if (turn === null || turn.turnId !== turnId) return
+  if (turn === null || turn.turnId !== turnId) return 0
   await update($, activeTurn, () => null)
 
   const now = await $.clock.now()
@@ -524,6 +528,7 @@ async function finishActiveTurn($: EngineInterface, settings: Settings, turnId: 
     const detail = `${record.steps} requests${record.subagentSteps > 0 ? ` + ${record.subagentSteps} by subagents` : ''}`
     $.ui.toast(`That prompt cost ≈ ${formatUsd(usd)} (${detail}): “${record.prompt}”`, { timeoutMs: 10_000 })
   }
+  return usd
 }
 
 async function recordToolResult($: EngineInterface, tool: string, agentId: string | undefined, text: string) {
@@ -707,6 +712,19 @@ async function runDoctor($: EngineInterface, settings: Settings): Promise<string
           'a price that has changed, the cache lifetime, fast mode, or requests the mod does not see',
       )
   }
+  // Where a gap lies says what kind it is: within turns the mod sees every
+  // request, so the prices are off; outside them it is spend with no request
+  // to show. Only for sessions tracked from their start, and not where the two
+  // figures are priced differently on purpose.
+  const split = turnSplit(await ledgerEntries($), month)
+  if (reconcile(split.totalUsd, split.estimatedUsd).share !== null && (await pricedApart($, settings)) === undefined) {
+    say(
+      null,
+      'Turns',
+      `during turns the total moved ${formatUsd(split.turnsUsd)} and the breakdown has ${formatUsd(split.turnsEstimatedUsd)}; ` +
+        `outside them, ${formatUsd(split.totalUsd - split.turnsUsd)} against ${formatUsd(split.estimatedUsd - split.turnsEstimatedUsd)}`,
+    )
+  }
 
   say(null, 'Resume', 'cannot be checked from here: compare /costs before and after a /resume of a session with known spend')
   return lines.join('\n')
@@ -755,17 +773,33 @@ async function startTurnCost($: EngineInterface, turnId: string) {
   if (usd !== undefined) turnCosts.set(turnId, { startUsd: usd, requests: [], isSpoiled: false })
 }
 
+// What a turn moved Claude Code's running total by, put to two uses: kept
+// beside what its requests were priced at, and read for the cache lifetime it
+// was charged. A total that fell during the turn was reset by a /clear and
+// says nothing.
+async function closeTurnCost($: EngineInterface, turnId: string, estimatedUsd: number) {
+  const measured = turnCosts.get(turnId)
+  turnCosts.delete(turnId)
+  if (measured === undefined) return
+  const usd = (await $.session.usage()).cost?.usd
+  if (usd === undefined || usd < measured.startUsd) return
+  const moved = usd - measured.startUsd
+
+  const key = SESSION_PREFIX + (await $.session.id())
+  const entry = (await $.store.get(key)) as SessionEntry | undefined
+  const tracked = addTurnMoves(entry, await $.clock.now(), moved, estimatedUsd)
+  if (tracked !== entry) await saveEntry($, key, tracked)
+
+  await learnTtl($, measured, moved)
+}
+
 // The cache lifetime Claude Code charged, read from what one turn moved its
 // running total by. Skipped under managed rates, which list prices cannot
 // match, and for any turn that does not add up either way.
-async function learnTtlFromTurn($: EngineInterface, turnId: string) {
-  const measured = turnCosts.get(turnId)
-  turnCosts.delete(turnId)
-  if (measured === undefined || measured.isSpoiled) return
+async function learnTtl($: EngineInterface, measured: { requests: PricedRequest[]; isSpoiled: boolean }, movedUsd: number) {
+  if (measured.isSpoiled) return
   if ((await $.store.get(LEARNED_PRICING_KEY)) === 'configured') return
-  const usd = (await $.session.usage()).cost?.usd
-  if (usd === undefined) return
-  const ttl = impliedTtl(usd - measured.startUsd, measured.requests)
+  const ttl = impliedTtl(movedUsd, measured.requests)
   if (ttl === undefined) return
   if ((await $.store.get(LEARNED_TTL_KEY)) !== ttl) await $.store.set(LEARNED_TTL_KEY, ttl)
   if ((await $.store.get(LEARNED_TTL_SOURCE_KEY)) !== 'pricing') await $.store.set(LEARNED_TTL_SOURCE_KEY, 'pricing')
@@ -1044,8 +1078,7 @@ export const register: Register = (on, options) => {
     const result = await next(e)
     const agentId = e.agentId
     if (agentId === undefined) {
-      await serially(() => finishActiveTurn($, settings, e.turnId))
-      await serially(() => learnTtlFromTurn($, e.turnId))
+      await serially(async () => closeTurnCost($, e.turnId, await finishActiveTurn($, settings, e.turnId)))
       runningTurn = null
       await armKeepAlive($, settings)
     } else

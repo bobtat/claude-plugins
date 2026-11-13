@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-import { engine, NOW, spentSession } from './support'
+import { complete, engine, measure, NOW, ROOT, runStep, spentSession, usage } from './support'
 
 function doctorEngine(on: On, hostTime: (now: number) => string, stored: Record<string, unknown> = {}) {
   const store = new Map<string, unknown>(Object.entries(stored))
@@ -159,3 +159,51 @@ test("/costs doctor does not hold a list-price breakdown to a total at your orga
 
   expect(await doctor($)).toMatch(/ℹ Breakdown: adds up to \$5\.00 against this month's \$10\.00 total \(50%\); it is priced at list rates and the total at your organisation's/)
 })
+
+// One turn in which Claude Code's total moves $3.00 for a request the mod
+// prices at $0.02, then $1.50 more after the turn with no request to show.
+async function turnThenUnseenSpend($: Engine, session: { usd: number }) {
+  await $.turn.start({ turnId: 't1', text: 'read the billing module' })
+  session.usd = 3
+  await runStep($, 't1')
+  await $.turn.complete(complete('t1'))
+  session.usd = 4.5
+  await $.session.measure(measure(4.5))
+}
+
+test('/costs doctor sets the total against the breakdown inside turns and outside them', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  const session = { usd: 0 }
+  engine(on, [usage(100_000, 0)], 'claude-opus-5-5', session)
+  doctorEngine(on, localStamp)
+
+  await turnThenUnseenSpend($, session)
+
+  expect(await doctor($)).toMatch(/ℹ Turns: during turns the total moved \$3\.00 and the breakdown has \$0\.02; outside them, \$1\.50 against \$0\.00/)
+})
+
+test('/costs doctor leaves a session begun under an earlier version out of the turn figures', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  const session = { usd: 0 }
+  engine(on, [usage(100_000, 0)], 'claude-opus-5-5', session)
+  doctorEngine(on, localStamp, { 'session:s1': { project: ROOT, days: {}, updatedAt: NOW } })
+
+  await turnThenUnseenSpend($, session)
+
+  expect(await doctor($)).not.toMatch(/Turns:/)
+})
+
+test(
+  '/costs doctor gives no turn figures where the breakdown and the total are priced apart',
+  { options: { rates: '{"opus-5-5": {"input": 2}}' } },
+  async ($, on) => {
+    mock.clock(on, { now: NOW })
+    const session = { usd: 0 }
+    engine(on, [usage(100_000, 0)], 'claude-opus-5-5', session)
+    doctorEngine(on, localStamp)
+
+    await turnThenUnseenSpend($, session)
+
+    expect(await doctor($)).not.toMatch(/Turns:/)
+  },
+)

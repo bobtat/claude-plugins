@@ -32,7 +32,8 @@ export const PANE = {
 
 // The engine beneath the plugin. Model requests are answered with the given
 // usages in order, as the API would, by the given model; toasts are collected.
-export function engine(on: On, steps: ReturnType<typeof usage>[] = [], model = 'claude-opus-5-5') {
+// Claude Code's running total is `session.usd`, which a test may move.
+export function engine(on: On, steps: ReturnType<typeof usage>[] = [], model = 'claude-opus-5-5', session = { usd: 1 }) {
   const toasts: string[] = []
   on('turn.step', async function* (_$, e) {
     return {
@@ -52,7 +53,7 @@ export function engine(on: On, steps: ReturnType<typeof usage>[] = [], model = '
   on('session.id', () => ({ value: 's1' }))
   on('session.root', () => ({ value: ROOT }))
   on('session.measure', (_$, e) => ({ changed: e.changed }))
-  on('session.usage', () => ({ value: { startedAt: NOW, context: { window: 200_000 }, rateLimits: [], cost: { usd: 1 } } }))
+  on('session.usage', () => ({ value: { startedAt: NOW, context: { window: 200_000 }, rateLimits: [], cost: { usd: session.usd } } }))
   on('turn.start', (_$, e) => ({ turnId: e.turnId }))
   on('turn.complete', () => ({ text: '' }))
   return toasts
