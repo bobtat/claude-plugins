@@ -37,6 +37,18 @@ test('a turn that writes too little, or adds up neither way, says nothing about 
   expect(impliedTtl(TURN_DELTA + 0.02, [{ usage: TURN, rates: OPUS }])).toBeUndefined()
 })
 
+test('a turn whose writes are too small a part of its cost to tell the rates apart says nothing', async () => {
+  // Fifty requests re-reading a 100k context and writing 1,500 tokens between
+  // them: $1.00 of reads, and writes of $0.0075 or $0.012. Both totals are
+  // within the tolerance of either, so neither lifetime can be read off it.
+  const longTurn = usage(0, 5_000_000, 1_500, 0)
+  const at5m = (5_000_000 * OPUS.cacheRead + 1_500 * OPUS.cacheWrite5m) / 1e6
+  const at1h = (5_000_000 * OPUS.cacheRead + 1_500 * OPUS.cacheWrite1h) / 1e6
+
+  expect(impliedTtl(at5m, [{ usage: longTurn, rates: OPUS }])).toBeUndefined()
+  expect(impliedTtl(at1h, [{ usage: longTurn, rates: OPUS }])).toBeUndefined()
+})
+
 test('a cold resume costs the conversation; the whole context is the worst case', async () => {
   const cold = coldEstimate(71_051, 29_130, OPUS.cacheWrite1h)
   expect(cold.likelyTokens).toBe(41_921)
