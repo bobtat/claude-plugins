@@ -152,7 +152,9 @@ until an update of the mod or the `rates` setting names it. The totals do not de
 - Week and day boundaries use the local time of the process running Claude Code.
 - The store is one JSON file shared by every Claude Code process on the machine. Two sessions
   writing at the same moment have not been tested for lost updates, and two sessions can
-  both show the same budget toast.
+  both show the same budget toast. Folding old sessions into their project's archive is made
+  safe to interrupt and to repeat: an archive records each session it has taken in, never
+  takes one in twice, and a session is removed only once the archive is seen to hold it.
 - After an in-process `/resume`, the mod takes Claude Code's running cost at that moment as
   the new baseline. If Claude Code restores the resumed session's earlier cost only after
   that point, the earlier cost would be counted again. This has been reasoned from the API
