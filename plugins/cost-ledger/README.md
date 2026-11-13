@@ -22,7 +22,7 @@ Claude to read.
 | Where | What |
 |---|---|
 | Status line and a band above the prompt | `$1.84 session · $23.10 week · $96.40 month · ctx 150k ≈$0.03/step · cache warm 3m`; once the cache has gone cold, `cache cold (re-cache ≈$0.34–$0.57)`; while the keep-alive holds it, `cache warm 41m (kept warm: 2 pings $0.03)` |
-| `/costs` pane | Totals with budget progress, the change against the same point last week and the month's pace (with the day a monthly budget would be reached), a heat-map calendar per month (shade by total spend or by cache writes, `p`/`n` to change month, `s` to switch shading), the month's prompt-cache breakdown, the subagent share, the most expensive prompts, what filled the context, spend by project, and daily bars |
+| `/costs` pane | Totals with budget progress, the change against the same point last week and the month's pace (with the day a monthly budget would be reached), a heat-map calendar per month (shade by total spend or by cache writes, `p`/`n` to change month, `s` to switch shading), the month's prompt-cache breakdown and how much of the month's total it accounts for, the subagent share, the most expensive prompts, what filled the context, spend by project, and daily bars |
 | `/costs export` | Writes `~/claude-costs/claude-costs-<date>.csv`: one row per day and project with the total, tokens and estimated cost per category, and subagent cost |
 | `/costs doctor` | Checks the assumptions the totals rest on (see below) |
 | `/costs keepalive [on\|off]` | Turns the keep-alive on or off for this session, overriding the `keepAlive` setting; with no argument, says whether it is on, the pings so far and when the next is due |
@@ -119,6 +119,14 @@ repository root.
   at list price, once it has said so, which it does when you switch models.
 - **Cache lifetime** and where it was learned, the **shared opening**, the **keep-alive**,
   **baseline**, **rates** and **models without a rate**.
+- **Breakdown**: whether the category breakdown accounts for this month's total. The two
+  are reached separately, the total from Claude Code's running figure and the breakdown from
+  each request's tokens at the mod's prices, so they agree only while the prices, the cache
+  lifetime and the mod's view of the requests are right. Within a tenth passes; further out it
+  warns and lists the causes: tokens from a model with no rate, a price that has changed, the
+  cache lifetime, fast mode, or requests the mod does not see. No comparison is made on less
+  than $1 of spend, and none is held against you where the two are priced differently on
+  purpose (your own `rates`, or your organisation's managed pricing).
 
 It cannot check the `/resume` accounting: for that, compare `/costs` before and after
 resuming a session whose spend you know.
