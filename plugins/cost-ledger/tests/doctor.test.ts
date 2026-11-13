@@ -193,7 +193,7 @@ test('/costs doctor flags a breakdown out of step with the total, and says what 
   const report = await doctor($)
 
   expect(report).toMatch(/⚠ Breakdown: adds up to \$5\.00 against this month's \$10\.00 total \(50%\)/)
-  expect(report).toMatch(/a price that has changed, .*fast mode.*requests the mod does not see/)
+  expect(report).toMatch(/a price that has changed, the cache lifetime, fast mode, US-only inference, web searches, or requests the mod does not see/)
 })
 
 test('/costs doctor counts unpriced tokens as the first cause of a low breakdown', async ($, on) => {
