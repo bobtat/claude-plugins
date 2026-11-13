@@ -763,7 +763,7 @@ async function runDoctor($: EngineInterface, settings: Settings): Promise<string
         false,
         'Breakdown',
         `${figures}: ${unpricedTokens > 0 ? `${formatTokens(unpricedTokens)} tokens this month are from models with no rate; beyond that, ` : ''}` +
-          'a price that has changed, the cache lifetime, fast mode, or requests the mod does not see',
+          'a price that has changed, the cache lifetime, fast mode, US-only inference, web searches, or requests the mod does not see',
       )
   }
   // Where a gap lies says what kind it is: within turns the mod sees every
