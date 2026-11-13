@@ -1,0 +1,35 @@
+{
+  "databases": {
+    "PubMed": 84,
+    "arXiv": 41,
+    "OpenAlex": 17
+  },
+  "removed_before_screening": {
+    "Duplicate records removed": 31
+  },
+  "screened": 111,
+  "excluded": {
+    "by automation tools": 54,
+    "by a human reviewer": 24
+  },
+  "sought": 33,
+  "not_retrieved": 2,
+  "assessed": 31,
+  "excluded_with_reasons": {
+    "Wrong population": 5,
+    "Not primary research": 3,
+    "No extractable outcome": 1
+  },
+  "other_methods": {
+    "Citation searching": 12
+  },
+  "other_sought": 12,
+  "other_not_retrieved": 1,
+  "other_assessed": 11,
+  "other_excluded_with_reasons": {
+    "Wrong population": 2,
+    "Duplicate of included report": 1
+  },
+  "included_studies": 27,
+  "included_reports": 30
+}
