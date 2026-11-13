@@ -11,7 +11,9 @@ import {
   emptyLoop,
   estimateTokens,
   finishTurn,
+  isOutOfStep,
   monthPace,
+  reconcile,
   startTurn,
   toolLabel,
   topTools,
@@ -173,6 +175,15 @@ async function cacheTtl($: EngineInterface, settings: Settings): Promise<CacheTt
   if (settings.ttlSetting === '5m' || settings.ttlSetting === '1h') return settings.ttlSetting
   const learned = await $.store.get(LEARNED_TTL_KEY)
   return learned === '1h' ? '1h' : '5m'
+}
+
+// The breakdown can be held to the total only where both are at list prices:
+// the rates setting reprices the breakdown, and an organisation's managed
+// pricing the total. Says how they differ, or nothing where they should agree.
+async function pricedApart($: EngineInterface, settings: Settings): Promise<string | undefined> {
+  if (settings.hasCustomRates) return "it is priced at your rates and the total at Claude Code's"
+  if ((await $.store.get(LEARNED_PRICING_KEY)) === 'configured') return "it is priced at list rates and the total at your organisation's"
+  return undefined
 }
 
 function rateLimitText(limits: readonly RateLimit[]): string {
@@ -676,6 +687,27 @@ async function runDoctor($: EngineInterface, settings: Settings): Promise<string
       : `no rate for ${unpriced.join(', ')}; update the plugin or add them to the rates setting`,
   )
 
+  const month = dayKey(now).slice(0, 7)
+  const summary = summarize(await ledgerEntries($), now)
+  const monthCache = sumMonth<Breakdown>(summary.cacheDays, month, addBreakdown)
+  const step = reconcile(summary.month, monthCache ? totalUsd(monthCache) : 0)
+  if (step.share === null) say(null, 'Breakdown', 'too little spend this month to compare with the total')
+  else {
+    const percent = Math.round(step.share * 100)
+    const figures = `adds up to ${formatUsd(step.estimatedUsd)} against this month's ${formatUsd(step.totalUsd)} total (${percent}%)`
+    const apart = await pricedApart($, settings)
+    const unpricedTokens = monthCache?.unpricedTokens ?? 0
+    if (apart !== undefined) say(null, 'Breakdown', `${figures}; ${apart}`)
+    else if (!isOutOfStep(step.share)) say(true, 'Breakdown', `accounts for ${percent}% of this month's ${formatUsd(step.totalUsd)} total`)
+    else
+      say(
+        false,
+        'Breakdown',
+        `${figures}: ${unpricedTokens > 0 ? `${formatTokens(unpricedTokens)} tokens this month are from models with no rate; beyond that, ` : ''}` +
+          'a price that has changed, the cache lifetime, fast mode, or requests the mod does not see',
+      )
+  }
+
   say(null, 'Resume', 'cannot be checked from here: compare /costs before and after a /resume of a session with known spend')
   return lines.join('\n')
 }
@@ -1084,6 +1116,9 @@ export const register: Register = (on, options) => {
     const cacheSum = cache ? totalUsd(cache) : 0
     const subagents = sumMonth<Breakdown>(t.subagentDays, shown.key, addBreakdown)
     const subagentSum = subagents ? totalUsd(subagents) : 0
+    const step = reconcile(shownTotal, cacheSum)
+    const apart = await pricedApart($, settings)
+    const isAstray = step.share !== null && apart === undefined && isOutOfStep(step.share)
     const projects = Object.entries(t.projectDays)
       .map(([root, projectDays]) => {
         const month = Object.entries(projectDays).filter(([day]) => day.startsWith(shown.key))
@@ -1230,6 +1265,12 @@ export const register: Register = (on, options) => {
               Cache hit {Math.round(hitRate(cache) * 100)}% of prompt tokens
               {settings.hasCustomRates ? '; totals above use Claude Code’s own pricing' : ''}
             </Text>
+            {step.share !== null && (
+              <Text dimColor={!isAstray} color={isAstray ? 'warning' : undefined}>
+                {`The breakdown adds up to ${formatUsd(cacheSum)}, ${Math.round(step.share * 100)}% of the month's ${formatUsd(shownTotal)} total` +
+                  (apart !== undefined ? `; ${apart}` : isAstray ? '; /costs doctor says what can cause the gap' : '')}
+              </Text>
+            )}
             <Text>
               {'Subagents'.padEnd(12)}
               {formatUsd(subagentSum).padStart(19)}

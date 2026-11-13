@@ -1,6 +1,9 @@
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
+import { addSpend, addUsage } from '../hooks/ledger'
+import type { SessionEntry } from '../hooks/ledger'
+
 export const NOW = new Date(2026, 9, 6, 12).getTime()
 export const DAY = 24 * 60 * 60 * 1000
 export const ROOT = 'C:/work/billing-api'
@@ -71,3 +74,14 @@ export async function runStep($: Engine, turnId: string, agentId?: string) {
 
 export const complete = (turnId: string, agentId?: string) =>
   ({ answer: '', durationMs: 0, isAborted: false, turnId, agentId, reason: 'answer' }) as const
+
+// A stored session that Claude Code totalled at `total` today and whose
+// requests the mod priced at `estimated`.
+export const spentSession = (total: number, estimated: number): SessionEntry =>
+  addUsage(
+    addSpend(undefined, NOW, total, ROOT),
+    NOW,
+    { tokens: { input: 0, output: 0, cacheRead: 1_000_000, cacheWrite: 0 }, usd: { input: 0, output: 0, cacheRead: estimated, cacheWrite: 0 }, unpricedTokens: 0 },
+    ROOT,
+    false,
+  )
