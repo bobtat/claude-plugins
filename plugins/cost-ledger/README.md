@@ -200,9 +200,7 @@ totals do not depend on any of this.
 - A turn in which a subagent made a request teaches nothing about the cache lifetime, and
   neither does one whose interval holds other spend the mod cannot see or that was priced at
   managed rates: what it moved the running total by is not the conversation's requests alone.
-  Such a turn's cache writes stay priced at the lifetime assumed while it ran. Figures
-  recorded before 0.9.2 were never priced again at a turn's end, so a session's first turn
-  can stand at the five-minute rate where it was charged the one-hour rate.
+  Such a turn's cache writes stay priced at the lifetime assumed while it ran.
 - Fast mode costs twice the standard rates, and a request does not say which speed it ran
   at, so the category breakdown prices a fast-mode request at the standard rates and shows
   about half of what it cost. The totals are not affected.
@@ -215,10 +213,8 @@ totals do not depend on any of this.
   at 200. Sessions older than 60 days are folded into one archive entry per project, which
   keeps the count down. The measurements are in `tests/cost-ledger-probe/README.md`.
 - The breakdown is priced as each request is recorded and is not priced again when the rates
-  change. Figures recorded before 0.6.1 stay as they were: Fable 5.2 and Haiku 5.5 tokens
-  unpriced, and Sonnet 5.5 cache reads at twice their price. Those recorded before 0.6.2
-  have subagents' cache writes at the conversation's rate, 60% too high where that is the
-  one-hour rate.
+  change or a later version corrects a rule. `CHANGELOG.md` lists, version by version, the
+  known errors that figures recorded by earlier versions still carry.
 
 ## Development
 
@@ -238,6 +234,10 @@ The code that does call the engine is split by what it works on:
 | `hooks/prices.ts` | The notices about a model with no rate and about a price Claude Code quotes differently |
 | `hooks/wording.ts` | The text of the status line, the band and the cache notices |
 | `hooks/doctor.ts` | The `/costs doctor` report |
+
+A version bump comes with an entry in `CHANGELOG.md`. Where the version corrects how the
+breakdown is priced, the entry also says what figures recorded before it still carry, since
+those are not priced again.
 
 `register.tsx` is the one module that touches `$.state`. Claude Code checks each state access
 against an atom declared in the module that makes it and will not load a module that uses an
