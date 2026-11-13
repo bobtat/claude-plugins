@@ -2,6 +2,7 @@
 // calls so it can be tested directly. The numbers behind each rule are in
 // tests/cost-ledger-probe/README.md.
 
+import { writeRate } from './pricing'
 import type { CacheTtl, Rates, Usage } from './pricing'
 
 export const TTL_MS: Record<CacheTtl, number> = { '5m': 5 * 60_000, '1h': 60 * 60_000 }
@@ -43,6 +44,16 @@ export function impliedTtl(deltaUsd: number, requests: readonly PricedRequest[])
   const is5m = near(base + write5m)
   if (is1h === is5m) return undefined
   return is1h ? '1h' : '5m'
+}
+
+// A cache write as the breakdown recorded it: the tokens, the rates it was
+// priced at and the lifetime believed at the time.
+export type PricedWrite = { tokens: number; rates: Rates; ttl: CacheTtl }
+
+// What pricing those writes at the lifetime they turned out to be charged at
+// adds to what was recorded for them, or takes from it.
+export function repricedWrites(writes: readonly PricedWrite[], ttl: CacheTtl): number {
+  return writes.reduce((sum, w) => sum + (w.tokens * (writeRate(w.rates, ttl) - writeRate(w.rates, w.ttl))) / 1e6, 0)
 }
 
 export type ColdEstimate = { likelyTokens: number; likelyUsd: number; worstTokens: number; worstUsd: number }
