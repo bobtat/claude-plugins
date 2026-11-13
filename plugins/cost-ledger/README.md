@@ -117,6 +117,14 @@ repository root.
   history recorded by one is not in another's totals.
 - **Claude Code pricing**: whether Claude Code prices at your organisation's managed rates or
   at list price, once it has said so, which it does when you switch models.
+- **Prices**: whether the mod's price list still matches Claude Code's. When you switch
+  models, Claude Code says what re-writing the prompt to the new model's cache would cost at
+  list prices, and the mod holds that against its own list. A difference raises a toast the
+  first time it is seen for a model and a warning here, each with both rates per million
+  tokens; the warning clears once an update of the mod brings the price into line. This checks
+  the cache-write rate, which follows the input rate, and so not the output or cache-read
+  rates. A model your `rates` setting reprices is not judged, nor is a quote at your
+  organisation's managed rates, and a quote is forgotten after thirty days.
 - **Cache lifetime** and where it was learned, the **shared opening**, the **keep-alive**,
   **baseline**, **rates** and **models without a rate**.
 - **Breakdown**: whether the category breakdown accounts for this month's total. The two
@@ -124,13 +132,15 @@ repository root.
   each request's tokens at the mod's prices, so they agree only while the prices, the cache
   lifetime and the mod's view of the requests are right. Within a tenth passes; further out it
   warns and lists the causes: tokens from a model with no rate, a price that has changed, the
-  cache lifetime, fast mode, or requests the mod does not see. No comparison is made on less
+  cache lifetime, fast mode, US-only inference, web searches, or requests the mod does not
+  see. No comparison is made on less
   than $1 of spend, and none is held against you where the two are priced differently on
   purpose (your own `rates`, or your organisation's managed pricing).
 - **Turns**: the same comparison split in two, which says what kind of gap it is. At the end
   of each turn the mod keeps what the turn moved Claude Code's total by, beside what it
   priced that turn's requests at. Within turns it sees every request, so a gap there means a
-  price, the cache lifetime or fast mode is off. Spend outside turns with nothing priced
+  price, the cache lifetime or fast mode is off, or a charge that token counts do not show
+  (US-only inference, web searches) was made. Spend outside turns with nothing priced
   against it is requests the mod does not see. Only sessions recorded from their start by
   0.8.0 or later are counted, so the line appears once there is $1 of such spend this month.
 
@@ -159,7 +169,9 @@ The list prices are the ones on Anthropic's pricing page, from Opus 4 and Sonnet
 model that is not among them, such as one released after this version of the mod, is not
 guessed at from its neighbours, whose prices have differed from one version to the next: a
 toast says so the first time it is used, and its tokens are reported as unpriced in the pane
-until an update of the mod or the `rates` setting names it. The totals do not depend on this.
+until an update of the mod or the `rates` setting names it. A listed model whose price has
+since changed is caught when you switch to it: see **Prices** under Checking the setup. The
+totals do not depend on any of this.
 
 ## Known limits
 
@@ -183,6 +195,9 @@ until an update of the mod or the `rates` setting names it. The totals do not de
 - Fast mode costs twice the standard rates, and a request does not say which speed it ran
   at, so the category breakdown prices a fast-mode request at the standard rates and shows
   about half of what it cost. The totals are not affected.
+- Two charges in Claude Code's total do not show in a request's token counts, so the
+  breakdown leaves them out: where inference is pinned to the US, every token category costs
+  1.1 times the standard rate, and each web search costs $0.01. The totals include both.
 - The breakdown is priced as each request is recorded and is not priced again when the rates
   change. Figures recorded before 0.6.1 stay as they were: Fable 5.2 and Haiku 5.5 tokens
   unpriced, and Sonnet 5.5 cache reads at twice their price. Those recorded before 0.6.2
@@ -192,8 +207,9 @@ until an update of the mod or the `rates` setting names it. The totals do not de
 ## Development
 
 The module is `hooks/register.tsx`. Date and summary logic is in `hooks/ledger.ts`, pricing
-in `hooks/pricing.ts`, the per-prompt, context and pace arithmetic in `hooks/insights.ts`,
-and the cache-lifetime, cold-cost and keep-alive rules in `hooks/keepalive.ts`; all four are
+in `hooks/pricing.ts`, the comparison of the price list with Claude Code's quotes in
+`hooks/pricecheck.ts`, the per-prompt, context and pace arithmetic in `hooks/insights.ts`,
+and the cache-lifetime, cold-cost and keep-alive rules in `hooks/keepalive.ts`; all five are
 free of engine calls so they can be tested directly.
 
 ```
