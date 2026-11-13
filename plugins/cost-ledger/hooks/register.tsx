@@ -64,9 +64,12 @@ import {
   promptTokens,
   rateTable,
   ratesFor,
+  sameRates,
   totalUsd,
   writeRate,
 } from './pricing'
+import { judgeQuote, keptQuotes, rateText, withQuote, writeQuote } from './pricecheck'
+import type { QuoteVerdict, WriteQuote } from './pricecheck'
 import type { CacheTtl, RateTable, Usage } from './pricing'
 import { checkPing, coldEstimate, impliedTtl, pingDelay, pingHit, SUBAGENT_TTL, TTL_MS } from './keepalive'
 import type { ColdEstimate, PricedRequest } from './keepalive'
@@ -79,6 +82,7 @@ const LEARNED_TTL_SOURCE_KEY = 'learnedCacheTtlSource'
 const SHARED_PREFIX_KEY = 'sharedPrefixTokens'
 const LEARNED_PRICING_KEY = 'learnedPricing'
 const UNPRICED_MODELS_KEY = 'unpricedModels'
+const WRITE_QUOTES_KEY = 'writeQuotes'
 const PROBE_KEY = 'doctorProbe'
 const STORE_LIMIT_BYTES = 4 * 1024 * 1024
 const SHOWN_TURNS = 10
@@ -485,6 +489,36 @@ async function noteUnpricedModel($: EngineInterface, model: string) {
   )
 }
 
+// Claude Code quotes at list prices, so its quote is held to the list. A model
+// the rates setting reprices is meant to differ from it and is not judged.
+function quoteVerdict(settings: Settings, quote: WriteQuote): QuoteVerdict | undefined {
+  const listed = ratesFor(LIST_TABLE, quote.model, quote.tokens)
+  const used = ratesFor(settings.table, quote.model, quote.tokens)
+  if (listed === undefined || used === undefined || !sameRates(listed, used)) return undefined
+  return judgeQuote(LIST_TABLE, quote)
+}
+
+// Only a quote that can be judged is kept, so one too small to say anything
+// does not displace what an earlier one showed. A difference is said when it
+// first appears for a model, not at every switch after: the kept quote for
+// the model already differing means it has been said.
+async function noteWriteQuote($: EngineInterface, settings: Settings, quote: WriteQuote | undefined) {
+  if (quote === undefined) return
+  const verdict = quoteVerdict(settings, quote)
+  if (verdict === undefined) return
+  const stored = await $.store.get(WRITE_QUOTES_KEY)
+  const before = keptQuotes(stored, quote.at).find(kept => kept.model === quote.model)
+  await $.store.set(WRITE_QUOTES_KEY, withQuote(stored, quote))
+  if (verdict.isAgreed) return
+  if (before !== undefined && quoteVerdict(settings, before)?.isAgreed === false) return
+  $.ui.toast(
+    `Claude Code prices cache writes on ${quote.model} at ${rateText(verdict.quotedPerMillion)} per million tokens and ` +
+      `cost-ledger's price list has ${rateText(verdict.listedPerMillion)}, so the cost breakdown for that model is off; ` +
+      "the totals are not affected. Update the plugin, or give the model's rates in the rates setting.",
+    { timeoutMs: 15_000 },
+  )
+}
+
 // A turn becomes the prompt's record at its first main-thread request, since
 // turn.start does not say which loop it belongs to. Subagent requests made
 // while it runs are charged to it.
@@ -650,6 +684,26 @@ async function runDoctor($: EngineInterface, settings: Settings): Promise<string
         ? 'Anthropic list prices; on Bedrock the totals may differ from your bill'
         : 'not reported yet; Claude Code reports it when you switch models with /model',
   )
+  // Each kept quote is judged against the list as it is now, so a warning
+  // clears once an updated plugin brings the price into line.
+  const judged = keptQuotes(await $.store.get(WRITE_QUOTES_KEY), now).flatMap(quote => {
+    const verdict = quoteVerdict(settings, quote)
+    return verdict === undefined ? [] : [{ quote, verdict }]
+  })
+  const mispriced = judged.filter(({ verdict }) => !verdict.isAgreed)
+  if (judged.length === 0) {
+    say(null, 'Prices', "not compared with Claude Code's yet; it quotes a cache-write price when you switch models with /model")
+  } else if (mispriced.length === 0) {
+    say(true, 'Prices', `Claude Code prices cache writes as the price list does for ${judged.map(({ quote }) => quote.model).join(', ')}`)
+  }
+  for (const { quote, verdict } of mispriced) {
+    say(
+      false,
+      'Prices',
+      `Claude Code prices cache writes on ${quote.model} at ${rateText(verdict.quotedPerMillion)} per million tokens and the price list has ` +
+        `${rateText(verdict.listedPerMillion)}; update the plugin, or give the model's rates in the rates setting`,
+    )
+  }
 
   const learnedTtl = await $.store.get(LEARNED_TTL_KEY)
   const learnedFrom = (await $.store.get(LEARNED_TTL_SOURCE_KEY)) === 'pricing' ? "from Claude Code's pricing of a turn" : 'reported by Claude Code'
@@ -1016,6 +1070,12 @@ export const register: Register = (on, options) => {
     await $.store.set(LEARNED_TTL_KEY, e.cache_ttl)
     await $.store.set(LEARNED_TTL_SOURCE_KEY, 'claude-code')
     await $.store.set(LEARNED_PRICING_KEY, e.pricing)
+    // Only a quote at list prices says anything about the list: a managed
+    // price is meant to differ, and the default tier is a guess at the model.
+    if (e.pricing === 'catalog') {
+      const quote = writeQuote(e.to_model, await $.clock.now(), e.context_tokens, e.estimated_cache_write_usd, e.cache_ttl)
+      await noteWriteQuote($, settings, quote)
+    }
     if (e.prompt_cache_warm && e.context_tokens > 0) {
       const rates = ratesFor(settings.table, e.to_model, e.context_tokens)
       const usd = rates

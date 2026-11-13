@@ -172,6 +172,10 @@ export function ratesFor(table: RateTable, model: string, requestPromptTokens: n
   return longPrompt !== undefined && requestPromptTokens > longPrompt.above ? longPrompt.rates : base
 }
 
+export function sameRates(a: Rates, b: Rates): boolean {
+  return RATE_FIELDS.every(field => a[field] === b[field])
+}
+
 export function writeRate(rates: Rates, ttl: CacheTtl): number {
   return ttl === '1h' ? rates.cacheWrite1h : rates.cacheWrite5m
 }

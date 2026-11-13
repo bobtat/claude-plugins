@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-import { complete, engine, measure, NOW, ROOT, runStep, spentSession, usage } from './support'
+import { complete, DAY, engine, measure, NOW, ROOT, runStep, spentSession, usage } from './support'
 
 function doctorEngine(on: On, hostTime: (now: number) => string, stored: Record<string, unknown> = {}) {
   const store = new Map<string, unknown>(Object.entries(stored))
@@ -101,6 +101,81 @@ test(
     expect(await doctor($)).toMatch(/✓ Models: every model seen has a rate/)
   },
 )
+
+// What Claude Code quoted for a one-hour write of `tokens` on a switch to `model`.
+const quoteOf = (model: string, tokens: number, usd: number, at = NOW) => ({ model, at, tokens, usd, ttl: '1h' })
+
+test('/costs doctor says the prices have not been compared before any model switch', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp)
+
+  expect(await doctor($)).toMatch(/ℹ Prices: not compared with Claude Code's yet/)
+})
+
+test('/costs doctor confirms the models Claude Code prices as the list does', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp, { writeQuotes: [quoteOf('claude-fable-5-2', 50_000, 0.8), quoteOf('claude-opus-5-5', 50_000, 0.4)] })
+
+  expect(await doctor($)).toMatch(/✓ Prices: Claude Code prices cache writes as the price list does for claude-fable-5-2, claude-opus-5-5/)
+})
+
+test('/costs doctor names a model Claude Code prices differently, with both rates', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp, { writeQuotes: [quoteOf('claude-fable-5-2', 50_000, 1), quoteOf('claude-opus-5-5', 50_000, 0.4)] })
+
+  const report = await doctor($)
+
+  expect(report).toMatch(/⚠ Prices: Claude Code prices cache writes on claude-fable-5-2 at \$20 per million tokens and the price list has \$16; update the plugin/)
+  expect(report).not.toMatch(/✓ Prices/)
+  expect(report).not.toMatch(/Prices: .*claude-opus-5-5/)
+})
+
+test('/costs doctor reads a quote past thirty days, or anything that is not a quote, as none', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp, { writeQuotes: [quoteOf('claude-fable-5-2', 50_000, 1, NOW - 31 * DAY), null, 'claude-fable-5-2', { model: 7 }] })
+
+  expect(await doctor($)).toMatch(/ℹ Prices: not compared with Claude Code's yet/)
+})
+
+test(
+  '/costs doctor does not hold a model the rates setting reprices to Claude Code',
+  { options: { rates: '{"fable-5-2": {"input": 9}}' } },
+  async ($, on) => {
+    mock.clock(on, { now: NOW })
+    engine(on)
+    doctorEngine(on, localStamp, { writeQuotes: [quoteOf('claude-fable-5-2', 50_000, 1)] })
+
+    expect(await doctor($)).toMatch(/ℹ Prices: not compared with Claude Code's yet/)
+  },
+)
+
+test('/costs doctor reports the price Claude Code quoted at a model switch', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp)
+  on('classic.PreModelSwitch', () => ({}))
+
+  await $.classic.PreModelSwitch({
+    session_id: 's1',
+    transcript_path: '',
+    cwd: ROOT,
+    from_model: 'claude-fable-5-2',
+    to_model: 'claude-opus-5-5',
+    requested_model: 'opus',
+    source: 'command',
+    context_tokens: 50_000,
+    prompt_cache_warm: false,
+    cache_ttl: '1h',
+    estimated_cache_write_usd: 0.5,
+    pricing: 'catalog',
+  })
+
+  expect(await doctor($)).toMatch(/⚠ Prices: Claude Code prices cache writes on claude-opus-5-5 at \$10 per million tokens and the price list has \$8/)
+})
 
 test("/costs doctor confirms a breakdown that accounts for the month's total", async ($, on) => {
   mock.clock(on, { now: NOW })

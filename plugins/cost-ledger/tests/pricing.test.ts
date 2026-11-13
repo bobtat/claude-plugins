@@ -236,7 +236,7 @@ test('a switch to Haiku 5.5 prices the re-cache on the card for the context it c
     context_tokens: 400_000,
     prompt_cache_warm: true,
     cache_ttl: '5m',
-    estimated_cache_write_usd: 0,
+    estimated_cache_write_usd: 0.25,
     pricing: 'catalog',
   })
 
