@@ -2,6 +2,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { ProbeRecord, Snapshot, Tokens } from './probe'
 import { contextOf, fromJsonl, logFileName, parseCommand, PING_PROMPT, report, scheduleDelays, toJsonl, USAGE } from './probe'
+import { storeBench } from './storebench'
 
 type Usage = {
   input_tokens: number
@@ -260,6 +261,8 @@ export const register: Register = on => {
       case 'mark':
         await add($, { at: now, kind: 'mark', text: command.text })
         return { text: `Marked: ${command.text}` }
+      case 'store':
+        return { text: await storeBench($, command.sessions) }
       case 'ping':
         // Not awaited: the command returns at once and the fork's record lands
         // when it finishes, as a scheduled ping's would.
