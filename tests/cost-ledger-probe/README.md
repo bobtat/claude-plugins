@@ -39,6 +39,7 @@ file. Timers still pending are lost on a reload.
 | `/probe prompt 110 [text]` | Sends a prompt (default `ok`) at that minute after the last turn ended, as if you typed it, so a long run needs no one at the keyboard |
 | `/probe burst 20 30` | 20 forks, each started 30 s after the previous one returned |
 | `/probe mark <text>` | Writes a label into the log, such as `control start` |
+| `/probe store [sessions...]` | Times the plugin store at those numbers of sessions (50 and 200 if none are given), then removes what it wrote. See What the store costs |
 | `/probe report` | Summarises forks, the first request of each turn, each turn's cost against its tokens at both cache write rates, spend no logged request explains, rate limits and cache lifetime |
 
 A prompt you send cancels any pings and any scheduled prompt still pending, and a ping is skipped (and logged as
@@ -165,6 +166,61 @@ Nothing is left to run for the keep-alive.
 - **The cold-resume estimate should subtract the shared opening,** learned from a session's first request, and still show the whole context as the worst case, since the opening stays warm only if something else used it within the hour.
 - **On a subscription, pings are cheap against the limits.** About 0.045% of the 5-hour window each at 62k tokens on Pro, so `keepAlive` can stay off by default as an opt-in for something that spends while the person is away, without the limits being the reason.
 - **Only the first ping after a turn writes anything.** It writes the tail; later pings are pure cache reads. That tail is written at the five-minute rate, so on a one-hour cache it has expired by the next ping or prompt and is written again: about $0.01 an hour at this size, not worth working around.
+
+## What the store costs
+
+cost-ledger reads and writes its session's entry in the plugin store on every tool call and
+model request, and rereads every entry at each cost measurement. `/probe store` times those
+operations on the engine's real store, filled with one synthetic 8 kB entry per session,
+which is about what a session's entry weighs in cost-ledger's store. It needs no model
+request, so it runs headless:
+
+```
+claude -p "/probe store 5 50 200 500" --plugin-dir tests/cost-ledger-probe
+```
+
+From Git Bash, run it through PowerShell or with `MSYS_NO_PATHCONV=1`: Git Bash rewrites
+the leading slash into a Windows path, and the text then goes to the model as a prompt.
+
+### 2026-11-12: Claude Code 2.1.323, Windows 11
+
+Means over 20 to 200 repetitions:
+
+| Sessions in the store | Store size | Get one entry | Set one entry | Get every entry |
+|---|---|---|---|---|
+| 5 | 39 KiB | 0.4 ms | 4 to 9 ms | 2 ms |
+| 50 | 391 KiB | 0.5 ms | 5 to 9 ms | 21 ms |
+| 200 | 1.5 MiB | 0.9 ms | 6 to 7 ms | 166 ms |
+| 500 | 3.8 MiB | 2.1 ms | 10 ms | 930 ms |
+
+- **A write costs 5 to 10 ms** and barely grows with the store.
+- **A read costs in proportion to the whole store**, not to the entry asked for: 0.5 ms at
+  391 KiB, 2.1 ms at 3.8 MiB. That is consistent with the engine reading the store file on
+  each get, which is also what lets one session see another's writes at once.
+- **Reading every entry therefore grows with the square of the number of sessions**: one
+  get per session, each costing in proportion to all of them.
+
+What cost-ledger 0.9.1 does per event, counted with a store that counts its calls and 50
+sessions already stored:
+
+| Event | Gets | Sets | Reads of every entry | About, at 50 sessions |
+|---|---|---|---|---|
+| Tool call | 1 | 1 | 0 | 5 to 10 ms |
+| Model request, main thread | 3 to 4 | 1 to 2 | 0 | 10 to 20 ms |
+| Model request, subagent | 2 | 1 | 0 | 5 to 10 ms |
+| Cost measurement | 5 | 1 | 1 | 30 ms |
+| End of a turn | 2 | 2 | 0 | 10 to 20 ms |
+| Session start | 3 | 0 | 4 | 85 ms |
+| 30-second tick | 1 | 0 | 0 | 0.5 ms |
+
+**No batching was added.** A model request takes seconds, and 5 to 10 ms on a tool call is
+below what a person would notice, so at the sizes a store reaches the mod's own work does
+not show. Sessions older than 60 days are folded into one archive entry per project, which
+bounds the count. The one figure that would come to matter is the read of every entry at
+each cost measurement: about 0.2 s per measurement at 200 sessions and about 1 s at 500,
+where the store is also at its 4 MiB limit. If stores that large turn up, the fix is
+to reread other sessions' entries less often than at every measurement, at the price of
+their spend showing in this session's totals a little late.
 
 ## Development
 

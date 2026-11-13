@@ -202,6 +202,11 @@ totals do not depend on any of this.
 - Two charges in Claude Code's total do not show in a request's token counts, so the
   breakdown leaves them out: where inference is pinned to the US, every token category costs
   1.1 times the standard rate, and each web search costs $0.01. The totals include both.
+- The mod keeps its figures in the plugin store as they change, which adds 5 to 20 ms to a
+  tool call or model request, and rereads every stored session at each cost measurement:
+  about 20 ms with 50 sessions stored, rising with the square of their number to about 0.2 s
+  at 200. Sessions older than 60 days are folded into one archive entry per project, which
+  keeps the count down. The measurements are in `tests/cost-ledger-probe/README.md`.
 - The breakdown is priced as each request is recorded and is not priced again when the rates
   change. Figures recorded before 0.6.1 stay as they were: Fable 5.2 and Haiku 5.5 tokens
   unpriced, and Sonnet 5.5 cache reads at twice their price. Those recorded before 0.6.2
