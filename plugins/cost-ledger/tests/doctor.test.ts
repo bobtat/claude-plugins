@@ -102,6 +102,36 @@ test(
   },
 )
 
+test('/costs doctor says the cache lifetime has not been learned when nothing is known', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp)
+
+  expect(await doctor($)).toMatch(/ℹ Cache lifetime: using 5m \(setting: auto; not learned yet\)/)
+})
+
+test('/costs doctor says when the cache lifetime in use is the one earlier sessions stored', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  engine(on)
+  doctorEngine(on, localStamp, { learnedCacheTtl: '1h' })
+
+  expect(await doctor($)).toMatch(/ℹ Cache lifetime: using 1h \(setting: auto; not learned in this session yet; earlier interactive sessions: 1h\)/)
+})
+
+test("/costs doctor says when the cache lifetime was read from this session's own turn", async ($, on) => {
+  mock.clock(on, { now: NOW })
+  const session = { usd: 0 }
+  engine(on, [usage(0, 100_000)], 'claude-opus-5-5', session)
+  doctorEngine(on, localStamp, { learnedCacheTtl: '5m' })
+
+  await $.turn.start({ turnId: 't1', text: 'read the billing module' })
+  session.usd = 0.8
+  await runStep($, 't1')
+  await $.turn.complete(complete('t1'))
+
+  expect(await doctor($)).toMatch(/ℹ Cache lifetime: using 1h \(setting: auto; this session: 1h, from Claude Code's pricing of a turn\)/)
+})
+
 // What Claude Code quoted for a one-hour write of `tokens` on a switch to `model`.
 const quoteOf = (model: string, tokens: number, usd: number, at = NOW) => ({ model, at, tokens, usd, ttl: '1h' })
 
@@ -174,7 +204,10 @@ test('/costs doctor reports the price Claude Code quoted at a model switch', asy
     pricing: 'catalog',
   })
 
-  expect(await doctor($)).toMatch(/⚠ Prices: Claude Code prices cache writes on claude-opus-5-5 at \$10 per million tokens and the price list has \$8/)
+  const report = await doctor($)
+
+  expect(report).toMatch(/⚠ Prices: Claude Code prices cache writes on claude-opus-5-5 at \$10 per million tokens and the price list has \$8/)
+  expect(report).toMatch(/ℹ Cache lifetime: using 1h \(setting: auto; this session: 1h, reported by Claude Code\)/)
 })
 
 test("/costs doctor confirms a breakdown that accounts for the month's total", async ($, on) => {
