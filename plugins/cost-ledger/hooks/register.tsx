@@ -30,11 +30,15 @@ import {
   budgetAlert,
   cacheMinutesLeft,
   dayKey,
+  daysFrom,
   daysIn,
   exportCsv,
+  forgetFolds,
   formatTokens,
   formatUsd,
   heatLevel,
+  isFoldForgettable,
+  markFolded,
   mergeEntries,
   monthView,
   OLDEST_MONTH_OFFSET,
@@ -149,6 +153,19 @@ async function loadEntries($: EngineInterface): Promise<[string, SessionEntry][]
   return Promise.all(
     keys.map(async key => [key, (await $.store.get(key)) as SessionEntry] as [string, SessionEntry]),
   )
+}
+
+// The entries as the ledger counts them. A session an archive has taken in
+// counts only for the days it has added since, whether or not its own entry
+// has been removed yet, so an interrupted fold is not counted twice.
+async function ledgerEntries($: EngineInterface): Promise<SessionEntry[]> {
+  const all = await loadEntries($)
+  const foldedAt = new Map(all.flatMap(([, entry]) => Object.entries(entry.folded ?? {})))
+  return all.flatMap(([key, entry]) => {
+    const at = foldedAt.get(key)
+    const counted = at === undefined ? entry : daysFrom(entry, dayKey(at))
+    return counted === undefined ? [] : [counted]
+  })
 }
 
 async function cacheTtl($: EngineInterface, settings: Settings): Promise<CacheTtl> {
@@ -266,7 +283,7 @@ async function writeExport($: EngineInterface): Promise<string> {
   const home = (await $.env.get('USERPROFILE')) ?? (await $.env.get('HOME'))
   if (home === undefined) return 'Could not find a home folder to write the export to.'
 
-  const csv = exportCsv((await loadEntries($)).map(([, entry]) => entry))
+  const csv = exportCsv(await ledgerEntries($))
   const path = `${home}/claude-costs/claude-costs-${dayKey(await $.clock.now())}.csv`
   await $.fs.write(path, csv)
   return `Wrote ${csv.trimEnd().split('\n').length - 1} rows to ${path}`
@@ -295,17 +312,49 @@ async function saveEntry($: EngineInterface, key: string, entry: SessionEntry): 
 // below its 4 MiB limit however many sessions run.
 async function compactStore($: EngineInterface, now: number) {
   for (const [key, entry] of await loadEntries($)) {
-    if (!key.startsWith(SESSION_PREFIX) || !shouldArchive(entry, now)) continue
-    const archiveKey = ARCHIVE_PREFIX + (entry.project ?? UNKNOWN_PROJECT)
-    const archive = (await $.store.get(archiveKey)) as SessionEntry | undefined
-    if (await saveEntry($, archiveKey, mergeEntries(archive, entry))) await $.store.delete(key)
+    if (key.startsWith(SESSION_PREFIX) && shouldArchive(entry, now)) await foldSession($, key, now)
   }
+  await finishFolds($, now)
   for (const [key, entry] of await loadEntries($)) {
     const pruned = pruneDays(entry, now)
-    const dayCount = (e: SessionEntry) =>
-      [e.days, e.cache, e.subagentCache].reduce((sum, days) => sum + Object.keys(days ?? {}).length, 0)
     if (pruned === undefined) await $.store.delete(key)
     else if (dayCount(pruned) !== dayCount(entry)) await saveEntry($, key, pruned)
+  }
+}
+
+const dayCount = (e: SessionEntry) =>
+  [e.days, e.cache, e.subagentCache, e.tools].reduce((sum, days) => sum + Object.keys(days ?? {}).length, 0) + (e.turns?.length ?? 0)
+
+// A fold is two writes, the archive and then the session's removal, and
+// another Claude Code process may be making the same fold from an older view
+// of the store. So the archive names each session it has taken in, and a
+// session it already names is never added to it again. The session is read
+// afresh: the scan's copy may be one another process has since dealt with.
+async function foldSession($: EngineInterface, key: string, now: number) {
+  const entry = (await $.store.get(key)) as SessionEntry | undefined
+  if (entry === undefined || !shouldArchive(entry, now)) return
+  const archiveKey = ARCHIVE_PREFIX + (entry.project ?? UNKNOWN_PROJECT)
+  const archive = (await $.store.get(archiveKey)) as SessionEntry | undefined
+  if (archive?.folded?.[key] !== undefined) return
+  await saveEntry($, archiveKey, markFolded(mergeEntries(archive, entry), key, now))
+}
+
+// Removes each session an archive is seen to hold. The archive is read back
+// from the store, not taken from the write, so a fold that another process
+// overwrote leaves its session in place to be folded again. A session resumed
+// since its fold has added days of its own, which it keeps.
+async function finishFolds($: EngineInterface, now: number) {
+  for (const [archiveKey, archive] of await loadEntries($)) {
+    if (!archiveKey.startsWith(ARCHIVE_PREFIX)) continue
+    const settled: string[] = []
+    for (const [key, at] of Object.entries(archive.folded ?? {})) {
+      const entry = (await $.store.get(key)) as SessionEntry | undefined
+      const since = entry && daysFrom(entry, dayKey(at))
+      if (entry !== undefined && since === undefined) await $.store.delete(key)
+      else if (entry !== undefined && since !== undefined && dayCount(since) !== dayCount(entry) && !(await saveEntry($, key, since))) continue
+      if (isFoldForgettable(at, now)) settled.push(key)
+    }
+    if (settled.length > 0) await saveEntry($, archiveKey, forgetFolds(archive, settled))
   }
 }
 
@@ -323,7 +372,7 @@ async function refresh(
 ) {
   const now = await $.clock.now()
   const previous = await read($, totals)
-  const entries = (await loadEntries($)).map(([, entry]) => entry)
+  const entries = await ledgerEntries($)
   const next: Totals = {
     session: sessionUsd ?? previous?.session ?? 0,
     ...summarize(entries, now),
