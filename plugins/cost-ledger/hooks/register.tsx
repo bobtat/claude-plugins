@@ -59,6 +59,7 @@ import type { SessionEntry } from './ledger'
 import {
   addBreakdown,
   CATEGORIES,
+  emptyBreakdown,
   hitRate,
   priceUsage,
   promptTokens,
@@ -71,8 +72,8 @@ import {
 import { judgeQuote, keptQuotes, rateText, withQuote, writeQuote } from './pricecheck'
 import type { QuoteVerdict, WriteQuote } from './pricecheck'
 import type { CacheTtl, RateTable, Usage } from './pricing'
-import { checkPing, coldEstimate, impliedTtl, pingDelay, pingHit, SUBAGENT_TTL, TTL_MS } from './keepalive'
-import type { ColdEstimate, PricedRequest } from './keepalive'
+import { checkPing, coldEstimate, impliedTtl, pingDelay, pingHit, repricedWrites, SUBAGENT_TTL, TTL_MS } from './keepalive'
+import type { ColdEstimate, PricedRequest, PricedWrite } from './keepalive'
 
 const PANE = 'cost-ledger'
 const SESSION_PREFIX = 'session:'
@@ -183,11 +184,14 @@ async function ledgerEntries($: EngineInterface): Promise<SessionEntry[]> {
 // way round: each kind has its own stored lifetime.
 const storedTtlKey = () => (isHeadless ? HEADLESS_TTL_KEY : LEARNED_TTL_KEY)
 
+const isTtlSet = (settings: Settings): settings is Settings & { ttlSetting: CacheTtl } =>
+  settings.ttlSetting === '5m' || settings.ttlSetting === '1h'
+
 // What this session's own requests showed comes first. Sessions of different
 // kinds run side by side on one machine, so the stored lifetime is only where
 // a session starts from until it has seen its own.
 async function cacheTtl($: EngineInterface, settings: Settings): Promise<CacheTtl> {
-  if (settings.ttlSetting === '5m' || settings.ttlSetting === '1h') return settings.ttlSetting
+  if (isTtlSet(settings)) return settings.ttlSetting
   const own = await read($, learnedTtl)
   if (own !== null) return own.ttl
   return (await $.store.get(storedTtlKey())) === '1h' ? '1h' : '5m'
@@ -445,7 +449,10 @@ async function recordStep($: EngineInterface, settings: Settings, usage: Usage &
   if (measured !== undefined) {
     const listRates = ratesFor(LIST_TABLE, usage.model, promptTokens(usage))
     if (!isMainThread || listRates === undefined) measured.isSpoiled = true
-    else measured.requests.push({ usage, rates: listRates })
+    else {
+      measured.requests.push({ usage, rates: listRates })
+      if (rates !== undefined) measured.writes.push({ tokens: usage.cache_creation_input_tokens, rates, ttl })
+    }
   }
 
   const loopId = step.agentId ?? 'main'
@@ -815,7 +822,8 @@ let keepAliveTimer: { cancel: () => void } | null = null
 let runningTurn: string | null = null
 let warnedColdAt: number | null = null
 let isHeadless = false
-const turnCosts = new Map<string, { startUsd: number; requests: PricedRequest[]; isSpoiled: boolean }>()
+type MeasuredTurn = { startUsd: number; requests: PricedRequest[]; writes: PricedWrite[]; isSpoiled: boolean }
+const turnCosts = new Map<string, MeasuredTurn>()
 
 // Steps of parallel subagents finish concurrently, and a keep-alive ping can
 // land between them; each read-modify-write of this session's store entry
@@ -844,38 +852,66 @@ function cancelKeepAlive() {
 
 async function startTurnCost($: EngineInterface, turnId: string) {
   const usd = (await $.session.usage()).cost?.usd
-  if (usd !== undefined) turnCosts.set(turnId, { startUsd: usd, requests: [], isSpoiled: false })
+  if (usd !== undefined) turnCosts.set(turnId, { startUsd: usd, requests: [], writes: [], isSpoiled: false })
 }
 
-// What a turn moved Claude Code's running total by, put to two uses: kept
-// beside what its requests were priced at, and read for the cache lifetime it
-// was charged. A total that fell during the turn was reset by a /clear and
-// says nothing.
-async function closeTurnCost($: EngineInterface, turnId: string, estimatedUsd: number) {
+// Ends a turn. What it moved Claude Code's running total by is read for the
+// cache lifetime it was charged at, and kept beside what its requests were
+// priced at. A total that fell during the turn was reset by a /clear and says
+// nothing.
+async function closeTurn($: EngineInterface, settings: Settings, turnId: string) {
   const measured = turnCosts.get(turnId)
   turnCosts.delete(turnId)
-  if (measured === undefined) return
-  const usd = (await $.session.usage()).cost?.usd
-  if (usd === undefined || usd < measured.startUsd) return
-  const moved = usd - measured.startUsd
+  const usd = measured === undefined ? undefined : (await $.session.usage()).cost?.usd
+  const moved = measured === undefined || usd === undefined || usd < measured.startUsd ? undefined : usd - measured.startUsd
+  const ttl = measured === undefined || moved === undefined ? undefined : await chargedTtl($, measured, moved)
 
-  const key = SESSION_PREFIX + (await $.session.id())
-  const entry = (await $.store.get(key)) as SessionEntry | undefined
-  const tracked = addTurnMoves(entry, await $.clock.now(), moved, estimatedUsd)
-  if (tracked !== entry) await saveEntry($, key, tracked)
+  // Before the turn's record is closed, so that the record carries it too. A
+  // lifetime the cacheTtl setting names is the user's to decide and stays. A
+  // turn whose record a /clear has dropped belongs to a session that is no
+  // longer the current one, and is left alone.
+  const isStillOpen = (await read($, activeTurn))?.turnId === turnId
+  if (measured !== undefined && ttl !== undefined && !isTtlSet(settings) && isStillOpen) {
+    const correction = repricedWrites(measured.writes, ttl)
+    if (correction !== 0) await repriceWrites($, turnId, correction)
+  }
 
-  await learnTtl($, measured, moved)
+  const estimatedUsd = await finishActiveTurn($, settings, turnId)
+  if (moved !== undefined) {
+    const key = SESSION_PREFIX + (await $.session.id())
+    const entry = (await $.store.get(key)) as SessionEntry | undefined
+    const tracked = addTurnMoves(entry, await $.clock.now(), moved, estimatedUsd)
+    if (tracked !== entry) await saveEntry($, key, tracked)
+  }
+  if (ttl !== undefined) await noteTtl($, { ttl, from: 'pricing' })
 }
 
 // The cache lifetime Claude Code charged, read from what one turn moved its
-// running total by. Skipped under managed rates, which list prices cannot
-// match, and for any turn that does not add up either way.
-async function learnTtl($: EngineInterface, measured: { requests: PricedRequest[]; isSpoiled: boolean }, movedUsd: number) {
-  if (measured.isSpoiled) return
-  if ((await $.store.get(LEARNED_PRICING_KEY)) === 'configured') return
-  const ttl = impliedTtl(movedUsd, measured.requests)
-  if (ttl === undefined) return
-  await noteTtl($, { ttl, from: 'pricing' })
+// running total by. Not read under managed rates, which list prices cannot
+// match, from a turn a subagent's request landed in, or from one that does
+// not add up either way.
+async function chargedTtl($: EngineInterface, measured: MeasuredTurn, movedUsd: number): Promise<CacheTtl | undefined> {
+  if (measured.isSpoiled) return undefined
+  if ((await $.store.get(LEARNED_PRICING_KEY)) === 'configured') return undefined
+  return impliedTtl(movedUsd, measured.requests)
+}
+
+// A request's writes are priced as it is recorded, at the lifetime believed
+// then, which a session's first turn can only assume. Once the turn's own
+// total shows they were charged at the other one, the difference is put right
+// wherever the requests were added: the turn's record, the session's stored
+// breakdown and the totals on show.
+async function repriceWrites($: EngineInterface, turnId: string, usd: number) {
+  const blank = emptyBreakdown()
+  const correction: Breakdown = { ...blank, usd: { ...blank.usd, cacheWrite: usd } }
+  await update($, activeTurn, turn => (turn === null || turn.turnId !== turnId ? turn : { ...turn, usage: addBreakdown(turn.usage, correction) }))
+
+  const now = await $.clock.now()
+  const project = await $.session.root()
+  const key = SESSION_PREFIX + (await $.session.id())
+  const entry = (await $.store.get(key)) as SessionEntry | undefined
+  await saveEntry($, key, addUsage(entry, now, correction, project, false))
+  await update($, totals, t => (t === null ? t : applyUsage(t, now, correction, project, false)))
 }
 
 async function isKeepAliveOn($: EngineInterface, settings: Settings): Promise<boolean> {
@@ -1156,7 +1192,7 @@ export const register: Register = (on, options) => {
     const result = await next(e)
     const agentId = e.agentId
     if (agentId === undefined) {
-      await serially(async () => closeTurnCost($, e.turnId, await finishActiveTurn($, settings, e.turnId)))
+      await serially(() => closeTurn($, settings, e.turnId))
       runningTurn = null
       await armKeepAlive($, settings)
     } else
