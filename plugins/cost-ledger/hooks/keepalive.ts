@@ -20,8 +20,10 @@ export type PricedRequest = { usage: Usage; rates: Rates }
 
 // Which cache lifetime Claude Code charged a turn at: its requests priced with
 // five-minute and with one-hour writes, set against what its running total
-// moved. Undefined when the turn wrote too little to tell or neither adds up
-// (a background request landing in the same interval, managed rates).
+// moved. Undefined when the turn wrote too little to tell, when neither adds
+// up (a background request landing in the same interval, managed rates), and
+// when both do: in a long turn the writes can be so small a part of the cost
+// that the two totals fall within each other's tolerance.
 export function impliedTtl(deltaUsd: number, requests: readonly PricedRequest[]): CacheTtl | undefined {
   let base = 0
   let write5m = 0
@@ -37,9 +39,10 @@ export function impliedTtl(deltaUsd: number, requests: readonly PricedRequest[])
   }
   if (written < MIN_WRITE_FOR_TTL) return undefined
   const near = (priced: number) => Math.abs(deltaUsd - priced) <= Math.max(0.0005, priced * 0.02)
-  if (near(base + write1h)) return '1h'
-  if (near(base + write5m)) return '5m'
-  return undefined
+  const is1h = near(base + write1h)
+  const is5m = near(base + write5m)
+  if (is1h === is5m) return undefined
+  return is1h ? '1h' : '5m'
 }
 
 export type ColdEstimate = { likelyTokens: number; likelyUsd: number; worstTokens: number; worstUsd: number }
