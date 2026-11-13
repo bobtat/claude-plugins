@@ -45,13 +45,18 @@ export type Command =
   | { kind: 'burst'; count: number; seconds: number }
   | { kind: 'prompt'; minutes: number; text: string }
   | { kind: 'mark'; text: string }
+  | { kind: 'store'; sessions: number[] }
   | { kind: 'report' }
   | { kind: 'help'; error?: string }
 
 export const USAGE =
-  'Usage: /probe ping | schedule <minutes...> | prompt <minutes> [text] | burst <count> <seconds> | mark <text> | report'
+  'Usage: /probe ping | schedule <minutes...> | prompt <minutes> [text] | burst <count> <seconds> | mark <text> | store [sessions...] | report'
 
 const isPositive = (n: number) => Number.isFinite(n) && n > 0
+
+// Past this many 8 kB entries the benchmark would overrun the store's 4 MiB.
+export const MAX_BENCH_SESSIONS = 500
+const DEFAULT_BENCH_SESSIONS = [50, 200]
 
 export function parseCommand(args: string): Command {
   const [verb = '', ...rest] = args.trim().split(/\s+/).filter(Boolean)
@@ -83,6 +88,13 @@ export function parseCommand(args: string): Command {
     case 'mark': {
       const text = rest.join(' ')
       return text === '' ? { kind: 'help', error: 'mark takes a label, e.g. mark control start' } : { kind: 'mark', text }
+    }
+    case 'store': {
+      const sessions = rest.map(Number)
+      if (!sessions.every(n => Number.isInteger(n) && isPositive(n) && n <= MAX_BENCH_SESSIONS)) {
+        return { kind: 'help', error: `store takes whole session counts up to ${MAX_BENCH_SESSIONS}, e.g. store 50 200` }
+      }
+      return { kind: 'store', sessions: sessions.length === 0 ? DEFAULT_BENCH_SESSIONS : sessions }
     }
     case 'report':
     case '':

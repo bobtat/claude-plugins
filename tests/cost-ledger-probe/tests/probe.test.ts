@@ -2,6 +2,8 @@ import { expect, mock, test } from 'claude-code/testing'
 
 import { contextOf, fromJsonl, parseCommand, report, scheduleDelays, turnCosts, unattributedSpend } from '../hooks/probe'
 import type { ProbeRecord } from '../hooks/probe'
+import type { On } from 'claude-code'
+
 import { engine, LOG, MIN, NOW, probe, turn, usage } from './support'
 
 test('subcommands parse, and bad arguments say what was expected', async () => {
@@ -219,4 +221,57 @@ test('a prompt typed before the scheduled one cancels it', async ($, on) => {
   await clock.advance(60 * MIN)
 
   expect(submitted).toEqual([])
+})
+
+test('store takes session counts within what the store can hold, and has a default', async () => {
+  expect(parseCommand('store')).toEqual({ kind: 'store', sessions: [50, 200] })
+  expect(parseCommand('store 5 80')).toEqual({ kind: 'store', sessions: [5, 80] })
+  expect(parseCommand('store 501').kind).toBe('help')
+  expect(parseCommand('store 2.5').kind).toBe('help')
+  expect(parseCommand('store 0').kind).toBe('help')
+  expect(parseCommand('store many').kind).toBe('help')
+})
+
+// The probe's store as a map; `capacity` makes a write past it fail, as a
+// store that has reached its size limit does.
+function benchStore(on: On, entries: [string, unknown][] = [], capacity = Number.POSITIVE_INFINITY) {
+  const store = new Map<string, unknown>(entries)
+  const seen = { mostKeys: store.size }
+  on('store.get', (_$, e) => ({ value: store.get(e.key) }))
+  on('store.keys', () => ({ value: [...store.keys()] }))
+  on('store.delete', (_$, e) => {
+    store.delete(e.key)
+    return { value: undefined }
+  })
+  on('store.set', (_$, e) => {
+    if (!store.has(e.key) && store.size >= capacity) throw new Error('store is full')
+    store.set(e.key, e.value)
+    seen.mostKeys = Math.max(seen.mostKeys, store.size)
+    return { value: undefined }
+  })
+  return { store, seen }
+}
+
+test('the store benchmark times each size, smallest first, and removes only what it wrote', async ($, on) => {
+  engine(on, mock.clock(on, { now: NOW }))
+  const { store, seen } = benchStore(on, [['kept', 1]])
+
+  const text = await probe($, 'store 7 3')
+
+  expect(text).toMatch(
+    /^3 sessions \(~23 KiB\):\n  get one entry .* ms mean, .* ms worst\n  set one entry .*\n  get then set .*\n  keys \+ get every entry .*\n7 sessions \(~55 KiB\):/,
+  )
+  expect(seen.mostKeys).toBe(8)
+  expect([...store.entries()]).toEqual([['kept', 1]])
+})
+
+test('the store benchmark removes what it wrote when the store fails part-way', async ($, on) => {
+  engine(on, mock.clock(on, { now: NOW }))
+  const { store } = benchStore(on, [], 4)
+
+  const text = await probe($, 'store 3 9')
+
+  expect(text).toMatch(/^3 sessions [^]*\nStopped: \S.*$/)
+  expect(text).not.toMatch(/9 sessions/)
+  expect(store.size).toBe(0)
 })
