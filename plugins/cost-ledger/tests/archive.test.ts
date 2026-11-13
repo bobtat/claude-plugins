@@ -110,6 +110,31 @@ test('an archive forgets a fold a day after it, once the session is gone', async
   expect(total(store.get(ARCHIVE))).toBe(3)
 })
 
+test('a store that refuses the housekeeping still leaves the session counted from where it started', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  const { store, session } = engine(on, { 'session:a': OLD_A }, { refusesDelete: () => true })
+  session.usd = 5
+
+  await start($)
+  session.usd = 5.5
+  await $.session.measure(measure(5.5))
+
+  expect(Math.round(total(store.get('session:now')) * 100)).toBe(50)
+})
+
+test('a session another process removed between the listing and the read is passed over', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  const { store, session, toasts } = engine(on, { 'session:c': RECENT }, { vanished: ['session:gone', 'archive:C:/work/gone'] })
+  session.usd = 5
+
+  await start($)
+  session.usd = 5.5
+  await $.session.measure(measure(5.5))
+
+  expect(toasts).toEqual([])
+  expect(Math.round(total(store.get('session:now')) * 100)).toBe(50)
+})
+
 test('a folded session that has not been removed yet is counted once, with what it has spent since', async ($, on) => {
   mock.clock(on, { now: NOW })
   mock.env(on, { USERPROFILE: 'C:\\Users\\someone' })

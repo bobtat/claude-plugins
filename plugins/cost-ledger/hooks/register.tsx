@@ -148,11 +148,12 @@ function readSettings(options: PluginOptions): Settings {
   }
 }
 
+// An entry another process removed between the listing and the read comes
+// back undefined and is left out.
 async function loadEntries($: EngineInterface): Promise<[string, SessionEntry][]> {
   const keys = (await $.store.keys()).filter(key => key.startsWith(SESSION_PREFIX) || key.startsWith(ARCHIVE_PREFIX))
-  return Promise.all(
-    keys.map(async key => [key, (await $.store.get(key)) as SessionEntry] as [string, SessionEntry]),
-  )
+  const read = await Promise.all(keys.map(async key => [key, await $.store.get(key)] as const))
+  return read.filter((pair): pair is [string, SessionEntry] => pair[1] !== undefined)
 }
 
 // The entries as the ledger counts them. A session an archive has taken in
@@ -884,8 +885,14 @@ export const register: Register = (on, options) => {
     if (settings.table.error) $.ui.toast(`cost-ledger: ${settings.table.error}`)
 
     const now = await $.clock.now()
-    await compactStore($, now)
-    await pruneBudgetKeys($, now)
+    // Housekeeping can wait for the next start. The baseline below cannot: a
+    // start that stopped here would count the session's whole cost as new.
+    try {
+      await compactStore($, now)
+      await pruneBudgetKeys($, now)
+    } catch (error) {
+      $.ui.toast(`cost-ledger could not tidy its store, and will try again at the next start: ${String(error)}`, { timeoutMs: 10_000 })
+    }
     $.clock.every(TICK_MS, () => void onTick($, settings))
 
     const usage = await $.session.usage()
