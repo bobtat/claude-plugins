@@ -1,0 +1,2162 @@
+{
+ "S41-a": {
+  "pid": "S41-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 777,
+  "timedOut": false,
+  "inTokens": 804,
+  "outTokens": 5
+ },
+ "S03-a": {
+  "pid": "S03-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 692,
+  "timedOut": false,
+  "inTokens": 1032,
+  "outTokens": 5
+ },
+ "S37-a": {
+  "pid": "S37-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 833,
+  "timedOut": false,
+  "inTokens": 575,
+  "outTokens": 5
+ },
+ "S32-a": {
+  "pid": "S32-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 652,
+  "timedOut": false,
+  "inTokens": 985,
+  "outTokens": 5
+ },
+ "S16-a": {
+  "pid": "S16-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 725,
+  "timedOut": false,
+  "inTokens": 998,
+  "outTokens": 5
+ },
+ "S52-a": {
+  "pid": "S52-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 727,
+  "timedOut": false,
+  "inTokens": 967,
+  "outTokens": 5
+ },
+ "S15-a": {
+  "pid": "S15-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 693,
+  "timedOut": false,
+  "inTokens": 529,
+  "outTokens": 6
+ },
+ "S04-a": {
+  "pid": "S04-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 703,
+  "timedOut": false,
+  "inTokens": 928,
+  "outTokens": 5
+ },
+ "S22-a": {
+  "pid": "S22-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 711,
+  "timedOut": false,
+  "inTokens": 1047,
+  "outTokens": 5
+ },
+ "S12-a": {
+  "pid": "S12-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 695,
+  "timedOut": false,
+  "inTokens": 873,
+  "outTokens": 5
+ },
+ "S54-a": {
+  "pid": "S54-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 753,
+  "timedOut": false,
+  "inTokens": 559,
+  "outTokens": 5
+ },
+ "S05-a": {
+  "pid": "S05-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 722,
+  "timedOut": false,
+  "inTokens": 887,
+  "outTokens": 5
+ },
+ "S54-b": {
+  "pid": "S54-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 1353,
+  "timedOut": false,
+  "inTokens": 351,
+  "outTokens": 5
+ },
+ "S32-b": {
+  "pid": "S32-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 689,
+  "timedOut": false,
+  "inTokens": 405,
+  "outTokens": 5
+ },
+ "S12-b": {
+  "pid": "S12-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1691,
+  "timedOut": false,
+  "inTokens": 386,
+  "outTokens": 5
+ },
+ "S52-b": {
+  "pid": "S52-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 697,
+  "timedOut": false,
+  "inTokens": 391,
+  "outTokens": 5
+ },
+ "S15-b": {
+  "pid": "S15-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 686,
+  "timedOut": false,
+  "inTokens": 356,
+  "outTokens": 6
+ },
+ "S41-b": {
+  "pid": "S41-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 731,
+  "timedOut": false,
+  "inTokens": 359,
+  "outTokens": 5
+ },
+ "S04-b": {
+  "pid": "S04-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 764,
+  "timedOut": false,
+  "inTokens": 396,
+  "outTokens": 6
+ },
+ "S16-b": {
+  "pid": "S16-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 695,
+  "timedOut": false,
+  "inTokens": 422,
+  "outTokens": 5
+ },
+ "S22-b": {
+  "pid": "S22-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 680,
+  "timedOut": false,
+  "inTokens": 384,
+  "outTokens": 5
+ },
+ "S03-b": {
+  "pid": "S03-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 680,
+  "timedOut": false,
+  "inTokens": 395,
+  "outTokens": 5
+ },
+ "S37-b": {
+  "pid": "S37-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 662,
+  "timedOut": false,
+  "inTokens": 351,
+  "outTokens": 5
+ },
+ "S05-b": {
+  "pid": "S05-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1773,
+  "timedOut": false,
+  "inTokens": 368,
+  "outTokens": 5
+ },
+ "S52-c": {
+  "pid": "S52-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 704,
+  "timedOut": false,
+  "inTokens": 783,
+  "outTokens": 5
+ },
+ "S12-c": {
+  "pid": "S12-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 720,
+  "timedOut": false,
+  "inTokens": 714,
+  "outTokens": 5
+ },
+ "S41-c": {
+  "pid": "S41-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 696,
+  "timedOut": false,
+  "inTokens": 611,
+  "outTokens": 5
+ },
+ "S15-c": {
+  "pid": "S15-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 692,
+  "timedOut": false,
+  "inTokens": 551,
+  "outTokens": 6
+ },
+ "S03-c": {
+  "pid": "S03-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 688,
+  "timedOut": false,
+  "inTokens": 776,
+  "outTokens": 5
+ },
+ "S16-c": {
+  "pid": "S16-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 756,
+  "timedOut": false,
+  "inTokens": 794,
+  "outTokens": 5
+ },
+ "S05-c": {
+  "pid": "S05-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 750,
+  "timedOut": false,
+  "inTokens": 737,
+  "outTokens": 5
+ },
+ "S04-c": {
+  "pid": "S04-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 728,
+  "timedOut": false,
+  "inTokens": 717,
+  "outTokens": 5
+ },
+ "S37-c": {
+  "pid": "S37-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 668,
+  "timedOut": false,
+  "inTokens": 558,
+  "outTokens": 5
+ },
+ "S22-c": {
+  "pid": "S22-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 738,
+  "timedOut": false,
+  "inTokens": 811,
+  "outTokens": 5
+ },
+ "S32-c": {
+  "pid": "S32-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 699,
+  "timedOut": false,
+  "inTokens": 811,
+  "outTokens": 5
+ },
+ "S54-c": {
+  "pid": "S54-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 741,
+  "timedOut": false,
+  "inTokens": 547,
+  "outTokens": 5
+ },
+ "S03-d": {
+  "pid": "S03-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 672,
+  "timedOut": false,
+  "inTokens": 645,
+  "outTokens": 5
+ },
+ "S04-d": {
+  "pid": "S04-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 684,
+  "timedOut": false,
+  "inTokens": 609,
+  "outTokens": 5
+ },
+ "S52-d": {
+  "pid": "S52-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 684,
+  "timedOut": false,
+  "inTokens": 592,
+  "outTokens": 5
+ },
+ "S22-d": {
+  "pid": "S22-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 720,
+  "timedOut": false,
+  "inTokens": 566,
+  "outTokens": 5
+ },
+ "S32-d": {
+  "pid": "S32-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 723,
+  "timedOut": false,
+  "inTokens": 664,
+  "outTokens": 5
+ },
+ "S41-d": {
+  "pid": "S41-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 811,
+  "timedOut": false,
+  "inTokens": 548,
+  "outTokens": 5
+ },
+ "S16-d": {
+  "pid": "S16-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 960,
+  "timedOut": false,
+  "inTokens": 607,
+  "outTokens": 5
+ },
+ "S37-d": {
+  "pid": "S37-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 708,
+  "timedOut": false,
+  "inTokens": 500,
+  "outTokens": 5
+ },
+ "S15-d": {
+  "pid": "S15-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 695,
+  "timedOut": false,
+  "inTokens": 461,
+  "outTokens": 6
+ },
+ "S05-d": {
+  "pid": "S05-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 710,
+  "timedOut": false,
+  "inTokens": 566,
+  "outTokens": 5
+ },
+ "S12-d": {
+  "pid": "S12-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 665,
+  "timedOut": false,
+  "inTokens": 565,
+  "outTokens": 5
+ },
+ "S54-d": {
+  "pid": "S54-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1027,
+  "timedOut": false,
+  "inTokens": 537,
+  "outTokens": 5
+ },
+ "S36-a": {
+  "pid": "S36-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 707,
+  "timedOut": false,
+  "inTokens": 604,
+  "outTokens": 6
+ },
+ "S56-a": {
+  "pid": "S56-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 708,
+  "timedOut": false,
+  "inTokens": 519,
+  "outTokens": 6
+ },
+ "S08-a": {
+  "pid": "S08-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 668,
+  "timedOut": false,
+  "inTokens": 655,
+  "outTokens": 5
+ },
+ "S06-a": {
+  "pid": "S06-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 694,
+  "timedOut": false,
+  "inTokens": 819,
+  "outTokens": 5
+ },
+ "S26-a": {
+  "pid": "S26-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 651,
+  "timedOut": false,
+  "inTokens": 799,
+  "outTokens": 5
+ },
+ "S17-a": {
+  "pid": "S17-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 685,
+  "timedOut": false,
+  "inTokens": 827,
+  "outTokens": 5
+ },
+ "S33-a": {
+  "pid": "S33-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 739,
+  "timedOut": false,
+  "inTokens": 599,
+  "outTokens": 5
+ },
+ "S27-a": {
+  "pid": "S27-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 856,
+  "timedOut": false,
+  "inTokens": 651,
+  "outTokens": 5
+ },
+ "S55-a": {
+  "pid": "S55-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 678,
+  "timedOut": false,
+  "inTokens": 676,
+  "outTokens": 5
+ },
+ "S11-a": {
+  "pid": "S11-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 703,
+  "timedOut": false,
+  "inTokens": 778,
+  "outTokens": 5
+ },
+ "S21-a": {
+  "pid": "S21-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 705,
+  "timedOut": false,
+  "inTokens": 823,
+  "outTokens": 5
+ },
+ "S47-a": {
+  "pid": "S47-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1727,
+  "timedOut": false,
+  "inTokens": 875,
+  "outTokens": 5
+ },
+ "S21-b": {
+  "pid": "S21-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 767,
+  "timedOut": false,
+  "inTokens": 420,
+  "outTokens": 5
+ },
+ "S36-b": {
+  "pid": "S36-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 698,
+  "timedOut": false,
+  "inTokens": 375,
+  "outTokens": 6
+ },
+ "S17-b": {
+  "pid": "S17-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 737,
+  "timedOut": false,
+  "inTokens": 429,
+  "outTokens": 5
+ },
+ "S11-b": {
+  "pid": "S11-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 755,
+  "timedOut": false,
+  "inTokens": 436,
+  "outTokens": 5
+ },
+ "S08-b": {
+  "pid": "S08-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 735,
+  "timedOut": false,
+  "inTokens": 382,
+  "outTokens": 5
+ },
+ "S55-b": {
+  "pid": "S55-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 735,
+  "timedOut": false,
+  "inTokens": 371,
+  "outTokens": 5
+ },
+ "S47-b": {
+  "pid": "S47-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 698,
+  "timedOut": false,
+  "inTokens": 457,
+  "outTokens": 5
+ },
+ "S33-b": {
+  "pid": "S33-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 690,
+  "timedOut": false,
+  "inTokens": 365,
+  "outTokens": 5
+ },
+ "S56-b": {
+  "pid": "S56-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 776,
+  "timedOut": false,
+  "inTokens": 379,
+  "outTokens": 6
+ },
+ "S26-b": {
+  "pid": "S26-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 645,
+  "timedOut": false,
+  "inTokens": 451,
+  "outTokens": 5
+ },
+ "S06-b": {
+  "pid": "S06-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 704,
+  "timedOut": false,
+  "inTokens": 440,
+  "outTokens": 5
+ },
+ "S27-b": {
+  "pid": "S27-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 768,
+  "timedOut": false,
+  "inTokens": 402,
+  "outTokens": 5
+ },
+ "S06-c": {
+  "pid": "S06-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 760,
+  "timedOut": false,
+  "inTokens": 856,
+  "outTokens": 5
+ },
+ "S36-c": {
+  "pid": "S36-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 686,
+  "timedOut": false,
+  "inTokens": 606,
+  "outTokens": 5
+ },
+ "S56-c": {
+  "pid": "S56-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 686,
+  "timedOut": false,
+  "inTokens": 558,
+  "outTokens": 6
+ },
+ "S26-c": {
+  "pid": "S26-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 746,
+  "timedOut": false,
+  "inTokens": 772,
+  "outTokens": 5
+ },
+ "S55-c": {
+  "pid": "S55-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 968,
+  "timedOut": false,
+  "inTokens": 688,
+  "outTokens": 5
+ },
+ "S08-c": {
+  "pid": "S08-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 790,
+  "timedOut": false,
+  "inTokens": 675,
+  "outTokens": 5
+ },
+ "S17-c": {
+  "pid": "S17-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 876,
+  "timedOut": false,
+  "inTokens": 811,
+  "outTokens": 5
+ },
+ "S33-c": {
+  "pid": "S33-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 689,
+  "timedOut": false,
+  "inTokens": 619,
+  "outTokens": 5
+ },
+ "S21-c": {
+  "pid": "S21-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 723,
+  "timedOut": false,
+  "inTokens": 758,
+  "outTokens": 5
+ },
+ "S27-c": {
+  "pid": "S27-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 735,
+  "timedOut": false,
+  "inTokens": 667,
+  "outTokens": 5
+ },
+ "S47-c": {
+  "pid": "S47-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 755,
+  "timedOut": false,
+  "inTokens": 825,
+  "outTokens": 5
+ },
+ "S11-c": {
+  "pid": "S11-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 680,
+  "timedOut": false,
+  "inTokens": 790,
+  "outTokens": 5
+ },
+ "S26-d": {
+  "pid": "S26-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 746,
+  "timedOut": false,
+  "inTokens": 626,
+  "outTokens": 5
+ },
+ "S17-d": {
+  "pid": "S17-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 694,
+  "timedOut": false,
+  "inTokens": 579,
+  "outTokens": 5
+ },
+ "S11-d": {
+  "pid": "S11-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 717,
+  "timedOut": false,
+  "inTokens": 633,
+  "outTokens": 5
+ },
+ "S06-d": {
+  "pid": "S06-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 680,
+  "timedOut": false,
+  "inTokens": 588,
+  "outTokens": 5
+ },
+ "S36-d": {
+  "pid": "S36-d",
+  "pick": "unparseable",
+  "raw": "Although this is mostly a locate task, it also asks which base directory is used and what overrides it. That means reading the code and explaining it, and it goes beyond a plain list of locations. How",
+  "ms": 1438,
+  "timedOut": false,
+  "inTokens": 413,
+  "outTokens": 108
+ },
+ "S21-d": {
+  "pid": "S21-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 861,
+  "timedOut": false,
+  "inTokens": 564,
+  "outTokens": 5
+ },
+ "S27-d": {
+  "pid": "S27-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 722,
+  "timedOut": false,
+  "inTokens": 513,
+  "outTokens": 6
+ },
+ "S33-d": {
+  "pid": "S33-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 816,
+  "timedOut": false,
+  "inTokens": 386,
+  "outTokens": 5
+ },
+ "S08-d": {
+  "pid": "S08-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 687,
+  "timedOut": false,
+  "inTokens": 511,
+  "outTokens": 5
+ },
+ "S56-d": {
+  "pid": "S56-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 714,
+  "timedOut": false,
+  "inTokens": 445,
+  "outTokens": 6
+ },
+ "S55-d": {
+  "pid": "S55-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 740,
+  "timedOut": false,
+  "inTokens": 433,
+  "outTokens": 5
+ },
+ "S47-d": {
+  "pid": "S47-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 702,
+  "timedOut": false,
+  "inTokens": 612,
+  "outTokens": 5
+ },
+ "S29-a": {
+  "pid": "S29-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 715,
+  "timedOut": false,
+  "inTokens": 942,
+  "outTokens": 5
+ },
+ "S07-a": {
+  "pid": "S07-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 763,
+  "timedOut": false,
+  "inTokens": 881,
+  "outTokens": 5
+ },
+ "S38-a": {
+  "pid": "S38-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 684,
+  "timedOut": false,
+  "inTokens": 776,
+  "outTokens": 5
+ },
+ "S09-a": {
+  "pid": "S09-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 755,
+  "timedOut": false,
+  "inTokens": 634,
+  "outTokens": 6
+ },
+ "S23-a": {
+  "pid": "S23-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 745,
+  "timedOut": false,
+  "inTokens": 739,
+  "outTokens": 5
+ },
+ "S57-a": {
+  "pid": "S57-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 751,
+  "timedOut": false,
+  "inTokens": 685,
+  "outTokens": 6
+ },
+ "S48-a": {
+  "pid": "S48-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 777,
+  "timedOut": false,
+  "inTokens": 781,
+  "outTokens": 5
+ },
+ "S51-a": {
+  "pid": "S51-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 791,
+  "timedOut": false,
+  "inTokens": 453,
+  "outTokens": 5
+ },
+ "S10-a": {
+  "pid": "S10-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 734,
+  "timedOut": false,
+  "inTokens": 772,
+  "outTokens": 5
+ },
+ "S13-a": {
+  "pid": "S13-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 740,
+  "timedOut": false,
+  "inTokens": 469,
+  "outTokens": 5
+ },
+ "S39-a": {
+  "pid": "S39-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 697,
+  "timedOut": false,
+  "inTokens": 695,
+  "outTokens": 5
+ },
+ "S50-a": {
+  "pid": "S50-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 786,
+  "timedOut": false,
+  "inTokens": 812,
+  "outTokens": 5
+ },
+ "S09-b": {
+  "pid": "S09-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 787,
+  "timedOut": false,
+  "inTokens": 408,
+  "outTokens": 6
+ },
+ "S39-b": {
+  "pid": "S39-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 683,
+  "timedOut": false,
+  "inTokens": 395,
+  "outTokens": 5
+ },
+ "S57-b": {
+  "pid": "S57-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 759,
+  "timedOut": false,
+  "inTokens": 388,
+  "outTokens": 6
+ },
+ "S29-b": {
+  "pid": "S29-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 791,
+  "timedOut": false,
+  "inTokens": 426,
+  "outTokens": 5
+ },
+ "S51-b": {
+  "pid": "S51-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 745,
+  "timedOut": false,
+  "inTokens": 352,
+  "outTokens": 5
+ },
+ "S38-b": {
+  "pid": "S38-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 709,
+  "timedOut": false,
+  "inTokens": 386,
+  "outTokens": 5
+ },
+ "S10-b": {
+  "pid": "S10-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 829,
+  "timedOut": false,
+  "inTokens": 386,
+  "outTokens": 5
+ },
+ "S50-b": {
+  "pid": "S50-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 691,
+  "timedOut": false,
+  "inTokens": 414,
+  "outTokens": 5
+ },
+ "S07-b": {
+  "pid": "S07-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 913,
+  "timedOut": false,
+  "inTokens": 408,
+  "outTokens": 5
+ },
+ "S48-b": {
+  "pid": "S48-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 699,
+  "timedOut": false,
+  "inTokens": 420,
+  "outTokens": 5
+ },
+ "S23-b": {
+  "pid": "S23-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 682,
+  "timedOut": false,
+  "inTokens": 418,
+  "outTokens": 5
+ },
+ "S13-b": {
+  "pid": "S13-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 828,
+  "timedOut": false,
+  "inTokens": 341,
+  "outTokens": 5
+ },
+ "S07-c": {
+  "pid": "S07-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1029,
+  "timedOut": false,
+  "inTokens": 1050,
+  "outTokens": 5
+ },
+ "S48-c": {
+  "pid": "S48-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1868,
+  "timedOut": false,
+  "inTokens": 924,
+  "outTokens": 5
+ },
+ "S10-c": {
+  "pid": "S10-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 752,
+  "timedOut": false,
+  "inTokens": 788,
+  "outTokens": 5
+ },
+ "S23-c": {
+  "pid": "S23-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 678,
+  "timedOut": false,
+  "inTokens": 871,
+  "outTokens": 5
+ },
+ "S29-c": {
+  "pid": "S29-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 703,
+  "timedOut": false,
+  "inTokens": 930,
+  "outTokens": 5
+ },
+ "S50-c": {
+  "pid": "S50-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 688,
+  "timedOut": false,
+  "inTokens": 824,
+  "outTokens": 5
+ },
+ "S57-c": {
+  "pid": "S57-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 725,
+  "timedOut": false,
+  "inTokens": 685,
+  "outTokens": 6
+ },
+ "S13-c": {
+  "pid": "S13-c",
+  "pick": "unparseable",
+  "raw": "Although the task is mostly locating things, it also asks for a brief note on where the marker is consumed, which means reading some code. It also requires following the inheritance chain through inte",
+  "ms": 2074,
+  "timedOut": false,
+  "inTokens": 576,
+  "outTokens": 192
+ },
+ "S09-c": {
+  "pid": "S09-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 679,
+  "timedOut": false,
+  "inTokens": 569,
+  "outTokens": 6
+ },
+ "S38-c": {
+  "pid": "S38-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 757,
+  "timedOut": false,
+  "inTokens": 842,
+  "outTokens": 5
+ },
+ "S51-c": {
+  "pid": "S51-c",
+  "pick": "unparseable",
+  "raw": "The task is to locate a controller and action, and report where it is (file path, line), its route and HTTP method, and what it calls. That is mostly locating, but it also needs a little reading to sa",
+  "ms": 2104,
+  "timedOut": false,
+  "inTokens": 439,
+  "outTokens": 173
+ },
+ "S39-c": {
+  "pid": "S39-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 725,
+  "timedOut": false,
+  "inTokens": 785,
+  "outTokens": 5
+ },
+ "S39-d": {
+  "pid": "S39-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 729,
+  "timedOut": false,
+  "inTokens": 607,
+  "outTokens": 5
+ },
+ "S23-d": {
+  "pid": "S23-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 711,
+  "timedOut": false,
+  "inTokens": 612,
+  "outTokens": 5
+ },
+ "S07-d": {
+  "pid": "S07-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 667,
+  "timedOut": false,
+  "inTokens": 638,
+  "outTokens": 5
+ },
+ "S48-d": {
+  "pid": "S48-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 784,
+  "timedOut": false,
+  "inTokens": 638,
+  "outTokens": 5
+ },
+ "S50-d": {
+  "pid": "S50-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 729,
+  "timedOut": false,
+  "inTokens": 588,
+  "outTokens": 5
+ },
+ "S29-d": {
+  "pid": "S29-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 717,
+  "timedOut": false,
+  "inTokens": 610,
+  "outTokens": 5
+ },
+ "S10-d": {
+  "pid": "S10-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 701,
+  "timedOut": false,
+  "inTokens": 542,
+  "outTokens": 5
+ },
+ "S57-d": {
+  "pid": "S57-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 721,
+  "timedOut": false,
+  "inTokens": 528,
+  "outTokens": 6
+ },
+ "S38-d": {
+  "pid": "S38-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 701,
+  "timedOut": false,
+  "inTokens": 601,
+  "outTokens": 5
+ },
+ "S09-d": {
+  "pid": "S09-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 749,
+  "timedOut": false,
+  "inTokens": 504,
+  "outTokens": 6
+ },
+ "S13-d": {
+  "pid": "S13-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 700,
+  "timedOut": false,
+  "inTokens": 457,
+  "outTokens": 5
+ },
+ "S51-d": {
+  "pid": "S51-d",
+  "pick": "unparseable",
+  "raw": "The task is to locate a specific controller and action, and report its file path, names, route and the MediatR request it dispatches. That is mostly a lookup, but it also requires reading the action b",
+  "ms": 2582,
+  "timedOut": false,
+  "inTokens": 403,
+  "outTokens": 207
+ },
+ "S35-a": {
+  "pid": "S35-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 969,
+  "timedOut": false,
+  "inTokens": 660,
+  "outTokens": 6
+ },
+ "S53-a": {
+  "pid": "S53-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 744,
+  "timedOut": false,
+  "inTokens": 710,
+  "outTokens": 5
+ },
+ "S30-a": {
+  "pid": "S30-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 706,
+  "timedOut": false,
+  "inTokens": 728,
+  "outTokens": 5
+ },
+ "S49-a": {
+  "pid": "S49-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 696,
+  "timedOut": false,
+  "inTokens": 708,
+  "outTokens": 5
+ },
+ "S58-a": {
+  "pid": "S58-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 686,
+  "timedOut": false,
+  "inTokens": 815,
+  "outTokens": 5
+ },
+ "S43-a": {
+  "pid": "S43-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 676,
+  "timedOut": false,
+  "inTokens": 606,
+  "outTokens": 5
+ },
+ "S31-a": {
+  "pid": "S31-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 715,
+  "timedOut": false,
+  "inTokens": 570,
+  "outTokens": 5
+ },
+ "S45-a": {
+  "pid": "S45-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 777,
+  "timedOut": false,
+  "inTokens": 661,
+  "outTokens": 5
+ },
+ "S20-a": {
+  "pid": "S20-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 693,
+  "timedOut": false,
+  "inTokens": 505,
+  "outTokens": 6
+ },
+ "S14-a": {
+  "pid": "S14-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 774,
+  "timedOut": false,
+  "inTokens": 783,
+  "outTokens": 5
+ },
+ "S40-a": {
+  "pid": "S40-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 737,
+  "timedOut": false,
+  "inTokens": 767,
+  "outTokens": 5
+ },
+ "S44-a": {
+  "pid": "S44-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1367,
+  "timedOut": false,
+  "inTokens": 724,
+  "outTokens": 5
+ },
+ "S49-b": {
+  "pid": "S49-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 719,
+  "timedOut": false,
+  "inTokens": 395,
+  "outTokens": 5
+ },
+ "S44-b": {
+  "pid": "S44-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 673,
+  "timedOut": false,
+  "inTokens": 391,
+  "outTokens": 5
+ },
+ "S53-b": {
+  "pid": "S53-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 689,
+  "timedOut": false,
+  "inTokens": 381,
+  "outTokens": 5
+ },
+ "S43-b": {
+  "pid": "S43-b",
+  "pick": "unparseable",
+  "raw": "The task is to locate test files that use InternalUrlSigner and report paths, class names, and how each uses it. It's primarily a search task, but \"how each uses it\" adds a small descriptive element. ",
+  "ms": 1822,
+  "timedOut": false,
+  "inTokens": 392,
+  "outTokens": 141
+ },
+ "S14-b": {
+  "pid": "S14-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 688,
+  "timedOut": false,
+  "inTokens": 395,
+  "outTokens": 5
+ },
+ "S58-b": {
+  "pid": "S58-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 692,
+  "timedOut": false,
+  "inTokens": 405,
+  "outTokens": 5
+ },
+ "S40-b": {
+  "pid": "S40-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 688,
+  "timedOut": false,
+  "inTokens": 412,
+  "outTokens": 5
+ },
+ "S30-b": {
+  "pid": "S30-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 764,
+  "timedOut": false,
+  "inTokens": 399,
+  "outTokens": 5
+ },
+ "S31-b": {
+  "pid": "S31-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 669,
+  "timedOut": false,
+  "inTokens": 362,
+  "outTokens": 5
+ },
+ "S20-b": {
+  "pid": "S20-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 678,
+  "timedOut": false,
+  "inTokens": 363,
+  "outTokens": 6
+ },
+ "S35-b": {
+  "pid": "S35-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 722,
+  "timedOut": false,
+  "inTokens": 388,
+  "outTokens": 6
+ },
+ "S45-b": {
+  "pid": "S45-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 750,
+  "timedOut": false,
+  "inTokens": 384,
+  "outTokens": 5
+ },
+ "S20-c": {
+  "pid": "S20-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1714,
+  "timedOut": false,
+  "inTokens": 614,
+  "outTokens": 6
+ },
+ "S53-c": {
+  "pid": "S53-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 722,
+  "timedOut": false,
+  "inTokens": 860,
+  "outTokens": 5
+ },
+ "S40-c": {
+  "pid": "S40-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 767,
+  "timedOut": false,
+  "inTokens": 876,
+  "outTokens": 5
+ },
+ "S14-c": {
+  "pid": "S14-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 946,
+  "timedOut": false,
+  "inTokens": 815,
+  "outTokens": 5
+ },
+ "S49-c": {
+  "pid": "S49-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 755,
+  "timedOut": false,
+  "inTokens": 785,
+  "outTokens": 5
+ },
+ "S45-c": {
+  "pid": "S45-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 745,
+  "timedOut": false,
+  "inTokens": 749,
+  "outTokens": 5
+ },
+ "S35-c": {
+  "pid": "S35-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 700,
+  "timedOut": false,
+  "inTokens": 725,
+  "outTokens": 6
+ },
+ "S43-c": {
+  "pid": "S43-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 705,
+  "timedOut": false,
+  "inTokens": 656,
+  "outTokens": 5
+ },
+ "S31-c": {
+  "pid": "S31-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 688,
+  "timedOut": false,
+  "inTokens": 636,
+  "outTokens": 5
+ },
+ "S30-c": {
+  "pid": "S30-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 729,
+  "timedOut": false,
+  "inTokens": 773,
+  "outTokens": 5
+ },
+ "S44-c": {
+  "pid": "S44-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 730,
+  "timedOut": false,
+  "inTokens": 782,
+  "outTokens": 5
+ },
+ "S58-c": {
+  "pid": "S58-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 707,
+  "timedOut": false,
+  "inTokens": 848,
+  "outTokens": 5
+ },
+ "S35-d": {
+  "pid": "S35-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 707,
+  "timedOut": false,
+  "inTokens": 584,
+  "outTokens": 5
+ },
+ "S30-d": {
+  "pid": "S30-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 722,
+  "timedOut": false,
+  "inTokens": 628,
+  "outTokens": 5
+ },
+ "S20-d": {
+  "pid": "S20-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 680,
+  "timedOut": false,
+  "inTokens": 515,
+  "outTokens": 6
+ },
+ "S45-d": {
+  "pid": "S45-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 715,
+  "timedOut": false,
+  "inTokens": 628,
+  "outTokens": 5
+ },
+ "S31-d": {
+  "pid": "S31-d",
+  "pick": "unparseable",
+  "raw": "The task is a search: find where a member is defined and list every usage with file, line, method, and default. It does ask for the default value and the enclosing method, and for noting why candidate",
+  "ms": 2412,
+  "timedOut": false,
+  "inTokens": 529,
+  "outTokens": 211
+ },
+ "S58-d": {
+  "pid": "S58-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 698,
+  "timedOut": false,
+  "inTokens": 625,
+  "outTokens": 5
+ },
+ "S40-d": {
+  "pid": "S40-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 734,
+  "timedOut": false,
+  "inTokens": 649,
+  "outTokens": 5
+ },
+ "S14-d": {
+  "pid": "S14-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 895,
+  "timedOut": false,
+  "inTokens": 639,
+  "outTokens": 5
+ },
+ "S43-d": {
+  "pid": "S43-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 720,
+  "timedOut": false,
+  "inTokens": 498,
+  "outTokens": 5
+ },
+ "S44-d": {
+  "pid": "S44-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 744,
+  "timedOut": false,
+  "inTokens": 609,
+  "outTokens": 5
+ },
+ "S53-d": {
+  "pid": "S53-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 732,
+  "timedOut": false,
+  "inTokens": 588,
+  "outTokens": 5
+ },
+ "S49-d": {
+  "pid": "S49-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 685,
+  "timedOut": false,
+  "inTokens": 598,
+  "outTokens": 5
+ },
+ "S60-a": {
+  "pid": "S60-a",
+  "pick": "unparseable",
+  "raw": "The task is mostly locating files, but it also asks for the column names and types each migration adds, which means reading the migration content. That goes beyond a bare list of locations, though it ",
+  "ms": 1310,
+  "timedOut": false,
+  "inTokens": 618,
+  "outTokens": 92
+ },
+ "S42-a": {
+  "pid": "S42-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 785,
+  "timedOut": false,
+  "inTokens": 802,
+  "outTokens": 5
+ },
+ "S24-a": {
+  "pid": "S24-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 729,
+  "timedOut": false,
+  "inTokens": 674,
+  "outTokens": 5
+ },
+ "S25-a": {
+  "pid": "S25-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 696,
+  "timedOut": false,
+  "inTokens": 778,
+  "outTokens": 5
+ },
+ "S18-a": {
+  "pid": "S18-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 730,
+  "timedOut": false,
+  "inTokens": 782,
+  "outTokens": 5
+ },
+ "S46-a": {
+  "pid": "S46-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 702,
+  "timedOut": false,
+  "inTokens": 815,
+  "outTokens": 5
+ },
+ "S34-a": {
+  "pid": "S34-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 678,
+  "timedOut": false,
+  "inTokens": 663,
+  "outTokens": 6
+ },
+ "S59-a": {
+  "pid": "S59-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 754,
+  "timedOut": false,
+  "inTokens": 739,
+  "outTokens": 5
+ },
+ "S01-a": {
+  "pid": "S01-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 799,
+  "timedOut": false,
+  "inTokens": 739,
+  "outTokens": 5
+ },
+ "S19-a": {
+  "pid": "S19-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 749,
+  "timedOut": false,
+  "inTokens": 550,
+  "outTokens": 5
+ },
+ "S28-a": {
+  "pid": "S28-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 711,
+  "timedOut": false,
+  "inTokens": 571,
+  "outTokens": 5
+ },
+ "S02-a": {
+  "pid": "S02-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 653,
+  "timedOut": false,
+  "inTokens": 689,
+  "outTokens": 5
+ },
+ "S42-b": {
+  "pid": "S42-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 757,
+  "timedOut": false,
+  "inTokens": 384,
+  "outTokens": 5
+ },
+ "S60-b": {
+  "pid": "S60-b",
+  "pick": "unparseable",
+  "raw": "The task is mostly locating files, but it also asks for the column names each migration adds. Those names have to be read from the migration contents, though that is only light extraction. The answer ",
+  "ms": 1813,
+  "timedOut": false,
+  "inTokens": 389,
+  "outTokens": 150
+ },
+ "S24-b": {
+  "pid": "S24-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 715,
+  "timedOut": false,
+  "inTokens": 397,
+  "outTokens": 5
+ },
+ "S02-b": {
+  "pid": "S02-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 687,
+  "timedOut": false,
+  "inTokens": 387,
+  "outTokens": 5
+ },
+ "S01-b": {
+  "pid": "S01-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 690,
+  "timedOut": false,
+  "inTokens": 384,
+  "outTokens": 5
+ },
+ "S46-b": {
+  "pid": "S46-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 730,
+  "timedOut": false,
+  "inTokens": 388,
+  "outTokens": 5
+ },
+ "S18-b": {
+  "pid": "S18-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 674,
+  "timedOut": false,
+  "inTokens": 411,
+  "outTokens": 5
+ },
+ "S19-b": {
+  "pid": "S19-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 718,
+  "timedOut": false,
+  "inTokens": 349,
+  "outTokens": 6
+ },
+ "S34-b": {
+  "pid": "S34-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 694,
+  "timedOut": false,
+  "inTokens": 376,
+  "outTokens": 6
+ },
+ "S25-b": {
+  "pid": "S25-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 676,
+  "timedOut": false,
+  "inTokens": 394,
+  "outTokens": 5
+ },
+ "S59-b": {
+  "pid": "S59-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 692,
+  "timedOut": false,
+  "inTokens": 411,
+  "outTokens": 5
+ },
+ "S28-b": {
+  "pid": "S28-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 857,
+  "timedOut": false,
+  "inTokens": 368,
+  "outTokens": 5
+ },
+ "S01-c": {
+  "pid": "S01-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1758,
+  "timedOut": false,
+  "inTokens": 825,
+  "outTokens": 5
+ },
+ "S02-c": {
+  "pid": "S02-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 710,
+  "timedOut": false,
+  "inTokens": 817,
+  "outTokens": 5
+ },
+ "S25-c": {
+  "pid": "S25-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 780,
+  "timedOut": false,
+  "inTokens": 851,
+  "outTokens": 5
+ },
+ "S19-c": {
+  "pid": "S19-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 661,
+  "timedOut": false,
+  "inTokens": 619,
+  "outTokens": 5
+ },
+ "S42-c": {
+  "pid": "S42-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 764,
+  "timedOut": false,
+  "inTokens": 788,
+  "outTokens": 5
+ },
+ "S24-c": {
+  "pid": "S24-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 686,
+  "timedOut": false,
+  "inTokens": 777,
+  "outTokens": 5
+ },
+ "S18-c": {
+  "pid": "S18-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 713,
+  "timedOut": false,
+  "inTokens": 828,
+  "outTokens": 5
+ },
+ "S34-c": {
+  "pid": "S34-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 688,
+  "timedOut": false,
+  "inTokens": 738,
+  "outTokens": 5
+ },
+ "S28-c": {
+  "pid": "S28-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 694,
+  "timedOut": false,
+  "inTokens": 517,
+  "outTokens": 5
+ },
+ "S46-c": {
+  "pid": "S46-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 706,
+  "timedOut": false,
+  "inTokens": 874,
+  "outTokens": 5
+ },
+ "S60-c": {
+  "pid": "S60-c",
+  "pick": "unparseable",
+  "raw": "The task asks to find migration files and report which columns they add, with types and nullability. That means locating the files and reading their AddColumn calls to report their content. Nothing is",
+  "ms": 1419,
+  "timedOut": false,
+  "inTokens": 601,
+  "outTokens": 101
+ },
+ "S59-c": {
+  "pid": "S59-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 698,
+  "timedOut": false,
+  "inTokens": 788,
+  "outTokens": 5
+ },
+ "S34-d": {
+  "pid": "S34-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 899,
+  "timedOut": false,
+  "inTokens": 551,
+  "outTokens": 6
+ },
+ "S19-d": {
+  "pid": "S19-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 728,
+  "timedOut": false,
+  "inTokens": 487,
+  "outTokens": 6
+ },
+ "S59-d": {
+  "pid": "S59-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 673,
+  "timedOut": false,
+  "inTokens": 577,
+  "outTokens": 5
+ },
+ "S25-d": {
+  "pid": "S25-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 723,
+  "timedOut": false,
+  "inTokens": 534,
+  "outTokens": 5
+ },
+ "S24-d": {
+  "pid": "S24-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 703,
+  "timedOut": false,
+  "inTokens": 532,
+  "outTokens": 5
+ },
+ "S28-d": {
+  "pid": "S28-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 707,
+  "timedOut": false,
+  "inTokens": 431,
+  "outTokens": 5
+ },
+ "S42-d": {
+  "pid": "S42-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 763,
+  "timedOut": false,
+  "inTokens": 509,
+  "outTokens": 5
+ },
+ "S60-d": {
+  "pid": "S60-d",
+  "pick": "unparseable",
+  "raw": "The task asks for file locations, but it also asks for the columns each migration adds, which means reading migration content. That is more than pure location. Still, it is reading and reporting, with",
+  "ms": 1277,
+  "timedOut": false,
+  "inTokens": 456,
+  "outTokens": 77
+ },
+ "S18-d": {
+  "pid": "S18-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 705,
+  "timedOut": false,
+  "inTokens": 492,
+  "outTokens": 5
+ },
+ "S01-d": {
+  "pid": "S01-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 689,
+  "timedOut": false,
+  "inTokens": 504,
+  "outTokens": 5
+ },
+ "S46-d": {
+  "pid": "S46-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 852,
+  "timedOut": false,
+  "inTokens": 495,
+  "outTokens": 5
+ },
+ "S02-d": {
+  "pid": "S02-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 724,
+  "timedOut": false,
+  "inTokens": 488,
+  "outTokens": 5
+ }
+}

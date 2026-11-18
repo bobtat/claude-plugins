@@ -1,0 +1,2162 @@
+{
+ "S41-a": {
+  "pid": "S41-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1106,
+  "timedOut": false,
+  "inTokens": 741,
+  "outTokens": 83
+ },
+ "S03-a": {
+  "pid": "S03-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1263,
+  "timedOut": false,
+  "inTokens": 969,
+  "outTokens": 104
+ },
+ "S37-a": {
+  "pid": "S37-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 948,
+  "timedOut": false,
+  "inTokens": 512,
+  "outTokens": 5
+ },
+ "S32-a": {
+  "pid": "S32-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 998,
+  "timedOut": false,
+  "inTokens": 922,
+  "outTokens": 101
+ },
+ "S16-a": {
+  "pid": "S16-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1282,
+  "timedOut": false,
+  "inTokens": 935,
+  "outTokens": 97
+ },
+ "S52-a": {
+  "pid": "S52-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1089,
+  "timedOut": false,
+  "inTokens": 904,
+  "outTokens": 5
+ },
+ "S15-a": {
+  "pid": "S15-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 653,
+  "timedOut": false,
+  "inTokens": 466,
+  "outTokens": 5
+ },
+ "S04-a": {
+  "pid": "S04-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1158,
+  "timedOut": false,
+  "inTokens": 865,
+  "outTokens": 109
+ },
+ "S22-a": {
+  "pid": "S22-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1014,
+  "timedOut": false,
+  "inTokens": 984,
+  "outTokens": 54
+ },
+ "S12-a": {
+  "pid": "S12-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 643,
+  "timedOut": false,
+  "inTokens": 810,
+  "outTokens": 5
+ },
+ "S54-a": {
+  "pid": "S54-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1434,
+  "timedOut": false,
+  "inTokens": 496,
+  "outTokens": 131
+ },
+ "S05-a": {
+  "pid": "S05-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1114,
+  "timedOut": false,
+  "inTokens": 824,
+  "outTokens": 91
+ },
+ "S54-b": {
+  "pid": "S54-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 656,
+  "timedOut": false,
+  "inTokens": 288,
+  "outTokens": 5
+ },
+ "S32-b": {
+  "pid": "S32-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 867,
+  "timedOut": false,
+  "inTokens": 342,
+  "outTokens": 5
+ },
+ "S12-b": {
+  "pid": "S12-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1015,
+  "timedOut": false,
+  "inTokens": 323,
+  "outTokens": 116
+ },
+ "S52-b": {
+  "pid": "S52-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 666,
+  "timedOut": false,
+  "inTokens": 328,
+  "outTokens": 5
+ },
+ "S15-b": {
+  "pid": "S15-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 785,
+  "timedOut": false,
+  "inTokens": 293,
+  "outTokens": 5
+ },
+ "S41-b": {
+  "pid": "S41-b",
+  "pick": "unparseable",
+  "raw": "The task involves running tests, diffing a commit, and root-causing a regression across possibly many files. That's agentic debugging requiring careful reasoning, so the most demanding part favors the",
+  "ms": 818,
+  "timedOut": false,
+  "inTokens": 296,
+  "outTokens": 69
+ },
+ "S04-b": {
+  "pid": "S04-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 630,
+  "timedOut": false,
+  "inTokens": 333,
+  "outTokens": 6
+ },
+ "S16-b": {
+  "pid": "S16-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 932,
+  "timedOut": false,
+  "inTokens": 359,
+  "outTokens": 5
+ },
+ "S22-b": {
+  "pid": "S22-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1388,
+  "timedOut": false,
+  "inTokens": 321,
+  "outTokens": 174
+ },
+ "S03-b": {
+  "pid": "S03-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1128,
+  "timedOut": false,
+  "inTokens": 332,
+  "outTokens": 127
+ },
+ "S37-b": {
+  "pid": "S37-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 664,
+  "timedOut": false,
+  "inTokens": 288,
+  "outTokens": 5
+ },
+ "S05-b": {
+  "pid": "S05-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1287,
+  "timedOut": false,
+  "inTokens": 305,
+  "outTokens": 157
+ },
+ "S52-c": {
+  "pid": "S52-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 673,
+  "timedOut": false,
+  "inTokens": 720,
+  "outTokens": 5
+ },
+ "S12-c": {
+  "pid": "S12-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 625,
+  "timedOut": false,
+  "inTokens": 651,
+  "outTokens": 5
+ },
+ "S41-c": {
+  "pid": "S41-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1653,
+  "timedOut": false,
+  "inTokens": 548,
+  "outTokens": 5
+ },
+ "S15-c": {
+  "pid": "S15-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 863,
+  "timedOut": false,
+  "inTokens": 488,
+  "outTokens": 5
+ },
+ "S03-c": {
+  "pid": "S03-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 941,
+  "timedOut": false,
+  "inTokens": 713,
+  "outTokens": 104
+ },
+ "S16-c": {
+  "pid": "S16-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 647,
+  "timedOut": false,
+  "inTokens": 731,
+  "outTokens": 5
+ },
+ "S05-c": {
+  "pid": "S05-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 684,
+  "timedOut": false,
+  "inTokens": 674,
+  "outTokens": 5
+ },
+ "S04-c": {
+  "pid": "S04-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 722,
+  "timedOut": false,
+  "inTokens": 654,
+  "outTokens": 5
+ },
+ "S37-c": {
+  "pid": "S37-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 612,
+  "timedOut": false,
+  "inTokens": 495,
+  "outTokens": 6
+ },
+ "S22-c": {
+  "pid": "S22-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 633,
+  "timedOut": false,
+  "inTokens": 748,
+  "outTokens": 5
+ },
+ "S32-c": {
+  "pid": "S32-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 706,
+  "timedOut": false,
+  "inTokens": 748,
+  "outTokens": 5
+ },
+ "S54-c": {
+  "pid": "S54-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1356,
+  "timedOut": false,
+  "inTokens": 484,
+  "outTokens": 168
+ },
+ "S03-d": {
+  "pid": "S03-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 699,
+  "timedOut": false,
+  "inTokens": 582,
+  "outTokens": 5
+ },
+ "S04-d": {
+  "pid": "S04-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 648,
+  "timedOut": false,
+  "inTokens": 546,
+  "outTokens": 5
+ },
+ "S52-d": {
+  "pid": "S52-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 657,
+  "timedOut": false,
+  "inTokens": 529,
+  "outTokens": 5
+ },
+ "S22-d": {
+  "pid": "S22-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 618,
+  "timedOut": false,
+  "inTokens": 503,
+  "outTokens": 5
+ },
+ "S32-d": {
+  "pid": "S32-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 728,
+  "timedOut": false,
+  "inTokens": 601,
+  "outTokens": 5
+ },
+ "S41-d": {
+  "pid": "S41-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 654,
+  "timedOut": false,
+  "inTokens": 485,
+  "outTokens": 5
+ },
+ "S16-d": {
+  "pid": "S16-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 679,
+  "timedOut": false,
+  "inTokens": 544,
+  "outTokens": 5
+ },
+ "S37-d": {
+  "pid": "S37-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 716,
+  "timedOut": false,
+  "inTokens": 437,
+  "outTokens": 5
+ },
+ "S15-d": {
+  "pid": "S15-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 647,
+  "timedOut": false,
+  "inTokens": 398,
+  "outTokens": 5
+ },
+ "S05-d": {
+  "pid": "S05-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 713,
+  "timedOut": false,
+  "inTokens": 503,
+  "outTokens": 5
+ },
+ "S12-d": {
+  "pid": "S12-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 671,
+  "timedOut": false,
+  "inTokens": 502,
+  "outTokens": 5
+ },
+ "S54-d": {
+  "pid": "S54-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1996,
+  "timedOut": false,
+  "inTokens": 474,
+  "outTokens": 245
+ },
+ "S36-a": {
+  "pid": "S36-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 620,
+  "timedOut": false,
+  "inTokens": 541,
+  "outTokens": 6
+ },
+ "S56-a": {
+  "pid": "S56-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 632,
+  "timedOut": false,
+  "inTokens": 456,
+  "outTokens": 5
+ },
+ "S08-a": {
+  "pid": "S08-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1201,
+  "timedOut": false,
+  "inTokens": 592,
+  "outTokens": 125
+ },
+ "S06-a": {
+  "pid": "S06-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1012,
+  "timedOut": false,
+  "inTokens": 756,
+  "outTokens": 84
+ },
+ "S26-a": {
+  "pid": "S26-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 685,
+  "timedOut": false,
+  "inTokens": 736,
+  "outTokens": 5
+ },
+ "S17-a": {
+  "pid": "S17-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 711,
+  "timedOut": false,
+  "inTokens": 764,
+  "outTokens": 5
+ },
+ "S33-a": {
+  "pid": "S33-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 768,
+  "timedOut": false,
+  "inTokens": 536,
+  "outTokens": 5
+ },
+ "S27-a": {
+  "pid": "S27-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 920,
+  "timedOut": false,
+  "inTokens": 588,
+  "outTokens": 70
+ },
+ "S55-a": {
+  "pid": "S55-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1354,
+  "timedOut": false,
+  "inTokens": 613,
+  "outTokens": 190
+ },
+ "S11-a": {
+  "pid": "S11-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1115,
+  "timedOut": false,
+  "inTokens": 715,
+  "outTokens": 101
+ },
+ "S21-a": {
+  "pid": "S21-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 643,
+  "timedOut": false,
+  "inTokens": 760,
+  "outTokens": 5
+ },
+ "S47-a": {
+  "pid": "S47-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 816,
+  "timedOut": false,
+  "inTokens": 812,
+  "outTokens": 50
+ },
+ "S21-b": {
+  "pid": "S21-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 870,
+  "timedOut": false,
+  "inTokens": 357,
+  "outTokens": 58
+ },
+ "S36-b": {
+  "pid": "S36-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 998,
+  "timedOut": false,
+  "inTokens": 312,
+  "outTokens": 106
+ },
+ "S17-b": {
+  "pid": "S17-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1190,
+  "timedOut": false,
+  "inTokens": 366,
+  "outTokens": 129
+ },
+ "S11-b": {
+  "pid": "S11-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 652,
+  "timedOut": false,
+  "inTokens": 373,
+  "outTokens": 5
+ },
+ "S08-b": {
+  "pid": "S08-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1771,
+  "timedOut": false,
+  "inTokens": 319,
+  "outTokens": 277
+ },
+ "S55-b": {
+  "pid": "S55-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1216,
+  "timedOut": false,
+  "inTokens": 308,
+  "outTokens": 133
+ },
+ "S47-b": {
+  "pid": "S47-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 637,
+  "timedOut": false,
+  "inTokens": 394,
+  "outTokens": 5
+ },
+ "S33-b": {
+  "pid": "S33-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 753,
+  "timedOut": false,
+  "inTokens": 302,
+  "outTokens": 5
+ },
+ "S56-b": {
+  "pid": "S56-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1110,
+  "timedOut": false,
+  "inTokens": 316,
+  "outTokens": 121
+ },
+ "S26-b": {
+  "pid": "S26-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 681,
+  "timedOut": false,
+  "inTokens": 388,
+  "outTokens": 5
+ },
+ "S06-b": {
+  "pid": "S06-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 675,
+  "timedOut": false,
+  "inTokens": 377,
+  "outTokens": 5
+ },
+ "S27-b": {
+  "pid": "S27-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 695,
+  "timedOut": false,
+  "inTokens": 339,
+  "outTokens": 6
+ },
+ "S06-c": {
+  "pid": "S06-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1012,
+  "timedOut": false,
+  "inTokens": 793,
+  "outTokens": 103
+ },
+ "S36-c": {
+  "pid": "S36-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 694,
+  "timedOut": false,
+  "inTokens": 543,
+  "outTokens": 5
+ },
+ "S56-c": {
+  "pid": "S56-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 637,
+  "timedOut": false,
+  "inTokens": 495,
+  "outTokens": 6
+ },
+ "S26-c": {
+  "pid": "S26-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 853,
+  "timedOut": false,
+  "inTokens": 709,
+  "outTokens": 72
+ },
+ "S55-c": {
+  "pid": "S55-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 650,
+  "timedOut": false,
+  "inTokens": 625,
+  "outTokens": 6
+ },
+ "S08-c": {
+  "pid": "S08-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 662,
+  "timedOut": false,
+  "inTokens": 612,
+  "outTokens": 5
+ },
+ "S17-c": {
+  "pid": "S17-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 738,
+  "timedOut": false,
+  "inTokens": 748,
+  "outTokens": 5
+ },
+ "S33-c": {
+  "pid": "S33-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 640,
+  "timedOut": false,
+  "inTokens": 556,
+  "outTokens": 5
+ },
+ "S21-c": {
+  "pid": "S21-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 685,
+  "timedOut": false,
+  "inTokens": 695,
+  "outTokens": 5
+ },
+ "S27-c": {
+  "pid": "S27-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1028,
+  "timedOut": false,
+  "inTokens": 604,
+  "outTokens": 80
+ },
+ "S47-c": {
+  "pid": "S47-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 667,
+  "timedOut": false,
+  "inTokens": 762,
+  "outTokens": 5
+ },
+ "S11-c": {
+  "pid": "S11-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1143,
+  "timedOut": false,
+  "inTokens": 727,
+  "outTokens": 114
+ },
+ "S26-d": {
+  "pid": "S26-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 639,
+  "timedOut": false,
+  "inTokens": 563,
+  "outTokens": 5
+ },
+ "S17-d": {
+  "pid": "S17-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 661,
+  "timedOut": false,
+  "inTokens": 516,
+  "outTokens": 5
+ },
+ "S11-d": {
+  "pid": "S11-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1015,
+  "timedOut": false,
+  "inTokens": 570,
+  "outTokens": 94
+ },
+ "S06-d": {
+  "pid": "S06-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 646,
+  "timedOut": false,
+  "inTokens": 525,
+  "outTokens": 5
+ },
+ "S36-d": {
+  "pid": "S36-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 695,
+  "timedOut": false,
+  "inTokens": 350,
+  "outTokens": 5
+ },
+ "S21-d": {
+  "pid": "S21-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 676,
+  "timedOut": false,
+  "inTokens": 501,
+  "outTokens": 5
+ },
+ "S27-d": {
+  "pid": "S27-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 709,
+  "timedOut": false,
+  "inTokens": 450,
+  "outTokens": 5
+ },
+ "S33-d": {
+  "pid": "S33-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 733,
+  "timedOut": false,
+  "inTokens": 323,
+  "outTokens": 5
+ },
+ "S08-d": {
+  "pid": "S08-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1064,
+  "timedOut": false,
+  "inTokens": 448,
+  "outTokens": 5
+ },
+ "S56-d": {
+  "pid": "S56-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 712,
+  "timedOut": false,
+  "inTokens": 382,
+  "outTokens": 5
+ },
+ "S55-d": {
+  "pid": "S55-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 691,
+  "timedOut": false,
+  "inTokens": 370,
+  "outTokens": 6
+ },
+ "S47-d": {
+  "pid": "S47-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 708,
+  "timedOut": false,
+  "inTokens": 549,
+  "outTokens": 5
+ },
+ "S29-a": {
+  "pid": "S29-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1050,
+  "timedOut": false,
+  "inTokens": 879,
+  "outTokens": 5
+ },
+ "S07-a": {
+  "pid": "S07-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 804,
+  "timedOut": false,
+  "inTokens": 818,
+  "outTokens": 5
+ },
+ "S38-a": {
+  "pid": "S38-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 899,
+  "timedOut": false,
+  "inTokens": 713,
+  "outTokens": 5
+ },
+ "S09-a": {
+  "pid": "S09-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 976,
+  "timedOut": false,
+  "inTokens": 571,
+  "outTokens": 91
+ },
+ "S23-a": {
+  "pid": "S23-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 700,
+  "timedOut": false,
+  "inTokens": 676,
+  "outTokens": 5
+ },
+ "S57-a": {
+  "pid": "S57-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 674,
+  "timedOut": false,
+  "inTokens": 622,
+  "outTokens": 5
+ },
+ "S48-a": {
+  "pid": "S48-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 643,
+  "timedOut": false,
+  "inTokens": 718,
+  "outTokens": 5
+ },
+ "S51-a": {
+  "pid": "S51-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 641,
+  "timedOut": false,
+  "inTokens": 390,
+  "outTokens": 5
+ },
+ "S10-a": {
+  "pid": "S10-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 683,
+  "timedOut": false,
+  "inTokens": 709,
+  "outTokens": 5
+ },
+ "S13-a": {
+  "pid": "S13-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 629,
+  "timedOut": false,
+  "inTokens": 406,
+  "outTokens": 6
+ },
+ "S39-a": {
+  "pid": "S39-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1241,
+  "timedOut": false,
+  "inTokens": 632,
+  "outTokens": 143
+ },
+ "S50-a": {
+  "pid": "S50-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1295,
+  "timedOut": false,
+  "inTokens": 749,
+  "outTokens": 5
+ },
+ "S09-b": {
+  "pid": "S09-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1259,
+  "timedOut": false,
+  "inTokens": 345,
+  "outTokens": 127
+ },
+ "S39-b": {
+  "pid": "S39-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1434,
+  "timedOut": false,
+  "inTokens": 332,
+  "outTokens": 137
+ },
+ "S57-b": {
+  "pid": "S57-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 1719,
+  "timedOut": false,
+  "inTokens": 325,
+  "outTokens": 5
+ },
+ "S29-b": {
+  "pid": "S29-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1647,
+  "timedOut": false,
+  "inTokens": 363,
+  "outTokens": 5
+ },
+ "S51-b": {
+  "pid": "S51-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 649,
+  "timedOut": false,
+  "inTokens": 289,
+  "outTokens": 5
+ },
+ "S38-b": {
+  "pid": "S38-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 622,
+  "timedOut": false,
+  "inTokens": 323,
+  "outTokens": 5
+ },
+ "S10-b": {
+  "pid": "S10-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 919,
+  "timedOut": false,
+  "inTokens": 323,
+  "outTokens": 92
+ },
+ "S50-b": {
+  "pid": "S50-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1082,
+  "timedOut": false,
+  "inTokens": 351,
+  "outTokens": 111
+ },
+ "S07-b": {
+  "pid": "S07-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 669,
+  "timedOut": false,
+  "inTokens": 345,
+  "outTokens": 5
+ },
+ "S48-b": {
+  "pid": "S48-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 646,
+  "timedOut": false,
+  "inTokens": 357,
+  "outTokens": 5
+ },
+ "S23-b": {
+  "pid": "S23-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 669,
+  "timedOut": false,
+  "inTokens": 355,
+  "outTokens": 5
+ },
+ "S13-b": {
+  "pid": "S13-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 665,
+  "timedOut": false,
+  "inTokens": 278,
+  "outTokens": 6
+ },
+ "S07-c": {
+  "pid": "S07-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 951,
+  "timedOut": false,
+  "inTokens": 987,
+  "outTokens": 61
+ },
+ "S48-c": {
+  "pid": "S48-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 909,
+  "timedOut": false,
+  "inTokens": 861,
+  "outTokens": 5
+ },
+ "S10-c": {
+  "pid": "S10-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1457,
+  "timedOut": false,
+  "inTokens": 725,
+  "outTokens": 182
+ },
+ "S23-c": {
+  "pid": "S23-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1056,
+  "timedOut": false,
+  "inTokens": 808,
+  "outTokens": 5
+ },
+ "S29-c": {
+  "pid": "S29-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 801,
+  "timedOut": false,
+  "inTokens": 867,
+  "outTokens": 52
+ },
+ "S50-c": {
+  "pid": "S50-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 636,
+  "timedOut": false,
+  "inTokens": 761,
+  "outTokens": 5
+ },
+ "S57-c": {
+  "pid": "S57-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1284,
+  "timedOut": false,
+  "inTokens": 622,
+  "outTokens": 124
+ },
+ "S13-c": {
+  "pid": "S13-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 625,
+  "timedOut": false,
+  "inTokens": 513,
+  "outTokens": 5
+ },
+ "S09-c": {
+  "pid": "S09-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 641,
+  "timedOut": false,
+  "inTokens": 506,
+  "outTokens": 6
+ },
+ "S38-c": {
+  "pid": "S38-c",
+  "pick": "unparseable",
+  "raw": "This task requires reading a real codebase, tracing cross-process write coordination, and producing a nuanced architectural recommendation with file-level evidence. That is the most demanding kind of ",
+  "ms": 1004,
+  "timedOut": false,
+  "inTokens": 779,
+  "outTokens": 80
+ },
+ "S51-c": {
+  "pid": "S51-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 610,
+  "timedOut": false,
+  "inTokens": 376,
+  "outTokens": 5
+ },
+ "S39-c": {
+  "pid": "S39-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 991,
+  "timedOut": false,
+  "inTokens": 722,
+  "outTokens": 87
+ },
+ "S39-d": {
+  "pid": "S39-d",
+  "pick": "unparseable",
+  "raw": "This task involves exploring an unfamiliar codebase, following conventions across controllers, reasoning about error mapping, deciding sync vs. background job, adding a test, and ensuring the solution",
+  "ms": 1037,
+  "timedOut": false,
+  "inTokens": 544,
+  "outTokens": 99
+ },
+ "S23-d": {
+  "pid": "S23-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 655,
+  "timedOut": false,
+  "inTokens": 549,
+  "outTokens": 5
+ },
+ "S07-d": {
+  "pid": "S07-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 665,
+  "timedOut": false,
+  "inTokens": 575,
+  "outTokens": 5
+ },
+ "S48-d": {
+  "pid": "S48-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 692,
+  "timedOut": false,
+  "inTokens": 575,
+  "outTokens": 5
+ },
+ "S50-d": {
+  "pid": "S50-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 973,
+  "timedOut": false,
+  "inTokens": 525,
+  "outTokens": 92
+ },
+ "S29-d": {
+  "pid": "S29-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 701,
+  "timedOut": false,
+  "inTokens": 547,
+  "outTokens": 5
+ },
+ "S10-d": {
+  "pid": "S10-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 640,
+  "timedOut": false,
+  "inTokens": 479,
+  "outTokens": 5
+ },
+ "S57-d": {
+  "pid": "S57-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 602,
+  "timedOut": false,
+  "inTokens": 465,
+  "outTokens": 6
+ },
+ "S38-d": {
+  "pid": "S38-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 710,
+  "timedOut": false,
+  "inTokens": 538,
+  "outTokens": 41
+ },
+ "S09-d": {
+  "pid": "S09-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 833,
+  "timedOut": false,
+  "inTokens": 441,
+  "outTokens": 6
+ },
+ "S13-d": {
+  "pid": "S13-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 709,
+  "timedOut": false,
+  "inTokens": 394,
+  "outTokens": 5
+ },
+ "S51-d": {
+  "pid": "S51-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 615,
+  "timedOut": false,
+  "inTokens": 340,
+  "outTokens": 5
+ },
+ "S35-a": {
+  "pid": "S35-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 618,
+  "timedOut": false,
+  "inTokens": 597,
+  "outTokens": 5
+ },
+ "S53-a": {
+  "pid": "S53-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 929,
+  "timedOut": false,
+  "inTokens": 647,
+  "outTokens": 69
+ },
+ "S30-a": {
+  "pid": "S30-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 664,
+  "timedOut": false,
+  "inTokens": 665,
+  "outTokens": 5
+ },
+ "S49-a": {
+  "pid": "S49-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 643,
+  "timedOut": false,
+  "inTokens": 645,
+  "outTokens": 5
+ },
+ "S58-a": {
+  "pid": "S58-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 631,
+  "timedOut": false,
+  "inTokens": 752,
+  "outTokens": 5
+ },
+ "S43-a": {
+  "pid": "S43-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1811,
+  "timedOut": false,
+  "inTokens": 543,
+  "outTokens": 237
+ },
+ "S31-a": {
+  "pid": "S31-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 675,
+  "timedOut": false,
+  "inTokens": 507,
+  "outTokens": 5
+ },
+ "S45-a": {
+  "pid": "S45-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 913,
+  "timedOut": false,
+  "inTokens": 598,
+  "outTokens": 5
+ },
+ "S20-a": {
+  "pid": "S20-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 718,
+  "timedOut": false,
+  "inTokens": 442,
+  "outTokens": 5
+ },
+ "S14-a": {
+  "pid": "S14-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 911,
+  "timedOut": false,
+  "inTokens": 720,
+  "outTokens": 5
+ },
+ "S40-a": {
+  "pid": "S40-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1224,
+  "timedOut": false,
+  "inTokens": 704,
+  "outTokens": 140
+ },
+ "S44-a": {
+  "pid": "S44-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1017,
+  "timedOut": false,
+  "inTokens": 661,
+  "outTokens": 5
+ },
+ "S49-b": {
+  "pid": "S49-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 662,
+  "timedOut": false,
+  "inTokens": 332,
+  "outTokens": 5
+ },
+ "S44-b": {
+  "pid": "S44-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1696,
+  "timedOut": false,
+  "inTokens": 328,
+  "outTokens": 244
+ },
+ "S53-b": {
+  "pid": "S53-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1265,
+  "timedOut": false,
+  "inTokens": 318,
+  "outTokens": 139
+ },
+ "S43-b": {
+  "pid": "S43-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1635,
+  "timedOut": false,
+  "inTokens": 329,
+  "outTokens": 186
+ },
+ "S14-b": {
+  "pid": "S14-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1130,
+  "timedOut": false,
+  "inTokens": 332,
+  "outTokens": 95
+ },
+ "S58-b": {
+  "pid": "S58-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 671,
+  "timedOut": false,
+  "inTokens": 342,
+  "outTokens": 5
+ },
+ "S40-b": {
+  "pid": "S40-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 641,
+  "timedOut": false,
+  "inTokens": 349,
+  "outTokens": 5
+ },
+ "S30-b": {
+  "pid": "S30-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1367,
+  "timedOut": false,
+  "inTokens": 336,
+  "outTokens": 172
+ },
+ "S31-b": {
+  "pid": "S31-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1126,
+  "timedOut": false,
+  "inTokens": 299,
+  "outTokens": 117
+ },
+ "S20-b": {
+  "pid": "S20-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 667,
+  "timedOut": false,
+  "inTokens": 300,
+  "outTokens": 5
+ },
+ "S35-b": {
+  "pid": "S35-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 1197,
+  "timedOut": false,
+  "inTokens": 325,
+  "outTokens": 108
+ },
+ "S45-b": {
+  "pid": "S45-b",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 650,
+  "timedOut": false,
+  "inTokens": 321,
+  "outTokens": 6
+ },
+ "S20-c": {
+  "pid": "S20-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 669,
+  "timedOut": false,
+  "inTokens": 551,
+  "outTokens": 5
+ },
+ "S53-c": {
+  "pid": "S53-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1126,
+  "timedOut": false,
+  "inTokens": 797,
+  "outTokens": 64
+ },
+ "S40-c": {
+  "pid": "S40-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1347,
+  "timedOut": false,
+  "inTokens": 813,
+  "outTokens": 156
+ },
+ "S14-c": {
+  "pid": "S14-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 717,
+  "timedOut": false,
+  "inTokens": 752,
+  "outTokens": 5
+ },
+ "S49-c": {
+  "pid": "S49-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 702,
+  "timedOut": false,
+  "inTokens": 722,
+  "outTokens": 5
+ },
+ "S45-c": {
+  "pid": "S45-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 689,
+  "timedOut": false,
+  "inTokens": 686,
+  "outTokens": 5
+ },
+ "S35-c": {
+  "pid": "S35-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 636,
+  "timedOut": false,
+  "inTokens": 662,
+  "outTokens": 5
+ },
+ "S43-c": {
+  "pid": "S43-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 681,
+  "timedOut": false,
+  "inTokens": 593,
+  "outTokens": 5
+ },
+ "S31-c": {
+  "pid": "S31-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 681,
+  "timedOut": false,
+  "inTokens": 573,
+  "outTokens": 5
+ },
+ "S30-c": {
+  "pid": "S30-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1399,
+  "timedOut": false,
+  "inTokens": 710,
+  "outTokens": 173
+ },
+ "S44-c": {
+  "pid": "S44-c",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 655,
+  "timedOut": false,
+  "inTokens": 719,
+  "outTokens": 6
+ },
+ "S58-c": {
+  "pid": "S58-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 655,
+  "timedOut": false,
+  "inTokens": 785,
+  "outTokens": 5
+ },
+ "S35-d": {
+  "pid": "S35-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 616,
+  "timedOut": false,
+  "inTokens": 521,
+  "outTokens": 5
+ },
+ "S30-d": {
+  "pid": "S30-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 645,
+  "timedOut": false,
+  "inTokens": 565,
+  "outTokens": 5
+ },
+ "S20-d": {
+  "pid": "S20-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 2091,
+  "timedOut": false,
+  "inTokens": 452,
+  "outTokens": 97
+ },
+ "S45-d": {
+  "pid": "S45-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 652,
+  "timedOut": false,
+  "inTokens": 565,
+  "outTokens": 5
+ },
+ "S31-d": {
+  "pid": "S31-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 700,
+  "timedOut": false,
+  "inTokens": 466,
+  "outTokens": 5
+ },
+ "S58-d": {
+  "pid": "S58-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 682,
+  "timedOut": false,
+  "inTokens": 562,
+  "outTokens": 5
+ },
+ "S40-d": {
+  "pid": "S40-d",
+  "pick": "unparseable",
+  "raw": "haiku is too weak for this: it involves reading repo conventions, running dotnet ef in two providers, checking generated migrations for unexpected changes, building, and running tests. sonnet handles ",
+  "ms": 1295,
+  "timedOut": false,
+  "inTokens": 586,
+  "outTokens": 148
+ },
+ "S14-d": {
+  "pid": "S14-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 848,
+  "timedOut": false,
+  "inTokens": 576,
+  "outTokens": 5
+ },
+ "S43-d": {
+  "pid": "S43-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 645,
+  "timedOut": false,
+  "inTokens": 435,
+  "outTokens": 5
+ },
+ "S44-d": {
+  "pid": "S44-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 664,
+  "timedOut": false,
+  "inTokens": 546,
+  "outTokens": 5
+ },
+ "S53-d": {
+  "pid": "S53-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 656,
+  "timedOut": false,
+  "inTokens": 525,
+  "outTokens": 5
+ },
+ "S49-d": {
+  "pid": "S49-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 645,
+  "timedOut": false,
+  "inTokens": 535,
+  "outTokens": 5
+ },
+ "S60-a": {
+  "pid": "S60-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 872,
+  "timedOut": false,
+  "inTokens": 555,
+  "outTokens": 5
+ },
+ "S42-a": {
+  "pid": "S42-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 680,
+  "timedOut": false,
+  "inTokens": 739,
+  "outTokens": 5
+ },
+ "S24-a": {
+  "pid": "S24-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 635,
+  "timedOut": false,
+  "inTokens": 611,
+  "outTokens": 5
+ },
+ "S25-a": {
+  "pid": "S25-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1117,
+  "timedOut": false,
+  "inTokens": 715,
+  "outTokens": 119
+ },
+ "S18-a": {
+  "pid": "S18-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 652,
+  "timedOut": false,
+  "inTokens": 719,
+  "outTokens": 5
+ },
+ "S46-a": {
+  "pid": "S46-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 660,
+  "timedOut": false,
+  "inTokens": 752,
+  "outTokens": 5
+ },
+ "S34-a": {
+  "pid": "S34-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1155,
+  "timedOut": false,
+  "inTokens": 600,
+  "outTokens": 108
+ },
+ "S59-a": {
+  "pid": "S59-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 645,
+  "timedOut": false,
+  "inTokens": 676,
+  "outTokens": 5
+ },
+ "S01-a": {
+  "pid": "S01-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1302,
+  "timedOut": false,
+  "inTokens": 676,
+  "outTokens": 135
+ },
+ "S19-a": {
+  "pid": "S19-a",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 656,
+  "timedOut": false,
+  "inTokens": 487,
+  "outTokens": 6
+ },
+ "S28-a": {
+  "pid": "S28-a",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 716,
+  "timedOut": false,
+  "inTokens": 508,
+  "outTokens": 5
+ },
+ "S02-a": {
+  "pid": "S02-a",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 982,
+  "timedOut": false,
+  "inTokens": 626,
+  "outTokens": 94
+ },
+ "S42-b": {
+  "pid": "S42-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 662,
+  "timedOut": false,
+  "inTokens": 321,
+  "outTokens": 5
+ },
+ "S60-b": {
+  "pid": "S60-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 641,
+  "timedOut": false,
+  "inTokens": 326,
+  "outTokens": 5
+ },
+ "S24-b": {
+  "pid": "S24-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1009,
+  "timedOut": false,
+  "inTokens": 334,
+  "outTokens": 5
+ },
+ "S02-b": {
+  "pid": "S02-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1436,
+  "timedOut": false,
+  "inTokens": 324,
+  "outTokens": 156
+ },
+ "S01-b": {
+  "pid": "S01-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1001,
+  "timedOut": false,
+  "inTokens": 321,
+  "outTokens": 92
+ },
+ "S46-b": {
+  "pid": "S46-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 625,
+  "timedOut": false,
+  "inTokens": 325,
+  "outTokens": 5
+ },
+ "S18-b": {
+  "pid": "S18-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1643,
+  "timedOut": false,
+  "inTokens": 348,
+  "outTokens": 5
+ },
+ "S19-b": {
+  "pid": "S19-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 2197,
+  "timedOut": false,
+  "inTokens": 286,
+  "outTokens": 151
+ },
+ "S34-b": {
+  "pid": "S34-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 687,
+  "timedOut": false,
+  "inTokens": 313,
+  "outTokens": 5
+ },
+ "S25-b": {
+  "pid": "S25-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 687,
+  "timedOut": false,
+  "inTokens": 331,
+  "outTokens": 5
+ },
+ "S59-b": {
+  "pid": "S59-b",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 662,
+  "timedOut": false,
+  "inTokens": 348,
+  "outTokens": 5
+ },
+ "S28-b": {
+  "pid": "S28-b",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 695,
+  "timedOut": false,
+  "inTokens": 305,
+  "outTokens": 5
+ },
+ "S01-c": {
+  "pid": "S01-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 642,
+  "timedOut": false,
+  "inTokens": 762,
+  "outTokens": 5
+ },
+ "S02-c": {
+  "pid": "S02-c",
+  "pick": "unparseable",
+  "raw": "This task requires reading a real codebase, tracing DI registration and callers, and producing a careful severity-ordered review with file:line references. That is complex, multi-step reasoning, so th",
+  "ms": 877,
+  "timedOut": false,
+  "inTokens": 754,
+  "outTokens": 71
+ },
+ "S25-c": {
+  "pid": "S25-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 650,
+  "timedOut": false,
+  "inTokens": 788,
+  "outTokens": 5
+ },
+ "S19-c": {
+  "pid": "S19-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 631,
+  "timedOut": false,
+  "inTokens": 556,
+  "outTokens": 5
+ },
+ "S42-c": {
+  "pid": "S42-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 678,
+  "timedOut": false,
+  "inTokens": 725,
+  "outTokens": 5
+ },
+ "S24-c": {
+  "pid": "S24-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 686,
+  "timedOut": false,
+  "inTokens": 714,
+  "outTokens": 5
+ },
+ "S18-c": {
+  "pid": "S18-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1221,
+  "timedOut": false,
+  "inTokens": 765,
+  "outTokens": 131
+ },
+ "S34-c": {
+  "pid": "S34-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 648,
+  "timedOut": false,
+  "inTokens": 675,
+  "outTokens": 5
+ },
+ "S28-c": {
+  "pid": "S28-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 678,
+  "timedOut": false,
+  "inTokens": 454,
+  "outTokens": 5
+ },
+ "S46-c": {
+  "pid": "S46-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1169,
+  "timedOut": false,
+  "inTokens": 811,
+  "outTokens": 123
+ },
+ "S60-c": {
+  "pid": "S60-c",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 666,
+  "timedOut": false,
+  "inTokens": 538,
+  "outTokens": 5
+ },
+ "S59-c": {
+  "pid": "S59-c",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1174,
+  "timedOut": false,
+  "inTokens": 725,
+  "outTokens": 111
+ },
+ "S34-d": {
+  "pid": "S34-d",
+  "pick": "sonnet",
+  "raw": "sonnet",
+  "ms": 679,
+  "timedOut": false,
+  "inTokens": 488,
+  "outTokens": 6
+ },
+ "S19-d": {
+  "pid": "S19-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 670,
+  "timedOut": false,
+  "inTokens": 424,
+  "outTokens": 5
+ },
+ "S59-d": {
+  "pid": "S59-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 630,
+  "timedOut": false,
+  "inTokens": 514,
+  "outTokens": 5
+ },
+ "S25-d": {
+  "pid": "S25-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 697,
+  "timedOut": false,
+  "inTokens": 471,
+  "outTokens": 5
+ },
+ "S24-d": {
+  "pid": "S24-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 691,
+  "timedOut": false,
+  "inTokens": 469,
+  "outTokens": 5
+ },
+ "S28-d": {
+  "pid": "S28-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 934,
+  "timedOut": false,
+  "inTokens": 368,
+  "outTokens": 5
+ },
+ "S42-d": {
+  "pid": "S42-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 785,
+  "timedOut": false,
+  "inTokens": 446,
+  "outTokens": 5
+ },
+ "S60-d": {
+  "pid": "S60-d",
+  "pick": "haiku",
+  "raw": "haiku",
+  "ms": 708,
+  "timedOut": false,
+  "inTokens": 393,
+  "outTokens": 5
+ },
+ "S18-d": {
+  "pid": "S18-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 682,
+  "timedOut": false,
+  "inTokens": 429,
+  "outTokens": 5
+ },
+ "S01-d": {
+  "pid": "S01-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 1252,
+  "timedOut": false,
+  "inTokens": 441,
+  "outTokens": 5
+ },
+ "S46-d": {
+  "pid": "S46-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 658,
+  "timedOut": false,
+  "inTokens": 432,
+  "outTokens": 5
+ },
+ "S02-d": {
+  "pid": "S02-d",
+  "pick": "inherit",
+  "raw": "inherit",
+  "ms": 651,
+  "timedOut": false,
+  "inTokens": 425,
+  "outTokens": 5
+ }
+}
