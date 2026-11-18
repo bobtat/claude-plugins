@@ -1,0 +1,11 @@
+{
+  "name": "subagent-router",
+  "version": "0.1.0",
+  "description": "Routes search subagents to a cheaper model.",
+  "userConfig": {
+    "mode": { "type": "string", "title": "Mode", "default": "observe", "options": ["observe", "route", "off"], "description": "observe records what would be routed and changes nothing; route acts; off does nothing." },
+    "locatingRoute": { "type": "string", "title": "Locating route", "default": "haiku", "description": "Model for tasks that only locate things: haiku, sonnet, or parent to leave them alone." },
+    "readingRoute": { "type": "string", "title": "Reading route", "default": "parent", "description": "Model for read-and-summarise tasks. Off (parent) by default: Sonnet was less complete in 17 of 20 measured reading tasks and wrong in 1." }
+  },
+  "types": "./types/index.d.ts"
+}
