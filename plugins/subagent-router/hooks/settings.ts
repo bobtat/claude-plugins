@@ -1,6 +1,6 @@
 import type { EngineInterface } from 'claude-code'
 import type { Mode, Route, Settings } from '../types'
-import { clean } from './clean'
+import { clean, hasHidden } from './clean'
 import { familyOf } from './model-rank'
 
 const PLUGIN = 'subagent-router'
@@ -27,8 +27,10 @@ function sameValue(a: unknown, b: unknown): boolean {
   }
 }
 
+// Without the remark, "route" with a zero-width space would be reported as an unrecognised "route".
 function shown(value: unknown): string {
-  return value === null ? 'null' : `"${clean(value, 40)}"`
+  if (value === null) return 'null'
+  return hasHidden(value) ? `"${clean(value, 40)}" (hidden characters removed)` : `"${clean(value, 40)}"`
 }
 
 function parseMode(value: unknown, notes: string[]): Mode {

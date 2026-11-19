@@ -45,6 +45,15 @@ test('a note shows the bad value cleaned', async () => {
   expect(s.notes[0]!.includes('\n')).toBe(false)
 })
 
+test('a note on a value that held hidden characters says they were removed from what it shows', async () => {
+  const s = parseSettings({ mode: 'route\u200B', locatingRoute: 'hai\u202Eku' }, undefined)
+  expect(s.mode).toBe('off')
+  expect(s.routes.locating).toBe('parent')
+  expect(s.notes.length).toBe(2)
+  for (const note of s.notes) expect(note.includes('hidden characters')).toBe(true)
+  expect(parseSettings({ mode: 'turbo' }, undefined).notes[0]!.includes('hidden')).toBe(false)
+})
+
 test('a forced subagent model makes the router stand down', async () => {
   for (const v of ['1', 'true', 'yes'])
     expect(parseSettings({ mode: 'route' }, v).standingDown).toBe('CLAUDE_CODE_SUBAGENT_MODEL_FORCE is set')

@@ -22,6 +22,11 @@ export function clean(text: unknown, max: number): string {
   return points.slice(0, Math.max(0, max - 1)).join('') + '…'
 }
 
+export function hasHidden(text: unknown): boolean {
+  const raw = asText(text)
+  return raw.replace(HIDDEN, '') !== raw
+}
+
 export const ID_MAX = 80
 
 export const cleanId = (value: unknown): string | null => clean(value, ID_MAX) || null
