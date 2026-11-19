@@ -35,7 +35,30 @@ test('usage reported for a recorded agent is added to its record', async ($, on)
   expect(w.sets.length).toBe(writes)
 })
 
-const OPUS_TURN = { input_tokens: 100, output_tokens: 10, cache_read_input_tokens: 1000, cache_creation_input_tokens: 0, model: 'claude-opus-5-5' }
+test('a record whose turns were only partly priced is marked, whichever came first', async ($, on) => {
+  const w = world(on)
+  on('turn.complete', (_$, e) => ({ text: e.answer }))
+  const spawn = spawner($)
+  await spawn()
+  await spawn({ model: 'sonnet' })
+  const end = (agentId: string, model: string) =>
+    $.turn.complete({ agentId, turnId: 't1', reason: 'answer', isAborted: false, answer: 'done', durationMs: 1, usage: { ...OPUS_TURN, model } })
+
+  await end('a1', 'claude-opus-5-5')
+  expect(records(w)[0]?.partial).toBe(undefined)
+  await end('a1', 'made-up-model')
+  expect(records(w)[0]?.partial).toBe(true)
+  await end('a1', 'claude-opus-5-5')
+  expect(records(w)[0]?.partial).toBe(true)
+
+  await end('a2', 'made-up-model')
+  expect(records(w)[1]).toEqual(expect.objectContaining({ usd: null }))
+  expect(records(w)[1]?.partial).toBe(undefined)
+  await end('a2', 'claude-opus-5-5')
+  expect(records(w)[1]?.partial).toBe(true)
+})
+
+const OPUS_TURN ={ input_tokens: 100, output_tokens: 10, cache_read_input_tokens: 1000, cache_creation_input_tokens: 0, model: 'claude-opus-5-5' }
 
 test('stored numbers that are not numbers are counted as nothing before a turn is added', async ($, on) => {
   const w = world(on)

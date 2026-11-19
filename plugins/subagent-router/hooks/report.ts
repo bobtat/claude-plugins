@@ -25,6 +25,7 @@ type Run = {
   hasStarted: boolean
   usd: number | undefined
   tokens: number
+  isPartial: boolean
   row: string
 }
 
@@ -49,8 +50,9 @@ function grouped(n: number): string | undefined {
   return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
-function dollars(usd: number): string | undefined {
+function dollars(usd: number, isAtLeast = false): string | undefined {
   if (!printable(usd)) return undefined
+  if (isAtLeast) return `estimated cost at least $${usd.toFixed(2)}`
   return usd > 0 && usd < 0.005 ? 'estimated cost under $0.01' : `estimated cost $${usd.toFixed(2)}`
 }
 
@@ -77,11 +79,11 @@ function modelText(started: string, ran: string): string {
   return `on ${ran || started || 'a model not named'}`
 }
 
-function costText(usd: number | undefined, tokens: number): string {
+function costText(usd: number | undefined, tokens: number, isPartial: boolean): string {
   const shown = tokens > 0 ? grouped(tokens) : undefined
   const parts = shown === undefined ? [] : [`${shown} tokens`]
   const cost = usd === undefined ? undefined : dollars(usd)
-  if (cost !== undefined) parts.push(cost)
+  if (cost !== undefined) parts.push(isPartial ? `${cost} for the priced turns` : cost)
   else if (parts.length > 0 || usd !== undefined) parts.push('not priced')
   return parts.join(', ')
 }
@@ -96,14 +98,15 @@ function runOf(value: Record<string, unknown>): Run {
   const hasStarted = started !== '' || agentId !== ''
   const usd = usdOf(value.usd)
   const tokens = tokensOf(value.tokens)
+  const isPartial = value.partial === true
   const reason = field(value.reason)
   const parts = [field(value.agentType) || 'unknown type', kind ?? '-', outcomeText(outcome, hasStarted, field(value.target), value.overridden === true), reason]
   if (hasStarted) parts.push(modelText(started, ran))
-  const cost = costText(usd, tokens)
+  const cost = costText(usd, tokens, isPartial)
   if (cost !== '') parts.push(cost)
   if (agentId !== '') parts.push(`agent ${agentId}`)
   const row = clean(`- ${parts.join(' | ')}: ${typeof value.description === 'string' ? clean(value.description, DESCRIPTION_MAX) : ''}`, LINE_MAX)
-  return { kind, outcome, reason, hasStarted, usd, tokens, row }
+  return { kind, outcome, reason, hasStarted, usd, tokens, isPartial, row }
 }
 
 function routeIsOff(kind: Kind, routes: Settings['routes'], routeOff: Kind[]): boolean {
@@ -127,7 +130,7 @@ function totalLine(kind: Kind, runs: Run[], a: ReportInput): string {
   const unpriced = ran.filter((r) => r.usd === undefined)
   const unpricedTokens = grouped(unpriced.reduce((sum, r) => sum + r.tokens, 0))
   const tokens = unpricedTokens !== undefined && unpricedTokens !== '0' ? ` (${unpricedTokens} tokens)` : ''
-  const pricedText = dollars(priced)
+  const pricedText = dollars(priced, ran.some((r) => r.usd !== undefined && r.isPartial))
   let cost: string
   if (unpriced.length === 0) cost = pricedText ?? 'cost not priced'
   else if (pricedText === undefined || unpriced.length === ran.length) cost = `cost not priced${tokens}`

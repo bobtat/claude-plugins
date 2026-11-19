@@ -14,6 +14,7 @@ export type DecisionRecord = {
   started: string | null       // model the spawn result named
   ran: string | null           // model of the last turn that reported usage
   agentId: string | null; tokens: Tokens | null; usd: number | null
+  partial?: true               // usd leaves out turns whose model had no listed price; absent: not known to
 }
 export type RoutedEntry = { v: 1; target: Family; baseline: string }
 export type Index = { v: 1; ids: string[]; outOfScope: number; wouldRefuse: number }

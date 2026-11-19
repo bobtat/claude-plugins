@@ -16,11 +16,15 @@ export async function addUsage($: $, e: TurnCompleteInput): Promise<void> {
   const rec = await readRecord($, id)
   if (rec === undefined) return
   // State can hold what another plugin or version wrote, and a string here would concatenate rather than add.
-  const had: Partial<Record<keyof Tokens, unknown>> = typeof rec.tokens === 'object' && rec.tokens !== null ? rec.tokens : {}
+  const hadTurn = typeof rec.tokens === 'object' && rec.tokens !== null
+  const had: Partial<Record<keyof Tokens, unknown>> = rec.tokens ?? {}
   const hadUsd = typeof rec.usd === 'number' && Number.isFinite(rec.usd) ? rec.usd : null
   const price = priceOf(usage.model)
+  // Turns already counted with no cost to show for them were unpriced, so a priced turn now makes usd partial too.
+  const isPartial = rec.partial === true || (price === undefined ? hadUsd !== null : hadTurn && hadUsd === null)
   await saveRecord($, id, {
     ...rec,
+    ...(isPartial ? { partial: true as const } : {}),
     tokens: {
       input: tokenCount(had.input) + tokenCount(usage.input_tokens),
       output: tokenCount(had.output) + tokenCount(usage.output_tokens),

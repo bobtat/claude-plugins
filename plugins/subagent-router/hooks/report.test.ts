@@ -73,6 +73,16 @@ test('nested spawns left alone are counted on their own line, not as baseline le
   expect(out.includes('Left alone while the baseline was learned')).toBe(false)
 })
 
+test('a run priced for only some of its turns says its cost covers the priced turns, and its total says at least', async () => {
+  const out = show([rec({ usd: 0.12, partial: true, description: 'find the partial one' }), rec({ agentId: 'a2', usd: 0.2 })])
+  const row = out.split('\n').find((l) => l.includes('find the partial one'))!
+  expect(row.includes('estimated cost $0.12 for the priced turns')).toBe(true)
+  expect(out.includes('locating: 2 run(s), 2 would be routed, estimated cost at least $0.32')).toBe(true)
+  const whole = show([rec({ usd: 0.12 })])
+  expect(whole.includes('for the priced turns')).toBe(false)
+  expect(whole.includes('at least')).toBe(false)
+})
+
 test('a record that never started is shown as not started', async () => {
   const row = show([rec({ started: null, agentId: null, description: 'find the lexer' })]).split('\n').find(l => l.includes('find the lexer'))!
   expect(row.includes('not started')).toBe(true)
