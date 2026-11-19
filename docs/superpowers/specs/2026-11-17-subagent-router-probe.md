@@ -108,7 +108,7 @@ Q13: In a real session, a spawn raised by a plugin's `$.agent.spawn` reaches oth
 
 ## Test kit (K1 to K12)
 
-K1: Yes.
+K1: Yes, for the probe build. Task 6 replaced that build with the router and removed the K1 tests from `kit.test.ts`; the bullets below record what they showed.
 
 - **Pass-through:** with stand-ins for `fs.write`, `process.hookEnv`, `session.model` and `env.get` (`mock.env`), plus `session.messages` for a nested spawn, the probe's `agent.spawn` hook passes the spawn on deep-equal to the input. It records `spawn` (including its `keys`), `started` and `q6`.
 - **Self-spawn:** with `SUBAGENT_ROUTER_PROBE_SELFSPAWN=1`, the probe raises at most one self-spawn per load. Its own spawn hook does not see that spawn, and the `self-spawn` record holds the caller's result, which under the kit is `{ model: 'inherit' }`.
@@ -130,7 +130,7 @@ K5: Yes, but the test does not fail. An unanswered `$` call rejects with `HooksE
 
 K6: Yes. A file in `hooks/` imports a sibling with no extension. This holds both from a test file and from the hooks module itself; the latter was checked with an experiment that was not committed.
 
-K7: The event's shape is a "no"; `next.origin` is a "yes". Under the kit, an inline plugin's `$.agent.spawn` arrives in the Agent tool's shape, `{ tool: 'Agent', prompt, description, run_in_background: true, subagent_type?, model? }`, with no `provider`, `parentModel`, `fork` or `tool_use_id`. `next.origin` is `{ plugin: 'other', tier: 'user' }` both at the test's hook and in the plugin under test. The caller's call resolves to `{ model: <its model or 'inherit'> }`, with no `agentId`. Working form: tests must not expect `AgentSpawnInput` fields on a plugin-raised spawn, and should key on `next.origin`. A real session delivers the full input (Q13).
+K7: The event's shape is a "no"; `next.origin` is a "yes". Under the kit, an inline plugin's `$.agent.spawn` arrives in the Agent tool's shape, `{ tool: 'Agent', prompt, description, run_in_background: true, subagent_type?, model? }`, with no `provider`, `parentModel`, `fork` or `tool_use_id`. `next.origin` is `{ plugin: 'other', tier: 'user' }` both at the test's hook and in the plugin under test (since Task 6, `kit.test.ts` pins it at the test's hook only; the check in the plugin under test went with the probe build). The caller's call resolves to `{ model: <its model or 'inherit'> }`, with no `agentId`. Working form: tests must not expect `AgentSpawnInput` fields on a plugin-raised spawn, and should key on `next.origin`. A real session delivers the full input (Q13).
 
 K8: It starts fresh. Module memory does not carry over between tests of one file, so no reset export is needed.
 
@@ -138,7 +138,7 @@ K9: No. A stand-in that throws is skipped, and the call then rejects as unanswer
 
 K10: Yes. `ui.log` lines made before and after `next` have reached the stand-in by the time the awaited `$.agent.spawn` resolves.
 
-K11: Partly. An inline plugin's `$.config.set` does reach the plugin under test's `config.set` hook. But under the kit the event is only `{ key, value }`, with no `origin`; the caller is in `next.origin`. Working form: read the caller from `next.origin`, or raise `config.set` on the engine's `$` with a full `ConfigSetInput`.
+K11: Partly. An inline plugin's `$.config.set` does reach the plugin under test's `config.set` hook (shown by the probe build; since Task 6, `kit.test.ts` pins the event and `next.origin` at the test's hook only). But under the kit the event is only `{ key, value }`, with no `origin`; the caller is in `next.origin`. Working form: read the caller from `next.origin`, or raise `config.set` on the engine's `$` with a full `ConfigSetInput`.
 
 K12: Yes. A hook that returns the `{ deny }` its own `next(e)` answered is accepted, and the spawn resolves to it. A deny the hook makes up itself after `next` answered fails the hook, and its `.catch` is asked.
 

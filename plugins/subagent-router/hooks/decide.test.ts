@@ -1,5 +1,6 @@
 import { expect, test } from 'claude-code/testing'
-import { anyRouteApplies, precheck, resolve } from './decide'
+import type { AgentSpawnInput } from 'claude-code'
+import { anyRouteApplies, factsOf, precheck, resolve } from './decide'
 
 const base = { mode: 'route', standingDown: false, spawnerWasRouted: false, isFork: false, isResume: false,
   isTeammate: false, isWorkflow: false, byOtherPlugin: false, isBuiltIn: true, subagentType: 'Explore', hasExplicitModel: false } as const
@@ -65,4 +66,58 @@ test('whether any route can apply', async () => {
   expect(anyRouteApplies(routes, undefined)).toBe(false)
   expect(anyRouteApplies({ locating: 'parent', reading: 'parent' }, 'claude-opus-5-5')).toBe(false)
   expect(anyRouteApplies({ locating: 'parent', reading: 'sonnet' }, 'claude-opus-5-5')).toBe(true)
+})
+
+const ENGINE = { plugin: 'engine', tier: 'core' } as const
+// As a session delivers it: model, cwd and name are keys even when unset.
+const event: AgentSpawnInput = {
+  tool_use_id: 'toolu_1', prompt: 'find callers of ParseMap', description: 'find callers', subagentType: 'Explore',
+  provider: ENGINE, parentModel: 'claude-opus-5-5', background: false, fork: false, model: undefined, cwd: undefined, name: undefined,
+}
+const known = { mode: 'route', standingDown: false, spawnerWasRouted: false } as const
+
+test('an engine spawn of a built-in agent is in scope', async () => {
+  const facts = factsOf(event, ENGINE, known)
+  expect(facts).toEqual({ ...known, isFork: false, isResume: false, isTeammate: false, isWorkflow: false,
+    byOtherPlugin: false, isBuiltIn: true, subagentType: 'Explore', hasExplicitModel: false })
+  expect(precheck(facts)).toBe('pick')
+})
+
+test('the same spawn raised by another plugin is passed on', async () => {
+  const facts = factsOf(event, { plugin: 'other', tier: 'user' }, known)
+  expect(facts.byOtherPlugin).toBe(true)
+  expect(precheck(facts)).toBe('pass')
+})
+
+test("a spawn under the router's own name is not another plugin's", async () => {
+  expect(factsOf(event, { plugin: 'subagent-router', tier: 'user' }, known).byOtherPlugin).toBe(false)
+})
+
+test('an event with no provider, or an agent type that is not text, is out of scope and nothing throws', async () => {
+  const noProvider = factsOf({ ...event, provider: undefined as never }, ENGINE, known)
+  expect(noProvider.isBuiltIn).toBe(false)
+  expect(precheck(noProvider)).toBe('pass')
+  const notText = factsOf({ ...event, subagentType: 7 as never }, ENGINE, known)
+  expect(notText.subagentType).toBe('')
+  expect(precheck(notText)).toBe('pass')
+})
+
+test('resume, workflow, teammate and fork each set their flag', async () => {
+  expect(factsOf({ ...event, resume: { agentId: 'a9' } }, ENGINE, known).isResume).toBe(true)
+  expect(factsOf({ ...event, workflow: { runId: 'wf_1', agentIndex: 1 } }, ENGINE, known).isWorkflow).toBe(true)
+  expect(factsOf({ ...event, isTeammate: true }, ENGINE, known).isTeammate).toBe(true)
+  expect(factsOf({ ...event, fork: true }, ENGINE, known).isFork).toBe(true)
+  const plain = factsOf(event, ENGINE, known)
+  expect([plain.isResume, plain.isWorkflow, plain.isTeammate, plain.isFork]).toEqual([false, false, false, false])
+})
+
+test('an unset model is not explicit, whether undefined or null, and a named one is', async () => {
+  expect(factsOf({ ...event, model: undefined }, ENGINE, known).hasExplicitModel).toBe(false)
+  expect(factsOf({ ...event, model: null as never }, ENGINE, known).hasExplicitModel).toBe(false)
+  expect(factsOf({ ...event, model: 'sonnet' }, ENGINE, known).hasExplicitModel).toBe(true)
+})
+
+test('what the hook already knows is carried through', async () => {
+  const facts = factsOf(event, ENGINE, { mode: 'off', standingDown: true, spawnerWasRouted: true })
+  expect([facts.mode, facts.standingDown, facts.spawnerWasRouted]).toEqual(['off', true, true])
 })

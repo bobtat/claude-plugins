@@ -1,5 +1,10 @@
 import { expect, test } from 'claude-code/testing'
-import { PRICES, estimateUsd, priceOf } from './prices'
+import { PRICES, estimateUsd, priceOf, tokenCount } from './prices'
+
+test('a token count is a finite, positive number, and anything else counts as zero', async () => {
+  expect(tokenCount(1234)).toBe(1234)
+  for (const n of [0, -5, Number.NaN, Number.POSITIVE_INFINITY, undefined, null, '12']) expect(tokenCount(n)).toBe(0)
+})
 
 const P = { input: 10, output: 50, cacheRead: 1, cacheWrite5m: 12, cacheWrite1h: 20 }
 

@@ -1,3 +1,4 @@
+import type { AgentSpawnInput, Origin } from 'claude-code'
 import type { Family, Kind, Mode, Route } from '../types'
 import { familyOf, ranksBelow } from './model-rank'
 
@@ -18,6 +19,29 @@ export type SpawnFacts = {
 }
 
 const IN_SCOPE_TYPES: readonly string[] = ['Explore', 'general-purpose']
+
+export type SpawnEvent = Pick<AgentSpawnInput, 'subagentType' | 'fork' | 'resume' | 'isTeammate' | 'workflow' | 'provider' | 'model'>
+
+// Every field is read as if it could be missing or of the wrong type, because at run time it can be.
+export function factsOf(
+  e: SpawnEvent,
+  origin: Origin,
+  known: { mode: Mode; standingDown: boolean; spawnerWasRouted: boolean },
+): SpawnFacts {
+  return {
+    ...known,
+    isFork: e.fork === true,
+    isResume: e.resume !== undefined,
+    isTeammate: e.isTeammate === true,
+    isWorkflow: e.workflow !== undefined,
+    // A plugin's spawn arrives exactly like an engine one (probe Q13); only the origin tells them apart.
+    byOtherPlugin: origin?.plugin !== 'engine' && origin?.plugin !== 'subagent-router',
+    isBuiltIn: e.provider?.plugin === 'engine' && e.provider?.tier === 'core',
+    subagentType: typeof e.subagentType === 'string' ? e.subagentType : '',
+    // The key is present even when unset (probe), and an unset value may come as null.
+    hasExplicitModel: e.model != null,
+  }
+}
 
 export function precheck(f: SpawnFacts): Precheck {
   // Checked before the mode so that a routed agent cannot spawn further agents

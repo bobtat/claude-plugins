@@ -27,18 +27,20 @@ function containsVersion(modelId: string, key: string): boolean {
   return false
 }
 
-const count = (n: number | undefined): number => (typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 0)
+export function tokenCount(n: unknown): number {
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 0
+}
 
 export function estimateUsd(u: TurnUsage, p: Price): number {
-  const written = count(u.cache_creation_input_tokens)
-  const w5m = count(u.ephemeral_5m_input_tokens)
-  const w1h = count(u.ephemeral_1h_input_tokens)
+  const written = tokenCount(u.cache_creation_input_tokens)
+  const w5m = tokenCount(u.ephemeral_5m_input_tokens)
+  const w1h = tokenCount(u.ephemeral_1h_input_tokens)
   // Writes whose lifetime was not named are priced as five-minute writes, as /cost does.
   const unnamed = Math.max(0, written - w5m - w1h)
   const dollars =
-    count(u.input_tokens) * p.input +
-    count(u.output_tokens) * p.output +
-    count(u.cache_read_input_tokens) * p.cacheRead +
+    tokenCount(u.input_tokens) * p.input +
+    tokenCount(u.output_tokens) * p.output +
+    tokenCount(u.cache_read_input_tokens) * p.cacheRead +
     (w5m + unnamed) * p.cacheWrite5m +
     w1h * p.cacheWrite1h
   return dollars / 1_000_000

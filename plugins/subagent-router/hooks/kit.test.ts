@@ -1,5 +1,6 @@
-import { describe, expect, mock, test } from 'claude-code/testing'
+import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
+import type { Index } from '../types'
 
 import { register } from './register'
 
@@ -22,8 +23,6 @@ const SPAWN = {
   fork: false,
 } as const
 
-const NOTE = '\n\nEnd your reply with the word PROBE-OK.\n[subagent-router:routed v1]'
-
 // Inline plugins report back by rewriting turn.start's text, since their
 // register closes over nothing of this file.
 function reports(on: On) {
@@ -37,21 +36,6 @@ function reports(on: On) {
 
 const reported = (texts: string[]) => texts.map((text) => JSON.parse(text) as unknown)
 
-// What the probe build calls on $ for a spawn, answered; its records parsed.
-function probeStandIns(on: On, data: string, env: Record<string, string> = {}) {
-  const paths: string[] = []
-  const records: Record<string, unknown>[] = []
-  on('fs.write', (_$, e) => {
-    paths.push(e.path)
-    records.push(JSON.parse(e.text) as Record<string, unknown>)
-    return { value: undefined }
-  })
-  on('process.hookEnv', () => ({ value: { CLAUDE_PLUGIN_DATA: data } }))
-  on('session.model', () => ({ value: 'claude-opus-5-5' }))
-  mock.env(on, env)
-  return { paths, records }
-}
-
 function spawnsAt(on: On, answer: { model: string; agentId: string } | { deny: string } = { model: 'claude-haiku-4-5', agentId: 'agent-1' }) {
   const spawns: { e: unknown; origin: unknown }[] = []
   on('agent.spawn', (_$, e, next) => {
@@ -60,13 +44,6 @@ function spawnsAt(on: On, answer: { model: string; agentId: string } | { deny: s
   })
   return spawns
 }
-
-// The self-spawn runs after session.start has answered, so the awaited
-// $.session.start resolves before it; nothing else signals its end. It lands
-// within a few milliseconds, so this real-time wait has a wide margin. The
-// kit's environment has setTimeout, though the engine's typings omit it.
-declare const setTimeout: (run: () => void, ms: number) => unknown
-const selfSpawnSettled = () => new Promise<void>((resolve) => setTimeout(resolve, 100))
 
 function logsAt(on: On) {
   const logs: string[] = []
@@ -77,195 +54,29 @@ function logsAt(on: On) {
   return logs
 }
 
-describe('K1: the probe build', () => {
-  test('its agent.spawn hook passes the spawn on unchanged and records it before and after', async ($, on) => {
-    const { paths, records } = probeStandIns(on, 'data')
-    const spawns = spawnsAt(on)
+const settingsWith = (options: object) => ({ pluginConfigs: { 'subagent-router': { options } } })
 
-    const result = await $.agent.spawn(SPAWN)
+// The router's spawn hook runs in every test that raises agent.spawn. With mode off it
+// reads its settings and passes the spawn on, so what the test pins is the kit's alone.
+function routerOff(on: On) {
+  on('settings.read', (_$, e) => ({ value: (e.source === 'user' ? settingsWith({ mode: 'off' }) : {}) as never }))
+  mock.env(on, {})
+}
 
-    expect(spawns.map((s) => s.e)).toEqual([SPAWN])
-    expect(result).toEqual({ model: 'claude-haiku-4-5', agentId: 'agent-1' })
-    expect(records).toEqual([
-      {
-        ev: 'spawn',
-        keys: ['background', 'description', 'fork', 'parentModel', 'prompt', 'provider', 'subagentType', 'tool_use_id'],
-        subagentType: 'Explore',
-        provider: { plugin: 'engine', tier: 'core' },
-        model: null,
-        parentModel: 'claude-opus-5-5',
-        parentAgentId: null,
-        fork: false,
-        resume: null,
-        workflow: null,
-        isTeammate: null,
-        origin: { plugin: 'engine', tier: 'core' },
-        promptChars: SPAWN.prompt.length,
-        toolUseId: 'toolu_1',
-        sessionModel: 'claude-opus-5-5',
-      },
-      { ev: 'started', toolUseId: 'toolu_1', result: { model: 'claude-haiku-4-5', agentId: 'agent-1' } },
-      { ev: 'q6', mine: 'toolu_1', seen: 'toolu_1', seenBefore: null },
-    ])
-    for (const path of paths) expect(path).toMatch(/[\\/]data[\\/]probe[\\/]\d+-[0-9a-f-]{36}\.json$/)
+// What the router calls on $ for one spawn it records; the index writes it makes, in order.
+function routerRecording(on: On) {
+  const indexes: Index[] = []
+  on('settings.read', (_$, e) => ({ value: (e.source === 'user' ? settingsWith({ mode: 'route' }) : {}) as never }))
+  mock.env(on, {})
+  mock.clock(on)
+  on('session.model', () => ({ value: 'claude-opus-5-5' }))
+  on('agent.spawn', (_$, e) => ({ model: e.model ?? 'claude-opus-5-5', agentId: 'agent-1' }))
+  on('state.set', (_$, e, next) => {
+    if (e.key === 'index') indexes.push(e.value as Index)
+    return next(e)
   })
-
-  test('with the probe variables set, an Explore spawn gets the model and every spawn the note', async ($, on) => {
-    probeStandIns(on, 'data', { SUBAGENT_ROUTER_PROBE_MODEL: 'haiku', SUBAGENT_ROUTER_PROBE_NOTE: '1' })
-    const spawns = spawnsAt(on)
-
-    await $.agent.spawn(SPAWN)
-    await $.agent.spawn({ ...SPAWN, subagentType: 'general-purpose' })
-
-    expect(spawns.map((s) => s.e)).toEqual([
-      { ...SPAWN, model: 'haiku', prompt: SPAWN.prompt + NOTE },
-      { ...SPAWN, subagentType: 'general-purpose', prompt: SPAWN.prompt + NOTE },
-    ])
-  })
-
-  test("Q6: two overlapping spawns each record lastSpawn as read before their write and after their next", async ($, on) => {
-    const { records } = probeStandIns(on, 'data')
-    // Holds each spawn until both hooks have written lastSpawn, as two spawns
-    // of one turn overlap in a session.
-    let release = () => {}
-    const bothArrived = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    let firstArrived = () => {}
-    const firstIsWaiting = new Promise<void>((resolve) => {
-      firstArrived = resolve
-    })
-    let arrived = 0
-    on('agent.spawn', async (_$, e) => {
-      arrived += 1
-      if (arrived === 1) firstArrived()
-      if (arrived === 2) release()
-      await bothArrived
-      return { model: 'claude-haiku-4-5', agentId: `agent-${e.tool_use_id}` }
-    })
-
-    const first = $.agent.spawn({ ...SPAWN, tool_use_id: 'toolu_a' })
-    await firstIsWaiting
-    await Promise.all([first, $.agent.spawn({ ...SPAWN, tool_use_id: 'toolu_b' })])
-
-    // Under the kit the second spawn's hook reads the first's write, but the
-    // first, reading again after its next, still reads its own: the write the
-    // second made meanwhile does not reach it. Run A says what a session does.
-    expect(records.filter((r) => r.ev === 'q6')).toEqual([
-      { ev: 'q6', mine: 'toolu_a', seen: 'toolu_a', seenBefore: null },
-      { ev: 'q6', mine: 'toolu_b', seen: 'toolu_b', seenBefore: 'toolu_a' },
-    ])
-  })
-
-  test("a nested spawn also records the parent's first message", async ($, on) => {
-    const { records } = probeStandIns(on, 'data')
-    on('session.messages', (_$, e) => ({
-      value: e.agentId === 'parent-1' ? [{ role: 'user', text: `${'x'.repeat(400)}tail`, toolUses: [] }] : { deny: 'no such agent' },
-    }))
-    spawnsAt(on)
-
-    await $.agent.spawn({ ...SPAWN, parentAgentId: 'parent-1' })
-
-    expect(records.at(-1)).toEqual({ ev: 'parent-messages', result: { rows: 1, firstTail: `${'x'.repeat(296)}tail` } })
-  })
-
-  test("a failed write leaves the spawn and its answer as they were", async ($, on) => {
-    on('fs.write', () => {
-      throw new Error('disk full')
-    })
-    on('process.hookEnv', () => ({ value: { CLAUDE_PLUGIN_DATA: 'data' } }))
-    on('session.model', () => ({ value: 'claude-opus-5-5' }))
-    mock.env(on, {})
-    const spawns = spawnsAt(on)
-
-    expect(await $.agent.spawn(SPAWN)).toEqual({ model: 'claude-haiku-4-5', agentId: 'agent-1' })
-    expect(spawns.map((s) => s.e)).toEqual([SPAWN])
-  })
-
-  test("an agent's turn.complete records its end", async ($, on) => {
-    const { records } = probeStandIns(on, 'data')
-    on('session.messages', () => ({ value: [{ role: 'user', text: 'Find hooks.', toolUses: [] }] }))
-    on('turn.complete', () => ({ text: '' }))
-    const usage = { input_tokens: 1, output_tokens: 2, cache_read_input_tokens: 3, cache_creation_input_tokens: 4, model: 'claude-haiku-4-5' }
-
-    await $.turn.complete({ answer: `${'a'.repeat(100)}PROBE-OK`, durationMs: 1, isAborted: false, turnId: 't1', agentId: 'agent-1', reason: 'answer', usage })
-    await $.turn.complete({ answer: 'main', durationMs: 1, isAborted: false, turnId: 't2', reason: 'answer' })
-
-    expect(records).toEqual([
-      { ev: 'end', agentId: 'agent-1', reason: 'answer', usage, answerTail: `${'a'.repeat(72)}PROBE-OK`, firstTail: { rows: 1, firstTail: 'Find hooks.' } },
-    ])
-  })
-
-  test('session.start records the settings and the canary, sets the canary and registers the command', async ($, on) => {
-    const { records } = probeStandIns(on, 'data', { CLAUDE_CODE_SUBAGENT_MODEL: 'sonnet' })
-    on('settings.read', (_$, e) => ({
-      value: e.source === 'user' ? { pluginConfigs: { 'subagent-router@inline': { options: { mode: 'route' } }, other: {} } } : {},
-    }))
-    const commands: unknown[] = []
-    on('command.register', (_$, e) => {
-      commands.push(e)
-      return { value: { command: e.name } }
-    })
-    const logs = logsAt(on)
-    on('session.start', (_$, e) => ({ cwd: e.cwd }))
-    on('command.run', () => ({ text: 'engine' }))
-
-    await $.session.start({ cwd: '/', surface: null, isInteractive: false })
-    await $.session.start({ cwd: '/', surface: null, isInteractive: false })
-    const run = await $.command.run({ command: 'subagent-router-probe', args: '' } as never)
-
-    const session = {
-      ev: 'session',
-      options: { mode: 'observe', locatingRoute: 'haiku', readingRoute: 'parent' },
-      sub: 'sonnet',
-      force: null,
-      user: { keys: ['subagent-router@inline', 'other'], entries: { 'subagent-router@inline': { options: { mode: 'route' } } } },
-      policy: { keys: [], entries: {} },
-    }
-    expect(records).toEqual([
-      { ...session, stateCanary: null },
-      { ...session, stateCanary: expect.any(Number) },
-    ])
-    expect(commands).toEqual([
-      { name: 'subagent-router-probe', description: 'Shows that the subagent-router probe build is loaded' },
-      { name: 'subagent-router-probe', description: 'Shows that the subagent-router probe build is loaded' },
-    ])
-    expect(logs).toEqual(['subagent-router probe files: data/probe', 'subagent-router probe files: data/probe'])
-    expect(run).toEqual({ text: 'probe command alive', ref: undefined, isTextDisplayOnly: true })
-  })
-
-  test('with SUBAGENT_ROUTER_PROBE_SELFSPAWN=1 the probe raises one spawn of its own per load and records it', async ($, on) => {
-    const { records } = probeStandIns(on, 'data', { SUBAGENT_ROUTER_PROBE_SELFSPAWN: '1' })
-    on('session.start', (_$, e) => ({ cwd: e.cwd }))
-    const spawns = spawnsAt(on)
-
-    await $.session.start({ cwd: '/', surface: null, isInteractive: false })
-    await $.session.start({ cwd: '/', surface: null, isInteractive: false })
-    await selfSpawnSettled()
-
-    expect(spawns).toEqual([
-      {
-        e: { tool: 'Agent', prompt: 'Reply with the single word OK.', description: 'probe self-spawn', run_in_background: true, subagent_type: 'Explore' },
-        origin: { plugin: 'subagent-router', tier: 'user' },
-      },
-    ])
-    // A plugin's own agent.spawn hook does not hear its own $.agent.spawn, so
-    // the probe writes no spawn or started record for it.
-    expect(records.filter((r) => r.ev !== 'session')).toEqual([{ ev: 'self-spawn', result: { model: 'inherit' } }])
-  })
-
-  test('with SUBAGENT_ROUTER_PROBE_SELFSPAWN unset the probe raises no spawn', async ($, on) => {
-    const { records } = probeStandIns(on, 'data')
-    on('session.start', (_$, e) => ({ cwd: e.cwd }))
-    const spawns = spawnsAt(on)
-
-    await $.session.start({ cwd: '/', surface: null, isInteractive: false })
-    await selfSpawnSettled()
-
-    expect(spawns).toEqual([])
-    expect(records.map((r) => r.ev)).toEqual(['session'])
-  })
-})
+  return indexes
+}
 
 test(
   "K2: a state.set hook sees a plugin's writes, and the plugin reads them back in the same hook and in a later event",
@@ -457,6 +268,7 @@ test(
     ],
   },
   async ($, on) => {
+    routerOff(on)
     const spawns = spawnsAt(on)
     const texts = reports(on)
 
@@ -472,61 +284,23 @@ test(
   },
 )
 
-test(
-  "K7: the plugin under test sees the inline plugin's spawn with the same origin",
-  {
-    plugins: [
-      {
-        name: 'other',
-        register(on) {
-          on('turn.start', async ($, e, next) => {
-            await $.agent.spawn({ prompt: 'Find the LICENSE file.', subagentType: 'Explore', description: 'Find licence' })
-            return next(e)
-          })
-        },
-      },
-    ],
-  },
-  async ($, on) => {
-    const { records } = probeStandIns(on, 'data')
-    spawnsAt(on)
-    reports(on)
-
-    await $.turn.start({ text: '', turnId: 't1' })
-
-    expect(records[0]).toEqual({
-      ev: 'spawn',
-      keys: ['description', 'prompt', 'run_in_background', 'subagent_type', 'tool'],
-      model: null,
-      parentAgentId: null,
-      resume: null,
-      workflow: null,
-      isTeammate: null,
-      origin: { plugin: 'other', tier: 'user' },
-      promptChars: 'Find the LICENSE file.'.length,
-      sessionModel: 'claude-opus-5-5',
-    })
-  },
-)
-
-// The probe keeps its data folder in module memory; these two tests answer
-// hookEnv differently, so the second sees which folder its module holds.
+// The router keeps its index in module memory and reads state for it only on the first
+// call after a load. The kit's state starts empty in every test (K2), so an index that
+// holds more than this test's one id would have come from the previous test's module.
 test('K8 (1 of 2): module memory is filled in one test', async ($, on) => {
-  const { paths } = probeStandIns(on, 'data-first')
-  spawnsAt(on)
+  const indexes = routerRecording(on)
 
   await $.agent.spawn(SPAWN)
 
-  expect(paths[0]).toMatch(/[\\/]data-first[\\/]probe[\\/]/)
+  expect(indexes.at(-1)?.ids.length).toBe(1)
 })
 
 test('K8 (2 of 2): module memory starts fresh in the next test of the file', async ($, on) => {
-  const { paths } = probeStandIns(on, 'data-second')
-  spawnsAt(on)
+  const indexes = routerRecording(on)
 
-  await $.agent.spawn(SPAWN)
+  await $.agent.spawn({ ...SPAWN, tool_use_id: 'toolu_2' })
 
-  expect(paths[0]).toMatch(/[\\/]data-second[\\/]probe[\\/]/)
+  expect(indexes.at(-1)?.ids.length).toBe(1)
 })
 
 test(
@@ -577,6 +351,7 @@ test(
     ],
   },
   async ($, on) => {
+    routerOff(on)
     const logs = logsAt(on)
     spawnsAt(on)
 
@@ -617,32 +392,6 @@ test(
 )
 
 test(
-  "K11: the plugin under test's config.set hook hears it, with no origin on the event",
-  {
-    plugins: [
-      {
-        name: 'other',
-        register(on) {
-          on('turn.start', async ($, e, next) => {
-            await $.config.set({ key: 'subagent-router.mode', value: 'route' })
-            return next(e)
-          })
-        },
-      },
-    ],
-  },
-  async ($, on) => {
-    const { records } = probeStandIns(on, 'data')
-    on('config.set', (_$, e) => ({ value: e.value }))
-    reports(on)
-
-    await $.turn.start({ text: '', turnId: 't1' })
-
-    expect(records).toEqual([{ ev: 'config', key: 'subagent-router.mode', caller: { plugin: 'other', tier: 'user' } }])
-  },
-)
-
-test(
   'K12: a hook that returns the deny its own next answered is accepted, and the spawn resolves to it',
   {
     plugins: [
@@ -661,6 +410,7 @@ test(
     ],
   },
   async ($, on) => {
+    routerOff(on)
     const logs = logsAt(on)
     spawnsAt(on, { deny: 'refused beneath' })
 
@@ -688,6 +438,7 @@ test(
     ],
   },
   async ($, on) => {
+    routerOff(on)
     const logs = logsAt(on)
     spawnsAt(on)
 
