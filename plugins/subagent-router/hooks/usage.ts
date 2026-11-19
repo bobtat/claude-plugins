@@ -1,7 +1,7 @@
 import type { EngineInterface, TurnCompleteInput } from 'claude-code'
+import { cleanId } from './clean'
 import { estimateUsd, priceOf, tokenCount } from './prices'
 import { readRecord, saveRecord } from './records'
-import { cleanId } from './spawn'
 
 const BY_AGENT = { plugin: 'subagent-router', key: 'byAgent' } as const
 

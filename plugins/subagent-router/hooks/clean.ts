@@ -21,3 +21,7 @@ export function clean(text: unknown, max: number): string {
   if (points.length <= max) return visible
   return points.slice(0, Math.max(0, max - 1)).join('') + '…'
 }
+
+export const ID_MAX = 80
+
+export const cleanId = (value: unknown): string | null => clean(value, ID_MAX) || null

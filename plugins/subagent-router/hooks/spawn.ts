@@ -1,6 +1,6 @@
 import type { AgentSpawnInput, AgentSpawnResult, EngineInterface, Next as NextOf, NextResult } from 'claude-code'
 import type { DecisionRecord, Family, Kind, Outcome, PickResult, Route, Settings } from '../types'
-import { clean } from './clean'
+import { ID_MAX, clean, cleanId } from './clean'
 import { registerCommand } from './command'
 import { anyRouteApplies, factsOf, precheck, resolve } from './decide'
 import { familyOf, ranksBelow } from './model-rank'
@@ -17,7 +17,6 @@ const BY_AGENT = { plugin: 'subagent-router', key: 'byAgent' } as const
 const PICKER_OFF = { plugin: 'subagent-router', key: 'pickerOff' } as const
 
 const DESCRIPTION_MAX = 120
-const ID_MAX = 80
 const LINE_MAX = 160
 const MAX_ROWS = 4096
 const FAILURES_TO_SWITCH_OFF = 3
@@ -44,8 +43,6 @@ const modelOf = (result: Answer): string | undefined =>
   typeof result === 'object' && result !== null && 'model' in result && typeof result.model === 'string' && result.model !== ''
     ? result.model
     : undefined
-
-export const cleanId = (value: unknown): string | null => clean(value, ID_MAX) || null
 
 function log($: $, line: string): void {
   try {
