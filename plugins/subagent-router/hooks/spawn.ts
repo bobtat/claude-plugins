@@ -22,6 +22,11 @@ const LINE_MAX = 160
 const MAX_ROWS = 4096
 const FAILURES_TO_SWITCH_OFF = 3
 
+// True pending probe Q11: the baseline is keyed on parentModel, and for a nested spawn it is not yet measured whether
+// that names the spawning agent's model or the session's. If it names the session's, a spawn under an agent on a
+// cheaper model could be moved up to a dearer one. Set it false once Q11 shows parentModel is the spawning agent's.
+const NESTED_UNVERIFIED = true
+
 type $ = EngineInterface
 type Next = NextOf<'agent.spawn'>
 type Answer = NextResult<'agent.spawn'>
@@ -133,8 +138,9 @@ async function passOn($: $, e: AgentSpawnInput, next: Next, settings: Settings, 
   return result
 }
 
-async function leaveExplicit($: $, e: AgentSpawnInput, next: Next): Promise<Answer> {
-  const rec = await draft($, e, { kind: null, outcome: 'unchanged', reason: 'explicit', target: null })
+// Recorded and passed on as it came, teaching nothing: no baseline, and no routed or observed entry.
+async function leaveAlone($: $, e: AgentSpawnInput, next: Next, fields: { kind: Kind | null; reason: string }): Promise<Answer> {
+  const rec = await draft($, e, { ...fields, outcome: 'unchanged', target: null })
   const id = await newRecord($, rec)
   const result = await next(e)
   if (!isStarted(result)) {
@@ -238,7 +244,18 @@ function routedLine(done: DecisionRecord, s: Settled): string {
   return `Asked for ${done.target}, but the agent started on ${started}: ${done.description}`
 }
 
+// Observe mode still asks the picker, so its counts by kind stay complete; route mode makes no call it would not act on.
+async function leaveNested($: $, e: AgentSpawnInput, next: Next, mode: Settings['mode']): Promise<Answer> {
+  let kind: Kind | null = null
+  if (mode === 'observe' && (await $.state.get(PICKER_OFF)).value !== true) {
+    const pick = await pickCounted($, e.prompt)
+    if (pick.reason === 'answered') kind = pick.kind
+  }
+  return leaveAlone($, e, next, { kind, reason: 'nested-unverified' })
+}
+
 async function pickAndRoute($: $, e: AgentSpawnInput, next: Next, settings: Settings): Promise<Answer> {
+  if (NESTED_UNVERIFIED && typeof e.parentAgentId === 'string') return leaveNested($, e, next, settings.mode)
   const baselineId = `${e.subagentType}|${e.parentModel}`
   const stored = (await $.state.get({ ...BASELINE, id: baselineId })).value
   const baseline = typeof stored === 'string' ? stored : undefined
@@ -275,6 +292,6 @@ export async function onSpawn($: $, e: AgentSpawnInput, next: Next): Promise<Ans
     await bump($, 'wouldRefuse')
   }
   if (verdict === 'pass') return passOn($, e, next, settings, spawner)
-  if (verdict === 'explicit') return leaveExplicit($, e, next)
+  if (verdict === 'explicit') return leaveAlone($, e, next, { kind: null, reason: 'explicit' })
   return pickAndRoute($, e, next, settings)
 }

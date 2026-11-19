@@ -175,6 +175,8 @@ export function renderReport(a: ReportInput): string {
   if (refused > 0) lines.push(`Spawns refused under an agent the router moved: ${refused}`)
   const learning = runs.filter((r) => r.reason === 'baseline-unknown').length
   if (learning > 0) lines.push(`Left alone while the baseline was learned: ${learning}`)
+  const nested = runs.filter((r) => r.reason === 'nested-unverified').length
+  if (nested > 0) lines.push(`Nested spawns left alone until the probe confirms which model they inherit: ${nested}`)
   if (skipped > 0) lines.push(`${skipped} record(s) from another version skipped`)
   if (runs.length > 0) lines.push('', 'Runs (costs are estimates from listed prices):', ...runs.map((r) => r.row))
   return lines.map((line) => clean(line, LINE_MAX)).join('\n')

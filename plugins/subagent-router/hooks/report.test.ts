@@ -67,6 +67,12 @@ test('runs left alone while the baseline was being learned are counted', async (
   expect(out.includes('Left alone while the baseline was learned: 1')).toBe(true)
 })
 
+test('nested spawns left alone are counted on their own line, not as baseline learning', async () => {
+  const out = show([rec({ outcome: 'unchanged', reason: 'nested-unverified', target: null }), rec({ outcome: 'unchanged', reason: 'nested-unverified', target: null, kind: null })])
+  expect(out.includes('Nested spawns left alone until the probe confirms which model they inherit: 2')).toBe(true)
+  expect(out.includes('Left alone while the baseline was learned')).toBe(false)
+})
+
 test('a record that never started is shown as not started', async () => {
   const row = show([rec({ started: null, agentId: null, description: 'find the lexer' })]).split('\n').find(l => l.includes('find the lexer'))!
   expect(row.includes('not started')).toBe(true)

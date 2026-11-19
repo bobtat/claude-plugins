@@ -59,6 +59,56 @@ test('observe mode: a fork of an agent that would have been routed is counted th
   expect(index(w)?.wouldRefuse).toBe(1)
 })
 
+// --- nested spawns, until probe Q11 says which model parentModel names ---
+
+const NESTED_KEYS = ['baseline', 'routed', 'observed', 'routeOff']
+
+test('route mode: a nested spawn is recorded and left alone, with no picker call, and teaches no baseline', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  const nested = { parentAgentId: 'x1', subagentType: 'general-purpose' }
+
+  await spawn()
+  const from = w.sets.length
+  await spawn({ ...nested, subagentType: 'Explore' })
+  expect(w.seen[1]?.model).toBe(undefined)
+  expect(w.seen[1]?.prompt).toBe(PROMPT)
+  expect(w.picks.length).toBe(0)
+  expect(records(w)[1]).toEqual(expect.objectContaining({ kind: null, outcome: 'unchanged', reason: 'nested-unverified', agentId: 'a2' }))
+  expect(NESTED_KEYS.flatMap((key) => written(w, key, from))).toEqual([])
+  expect(w.lines).toEqual([])
+
+  await spawn(nested)
+  await spawn({ subagentType: 'general-purpose' })
+  expect(records(w)[3]?.reason).toBe('baseline-unknown')
+  await spawn({ subagentType: 'general-purpose' })
+  expect(w.seen[4]?.model).toBe('haiku')
+})
+
+test('observe mode: a nested spawn is asked about so its kind is recorded, and is never would-route', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.mode = 'observe'
+
+  await spawn()
+  const from = w.sets.length
+  await spawn({ parentAgentId: 'x1' })
+  expect(w.picks.length).toBe(2)
+  expect(records(w)[1]).toEqual(expect.objectContaining({ kind: 'locating', outcome: 'unchanged', reason: 'nested-unverified', target: null }))
+  expect(NESTED_KEYS.flatMap((key) => written(w, key, from))).toEqual([])
+})
+
+test('a nested spawn under a routed agent is still refused, and a nested explicit model is still recorded as explicit', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await spawn()
+  expect(await spawn()).toEqual({ model: 'haiku', agentId: 'a2' })
+
+  expect(isDenied(await spawn({ parentAgentId: 'a2' }))).toBe(true)
+  await spawn({ parentAgentId: 'x1', model: 'sonnet' })
+  expect(records(w).at(-1)).toEqual(expect.objectContaining({ outcome: 'unchanged', reason: 'explicit' }))
+})
+
 test('a reading task with the reading route off is recorded with its kind and left alone', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)
