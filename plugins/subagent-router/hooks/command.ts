@@ -24,7 +24,7 @@ export function registerCommand($: $): Promise<void> {
   if (registering !== undefined) return registering
   try {
     registering = $.command
-      .register({ name: 'subagent-router', description: 'Shows what subagent-router decided this session and what it would save' })
+      .register({ name: 'subagent-router', description: 'Shows what subagent-router decided this session and what those runs cost (estimated)' })
       .then(
         () => {
           commandRegistered = true
