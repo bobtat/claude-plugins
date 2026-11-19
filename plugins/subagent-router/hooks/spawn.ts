@@ -125,6 +125,9 @@ async function passOn($: $, e: AgentSpawnInput, next: Next, settings: Settings, 
     // its marker has no entry to copy, so one is built: refusing must not depend on what state remembered.
     const entry = spawner.entry ?? { v: 1, target: familyOf(e.parentModel) ?? 'haiku', baseline: '' }
     await attempt(() => $.state.set({ ...ROUTED, id: result.agentId }, entry as never))
+  } else if (e.fork === true && spawner.isObserved && isStarted(result)) {
+    // Likewise in observe mode, so the fork's own spawns count toward what the rule would have refused.
+    await attempt(() => $.state.set({ ...OBSERVED, id: result.agentId }, { v: 1 }))
   }
   return result
 }

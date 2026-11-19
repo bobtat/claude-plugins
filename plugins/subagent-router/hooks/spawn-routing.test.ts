@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { AgentSpawnInput } from 'claude-code'
 import { MARKER } from './note'
-import { FAILED, PROMPT, USAGE, index, input, isDenied, records, spawner, world } from './test-support'
+import { FAILED, PROMPT, USAGE, index, input, isDenied, records, spawner, world, written } from './test-support'
 
 // --- routing ---
 
@@ -40,6 +40,22 @@ test('observe mode changes nothing and records what it would do', async ($, on) 
 
   const third = await spawn({ parentAgentId: 'a2', subagentType: 'feature-dev:code-explorer' })
   expect(isDenied(third)).toBe(false)
+  expect(index(w)?.wouldRefuse).toBe(1)
+})
+
+test('observe mode: a fork of an agent that would have been routed is counted the same way', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.mode = 'observe'
+
+  await spawn()
+  await spawn()
+  expect(records(w)[1]?.outcome).toBe('would-route')
+  expect(isDenied(await spawn({ parentAgentId: 'a2', fork: true }))).toBe(false)
+  expect(index(w)?.wouldRefuse ?? 0).toBe(0)
+  expect(written(w, 'observed').map((s) => s.id)).toEqual(['a2', 'a3'])
+
+  expect(isDenied(await spawn({ parentAgentId: 'a3', subagentType: 'feature-dev:code-explorer' }))).toBe(false)
   expect(index(w)?.wouldRefuse).toBe(1)
 })
 
