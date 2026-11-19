@@ -11,17 +11,23 @@ export function namesThisPlugin(key: unknown): boolean {
   return typeof key === 'string' && NAMES_US.test(key)
 }
 
-// The person's own change only: from the /config menu or their typed /config. A bridge change is not attestably theirs.
+// The row's owner is stamped by the engine, so it catches one of this plugin's rows under a key the pattern misses.
+function isOurRow(e: ConfigSetInput): boolean {
+  return namesThisPlugin(e.key) || (isRecord(e.provider) && e.provider.plugin === 'subagent-router')
+}
+
+// The person's own change only: from the /config menu or their typed /config. A bridge change is not attestably
+// theirs, and neither is one with no origin: the engine always stamps one, so its absence is not the engine's doing.
 export function isPersonsChange(caller: unknown, origin: unknown): boolean {
   if (!isRecord(caller) || caller.plugin !== 'engine') return false
-  return origin === undefined || (isRecord(origin) && origin.kind === 'composer')
+  return isRecord(origin) && origin.kind === 'composer'
 }
 
 export const SETTINGS_DENIED = 'subagent-router: its settings can be changed only by you, in /config'
 export const GUARD_FAILED = 'subagent-router: its settings guard failed, so the change was refused'
 
 export function guardSettings(e: ConfigSetInput, next: NextOf<'config.set'>): ConfigSetResult | Promise<ConfigSetResult> {
-  if (!namesThisPlugin(e.key) || isPersonsChange(next.origin, e.origin)) return next(e)
+  if (!isOurRow(e) || isPersonsChange(next.origin, e.origin)) return next(e)
   return { deny: SETTINGS_DENIED }
 }
 
@@ -29,7 +35,7 @@ export function guardSettings(e: ConfigSetInput, next: NextOf<'config.set'>): Co
 export function settingsGuardFailed(e: ConfigSetInput, next: NextOf<'config.set'> & Caught): ConfigSetResult | Promise<ConfigSetResult> {
   if (next.called) return next(e)
   try {
-    if (!namesThisPlugin(e.key)) return next(e)
+    if (!isOurRow(e)) return next(e)
   } catch {
     // A key that cannot be checked is treated as this plugin's.
   }
