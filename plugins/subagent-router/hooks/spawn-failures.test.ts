@@ -105,6 +105,27 @@ test('a routed spawn that starts at or above its baseline is marked and turns th
   expect(isDenied(await spawn({ parentAgentId: 'a2', parentModel: 'claude-opus-5-5' }))).toBe(false)
 })
 
+for (const started of ['arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/abc123', 'fast']) {
+  test(`a routed start on a model whose family cannot be read (${started.slice(0, 12)}) is kept routed and turns the route off`, async ($, on) => {
+    const w = world(on)
+    const spawn = spawner($)
+    await spawn()
+
+    w.answer = () => ({ model: started, agentId: `a${w.seen.length}` })
+    await spawn()
+    expect(w.seen[1]?.model).toBe('haiku')
+    expect(written(w, 'routed').map((s) => s.id)).toEqual(['a2'])
+    expect(w.lines.length).toBe(1)
+    expect(w.lines[0]?.startsWith(`Asked for haiku; the locating route is off for this session; started on ${started}`)).toBe(true)
+
+    w.answer = w.start
+    expect(await spawn({ parentAgentId: 'a2', subagentType: 'general-purpose' })).toEqual({ deny: DENY_TEXT })
+    await spawn()
+    expect(w.seen.at(-1)?.model).toBe(undefined)
+    expect(records(w).at(-1)?.reason).toBe('no-route-applies')
+  })
+}
+
 test('a failure after the spawn started does not lose the spawn', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)

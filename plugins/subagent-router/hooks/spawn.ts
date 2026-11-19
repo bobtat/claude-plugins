@@ -210,9 +210,11 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
     if (rec.outcome === 'would-route') await attempt(() => $.state.set({ ...OBSERVED, id: agentId }, { v: 1 }))
   } else if (target !== null && rec.kind !== null) {
     const kind = rec.kind
-    // A start that names no model cannot show the move failed, so the agent is kept as routed and the route is
-    // turned off: both are the cautious reading.
-    if (model === undefined || ranksBelow(model, baseline)) {
+    // Only a start that names a family at or above the baseline shows the move failed. One that names no model,
+    // or one whose family cannot be read (an ARN, a gateway alias), may well be the cheaper model, so the agent is
+    // kept as routed and the route is turned off: both are the cautious reading.
+    const isPlainlyNotCheaper = model !== undefined && familyOf(model) !== undefined && !ranksBelow(model, baseline)
+    if (!isPlainlyNotCheaper) {
       await attempt(() => $.state.set({ ...ROUTED, id: agentId }, { v: 1, target, baseline }))
     }
     if (!ranksBelow(model, baseline)) routeTurnedOff = await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))
@@ -222,12 +224,13 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
   return { done, routeTurnedOff }
 }
 
-// The line never says an agent was routed to a model it is not on.
+// The line never says an agent was routed to a model it is not on. The route being off comes before the model id,
+// which can be long enough (an ARN) to push anything after it past the line's limit.
 function routedLine(done: DecisionRecord, routeTurnedOff: boolean): string {
   if (done.started !== null && !done.overridden) return `Routed to ${done.target} as a ${done.kind} task: ${done.description}`
   const started = done.started ?? 'a model the start did not name'
-  const off = routeTurnedOff ? `; the ${done.kind} route is off for this session` : ''
-  return `Asked for ${done.target}, but the agent started on ${started}${off}: ${done.description}`
+  if (routeTurnedOff) return `Asked for ${done.target}; the ${done.kind} route is off for this session; started on ${started}: ${done.description}`
+  return `Asked for ${done.target}, but the agent started on ${started}: ${done.description}`
 }
 
 async function pickAndRoute($: $, e: AgentSpawnInput, next: Next, settings: Settings): Promise<Answer> {
