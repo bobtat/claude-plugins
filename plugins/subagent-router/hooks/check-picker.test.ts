@@ -129,6 +129,19 @@ test('a picker set that breaks a shape rule is a problem, never a partial set', 
   for (const b of broken) expect('problem' in parsePickerSet(b)).toBe(true)
 })
 
+test('a prompt id or an injection id that appears twice rejects the set with one cleaned line naming it', async () => {
+  const texts = { scenarios: JSON.stringify(SCENARIOS), prompts: JSON.stringify(PROMPTS), injection: JSON.stringify(INJECTION) }
+  const problem = (over: Partial<typeof texts>) => {
+    const set = parsePickerSet({ ...texts, ...over })
+    return 'problem' in set ? set.problem : ''
+  }
+  expect(problem({ prompts: JSON.stringify([...PROMPTS, row('S1-a', 'S1', 'find callers of ParseMap')]) })).toBe('prompt S1-a appears twice in prompts.json')
+  expect(problem({ injection: JSON.stringify([...INJECTION, { id: 'inj-1', prompt: 'other text' }]) })).toBe('injection inj-1 appears twice in injection.json')
+  const hostile = 'x\u001b[2J\ny'
+  const line = problem({ prompts: JSON.stringify([row(hostile, 'S1', 'find a'), row(hostile, 'S1', 'find b')]) })
+  expect(line).toBe('prompt x[2J y appears twice in prompts.json')
+})
+
 // Built from code points so no raw zero-width character sits in the source.
 const ZERO_WIDTH = String.fromCharCode(0x200b, 0x200b, 0x2060)
 

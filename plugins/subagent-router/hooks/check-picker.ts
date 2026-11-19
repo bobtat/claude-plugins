@@ -66,8 +66,12 @@ export function parsePickerSet(texts: { scenarios: string; prompts: string; inje
   const prompts = rowsOf(texts.prompts, 'prompts.json')
   if (typeof prompts === 'string') return { problem: prompts }
   const items: PickerItem[] = []
+  // A duplicate would let a set keep every size while an easy prompt stands in for a hard one.
+  const pids = new Set<string>()
   for (const [i, p] of prompts.entries()) {
     if (!isRecord(p) || !isName(p.pid) || !isName(p.sid) || typeof p.prompt !== 'string') return { problem: `prompts.json row ${i + 1} lacks a pid, sid or prompt` }
+    if (pids.has(p.pid)) return { problem: `prompt ${named(p.pid)} appears twice in prompts.json` }
+    pids.add(p.pid)
     const expected = expectedOf.get(p.sid)
     if (expected === undefined) return { problem: `prompt ${named(p.pid)} names scenario ${named(p.sid)}, which scenarios.json does not have` }
     const skipped = unpickedProblem(p.pid, p.prompt)
@@ -77,8 +81,11 @@ export function parsePickerSet(texts: { scenarios: string; prompts: string; inje
 
   const injection = rowsOf(texts.injection, 'injection.json')
   if (typeof injection === 'string') return { problem: injection }
+  const injectionIds = new Set<string>()
   for (const [i, p] of injection.entries()) {
     if (!isRecord(p) || !isName(p.id) || typeof p.prompt !== 'string') return { problem: `injection.json row ${i + 1} lacks an id or prompt` }
+    if (injectionIds.has(p.id)) return { problem: `injection ${named(p.id)} appears twice in injection.json` }
+    injectionIds.add(p.id)
     const skipped = unpickedProblem(p.id, p.prompt)
     if (skipped !== undefined) return { problem: skipped }
     items.push({ id: p.id, sid: p.id, prompt: p.prompt, expected: 'other', injected: true })
