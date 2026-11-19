@@ -1,4 +1,4 @@
-import type { AgentSpawnInput, AgentSpawnResult, EngineInterface, Next as NextOf, NextResult, Register, TurnCompleteInput } from 'claude-code'
+import type { AgentSpawnInput, AgentSpawnResult, CommandRunResult, EngineInterface, Next as NextOf, NextResult, Register, TurnCompleteInput } from 'claude-code'
 import type { DecisionRecord, Family, Kind, Outcome, PickResult, Route, Settings } from '../types'
 import { clean } from './clean'
 import { anyRouteApplies, factsOf, precheck, resolve } from './decide'
@@ -6,7 +6,8 @@ import { familyOf, ranksBelow } from './model-rank'
 import { DENY_TEXT, NO_RESUME, endsWithMarker, routerNote } from './note'
 import { pickKind } from './picker'
 import { estimateUsd, priceOf, tokenCount } from './prices'
-import { bump, newRecord, readRecord, saveRecord } from './records'
+import { bump, newRecord, readRecord, saveRecord, snapshot } from './records'
+import { renderReport } from './report'
 import { readSettings } from './settings'
 
 const ROUTED = { plugin: 'subagent-router', key: 'routed' } as const
@@ -35,6 +36,9 @@ type Settled = { done: DecisionRecord; routeTurnedOff: boolean }
 let failuresInARow = 0
 let tick = 0
 let lastCountedFailureEnded = -1
+
+let commandRegistered = false
+let registering: Promise<void> | undefined
 
 function isStarted(result: Answer): result is Started {
   return typeof result === 'object' && result !== null && !('deny' in result) && typeof result.agentId === 'string' && result.agentId !== ''
@@ -255,7 +259,54 @@ async function pickAndRoute($: $, e: AgentSpawnInput, next: Next, settings: Sett
   return result
 }
 
+// Whether a command outlives a settings reload is not yet known (probe Q12), so every hook asks until one call in
+// this load has succeeded. Resolves whatever happens, so a caller that does not await it is never held up or failed.
+function registerCommand($: $): Promise<void> {
+  if (commandRegistered) return Promise.resolve()
+  if (registering !== undefined) return registering
+  try {
+    registering = $.command
+      .register({ name: 'subagent-router', description: 'Shows what subagent-router decided this session and what it would save' })
+      .then(
+        () => {
+          commandRegistered = true
+        },
+        () => undefined,
+      )
+      .finally(() => {
+        registering = undefined
+      })
+    return registering
+  } catch {
+    return Promise.resolve()
+  }
+}
+
+async function buildReport($: $): Promise<string> {
+  const [settings, recorded, locatingOff, readingOff, pickerOff] = await Promise.all([
+    readSettings($),
+    snapshot($),
+    $.state.get({ ...ROUTE_OFF, id: 'locating' }),
+    $.state.get({ ...ROUTE_OFF, id: 'reading' }),
+    $.state.get(PICKER_OFF),
+  ])
+  const routeOff: Kind[] = []
+  if (locatingOff.value !== undefined) routeOff.push('locating')
+  if (readingOff.value !== undefined) routeOff.push('reading')
+  return renderReport({ settings, ...recorded, routeOff, pickerOff: pickerOff.value === true })
+}
+
+// Display-only: the report costs the conversation nothing and puts none of the records' text before the model.
+async function answerCommand($: $): Promise<CommandRunResult> {
+  try {
+    return { text: await buildReport($), isTextDisplayOnly: true }
+  } catch (error) {
+    return { text: clean(`subagent-router: the report could not be built (${clean(error, 80)})`, LINE_MAX), isTextDisplayOnly: true }
+  }
+}
+
 async function onSpawn($: $, e: AgentSpawnInput, next: Next): Promise<Answer> {
+  void registerCommand($)
   const settings = await readSettings($)
   const spawner = await spawnerOf($, e)
   const facts = factsOf(e, next.origin, { mode: settings.mode, standingDown: settings.standingDown !== null, spawnerWasRouted: spawner.wasRouted })
@@ -297,6 +348,7 @@ export const register: Register = (on) => {
   on('agent.spawn', onSpawn).catch(($, e, next) => next(e))
 
   on('turn.complete', async ($, e, next) => {
+    void registerCommand($)
     try {
       await addUsage($, e)
     } catch {
@@ -304,4 +356,14 @@ export const register: Register = (on) => {
     }
     return next(e)
   }).catch(($, e, next) => next(e))
+
+  on('session.start', async ($, e, next) => {
+    await registerCommand($)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  on('command.run', { command: 'subagent-router' }, ($) => answerCommand($)).catch(() => ({
+    text: 'subagent-router: the report could not be built',
+    isTextDisplayOnly: true,
+  }))
 }

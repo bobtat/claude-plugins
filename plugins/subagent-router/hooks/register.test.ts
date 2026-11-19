@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
-import type { AgentSpawnInput, ModelCompleteRequest, ModelCompleteResult, On, SessionMessage } from 'claude-code'
+import type { AgentSpawnInput, CommandRunInput, CommandSpec, ModelCompleteRequest, ModelCompleteResult, On, SessionMessage } from 'claude-code'
 import type { DecisionRecord, Index } from '../types'
 import { DENY_TEXT, MARKER, routerNote } from './note'
 import { estimateUsd, priceOf } from './prices'
@@ -29,6 +29,8 @@ type World = {
   messages: (agentId: string | undefined) => SessionMessage[] | { deny: string }
   failSet: string | null
   onLog: (text: string) => void
+  registration: 'answers' | 'refuses' | 'hangs'
+  registered: CommandSpec[]
   picks: ModelCompleteRequest[]
   seen: AgentSpawnInput[]
   lines: string[]
@@ -51,6 +53,8 @@ function world(on: On): World {
     messages: () => ({ deny: 'not readable' }),
     failSet: null,
     onLog: () => {},
+    registration: 'answers',
+    registered: [],
     picks: [],
     seen: [],
     lines: [],
@@ -79,6 +83,13 @@ function world(on: On): World {
     w.lines.push(e.text)
     w.onLog(e.text)
     return { value: undefined }
+  })
+  // A deny makes the plugin's $.command.register reject, as for state.set below.
+  on('command.register', (_$, e) => {
+    w.registered.push(e)
+    if (w.registration === 'refuses') return { deny: 'refused' } as never
+    if (w.registration === 'hangs') return new Promise<never>(() => {})
+    return { value: { command: e.name } }
   })
   // A thrown stand-in is skipped and the kit's own state writes anyway; a deny makes the plugin's write reject.
   on('state.set', (_$, e, next) => {
@@ -127,6 +138,9 @@ async function until(holds: () => boolean): Promise<void> {
 }
 
 const first = (text: string) => () => [{ role: 'user' as const, text, toolUses: [] }]
+
+const RUN: CommandRunInput = { command: 'subagent-router', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } }
+const report = async ($: Engine) => (await $.command.run(RUN)).text ?? ''
 
 // --- routing ---
 
@@ -556,6 +570,9 @@ test('three spawns resolving out of order are each recorded against their own sp
   expect(byTask.get('one')).toEqual(expect.objectContaining({ kind: 'other', agentId: 'agent-one', outcome: 'unchanged' }))
   expect(byTask.get('two')).toEqual(expect.objectContaining({ kind: 'locating', agentId: 'agent-two', outcome: 'routed' }))
   expect(byTask.get('three')).toEqual(expect.objectContaining({ kind: 'other', agentId: 'agent-three', outcome: 'unchanged' }))
+  // A row ends with its description, so "one" is not found inside some other word.
+  const rows = (await report($)).split('\n')
+  for (const t of tasks) expect(rows.some((row) => row.endsWith(`: ${t}`))).toBe(true)
   expect(await spawn({ parentAgentId: 'agent-two' })).toEqual({ deny: DENY_TEXT })
   expect(isDenied(await spawn({ parentAgentId: 'agent-one' }))).toBe(false)
   expect(isDenied(await spawn({ parentAgentId: 'agent-three' }))).toBe(false)
@@ -704,13 +721,15 @@ test('a failed index read is retried, and what was gathered meanwhile is merged 
 
   read.fails = true
   await spawn()
+  await spawn({ subagentType: 'Plan' })
   await spawn()
   expect(written(w, 'index')).toEqual([])
 
   read.fails = false
   read.stored = { v: 1, ids: ['old1'], outOfScope: 3, wouldRefuse: 0 }
   await spawn({ subagentType: 'Plan' })
-  expect(index(w)).toEqual({ v: 1, ids: ['old1', ...recordIds(w)], outOfScope: 4, wouldRefuse: 0 })
+  // The stored 3, the one counted while the read failed and the one counted after the load.
+  expect(index(w)).toEqual({ v: 1, ids: ['old1', ...recordIds(w)], outOfScope: 5, wouldRefuse: 0 })
 })
 
 test('an index that cannot be read at all is never written, and spawns still go on', async ($, on) => {
@@ -803,4 +822,88 @@ test('usage reported for a recorded agent is added to its record', async ($, on)
   expect((await end('nobody', usage)).text).toBe('done nobody')
   expect((await end('a1', undefined)).text).toBe('done a1')
   expect(w.sets.length).toBe(writes)
+})
+
+// --- the report command ---
+
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+const turnEnd = ($: Engine) =>
+  $.turn.complete({ agentId: 'nobody', turnId: 't1', reason: 'answer', isAborted: false, answer: 'done', durationMs: 1, usage: undefined })
+
+test('the command answers display-only text and nothing for the model', async ($, on) => {
+  const w = world(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('command.run', (_$, e) => ({ text: `the engine ran ${e.command}` }))
+
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  expect(w.registered.length).toBe(1)
+  expect(w.registered[0]?.name).toBe('subagent-router')
+  expect(w.registered[0]?.immediate).toBe(undefined)
+
+  const r = await $.command.run(RUN)
+  expect(r.isTextDisplayOnly).toBe(true)
+  expect(r.text?.includes('mode:')).toBe(true)
+  expect(r.context).toBe(undefined)
+  expect(await $.command.run({ ...RUN, command: 'other' })).toEqual({ text: 'the engine ran other' })
+})
+
+test('with no session start, the first hook after a load registers the command, and only once', async ($, on) => {
+  const w = world(on)
+  on('turn.complete', (_$, e) => ({ text: e.answer }))
+  const spawn = spawner($)
+
+  await spawn()
+  await until(() => w.registered.length === 1)
+  await spawn()
+  await turnEnd($)
+  await pause(20)
+  expect(w.registered.length).toBe(1)
+  expect((await $.command.run(RUN)).isTextDisplayOnly).toBe(true)
+})
+
+test('the turn hook registers the command too', async ($, on) => {
+  const w = world(on)
+  on('turn.complete', (_$, e) => ({ text: e.answer }))
+
+  expect((await turnEnd($)).text).toBe('done')
+  await until(() => w.registered.length === 1)
+})
+
+test('a refused registration changes nothing about the spawn and is tried again on the next hook', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.registration = 'refuses'
+
+  expect(await spawn()).toEqual({ model: 'claude-opus-5-5', agentId: 'a1' })
+  await until(() => w.registered.length === 1)
+  await pause(20)
+  w.registration = 'answers'
+  expect(await spawn()).toEqual({ model: 'haiku', agentId: 'a2' })
+  await until(() => w.registered.length === 2)
+  await pause(20)
+  await spawn()
+  await pause(20)
+  expect(w.registered.length).toBe(2)
+})
+
+test('a registration that never answers does not hold up the spawn', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.registration = 'hangs'
+
+  expect(await spawn()).toEqual({ model: 'claude-opus-5-5', agentId: 'a1' })
+  expect(await spawn()).toEqual({ model: 'haiku', agentId: 'a2' })
+  expect(w.registered.length).toBe(1)
+})
+
+test('a report that cannot be built answers one display-only line saying so', async ($, on) => {
+  world(on)
+  on('state.get', { plugin: 'subagent-router', key: 'decision' }, () => ({ deny: 'unreadable' }) as never)
+  await spawner($)()
+
+  const r = await $.command.run(RUN)
+  expect(r.isTextDisplayOnly).toBe(true)
+  expect(r.context).toBe(undefined)
+  expect(r.text?.startsWith('subagent-router: the report could not be built')).toBe(true)
+  expect(r.text?.includes('\n')).toBe(false)
 })
