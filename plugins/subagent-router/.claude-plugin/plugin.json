@@ -1,7 +1,13 @@
 {
   "name": "subagent-router",
   "version": "0.1.0",
-  "description": "Routes search subagents to a cheaper model.",
+  "description": "Moves the built-in Explore and general-purpose subagents to a cheaper model when a small Haiku call finds their task only locates things (reading tasks too, if you turn that route on), and starts in an observe mode that records what it would do and changes nothing",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": ["subagents", "routing", "model", "cost", "haiku", "explore", "mod"],
   "userConfig": {
     "mode": { "type": "string", "title": "Mode", "default": "observe", "options": ["observe", "route", "off"], "description": "observe records what would be routed and changes nothing; route acts; off does nothing." },
     "locatingRoute": { "type": "string", "title": "Locating route", "default": "haiku", "description": "Model for tasks that only locate things: haiku, sonnet, or parent to leave them alone." },

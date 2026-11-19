@@ -153,6 +153,19 @@
       "category": "code-quality"
     },
     {
+      "name": "subagent-router",
+      "source": "./plugins/subagent-router",
+      "description": "Moves the built-in Explore and general-purpose subagents to a cheaper model when a small Haiku call finds their task only locates things (reading tasks too, if you turn that route on), and starts in an observe mode that records what it would do and changes nothing",
+      "version": "0.1.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["subagents", "routing", "model", "cost", "haiku", "explore", "mod"],
+      "category": "productivity"
+    },
+    {
       "name": "subagent-tree",
       "source": "./plugins/subagent-tree",
       "description": "A live /agents-tree pane showing the session's subagents as a tree — status, how long each has run, its tool calls and steps, the tool it is on now and the output tokens it used",

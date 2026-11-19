@@ -14,6 +14,8 @@ Markdown and JSON only — no package manager, no test runner, no lint step, no 
 
 **`adversary` is code as well**, with the same two commands: after any change under `plugins/adversary/`, run `claude plugin validate plugins/adversary` and `claude plugin test plugins/adversary` and don't commit until both pass. The reviewer's path guard and the findings parser fail silently rather than loudly: a guard bug lets the reviewer read outside the review root, a parser bug drops findings. See `plugins/adversary/README.md`.
 
+**`subagent-router` is code too**: after any change under `plugins/subagent-router/`, run `claude plugin validate plugins/subagent-router` and `claude plugin test plugins/subagent-router` and don't commit until both pass. A change to the picker prompt also needs `/subagent-router check-picker confirm` to pass, and the passed text copied into `hooks/picker-gate.ts`. Its failures are quiet: a wrong picker answer or route sends work to a weaker model without an error. See `plugins/subagent-router/README.md`.
+
 ## Code exception: plugins/agentic-qa/hooks
 
 `plugins/agentic-qa/hooks/target-guard.mjs` is the plugin's `PreToolUse` guard, in dependency-free Node. After any change to it, run its tests and don't commit until they pass:
