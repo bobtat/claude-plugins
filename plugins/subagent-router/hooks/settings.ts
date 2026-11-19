@@ -50,12 +50,13 @@ function parseRoute(field: string, value: unknown, fallback: Route, notes: strin
   return 'parent'
 }
 
-export function parseSettings(raw: unknown, force: string | undefined): Settings {
+// `conflicted` names fields already reported as a conflict: they are unrecognised, with no note of their own.
+export function parseSettings(raw: unknown, force: string | undefined, conflicted: ReadonlySet<string> = new Set()): Settings {
   const options = isRecord(raw) ? raw : {}
   const notes: string[] = []
-  const mode = parseMode(options.mode, notes)
-  const locating = parseRoute('locatingRoute', options.locatingRoute, 'haiku', notes)
-  const reading = parseRoute('readingRoute', options.readingRoute, 'parent', notes)
+  const mode = conflicted.has('mode') ? 'off' : parseMode(options.mode, notes)
+  const locating = conflicted.has('locatingRoute') ? 'parent' : parseRoute('locatingRoute', options.locatingRoute, 'haiku', notes)
+  const reading = conflicted.has('readingRoute') ? 'parent' : parseRoute('readingRoute', options.readingRoute, 'parent', notes)
   const standingDown = force !== undefined && force !== '' && force !== '0' && force !== 'false'
     ? `${FORCE_VARIABLE} is set`
     : null
@@ -88,6 +89,15 @@ export function pickOptions(settings: unknown): { options: Options; note: string
   return { options, note, conflicts: [...conflicts] }
 }
 
+function conflictNote(source: 'user' | 'policy', field: string, outcome: 'off' | 'overruled'): string {
+  const name = clean(field, 40)
+  const head = `${source}: ${PLUGIN} entries disagree on ${name}`
+  if (outcome === 'overruled') return `${head}, so policy's value is used`
+  if (field === 'mode') return `${head}, so the router is off`
+  if (field === 'locatingRoute' || field === 'readingRoute') return `${head}, so that route is off and the parent model is used`
+  return `${head}, so it is not used`
+}
+
 function off(note: string): Settings {
   const stood = parseSettings({ mode: 'off' }, undefined)
   return { ...stood, notes: [note] }
@@ -100,15 +110,25 @@ export async function readSettings($: SettingsHost): Promise<Settings> {
     // Only user and policy are read: project and local settings come from the repository being worked in.
     const user = pickOptions(await $.settings.read({ source: 'user' }))
     const policy = pickOptions(await $.settings.read({ source: 'policy' }))
-    if (user.note !== null) notes.push(`user: ${user.note}`)
-    if (policy.note !== null) notes.push(`policy: ${policy.note}`)
     Object.assign(merged, user.options, policy.options)
     // A field the sources disagree on is unrecognised, not missing: a missing one would take a default that can be more active than either entry.
-    for (const field of policy.conflicts) merged[field] = null
-    for (const field of user.conflicts) if (!Object.hasOwn(policy.options, field)) merged[field] = null
+    const conflicted = new Set<string>()
+    for (const field of policy.conflicts) {
+      conflicted.add(field)
+      notes.push(conflictNote('policy', field, 'off'))
+    }
+    for (const field of user.conflicts) {
+      if (policy.conflicts.includes(field)) continue
+      if (Object.hasOwn(policy.options, field)) {
+        notes.push(conflictNote('user', field, 'overruled'))
+      } else {
+        conflicted.add(field)
+        notes.push(conflictNote('user', field, 'off'))
+      }
+    }
     // A literal, not FORCE_VARIABLE: the engine reads env names off the source and refuses a name the module does not spell.
     const force = await $.env.get('CLAUDE_CODE_SUBAGENT_MODEL_FORCE')
-    const parsed = parseSettings(merged, typeof force === 'string' ? force : undefined)
+    const parsed = parseSettings(merged, typeof force === 'string' ? force : undefined, conflicted)
     return { ...parsed, notes: [...notes, ...parsed.notes] }
   } catch (error) {
     return off(`settings could not be read (${clean(error, 40)}), so the router is off`)

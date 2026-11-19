@@ -155,7 +155,7 @@ test('a conflict note reaches the result and names its source', async () => {
   const { host } = fakeHost({ user: {}, policy: conflicting })
   const s = await readSettings(host)
   expect(s.mode).toBe('off')
-  expect(s.notes.length).toBe(2)
+  expect(s.notes.length).toBe(1)
   expect(s.notes[0]!.includes('policy')).toBe(true)
   const { host: userHost } = fakeHost({ user: conflicting, policy: {} })
   expect((await readSettings(userHost)).notes[0]!.includes('user')).toBe(true)
@@ -224,6 +224,60 @@ test('policy values are merged before they are parsed, so a bad policy value is 
   expect(await mode({ mode: null })).toBe('off')
   const { host } = fakeHost({ user: withOptions({ readingRoute: 'sonnet' }), policy: withOptions({ readingRoute: 'gpt' }) })
   expect((await readSettings(host)).routes.reading).toBe('parent')
+})
+
+test('a policy conflict is reported once, by its cause, and not as a null value', async () => {
+  const { host } = fakeHost({ user: withOptions({ mode: 'route' }), policy: entries({ mode: 'off' }, { mode: 'observe' }) })
+  const s = await readSettings(host)
+  expect(s.mode).toBe('off')
+  expect(s.notes.length).toBe(1)
+  expect(s.notes[0]!.includes('policy') && s.notes[0]!.includes('mode') && s.notes[0]!.includes('the router is off')).toBe(true)
+  expect(s.notes.some(n => n.includes('null'))).toBe(false)
+})
+
+test('a user conflict with policy silent is reported once and says that route is off', async () => {
+  const { host } = fakeHost({ user: entries({ locatingRoute: 'parent' }, { locatingRoute: 'sonnet' }), policy: {} })
+  const s = await readSettings(host)
+  expect(s.routes.locating).toBe('parent')
+  expect(s.notes.length).toBe(1)
+  expect(s.notes[0]!.includes('user') && s.notes[0]!.includes('locatingRoute') && s.notes[0]!.includes('that route is off')).toBe(true)
+})
+
+test("a user conflict on a field policy sets says policy's value is used, not that anything is off", async () => {
+  const { host } = fakeHost({ user: entries({ mode: 'off' }, { mode: 'Off' }), policy: withOptions({ mode: 'observe' }) })
+  const s = await readSettings(host)
+  expect(s.mode).toBe('observe')
+  expect(s.notes.length).toBe(1)
+  expect(s.notes[0]!.includes('user') && s.notes[0]!.includes('mode') && s.notes[0]!.includes("policy's value is used")).toBe(true)
+  expect(s.notes[0]!.includes('is off')).toBe(false)
+})
+
+test('a policy conflict and a bad user value each give their own note', async () => {
+  const { host } = fakeHost({ user: withOptions({ readingRoute: 'gpt' }), policy: entries({ mode: 'off' }, { mode: 'observe' }) })
+  const s = await readSettings(host)
+  expect(s.notes.length).toBe(2)
+  expect(s.notes.some(n => n.includes('policy') && n.includes('mode'))).toBe(true)
+  expect(s.notes.some(n => n.includes('readingRoute') && n.includes('gpt'))).toBe(true)
+})
+
+test('a real null mode keeps its value note and gets no conflict note', async () => {
+  const { host } = fakeHost({ user: withOptions({ mode: null }), policy: {} })
+  const s = await readSettings(host)
+  expect(s.mode).toBe('off')
+  expect(s.notes.length).toBe(1)
+  expect(s.notes[0]!.includes('mode null is')).toBe(true)
+  expect(s.notes[0]!.includes('disagree')).toBe(false)
+})
+
+test('conflicts on two fields in one source give one note per field', async () => {
+  const { host } = fakeHost({
+    user: {},
+    policy: entries({ mode: 'off', readingRoute: 'parent' }, { mode: 'route', readingRoute: 'sonnet' }),
+  })
+  const s = await readSettings(host)
+  expect(s.notes.length).toBe(2)
+  expect(s.notes.some(n => n.includes('mode'))).toBe(true)
+  expect(s.notes.some(n => n.includes('readingRoute'))).toBe(true)
 })
 
 test('a null value is shown as null in its note, and not as an empty string', async () => {
