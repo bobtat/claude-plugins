@@ -104,6 +104,23 @@ test('a picker failure is recorded with its own reason, and three in a row switc
   expect(w.picks.length).toBe(3)
 })
 
+test('a prompt the picker is never asked about does not reset the count of failures', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.mode = 'observe'
+  w.reply = () => FAILED
+
+  await spawn()
+  await spawn()
+  await spawn({ prompt: 'find ' + 'x'.repeat(16001) })
+  await spawn({ prompt: '\u200B' })
+  await spawn()
+  expect(records(w).map((r) => r.reason)).toEqual(['error', 'error', 'too-long', 'empty-prompt', 'error'])
+  await spawn()
+  expect(records(w)[5]?.reason).toBe('picker-off')
+  expect(w.picks.length).toBe(3)
+})
+
 test('picker failures that begin together count once', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)

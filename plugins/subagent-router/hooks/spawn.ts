@@ -166,8 +166,9 @@ async function pickCounted($: $, prompt: string): Promise<PickResult> {
       lastCountedFailureEnded = ended
       if (failuresInARow >= FAILURES_TO_SWITCH_OFF) await $.state.set(PICKER_OFF, true).catch(() => undefined)
     }
-  } else if (pick.reason !== 'aborted') {
-    // An abort is the person pressing Escape, which says nothing about the picker.
+  } else if (pick.reason === 'answered' || pick.reason === 'unparseable') {
+    // Only a reply shows the picker works. An abort is the person pressing Escape, and an empty or too-long
+    // prompt makes no call, so neither says anything about it.
     failuresInARow = 0
   }
   return pick
