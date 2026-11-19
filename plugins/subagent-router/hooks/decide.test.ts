@@ -49,7 +49,7 @@ test('other never routes, and a route set to parent is off', async () => {
 
 test('nothing routes without a baseline, or at or above it', async () => {
   expect(resolve('locating', routes, undefined)).toEqual({ action: 'unchanged', reason: 'baseline-unknown' })
-  expect(resolve('locating', routes, 'some-new-model')).toEqual({ action: 'unchanged', reason: 'baseline-unknown' })
+  expect(resolve('locating', routes, 'some-new-model')).toEqual({ action: 'unchanged', reason: 'baseline-unrecognised' })
   expect(resolve('locating', routes, 'claude-haiku-5-5')).toEqual({ action: 'unchanged', reason: 'not-cheaper' })
   expect(resolve('reading', both, 'claude-sonnet-5-5')).toEqual({ action: 'unchanged', reason: 'not-cheaper' })
   expect(resolve('reading', both, 'claude-haiku-5-5')).toEqual({ action: 'unchanged', reason: 'not-cheaper' })

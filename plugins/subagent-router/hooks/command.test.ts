@@ -1,5 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
+import { GATE_RESULT } from './picker-gate'
 import { RUN, spawner, until, world } from './test-support'
 
 // The kit has setTimeout, though the engine's typings omit it.
@@ -26,6 +27,13 @@ test('the command answers display-only text and nothing for the model', async ($
   expect(r.text?.includes('mode:')).toBe(true)
   expect(r.context).toBe(undefined)
   expect(await $.command.run({ ...RUN, command: 'other' })).toEqual({ text: 'the engine ran other' })
+})
+
+test('the report says when the shipped picker wording has not passed its check', async ($, on) => {
+  world(on)
+  const text = (await $.command.run(RUN)).text ?? ''
+  const passed = GATE_RESULT.status === ('passed' as string)
+  expect(text.includes('The picker check has not been passed on this wording')).toBe(!passed)
 })
 
 test('with no session start, the first hook after a load registers the command, and only once', async ($, on) => {

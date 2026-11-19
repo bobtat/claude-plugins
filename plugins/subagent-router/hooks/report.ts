@@ -16,6 +16,8 @@ export type ReportInput = {
   wouldRefuse: number
   routeOff: Kind[]
   pickerOff: boolean
+  // GATE_RESULT.status for the shipped picker wording; absent, the report says nothing about the check.
+  pickerCheckStatus?: string
 }
 
 type Run = {
@@ -29,10 +31,11 @@ type Run = {
   row: string
 }
 
+// A refusal does not depend on the mode, so the two quiet modes name it.
 const MODE_TEXT: Record<string, string> = {
-  observe: 'records what it would do and changes nothing',
+  observe: 'records what it would do and changes no spawn, but still refuses spawns by an agent it already routed',
   route: 'runs the kinds with a route on a cheaper model',
-  off: 'does nothing',
+  off: 'routes nothing, but still refuses spawns by an agent it already routed, and records those',
 }
 
 // Past this, String and toFixed switch to exponent form or lose whole digits.
@@ -146,10 +149,16 @@ function headerLines(a: ReportInput): string[] {
     `subagent-router, mode: ${mode} (${MODE_TEXT[mode] ?? 'not a known mode'})`,
     `Routes: locating to ${routeName(routes.locating)}, reading to ${routeName(routes.reading)}`,
   ]
-  if (a.settings.standingDown !== null) lines.push(`Standing down: ${clean(a.settings.standingDown, NOTE_MAX)}, so the router does nothing.`)
+  if (a.pickerCheckStatus !== undefined && a.pickerCheckStatus !== 'passed') {
+    lines.push('The picker check has not been passed on this wording, so route mode should wait for it.')
+  }
+  if (a.settings.standingDown !== null) {
+    lines.push(`Standing down: ${clean(a.settings.standingDown, NOTE_MAX)}, so the router routes nothing; it still refuses spawns by an agent it already routed.`)
+  }
   for (const note of a.settings.notes) lines.push(`Settings: ${clean(note, NOTE_MAX)}`)
+  // A route is turned off by a start at or above its usual model, one that named no model, or one not shown cheaper.
   for (const kind of KINDS) {
-    if (a.routeOff.includes(kind)) lines.push(`The ${kind} route is off for this session: a run routed to a cheaper model started at or above its usual model.`)
+    if (a.routeOff.includes(kind)) lines.push(`The ${kind} route is off for this session: a run routed on it started on a model not confirmed cheaper than its usual one.`)
   }
   if (a.pickerOff) lines.push('The picker is off for this session after three failures in a row.')
   return lines
@@ -170,14 +179,20 @@ export function renderReport(a: ReportInput): string {
   const wouldRefuse = count(a.wouldRefuse)
   const lines = [...headerLines(a), '']
 
-  if (runs.length === 0) lines.push('No subagent spawns in scope yet.')
-  for (const kind of KINDS) if (runs.some((r) => r.kind === kind)) lines.push(totalLine(kind, runs, a))
-  if (runs.length + outOfScope > 0) lines.push(`In scope: ${runs.length} of ${runs.length + outOfScope} spawns`)
+  // A refused spawn can be of any agent type, so it is not an in-scope run; it is counted on its own line.
+  const inScope = runs.filter((r) => r.outcome !== 'refused').length
+  if (inScope === 0) lines.push('No subagent spawns in scope yet.')
+  const totals = KINDS.filter((kind) => runs.some((r) => r.kind === kind)).map((kind) => totalLine(kind, runs, a))
+  lines.push(...totals)
+  if (totals.length > 0) lines.push('Dollar figures are estimates of what these runs cost as they ran, not a saving.')
+  if (runs.length + outOfScope > 0) lines.push(`In scope: ${inScope} of ${runs.length + outOfScope} spawns`)
   if (wouldRefuse > 0 || runs.some((r) => r.outcome === 'would-route')) lines.push(`Spawns the no-spawn rule would have refused: ${wouldRefuse}`)
   const refused = runs.filter((r) => r.outcome === 'refused').length
   if (refused > 0) lines.push(`Spawns refused under an agent the router moved: ${refused}`)
   const learning = runs.filter((r) => r.reason === 'baseline-unknown').length
   if (learning > 0) lines.push(`Left alone while the baseline was learned: ${learning}`)
+  const unranked = runs.filter((r) => r.reason === 'baseline-unrecognised').length
+  if (unranked > 0) lines.push(`Left alone because these agents start on a model the router cannot rank: ${unranked}`)
   const nested = runs.filter((r) => r.reason === 'nested-unverified').length
   if (nested > 0) lines.push(`Nested spawns left alone until the probe confirms which model they inherit: ${nested}`)
   if (skipped > 0) lines.push(`${skipped} record(s) from another version skipped`)

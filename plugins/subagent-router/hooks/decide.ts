@@ -56,7 +56,7 @@ export function precheck(f: SpawnFacts): Precheck {
 
 export type Resolution =
   | { action: 'route'; target: Family }
-  | { action: 'unchanged'; reason: 'other' | 'route-off' | 'not-cheaper' | 'baseline-unknown' }
+  | { action: 'unchanged'; reason: 'other' | 'route-off' | 'not-cheaper' | 'baseline-unknown' | 'baseline-unrecognised' }
 
 type Routes = { locating: Route; reading: Route }
 
@@ -64,7 +64,10 @@ export function resolve(kind: Kind, routes: Routes, baseline: string | undefined
   if (kind === 'other') return { action: 'unchanged', reason: 'other' }
   const target = routes[kind]
   if (target === 'parent') return { action: 'unchanged', reason: 'route-off' }
-  if (baseline === undefined || familyOf(baseline) === undefined) return { action: 'unchanged', reason: 'baseline-unknown' }
+  if (baseline === undefined) return { action: 'unchanged', reason: 'baseline-unknown' }
+  // Learned, but not a model the router can rank: a reason of its own, so the report does not count it as a baseline
+  // still being learned.
+  if (familyOf(baseline) === undefined) return { action: 'unchanged', reason: 'baseline-unrecognised' }
   if (!ranksBelow(target, baseline)) return { action: 'unchanged', reason: 'not-cheaper' }
   return { action: 'route', target }
 }

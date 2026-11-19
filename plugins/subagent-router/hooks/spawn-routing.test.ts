@@ -59,6 +59,20 @@ test('observe mode: a fork of an agent that would have been routed is counted th
   expect(index(w)?.wouldRefuse).toBe(1)
 })
 
+test('a learned baseline the router cannot rank is recorded as such, in route and observe mode', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.startModel = 'fast'
+
+  await spawn()
+  expect(records(w)[0]?.reason).toBe('baseline-unknown')
+  await spawn()
+  expect(records(w)[1]?.reason).toBe('baseline-unrecognised')
+  w.mode = 'observe'
+  await spawn()
+  expect(records(w)[2]).toEqual(expect.objectContaining({ kind: 'locating', outcome: 'unchanged', reason: 'baseline-unrecognised' }))
+})
+
 // --- nested spawns, until probe Q11 says which model parentModel names ---
 
 const NESTED_KEYS = ['baseline', 'routed', 'observed', 'routeOff']

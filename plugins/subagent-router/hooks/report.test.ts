@@ -83,6 +83,54 @@ test('a run priced for only some of its turns says its cost covers the priced tu
   expect(whole.includes('at least')).toBe(false)
 })
 
+test('observe and off name the one thing they still do: refuse spawns by an agent already routed', async () => {
+  const observe = show([]).split('\n')[0]!
+  expect(observe.startsWith('subagent-router, mode: observe')).toBe(true)
+  expect(observe.includes('changes nothing')).toBe(false)
+  expect(observe.includes('still refuses spawns by an agent it already routed')).toBe(true)
+  const off = show([], { settings: settings({ mode: 'off' }) }).split('\n')[0]!
+  expect(off.includes('does nothing')).toBe(false)
+  expect(off.includes('still refuses spawns by an agent it already routed')).toBe(true)
+  const down = show([], { settings: settings({ standingDown: 'CLAUDE_CODE_SUBAGENT_MODEL_FORCE is set' }) })
+  expect(down.includes('does nothing')).toBe(false)
+  expect(down.includes('it still refuses spawns by an agent it already routed')).toBe(true)
+})
+
+test('a refused spawn is not counted as an in-scope run', async () => {
+  const refused = rec({ agentType: 'Plan', kind: null, outcome: 'refused', reason: 'spawner-routed', target: null, started: null, agentId: null, tokens: null, usd: null })
+  const out = show([rec(), refused], { outOfScope: 3 })
+  expect(out.includes('In scope: 1 of 5 spawns')).toBe(true)
+  expect(out.includes('Spawns refused under an agent the router moved: 1')).toBe(true)
+  expect(show([refused]).includes('No subagent spawns in scope yet.')).toBe(true)
+})
+
+test('a baseline the router cannot rank is its own line, not baseline learning', async () => {
+  const out = show([rec({ outcome: 'unchanged', reason: 'baseline-unrecognised', target: null })])
+  expect(out.includes('Left alone because these agents start on a model the router cannot rank: 1')).toBe(true)
+  expect(out.includes('Left alone while the baseline was learned')).toBe(false)
+})
+
+test('a route turned off says why in words true of every way it is turned off', async () => {
+  const out = show([], { routeOff: ['reading'] })
+  expect(out.includes('The reading route is off for this session: a run routed on it started on a model not confirmed cheaper than its usual one')).toBe(true)
+  expect(out.includes('started at or above')).toBe(false)
+})
+
+test('the totals say once that their dollar figures are estimated costs, not a saving', async () => {
+  const out = show([rec(), rec({ kind: 'reading', outcome: 'unchanged', reason: 'route-off', target: null })])
+  const said = out.split('\n').filter((l) => l.includes('not a saving'))
+  expect(said).toEqual(['Dollar figures are estimates of what these runs cost as they ran, not a saving.'])
+  expect(show([]).includes('not a saving')).toBe(false)
+})
+
+test('a picker wording that has not passed the live check is said near the top, and only when told', async () => {
+  const warning = 'The picker check has not been passed on this wording, so route mode should wait for it.'
+  const lines = show([rec()], { pickerCheckStatus: 'not run' }).split('\n')
+  expect(lines.indexOf(warning)).toBe(2)
+  expect(show([rec()], { pickerCheckStatus: 'passed' }).includes('picker check')).toBe(false)
+  expect(show([rec()]).includes('picker check')).toBe(false)
+})
+
 test('a record that never started is shown as not started', async () => {
   const row = show([rec({ started: null, agentId: null, description: 'find the lexer' })]).split('\n').find(l => l.includes('find the lexer'))!
   expect(row.includes('not started')).toBe(true)

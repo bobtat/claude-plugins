@@ -2,6 +2,7 @@ import type { CommandRunInput, CommandRunResult, EngineInterface } from 'claude-
 import type { Kind } from '../types'
 import { answerCheckPicker } from './check-picker'
 import { clean } from './clean'
+import { GATE_RESULT } from './picker-gate'
 import { snapshot } from './records'
 import { renderReport } from './report'
 import { readSettings } from './settings'
@@ -51,7 +52,7 @@ async function buildReport($: $): Promise<string> {
   const routeOff: Kind[] = []
   if (locatingOff.value !== undefined) routeOff.push('locating')
   if (readingOff.value !== undefined) routeOff.push('reading')
-  return renderReport({ settings, ...recorded, routeOff, pickerOff: pickerOff.value === true })
+  return renderReport({ settings, ...recorded, routeOff, pickerOff: pickerOff.value === true, pickerCheckStatus: GATE_RESULT.status })
 }
 
 async function answerReport($: $): Promise<CommandRunResult> {
