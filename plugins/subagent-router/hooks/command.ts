@@ -1,5 +1,6 @@
-import type { CommandRunResult, EngineInterface } from 'claude-code'
+import type { CommandRunInput, CommandRunResult, EngineInterface } from 'claude-code'
 import type { Kind } from '../types'
+import { answerCheckPicker } from './check-picker'
 import { clean } from './clean'
 import { snapshot } from './records'
 import { renderReport } from './report'
@@ -9,6 +10,7 @@ const ROUTE_OFF = { plugin: 'subagent-router', key: 'routeOff' } as const
 const PICKER_OFF = { plugin: 'subagent-router', key: 'pickerOff' } as const
 
 const LINE_MAX = 160
+const USAGE = 'Usage: /subagent-router shows the report; /subagent-router check-picker says what the picker check costs; add confirm to run it.'
 
 type $ = EngineInterface
 
@@ -52,11 +54,19 @@ async function buildReport($: $): Promise<string> {
   return renderReport({ settings, ...recorded, routeOff, pickerOff: pickerOff.value === true })
 }
 
-// Display-only: the report costs the conversation nothing and puts none of the records' text before the model.
-export async function answerCommand($: $): Promise<CommandRunResult> {
+async function answerReport($: $): Promise<CommandRunResult> {
   try {
     return { text: await buildReport($), isTextDisplayOnly: true }
   } catch (error) {
     return { text: clean(`subagent-router: the report could not be built (${clean(error, 80)})`, LINE_MAX), isTextDisplayOnly: true }
   }
+}
+
+// Display-only: the report costs the conversation nothing and puts none of the records' text before the model.
+export async function answerCommand($: $, e: CommandRunInput): Promise<CommandRunResult> {
+  const words = typeof e?.args === 'string' ? e.args.trim().split(/\s+/u).filter((word) => word !== '') : []
+  if (words.length === 0) return answerReport($)
+  if (words[0] === 'check-picker' && words.length === 1) return answerCheckPicker($, e, false)
+  if (words[0] === 'check-picker' && words[1] === 'confirm' && words.length === 2) return answerCheckPicker($, e, true)
+  return { text: USAGE, isTextDisplayOnly: true }
 }

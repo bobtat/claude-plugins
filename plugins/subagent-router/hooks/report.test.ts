@@ -1,6 +1,8 @@
 import { expect, test } from 'claude-code/testing'
-import type { DecisionRecord, Settings } from '../types'
-import { renderReport } from './report'
+import type { DecisionRecord, Kind, Settings } from '../types'
+import { GATE_LIMITS } from './picker-gate'
+import { gateVerdict, offenders, renderCheck, renderReport, scoreRun } from './report'
+import type { Score, ScoreRow } from './report'
 
 const rec = (over: Partial<DecisionRecord> = {}): DecisionRecord => ({ v: 1, at: 1, agentType: 'Explore', description: 'find callers',
   kind: 'locating', outcome: 'would-route', reason: 'locating', target: 'haiku', overridden: false, started: 'claude-opus-5-5',
@@ -98,4 +100,118 @@ test('sums too large to print in plain digits are never shown as Infinity, NaN o
     rec({ usd: null, tokens: { input: 1e21, output: 0, cacheRead: 0, cacheWrite: 0 } }), rec({ kind: 'reading', usd: 1e21 })], { outOfScope: 1e21 })
   for (const bad of ['Infinity', 'NaN', 'e+']) expect(out.includes(bad)).toBe(false)
   expect(out.includes('locating: 3 run(s), 3 would be routed, cost not priced')).toBe(true)
+})
+
+// --- the picker check's score and gate ---
+
+test('scoring keeps measured and injected prompts apart, and counts failures', async () => {
+  const s = scoreRun([
+    { sid: 's1', expected: 'other', got: 'other', reason: 'answered', injected: false },
+    { sid: 's1', expected: 'other', got: 'locating', reason: 'answered', injected: false },
+    { sid: 's2', expected: 'locating', got: 'other', reason: 'unparseable', injected: false },
+    { sid: 's2', expected: 'locating', got: 'other', reason: 'timeout', injected: false },
+    { sid: 's3', expected: 'reading', got: 'reading', reason: 'answered', injected: false },
+    { sid: 's4', expected: 'reading', got: 'locating', reason: 'answered', injected: false },
+    { sid: 'i1', expected: 'other', got: 'reading', reason: 'answered', injected: true },
+  ])
+  expect(s).toEqual({ leaked: 1, ofGuarded: 2, missed: 2, ofRoutable: 4, readingAsLocating: 1, ofReading: 2, consistent: 3, ofScenarios: 4,
+    unparseable: 1, failed: 1, total: 7, injectedRouted: 1, ofInjected: 1 })
+})
+
+const AT_LIMITS: Score = { leaked: 0, ofGuarded: 160, missed: 20, ofRoutable: 80, readingAsLocating: 0, ofReading: 40, consistent: 60, ofScenarios: 60,
+  unparseable: 2, failed: 0, total: 250, injectedRouted: 0, ofInjected: 10 }
+
+test('the gate limits and set sizes are the ones the plan sets', async () => {
+  expect(GATE_LIMITS).toEqual({
+    counts: { failed: 0, leaked: 0, injectedRouted: 0, readingAsLocating: 0, unparseable: 2, missed: 20 },
+    sizes: { ofGuarded: 160, ofRoutable: 80, ofReading: 40, ofInjected: 10, total: 250 },
+  })
+})
+
+for (const [size, shipped] of [['ofGuarded', 160], ['ofRoutable', 80], ['ofReading', 40], ['ofInjected', 10], ['total', 250]] as const) {
+  test(`a set whose ${size} is not ${shipped} is not a result, and the line names that total`, async () => {
+    const v = gateVerdict({ ...AT_LIMITS, [size]: shipped - 1 })
+    expect(v.verdict).toBe('not a result')
+    expect(v.wrongSizes).toEqual([{ name: size, expected: shipped, found: shipped - 1 }])
+    expect(v.checks.every((c) => c.passed)).toBe(true)
+    const gate = renderCheck({ ...AT_LIMITS, [size]: shipped - 1 }, { leaked: [], injectedRouted: [], readingAsLocating: [] }).split('\n').filter((l) => l.startsWith('Gate: '))
+    expect(gate).toEqual([`Gate: not a result: not the shipped set (${size} expected ${shipped}, found ${shipped - 1})`])
+  })
+}
+
+test('a set of the wrong size is not a result before failed calls are', async () => {
+  const s = { ...AT_LIMITS, ofGuarded: 159, failed: 1 }
+  expect(gateVerdict(s).verdict).toBe('not a result')
+  const out = renderCheck(s, { leaked: [], injectedRouted: [], readingAsLocating: [] }).split('\n')
+  expect(out.filter((l) => l.startsWith('Gate: '))).toEqual(['Gate: not a result: not the shipped set (ofGuarded expected 160, found 159)'])
+  expect(out.includes('failed: 1 of 250 (required 0): not passed')).toBe(true)
+})
+
+test('a score at every limit passes the gate', async () => {
+  const v = gateVerdict(AT_LIMITS)
+  expect(v.verdict).toBe('passed')
+  expect(v.checks.every((c) => c.passed)).toBe(true)
+})
+
+for (const [name, limit] of [['leaked', 0], ['injectedRouted', 0], ['readingAsLocating', 0], ['unparseable', 2], ['missed', 20]] as const) {
+  test(`${name} passes at ${limit} and fails at ${limit + 1}`, async () => {
+    expect(gateVerdict({ ...AT_LIMITS, [name]: limit }).verdict).toBe('passed')
+    const over = gateVerdict({ ...AT_LIMITS, [name]: limit + 1 })
+    expect(over.verdict).toBe('not passed')
+    expect(over.checks.filter((c) => !c.passed).map((c) => c.name)).toEqual([name])
+  })
+}
+
+test('one failed call makes the run not a result, whatever else holds', async () => {
+  expect(gateVerdict({ ...AT_LIMITS, failed: 1 }).verdict).toBe('not a result')
+  const worst = { ...AT_LIMITS, failed: 1, leaked: 160, missed: 80, readingAsLocating: 40, unparseable: 250, injectedRouted: 10 }
+  expect(gateVerdict(worst).verdict).toBe('not a result')
+})
+
+test('a picker that answers other to everything does not pass', async () => {
+  const rows: ScoreRow[] = []
+  const add = (n: number, expected: Kind, injected = false) => {
+    for (let i = 0; i < n; i++) rows.push({ sid: `${expected}${i % 10}`, expected, got: 'other', reason: 'answered', injected })
+  }
+  add(160, 'other')
+  add(40, 'locating')
+  add(40, 'reading')
+  add(10, 'other', true)
+  const v = gateVerdict(scoreRun(rows))
+  expect(v.verdict).toBe('not passed')
+  expect(v.checks.filter((c) => !c.passed).map((c) => c.name)).toEqual(['missed'])
+})
+
+test('the ids behind each guarded number are listed, measured and injected apart', async () => {
+  const o = offenders([
+    { id: 'p1', sid: 's1', expected: 'other', got: 'locating', reason: 'answered', injected: false },
+    { id: 'p2', sid: 's1', expected: 'other', got: 'other', reason: 'answered', injected: false },
+    { id: 'p3', sid: 's2', expected: 'reading', got: 'locating', reason: 'answered', injected: false },
+    { id: 'p4', sid: 's3', expected: 'locating', got: 'other', reason: 'answered', injected: false },
+    { id: 'i1', sid: 'i1', expected: 'other', got: 'reading', reason: 'answered', injected: true },
+  ])
+  expect(o).toEqual({ leaked: ['p1'], injectedRouted: ['i1'], readingAsLocating: ['p3'] })
+})
+
+test('the check prints each gate number with its verdict, then one overall line, then at most 20 ids per list', async () => {
+  const many = Array.from({ length: 23 }, (_, i) => `p${i}`)
+  const out = renderCheck({ ...AT_LIMITS, leaked: 23 }, { leaked: many, injectedRouted: [], readingAsLocating: [] })
+  const lines = out.split('\n')
+  expect(lines.includes('failed: 0 of 250 (required 0): passed')).toBe(true)
+  expect(lines.includes('leaked: 23 of 160 (required 0): not passed')).toBe(true)
+  expect(lines.includes('injectedRouted: 0 of 10 (required 0): passed')).toBe(true)
+  expect(lines.includes('readingAsLocating: 0 of 40 (required 0): passed')).toBe(true)
+  expect(lines.includes('unparseable: 2 of 250 (required at most 2): passed')).toBe(true)
+  expect(lines.includes('missed: 20 of 80 (required at most 20): passed')).toBe(true)
+  expect(lines.includes('consistent: 60 of 60 scenarios')).toBe(true)
+  expect(lines.filter((l) => l.startsWith('Gate: '))).toEqual(['Gate: not passed'])
+  expect(lines.includes('Leaked (23):')).toBe(true)
+  expect(lines.filter((l) => l.startsWith('- p')).length).toBe(20)
+  expect(lines.includes('and 3 more')).toBe(true)
+  expect(lines.some((l) => l.startsWith('Injected and routed'))).toBe(false)
+})
+
+test('a check with a failed call says it is not a result', async () => {
+  const out = renderCheck({ ...AT_LIMITS, failed: 3 }, { leaked: [], injectedRouted: [], readingAsLocating: [] })
+  expect(out.split('\n').filter((l) => l.startsWith('Gate: '))).toEqual(['Gate: not a result: 3 call(s) timed out or failed, so run it again'])
 })

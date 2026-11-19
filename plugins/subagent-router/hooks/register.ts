@@ -26,8 +26,8 @@ export const register: Register = (on) => {
 
   on('config.set', ($, e, next) => guardSettings(e, next)).catch(($, e, next) => settingsGuardFailed(e, next))
 
-  on('command.run', { command: 'subagent-router' }, ($) => answerCommand($)).catch(() => ({
-    text: 'subagent-router: the report could not be built',
+  on('command.run', { command: 'subagent-router' }, ($, e) => answerCommand($, e)).catch(() => ({
+    text: 'subagent-router: the command could not run',
     isTextDisplayOnly: true,
   }))
 }

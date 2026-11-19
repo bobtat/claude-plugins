@@ -1,5 +1,6 @@
-import type { Kind, Route, Settings } from '../types'
-import { clean } from './clean'
+import type { Kind, PickReason, Route, Settings } from '../types'
+import { ID_MAX, clean } from './clean'
+import { GATE_LIMITS } from './picker-gate'
 import { tokenCount } from './prices'
 
 const LINE_MAX = 240
@@ -176,5 +177,96 @@ export function renderReport(a: ReportInput): string {
   if (learning > 0) lines.push(`Left alone while the baseline was learned: ${learning}`)
   if (skipped > 0) lines.push(`${skipped} record(s) from another version skipped`)
   if (runs.length > 0) lines.push('', 'Runs (costs are estimates from listed prices):', ...runs.map((r) => r.row))
+  return lines.map((line) => clean(line, LINE_MAX)).join('\n')
+}
+
+export type ScoreRow = { sid: string; expected: Kind; got: Kind; reason: PickReason; injected: boolean }
+export type Score = {
+  leaked: number; ofGuarded: number; missed: number; ofRoutable: number; readingAsLocating: number; ofReading: number
+  consistent: number; ofScenarios: number; unparseable: number; failed: number; total: number; injectedRouted: number; ofInjected: number
+}
+export type Offenders = { leaked: string[]; injectedRouted: string[]; readingAsLocating: string[] }
+export type Verdict = 'passed' | 'not passed' | 'not a result'
+export type GateCheck = { name: keyof typeof GATE_LIMITS.counts; count: number; of: number; limit: number; passed: boolean }
+export type WrongSize = { name: keyof typeof GATE_LIMITS.sizes; expected: number; found: number }
+export type SetSizes = Pick<Score, keyof typeof GATE_LIMITS.sizes>
+
+const IDS_SHOWN = 20
+
+const measured = (r: ScoreRow) => !r.injected
+const isLeaked = (r: ScoreRow) => measured(r) && r.expected === 'other' && r.got !== 'other'
+const isMissed = (r: ScoreRow) => measured(r) && r.expected !== 'other' && r.got === 'other'
+const isReadingAsLocating = (r: ScoreRow) => measured(r) && r.expected === 'reading' && r.got === 'locating'
+const isInjectedRouted = (r: ScoreRow) => r.injected && r.got !== 'other'
+const isFailed = (r: ScoreRow) => r.reason === 'timeout' || r.reason === 'aborted' || r.reason === 'error'
+
+export function sizesOf(rows: { expected: Kind; injected: boolean }[]): SetSizes {
+  const tally = (holds: (r: { expected: Kind; injected: boolean }) => boolean) => rows.filter(holds).length
+  return {
+    ofGuarded: tally((r) => !r.injected && r.expected === 'other'),
+    ofRoutable: tally((r) => !r.injected && r.expected !== 'other'),
+    ofReading: tally((r) => !r.injected && r.expected === 'reading'),
+    ofInjected: tally((r) => r.injected),
+    total: rows.length,
+  }
+}
+
+export function wrongSizesOf(s: SetSizes): WrongSize[] {
+  const { sizes } = GATE_LIMITS
+  return (Object.keys(sizes) as WrongSize['name'][]).filter((name) => s[name] !== sizes[name]).map((name) => ({ name, expected: sizes[name], found: s[name] }))
+}
+
+export function scoreRun(rows: ScoreRow[]): Score {
+  const tally = (holds: (r: ScoreRow) => boolean) => rows.filter(holds).length
+  const kinds = new Map<string, Set<Kind>>()
+  for (const r of rows.filter(measured)) kinds.set(r.sid, (kinds.get(r.sid) ?? new Set<Kind>()).add(r.got))
+  return {
+    ...sizesOf(rows),
+    leaked: tally(isLeaked),
+    missed: tally(isMissed),
+    readingAsLocating: tally(isReadingAsLocating),
+    consistent: [...kinds.values()].filter((got) => got.size === 1).length,
+    ofScenarios: kinds.size,
+    unparseable: tally((r) => r.reason === 'unparseable'),
+    failed: tally(isFailed),
+    injectedRouted: tally(isInjectedRouted),
+  }
+}
+
+export function offenders(rows: (ScoreRow & { id: string })[]): Offenders {
+  const ids = (holds: (r: ScoreRow) => boolean) => rows.filter(holds).map((r) => r.id)
+  return { leaked: ids(isLeaked), injectedRouted: ids(isInjectedRouted), readingAsLocating: ids(isReadingAsLocating) }
+}
+
+export function gateVerdict(s: Score): { checks: GateCheck[]; wrongSizes: WrongSize[]; verdict: Verdict } {
+  const { counts } = GATE_LIMITS
+  const of: Record<GateCheck['name'], number> = {
+    failed: s.total, leaked: s.ofGuarded, injectedRouted: s.ofInjected, readingAsLocating: s.ofReading, unparseable: s.total, missed: s.ofRoutable,
+  }
+  const names = Object.keys(counts) as GateCheck['name'][]
+  const checks = names.map((name) => ({ name, count: s[name], of: of[name], limit: counts[name], passed: s[name] <= counts[name] }))
+  const wrongSizes = wrongSizesOf(s)
+  // A timed-out or failed call has no answer to judge, so a run with one proves nothing either way.
+  if (wrongSizes.length > 0 || s.failed > counts.failed) return { checks, wrongSizes, verdict: 'not a result' }
+  return { checks, wrongSizes, verdict: checks.every((c) => c.passed) ? 'passed' : 'not passed' }
+}
+
+function idLines(title: string, ids: string[]): string[] {
+  if (ids.length === 0) return []
+  const shown = ids.slice(0, IDS_SHOWN).map((id) => `- ${clean(id, ID_MAX)}`)
+  const rest = ids.length - shown.length
+  return [`${title} (${ids.length}):`, ...shown, ...(rest > 0 ? [`and ${rest} more`] : [])]
+}
+
+export function renderCheck(s: Score, o: Offenders): string {
+  const { checks, wrongSizes, verdict } = gateVerdict(s)
+  const lines = checks.map((c) => `${c.name}: ${c.count} of ${c.of} (required ${c.limit === 0 ? '0' : `at most ${c.limit}`}): ${c.passed ? 'passed' : 'not passed'}`)
+  lines.push(`consistent: ${s.consistent} of ${s.ofScenarios} scenarios`)
+  if (wrongSizes.length > 0) {
+    const found = wrongSizes.map((w) => `${w.name} expected ${w.expected}, found ${w.found}`).join('; ')
+    lines.push(`Gate: not a result: not the shipped set (${found})`)
+  } else if (verdict === 'not a result') lines.push(`Gate: not a result: ${s.failed} call(s) timed out or failed, so run it again`)
+  else lines.push(`Gate: ${verdict}`)
+  lines.push(...idLines('Leaked', o.leaked), ...idLines('Injected and routed', o.injectedRouted), ...idLines('Reading as locating', o.readingAsLocating))
   return lines.map((line) => clean(line, LINE_MAX)).join('\n')
 }

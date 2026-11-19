@@ -1,6 +1,7 @@
 // hooks/picker.test.ts
 import { expect, test } from 'claude-code/testing'
 import { PICKER_SYSTEM, buildUserMessage, parseKind, pickKind } from './picker'
+import { GATED_SYSTEM } from './picker-gate'
 
 const USAGE = { input_tokens: 600, output_tokens: 5, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 }
 const answer = (text: string) => ({ isAnswered: true, text, usage: USAGE })
@@ -97,4 +98,35 @@ test('an API error, an empty reply, a throw and a sentence all come back other w
   const thrown = await pickKind(async () => { throw new Error('blocked') }, 'find callers of X')
   expect(thrown.kind).toBe('other')
   expect(thrown.reason).toBe('error')
+})
+
+test('the shipped picker prompt is the one the gate passed on', async () => {
+  expect(PICKER_SYSTEM).toBe(GATED_SYSTEM)
+})
+
+test('a delimiter that keeps occurring in the prompt gives up after five redraws, with no model call', async () => {
+  const seen: unknown[] = []
+  let draws = 0
+  const pick = await pickKind(fake([answer('locating')], seen), 'rewrite the parser aaaaaaaaaaaa', { draw: () => { draws += 1; return 'aaaaaaaaaaaa' } })
+  expect(pick.kind).toBe('other')
+  expect(pick.reason).toBe('error')
+  expect(draws).toBe(6)
+  expect(seen.length).toBe(0)
+})
+
+test('a prompt that is not text at run time is other without a model call', async () => {
+  const seen: unknown[] = []
+  for (const p of [undefined as never, 7 as never]) {
+    const pick = await pickKind(fake([answer('locating')], seen), p)
+    expect(pick.kind).toBe('other')
+    expect(pick.reason).toBe('empty-prompt')
+  }
+  expect(seen.length).toBe(0)
+})
+
+test('an abort is a timeout from 4,500 ms on, and an abort just before', async () => {
+  const aborted = { isAnswered: false, reason: 'aborted', usage: USAGE }
+  const clock = (ticks: number[]) => ({ now: () => ticks.shift()! })
+  expect((await pickKind(fake([aborted]), 'find callers of X', clock([0, 4500]))).reason).toBe('timeout')
+  expect((await pickKind(fake([aborted]), 'find callers of X', clock([0, 4499]))).reason).toBe('aborted')
 })

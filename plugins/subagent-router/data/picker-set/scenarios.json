@@ -1,0 +1,422 @@
+[
+  {
+    "kind": "DESIGN",
+    "text": "The contract with the next engine (`NextContract`) needs a test strategy: what gets tested at which level.",
+    "group": 5,
+    "id": "S01",
+    "expected": "inherit"
+  },
+  {
+    "kind": "REVIEW",
+    "text": "The engineer asks whether the error handling in `TroubleshootingUploadClient` is adequate for flaky networks.",
+    "group": 5,
+    "id": "S02",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DESIGN",
+    "text": "Service registration in `Startup.cs` has grown very long. The engineer wants a plan for breaking it into per-area modules.",
+    "group": 1,
+    "id": "S03",
+    "expected": "inherit"
+  },
+  {
+    "kind": "READ",
+    "text": "Before the engineer's next question you need to understand how the troubleshooting upload feature works from start to finish (prepare, archive, encrypt, upload, discard). You want a written walkthrough.",
+    "group": 1,
+    "id": "S04",
+    "expected": "sonnet"
+  },
+  {
+    "kind": "IMPL",
+    "text": "JWT streaming auth was removed, but some handler still passes a token through to the streaming session. Wherever that is, the leftover parameter has to go.",
+    "group": 1,
+    "id": "S05",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DESIGN",
+    "text": "The Plex, Jellyfin and Emby API clients have no retry policy. The engineer wants one designed: where it lives and what it covers.",
+    "group": 2,
+    "id": "S06",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DEBUG",
+    "text": "Memory grows steadily during a large Plex library scan. Something is holding on to references.",
+    "group": 3,
+    "id": "S07",
+    "expected": "inherit"
+  },
+  {
+    "kind": "REVIEW",
+    "text": "The engineer wants to know how good the test coverage of `NextPlayoutDependents` is and which cases are missing.",
+    "group": 2,
+    "id": "S08",
+    "expected": "inherit"
+  },
+  {
+    "kind": "READ",
+    "text": "The engineer asked how the scanner process talks to the main application. The mechanism is somewhere in `ErsatzTV.Scanner` and `ScannerService`.",
+    "group": 3,
+    "id": "S09",
+    "expected": "sonnet"
+  },
+  {
+    "kind": "IMPL",
+    "text": "Several places build the lock file path by hand. There should be one `FileSystemLayout.LockFilePath` property, and those places should use it.",
+    "group": 3,
+    "id": "S10",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DEBUG",
+    "text": "HLS playback on one channel stalls after about thirty seconds. The engineer pasted the log lines around the stall, and you have them.",
+    "group": 2,
+    "id": "S11",
+    "expected": "inherit"
+  },
+  {
+    "kind": "REVIEW",
+    "text": "The engineer has uncommitted changes to the age encryptor and wants them checked for correctness and security problems before committing.",
+    "group": 1,
+    "id": "S12",
+    "expected": "inherit"
+  },
+  {
+    "kind": "LOC",
+    "text": "You want to know which MediatR request types are marked with `IScannerBackgroundServiceRequest`.",
+    "group": 3,
+    "id": "S13",
+    "expected": "haiku"
+  },
+  {
+    "kind": "DEBUG",
+    "text": "Rebuilding the search index takes about ten times longer than it did a month ago. Some change in that window is responsible.",
+    "group": 4,
+    "id": "S14",
+    "expected": "inherit"
+  },
+  {
+    "kind": "READ",
+    "text": "You want to know what `CHANGELOG.md` says changed between v26.11.3 and v26.12.0.",
+    "group": 1,
+    "id": "S15",
+    "expected": "sonnet"
+  },
+  {
+    "kind": "DESIGN",
+    "text": "The engineer is considering a third database provider, PostgreSQL, alongside the existing Sqlite and MySql projects and wants a proposal for how to add it.",
+    "group": 1,
+    "id": "S16",
+    "expected": "inherit"
+  },
+  {
+    "kind": "IMPL",
+    "text": "`Bech32` has no unit tests. The engineer wants encode/decode round trips and invalid input covered.",
+    "group": 2,
+    "id": "S17",
+    "expected": "inherit"
+  },
+  {
+    "kind": "IMPL",
+    "text": "`RerunMediaCollectionEnumerator` handles its state differently from the other enumerators in the folder. The engineer wants it brought in line with how the others do it.",
+    "group": 5,
+    "id": "S18",
+    "expected": "inherit"
+  },
+  {
+    "kind": "READ",
+    "text": "You want to know what `SubtitleNulBytes` does and when each of its result values comes back.",
+    "group": 5,
+    "id": "S19",
+    "expected": "sonnet"
+  },
+  {
+    "kind": "READ",
+    "text": "You need to know what the README and `hdhr.md` say about setting up HDHomeRun emulation.",
+    "group": 4,
+    "id": "S20",
+    "expected": "sonnet"
+  },
+  {
+    "kind": "REVIEW",
+    "text": "`ScannerService` now uses `EntityLocker` in a few new places. The engineer is worried about race conditions there.",
+    "group": 2,
+    "id": "S21",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DEBUG",
+    "text": "A user reports that a second instance still starts on an NFS-mounted config folder despite the lock file. You need the cause.",
+    "group": 1,
+    "id": "S22",
+    "expected": "inherit"
+  },
+  {
+    "kind": "REVIEW",
+    "text": "The engineer wants the controllers gone through for endpoints that lack an authorization attribute where one would be expected.",
+    "group": 3,
+    "id": "S23",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DESIGN",
+    "text": "`SchedulingEngine` makes it hard to add new schedule kinds. The engineer wants suggestions for restructuring it so they plug in.",
+    "group": 5,
+    "id": "S24",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DEBUG",
+    "text": "Emby HDR items are being reported as SDR. The fault is either in the API client mapping or in the statistics provider.",
+    "group": 5,
+    "id": "S25",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DESIGN",
+    "text": "Playout builds cannot be cancelled midway. The engineer wants an approach for making them cancellable.",
+    "group": 2,
+    "id": "S26",
+    "expected": "inherit"
+  },
+  {
+    "kind": "READ",
+    "text": "You need to understand how a finished library scan leads to \"next\" playouts being re-synced. `ScannerService` and `NextPlayoutDependents` are involved.",
+    "group": 2,
+    "id": "S27",
+    "expected": "sonnet"
+  },
+  {
+    "kind": "LOC",
+    "text": "You need to know which Razor pages and components inject `IEntityLocker`.",
+    "group": 5,
+    "id": "S28",
+    "expected": "haiku"
+  },
+  {
+    "kind": "DESIGN",
+    "text": "The IPTV endpoints need per-channel rate limiting. The engineer wants an implementation plan before any code is written.",
+    "group": 3,
+    "id": "S29",
+    "expected": "inherit"
+  },
+  {
+    "kind": "REVIEW",
+    "text": "The two Dockerfiles (amd64 and arm64) have drifted. The engineer wants to know about inconsistencies that could make the arm64 image behave differently.",
+    "group": 4,
+    "id": "S30",
+    "expected": "inherit"
+  },
+  {
+    "kind": "LOC",
+    "text": "There is a config key for the HLS segmenter idle timeout somewhere in `ConfigElementKey`. You need its definition and every place it is read.",
+    "group": 4,
+    "id": "S31",
+    "expected": "haiku"
+  },
+  {
+    "kind": "IMPL",
+    "text": "The engineer wants a new `ConfigElementKey` for a maximum troubleshooting archive size, enforced in `ArchiveTroubleshootingResultsHandler`.",
+    "group": 1,
+    "id": "S32",
+    "expected": "inherit"
+  },
+  {
+    "kind": "LOC",
+    "text": "You need to know where `IAgeEncryptor` is registered for dependency injection and which classes take it as a constructor dependency.",
+    "group": 2,
+    "id": "S33",
+    "expected": "haiku"
+  },
+  {
+    "kind": "READ",
+    "text": "You want to understand how block scheduling differs from classic scheduling in the way playout items are built. `BlockPlayoutBuilder` and `PlayoutBuilder` are the two builders.",
+    "group": 5,
+    "id": "S34",
+    "expected": "sonnet"
+  },
+  {
+    "kind": "READ",
+    "text": "You want to understand how `HardwareCapabilitiesFactory` decides which `IHardwareCapabilities` implementation to return.",
+    "group": 4,
+    "id": "S35",
+    "expected": "sonnet"
+  },
+  {
+    "kind": "LOC",
+    "text": "You are editing the Docker documentation and need to know where the application decides the path of its single-instance lock file (`ersatztv.lock`).",
+    "group": 2,
+    "id": "S36",
+    "expected": "haiku"
+  },
+  {
+    "kind": "LOC",
+    "text": "The engineer asked which classes implement `IMediaCollectionEnumerator`. You want the complete list with file paths.",
+    "group": 1,
+    "id": "S37",
+    "expected": "haiku"
+  },
+  {
+    "kind": "DESIGN",
+    "text": "The engineer is unsure whether the search index should move out of process and wants a recommendation with the trade-offs.",
+    "group": 3,
+    "id": "S38",
+    "expected": "inherit"
+  },
+  {
+    "kind": "IMPL",
+    "text": "The engineer wants an API endpoint on `MaintenanceController` that triggers emptying the trash.",
+    "group": 3,
+    "id": "S39",
+    "expected": "inherit"
+  },
+  {
+    "kind": "IMPL",
+    "text": "`Playout` needs a nullable `LastSyncedAt` column, with migrations for both database providers.",
+    "group": 4,
+    "id": "S40",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DEBUG",
+    "text": "`PlaylistEnumeratorTests` started failing after the playout build optimisation went in. The engineer wants to know why.",
+    "group": 1,
+    "id": "S41",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DEBUG",
+    "text": "A classic schedule with \"discard to fill\" leaves a gap at midnight. The engineer wants it reproduced in a test and the cause found.",
+    "group": 5,
+    "id": "S42",
+    "expected": "inherit"
+  },
+  {
+    "kind": "LOC",
+    "text": "You need to know which test files exercise `InternalUrlSigner`, including tests of other classes that construct one.",
+    "group": 4,
+    "id": "S43",
+    "expected": "haiku"
+  },
+  {
+    "kind": "DESIGN",
+    "text": "Nobody has decided how troubleshooting uploads are retained and expired on the server side. The engineer wants options to choose from.",
+    "group": 4,
+    "id": "S44",
+    "expected": "inherit"
+  },
+  {
+    "kind": "IMPL",
+    "text": "`hdhr.md` does not mention the tuner count setting. It should, and the README needs the matching note.",
+    "group": 4,
+    "id": "S45",
+    "expected": "inherit"
+  },
+  {
+    "kind": "IMPL",
+    "text": "The Refit package is to be bumped to the latest version in every project file, with any compile errors that follow sorted out.",
+    "group": 5,
+    "id": "S46",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DEBUG",
+    "text": "`dotnet test` for `ErsatzTV.Infrastructure.Tests` hangs in CI but passes locally. Nobody knows why yet.",
+    "group": 2,
+    "id": "S47",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DEBUG",
+    "text": "For some Jellyfin items the external subtitle streams come out in the wrong order. Somewhere between the API response and the stored streams the order goes wrong.",
+    "group": 3,
+    "id": "S48",
+    "expected": "inherit"
+  },
+  {
+    "kind": "REVIEW",
+    "text": "You wrote the invalidation logic in `CollectionItemsCache` earlier in this session and want a second opinion on whether it is correct.",
+    "group": 4,
+    "id": "S49",
+    "expected": "inherit"
+  },
+  {
+    "kind": "REVIEW",
+    "text": "The pull request that removed JWT streaming auth is up. The question is whether anything left behind still assumes a token.",
+    "group": 3,
+    "id": "S50",
+    "expected": "inherit"
+  },
+  {
+    "kind": "LOC",
+    "text": "You need to know which controller and action serve the HDHomeRun `lineup.json` endpoint.",
+    "group": 3,
+    "id": "S51",
+    "expected": "haiku"
+  },
+  {
+    "kind": "REVIEW",
+    "text": "The engineer wonders whether the signing scheme in `InternalUrlSigner` has weaknesses.",
+    "group": 1,
+    "id": "S52",
+    "expected": "inherit"
+  },
+  {
+    "kind": "DEBUG",
+    "text": "A `NullReferenceException` shows up in `GetTroubleshootingInfoHandler` when the next probe has not run yet. You have the stack trace but not the path that leads there.",
+    "group": 4,
+    "id": "S53",
+    "expected": "inherit"
+  },
+  {
+    "kind": "LOC",
+    "text": "You are about to change the signature of `NextPlayoutDependents.ForMediaSource`. You do not yet know which code calls it.",
+    "group": 1,
+    "id": "S54",
+    "expected": "haiku"
+  },
+  {
+    "kind": "IMPL",
+    "text": "`NextPlayoutDependents.All` is to be renamed `ForAllChannels`, with every caller updated.",
+    "group": 2,
+    "id": "S55",
+    "expected": "inherit"
+  },
+  {
+    "kind": "READ",
+    "text": "You want to know what `Program.cs` does at startup, in order, before the web host starts.",
+    "group": 2,
+    "id": "S56",
+    "expected": "sonnet"
+  },
+  {
+    "kind": "READ",
+    "text": "You need to know what options an `FFmpegProfile` exposes and what each one controls, going by the domain class and the editor page.",
+    "group": 3,
+    "id": "S57",
+    "expected": "sonnet"
+  },
+  {
+    "kind": "DESIGN",
+    "text": "The engineer wants a migration path for replacing MediatR with direct handler calls in the Scanner project.",
+    "group": 4,
+    "id": "S58",
+    "expected": "inherit"
+  },
+  {
+    "kind": "REVIEW",
+    "text": "`SlowQueryInterceptor` logs command text. The engineer wants to know whether that could leak sensitive data.",
+    "group": 5,
+    "id": "S59",
+    "expected": "inherit"
+  },
+  {
+    "kind": "LOC",
+    "text": "Migrations were added for HDR columns on `MediaStream`. You need the migration files in both the Sqlite and the MySql projects.",
+    "group": 5,
+    "id": "S60",
+    "expected": "haiku"
+  }
+]

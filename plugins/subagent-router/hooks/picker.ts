@@ -34,6 +34,14 @@ function randomDelimiter(): string {
   return crypto.randomUUID().replace(/-/g, '').slice(0, 12)
 }
 
+// Why a prompt goes to no picker call. The picker check rejects such a prompt by this same rule, so the two cannot drift.
+export function unpickable(prompt: unknown): 'empty-prompt' | 'too-long' | undefined {
+  const text = typeof prompt === 'string' ? prompt : ''
+  if (clean(text, 1) === '') return 'empty-prompt'
+  if (Array.from(text).length > MAX_PROMPT) return 'too-long'
+  return undefined
+}
+
 export async function pickKind(
   complete: Complete,
   prompt: string,
@@ -41,9 +49,9 @@ export async function pickKind(
 ): Promise<PickResult> {
   const result = (reason: PickReason, kind: Kind = 'other', ms = 0): PickResult => ({ kind, reason, ms })
   try {
-    const text = typeof prompt === 'string' ? prompt : ''
-    if (clean(text, 1) === '') return result('empty-prompt')
-    if (Array.from(text).length > MAX_PROMPT) return result('too-long')
+    const skipped = unpickable(prompt)
+    if (skipped !== undefined) return result(skipped)
+    const text = prompt
 
     const draw = opts.draw ?? randomDelimiter
     const now = opts.now ?? (() => performance.now())
