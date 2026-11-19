@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { PRICES, estimateUsd, priceOf, tokenCount } from './prices'
+import { PRICES, estimateUsd, isConfirmedCheaper, priceOf, tokenCount } from './prices'
 
 test('a token count is a finite, positive number, and anything else counts as zero', async () => {
   expect(tokenCount(1234)).toBe(1234)
@@ -38,6 +38,35 @@ test('a key does not match inside a longer version number or word', async () => 
   }
   expect(priceOf('claude-opus-5-50')).toBe(undefined)
   expect(priceOf('claude-opus-5-5b')).toBe(undefined)
+})
+
+test('older versions are priced only where the bundled reference lists them', async () => {
+  expect(priceOf('claude-opus-4-8')).toEqual({ input: 5, output: 25, cacheRead: 0.5, cacheWrite5m: 6.25, cacheWrite1h: 10 })
+  expect(priceOf('claude-fable-5-1')).toEqual({ input: 10, output: 50, cacheRead: 0.25, cacheWrite5m: 12.5, cacheWrite1h: 20 })
+  expect(priceOf('claude-mythos-5-1')).toEqual(priceOf('claude-fable-5-1'))
+  for (const unlisted of ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5', 'claude-opus-4-1-20250805']) expect(priceOf(unlisted)).toBe(undefined)
+})
+
+test('no key is listed after a shorter key it contains', async () => {
+  const keys = PRICES.map(([key]) => key)
+  keys.forEach((key, i) => {
+    for (const earlier of keys.slice(0, i)) expect(key.includes(earlier)).toBe(false)
+  })
+})
+
+test('a start is confirmed cheaper by listed price where both are listed, and by family only for haiku', async () => {
+  expect(isConfirmedCheaper('claude-sonnet-5-5', 'claude-opus-5-5', 'sonnet')).toBe(true)
+  expect(isConfirmedCheaper('claude-opus-4-8', 'claude-fable-5-2', 'opus')).toBe(true)
+  // Opus by family, but priced as Fable 5.1: dearer than the Fable 5.2 baseline.
+  expect(isConfirmedCheaper('claude-opus-affable-5-1', 'claude-fable-5-2', 'opus')).toBe(false)
+  expect(isConfirmedCheaper('claude-sonnet-5-5', 'claude-sonnet-5-5', 'sonnet')).toBe(false)
+  expect(isConfirmedCheaper('claude-haiku-4-5', 'claude-opus-5-5', 'haiku')).toBe(true)
+  expect(isConfirmedCheaper('haiku', 'claude-opus-5-5', 'haiku')).toBe(true)
+  expect(isConfirmedCheaper('claude-sonnet-4-6', 'claude-opus-5-5', 'sonnet')).toBe(false)
+  expect(isConfirmedCheaper('claude-sonnet-4-6', 'claude-opus-5-5', 'haiku')).toBe(false)
+  expect(isConfirmedCheaper('fast', 'claude-opus-5-5', 'haiku')).toBe(false)
+  expect(isConfirmedCheaper(undefined, 'claude-opus-5-5', 'haiku')).toBe(false)
+  expect(isConfirmedCheaper('claude-haiku-4-5', 'claude-haiku-5-5', 'haiku')).toBe(false)
 })
 
 test('only listed model versions have a price', async () => {

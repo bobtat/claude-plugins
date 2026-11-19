@@ -1,4 +1,6 @@
 import type { TurnUsage } from 'claude-code'
+import type { Family } from '../types'
+import { familyOf, ranksBelow } from './model-rank'
 
 export type Price = { input: number; output: number; cacheRead: number; cacheWrite5m: number; cacheWrite1h: number }
 
@@ -6,13 +8,34 @@ export type Price = { input: number; output: number; cacheRead: number; cacheWri
 // output and cache reads, shared/prompt-caching.md for cache writes (1.25 times input for five minutes, 2 times for
 // one hour). Haiku 5.5 costs five times as much for a prompt over 100,000 tokens; this table uses the base rate.
 // A model that is not listed is unpriced, never guessed from a neighbour.
+// Older versions, read on 2026-11-19 from the same files: Fable 5.1 and Mythos 5.1 at $10/$50 with cache reads at
+// $0.25 (models.md); Opus 4.8 at $5/$25 (models.md, "Opus 4.8's pricing ($5/$25 per MTok)") with cache reads at 0.1
+// times input (prompt-caching.md, "0.1x elsewhere"). Opus 5, Sonnet 5 and Fable 5 are listed there too but left out:
+// their keys (opus-5) would also claim an unlisted later minor version such as opus-5-50.
+// A key is never listed after a shorter key it contains, which would claim its ids first.
 export const PRICES: readonly [string, Price][] = [
   ['haiku-5-5', { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite5m: 0.125, cacheWrite1h: 0.2 }],
   ['sonnet-5-5', { input: 2, output: 10, cacheRead: 0.1, cacheWrite5m: 2.5, cacheWrite1h: 4 }],
   ['opus-5-5', { input: 4, output: 20, cacheRead: 0.2, cacheWrite5m: 5, cacheWrite1h: 8 }],
+  ['opus-4-8', { input: 5, output: 25, cacheRead: 0.5, cacheWrite5m: 6.25, cacheWrite1h: 10 }],
   ['fable-5-2', { input: 8, output: 40, cacheRead: 0.2, cacheWrite5m: 10, cacheWrite1h: 16 }],
   ['mythos-5-2', { input: 8, output: 40, cacheRead: 0.2, cacheWrite5m: 10, cacheWrite1h: 16 }],
+  ['fable-5-1', { input: 10, output: 50, cacheRead: 0.25, cacheWrite5m: 12.5, cacheWrite1h: 20 }],
+  ['mythos-5-1', { input: 10, output: 50, cacheRead: 0.25, cacheWrite5m: 12.5, cacheWrite1h: 20 }],
 ]
+
+// Family rank is not a price rank across generations: an alias pinned to an older Opus can cost more than a newer
+// Fable. So where both are listed the prices decide. Haiku is the cheapest family in every generation, so a Haiku
+// start alone may be confirmed by rank when a price is missing; any other unlisted start cannot be confirmed.
+export function isConfirmedCheaper(started: string | undefined, baseline: string, target: Family): boolean {
+  if (started === undefined) return false
+  const startedPrice = priceOf(started)
+  const baselinePrice = priceOf(baseline)
+  if (startedPrice !== undefined && baselinePrice !== undefined) {
+    return startedPrice.input < baselinePrice.input && startedPrice.output < baselinePrice.output
+  }
+  return target === 'haiku' && familyOf(started) === 'haiku' && ranksBelow(started, baseline)
+}
 
 export function priceOf(modelId: string): Price | undefined {
   if (typeof modelId !== 'string') return undefined

@@ -126,6 +126,73 @@ for (const started of ['arn:aws:bedrock:us-east-1:123456789012:application-infer
   })
 }
 
+// Opus by family, so it ranks below a Fable baseline, but priced by the table as Fable 5.1 ($10/$50), which is dearer
+// than Fable 5.2 ($8/$40): it stands for an opus alias pinned to an older, dearer version.
+const DEARER_OPUS = 'claude-opus-affable-5-1'
+
+test('a routed start that ranks below the baseline but costs more by listed price turns the route off', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.routes = { readingRoute: 'opus' }
+  w.kinds = ['reading']
+  w.startModel = 'claude-fable-5-2'
+  const fable = { parentModel: 'claude-fable-5-2' }
+  await spawn(fable)
+
+  w.answer = () => ({ model: DEARER_OPUS, agentId: `a${w.seen.length}` })
+  await spawn(fable)
+  expect(w.seen[1]?.model).toBe('opus')
+  expect(w.lines).toEqual([expect.stringContaining('Asked for opus; the reading route is off for this session; started on ' + DEARER_OPUS)])
+  expect(written(w, 'routeOff').map((s) => s.id)).toEqual(['reading'])
+
+  w.answer = w.start
+  await spawn(fable)
+  expect(w.seen[2]?.model).toBe(undefined)
+  expect(records(w)[2]?.reason).toBe('route-off')
+})
+
+test('a routed start confirmed cheaper by listed price keeps the route on', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.routes = { readingRoute: 'sonnet' }
+  w.kinds = ['reading']
+  await spawn()
+
+  w.answer = (e) => ({ model: e.model === 'sonnet' ? 'claude-sonnet-5-5' : w.startModel, agentId: `a${w.seen.length}` })
+  await spawn()
+  await spawn()
+  expect(w.seen.map((s) => s.model)).toEqual([undefined, 'sonnet', 'sonnet'])
+  expect(w.lines.every((line) => line.startsWith('Routed to sonnet'))).toBe(true)
+  expect(written(w, 'routeOff')).toEqual([])
+})
+
+test('a haiku route that starts on an unpriced haiku is confirmed by family and stays on', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await spawn()
+
+  w.answer = (e) => ({ model: e.model === 'haiku' ? 'claude-haiku-4-5' : w.startModel, agentId: `a${w.seen.length}` })
+  await spawn()
+  await spawn()
+  expect(w.seen.map((s) => s.model)).toEqual([undefined, 'haiku', 'haiku'])
+  expect(written(w, 'routeOff')).toEqual([])
+})
+
+test('a sonnet route that starts on an unpriced sonnet cannot be confirmed cheaper and turns off', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.routes = { readingRoute: 'sonnet' }
+  w.kinds = ['reading']
+  await spawn()
+
+  w.answer = (e) => ({ model: e.model === 'sonnet' ? 'claude-sonnet-4-6' : w.startModel, agentId: `a${w.seen.length}` })
+  await spawn()
+  expect(w.lines).toEqual([expect.stringContaining('Asked for sonnet; the reading route is off for this session; started on claude-sonnet-4-6')])
+  expect(written(w, 'routed').map((s) => s.id)).toEqual(['a2'])
+  await spawn()
+  expect(w.seen[2]?.model).toBe(undefined)
+})
+
 test('a failure after the spawn started does not lose the spawn', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)

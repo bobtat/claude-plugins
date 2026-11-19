@@ -6,6 +6,7 @@ import { anyRouteApplies, factsOf, precheck, resolve } from './decide'
 import { familyOf, ranksBelow } from './model-rank'
 import { DENY_TEXT, NO_RESUME, endsWithMarker, routerNote } from './note'
 import { pickKind } from './picker'
+import { isConfirmedCheaper } from './prices'
 import { bump, newRecord, saveRecord } from './records'
 import { readSettings } from './settings'
 
@@ -28,7 +29,7 @@ type Started = AgentSpawnResult & { agentId: string }
 type Spawner = { wasRouted: boolean; entry: unknown; isObserved: boolean }
 type Routes = { locating: Route; reading: Route }
 type Choice = { kind: Kind | null; target: Family | null; reason: string }
-type Settled = { done: DecisionRecord; routeTurnedOff: boolean }
+type Settled = { done: DecisionRecord; routeTurnedOff: boolean; isCheaper: boolean }
 
 // Picker failures in a row. Ticks order call starts and ends, so failures whose calls overlap count once.
 let failuresInARow = 0
@@ -198,10 +199,11 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
   if (!isStarted(result)) {
     const notStarted: DecisionRecord = { ...rec, outcome: 'not-started' }
     await attempt(() => saveRecord($, id, notStarted))
-    return { done: notStarted, routeTurnedOff: false }
+    return { done: notStarted, routeTurnedOff: false, isCheaper: false }
   }
   const agentId = result.agentId
   let routeTurnedOff = false
+  let isCheaper = false
   const model = modelOf(result)
   const target = rec.target
   const overridden = rewrote && model !== undefined && familyOf(model) !== target
@@ -217,17 +219,20 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
     if (!isPlainlyNotCheaper) {
       await attempt(() => $.state.set({ ...ROUTED, id: agentId }, { v: 1, target, baseline }))
     }
-    if (!ranksBelow(model, baseline)) routeTurnedOff = await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))
+    // The route stays on only for a start shown to cost less than the baseline, by listed price where both are listed.
+    isCheaper = isConfirmedCheaper(model, baseline, target)
+    if (!isCheaper) routeTurnedOff = await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))
   }
   const done: DecisionRecord = { ...rec, started: cleanId(model), agentId, overridden }
   if (await attempt(() => saveRecord($, id, done))) await attempt(() => $.state.set({ ...BY_AGENT, id: agentId }, id))
-  return { done, routeTurnedOff }
+  return { done, routeTurnedOff, isCheaper }
 }
 
-// The line never says an agent was routed to a model it is not on. The route being off comes before the model id,
-// which can be long enough (an ARN) to push anything after it past the line's limit.
-function routedLine(done: DecisionRecord, routeTurnedOff: boolean): string {
-  if (done.started !== null && !done.overridden) return `Routed to ${done.target} as a ${done.kind} task: ${done.description}`
+// The line never says an agent was routed to a model it is not on, or one not shown to be cheaper. The route being off
+// comes before the model id, which can be long enough (an ARN) to push anything after it past the line's limit.
+function routedLine(done: DecisionRecord, s: Settled): string {
+  const { routeTurnedOff, isCheaper } = s
+  if (isCheaper && done.started !== null && !done.overridden) return `Routed to ${done.target} as a ${done.kind} task: ${done.description}`
   const started = done.started ?? 'a model the start did not name'
   if (routeTurnedOff) return `Asked for ${done.target}; the ${done.kind} route is off for this session; started on ${started}: ${done.description}`
   return `Asked for ${done.target}, but the agent started on ${started}: ${done.description}`
@@ -251,8 +256,8 @@ async function pickAndRoute($: $, e: AgentSpawnInput, next: Next, settings: Sett
       : e,
   )
   try {
-    const { done, routeTurnedOff } = await settle($, { id, rec, result, rewrote: rewrites, baseline: baseline ?? '', baselineId })
-    if (done.outcome === 'routed') log($, routedLine(done, routeTurnedOff))
+    const settled = await settle($, { id, rec, result, rewrote: rewrites, baseline: baseline ?? '', baselineId })
+    if (settled.done.outcome === 'routed') log($, routedLine(settled.done, settled))
   } catch {
     // The spawn has started; nothing here may start it again.
   }
