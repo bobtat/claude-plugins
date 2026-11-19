@@ -62,6 +62,19 @@ export function parseSettings(raw: unknown, force: string | undefined): Settings
   return { mode, routes: { locating, reading }, standingDown, notes }
 }
 
+// Deliberately broader than "subagent-router.<field>": the key a /config change carries is not yet measured (probe Q12).
+const NAMES_US = /(?<![\p{L}\p{N}-])subagent-router(?![\p{L}\p{N}-])/iu
+
+export function namesThisPlugin(key: unknown): boolean {
+  return typeof key === 'string' && NAMES_US.test(key)
+}
+
+// The person's own change only: from the /config menu or their typed /config. A bridge change is not attestably theirs.
+export function isPersonsChange(caller: unknown, origin: unknown): boolean {
+  if (!isRecord(caller) || caller.plugin !== 'engine') return false
+  return origin === undefined || (isRecord(origin) && origin.kind === 'composer')
+}
+
 function isOurKey(key: string): boolean {
   return key === PLUGIN || key.startsWith(`${PLUGIN}@`)
 }

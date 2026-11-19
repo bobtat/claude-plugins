@@ -1,4 +1,7 @@
-import type { AgentSpawnInput, AgentSpawnResult, CommandRunResult, EngineInterface, Next as NextOf, NextResult, Register, TurnCompleteInput } from 'claude-code'
+import type {
+  AgentSpawnInput, AgentSpawnResult, Caught, CommandRunResult, ConfigSetInput, ConfigSetResult, EngineInterface, Next as NextOf, NextResult, Register,
+  TurnCompleteInput,
+} from 'claude-code'
 import type { DecisionRecord, Family, Kind, Outcome, PickResult, Route, Settings } from '../types'
 import { clean } from './clean'
 import { anyRouteApplies, factsOf, precheck, resolve } from './decide'
@@ -8,7 +11,7 @@ import { pickKind } from './picker'
 import { estimateUsd, priceOf, tokenCount } from './prices'
 import { bump, newRecord, readRecord, saveRecord, snapshot } from './records'
 import { renderReport } from './report'
-import { readSettings } from './settings'
+import { isPersonsChange, namesThisPlugin, readSettings } from './settings'
 
 const ROUTED = { plugin: 'subagent-router', key: 'routed' } as const
 const OBSERVED = { plugin: 'subagent-router', key: 'observed' } as const
@@ -305,6 +308,25 @@ async function answerCommand($: $): Promise<CommandRunResult> {
   }
 }
 
+export const SETTINGS_DENIED = 'subagent-router: its settings can be changed only by you, in /config'
+export const GUARD_FAILED = 'subagent-router: its settings guard failed, so the change was refused'
+
+function guardSettings(e: ConfigSetInput, next: NextOf<'config.set'>): ConfigSetResult | Promise<ConfigSetResult> {
+  if (!namesThisPlugin(e.key) || isPersonsChange(next.origin, e.origin)) return next(e)
+  return { deny: SETTINGS_DENIED }
+}
+
+// Exported so its refusal can be tested: nothing the guard calls can be made to fail under the test kit.
+export function settingsGuardFailed(e: ConfigSetInput, next: NextOf<'config.set'> & Caught): ConfigSetResult | Promise<ConfigSetResult> {
+  if (next.called) return next(e)
+  try {
+    if (!namesThisPlugin(e.key)) return next(e)
+  } catch {
+    // A key that cannot be checked is treated as this plugin's.
+  }
+  return { deny: GUARD_FAILED }
+}
+
 async function onSpawn($: $, e: AgentSpawnInput, next: Next): Promise<Answer> {
   void registerCommand($)
   const settings = await readSettings($)
@@ -361,6 +383,8 @@ export const register: Register = (on) => {
     await registerCommand($)
     return next(e)
   }).catch(($, e, next) => next(e))
+
+  on('config.set', ($, e, next) => guardSettings(e, next)).catch(($, e, next) => settingsGuardFailed(e, next))
 
   on('command.run', { command: 'subagent-router' }, ($) => answerCommand($)).catch(() => ({
     text: 'subagent-router: the report could not be built',

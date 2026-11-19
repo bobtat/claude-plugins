@@ -361,6 +361,7 @@ test(
   },
 )
 
+// The key names another plugin, so the router's settings guard passes the change on and what is pinned is the kit's.
 test(
   "K11: an inline plugin's $.config.set reaches config.set as key and value only, its caller in next.origin",
   {
@@ -369,7 +370,7 @@ test(
         name: 'other',
         register(on) {
           on('turn.start', async ($, e, next) => {
-            const result = await $.config.set({ key: 'subagent-router.mode', value: 'route' })
+            const result = await $.config.set({ key: 'kit.mode', value: 'route' })
             return next({ ...e, text: JSON.stringify(result) })
           })
         },
@@ -386,7 +387,7 @@ test(
 
     await $.turn.start({ text: '', turnId: 't1' })
 
-    expect(sets).toEqual([{ e: { key: 'subagent-router.mode', value: 'route' }, origin: { plugin: 'other', tier: 'user' } }])
+    expect(sets).toEqual([{ e: { key: 'kit.mode', value: 'route' }, origin: { plugin: 'other', tier: 'user' } }])
     expect(reported(texts)).toEqual([{ value: 'route' }])
   },
 )

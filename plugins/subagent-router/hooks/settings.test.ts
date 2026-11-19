@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { parseSettings, pickOptions, readSettings } from './settings'
+import { isPersonsChange, namesThisPlugin, parseSettings, pickOptions, readSettings } from './settings'
 import type { SettingsHost } from './settings'
 
 test('defaults: observe, locating to haiku, reading off', async () => {
@@ -231,4 +231,30 @@ test('a null value is shown as null in its note, and not as an empty string', as
   const emptyNote = parseSettings({ mode: '' }, undefined).notes[0]!
   expect(nullNote.includes('mode null is')).toBe(true)
   expect(emptyNote.includes('mode "" is')).toBe(true)
+})
+
+test('a settings key names this plugin only where subagent-router stands as a whole word', async () => {
+  for (const key of ['subagent-router', 'subagent-router.mode', 'subagent-router@inline.mode', 'pluginConfigs.subagent-router@inline.options.mode',
+    'pluginConfigs.subagent-router.options', 'x/subagent-router', 'Subagent-Router.mode', 'subagent-router-extra.mode subagent-router.mode']) {
+    expect(namesThisPlugin(key)).toBe(true)
+  }
+  for (const key of ['subagent-router-extra.mode', 'mysubagent-router.x', '-subagent-router.mode', 'subagent-router2.mode', 'subagent_router.mode',
+    'theme', '', 'subagent-rout']) {
+    expect(namesThisPlugin(key)).toBe(false)
+  }
+  for (const key of [undefined, null, 7, ['subagent-router.mode'], { key: 'subagent-router.mode' }]) expect(namesThisPlugin(key)).toBe(false)
+})
+
+test('only a change the engine raised for the person in /config counts as the person\'s own', async () => {
+  const engine = { plugin: 'engine', tier: 'core' }
+  expect(isPersonsChange(engine, { kind: 'composer' })).toBe(true)
+  expect(isPersonsChange(engine, undefined)).toBe(true)
+  expect(isPersonsChange(engine, { kind: 'plugin', name: 'x' })).toBe(false)
+  expect(isPersonsChange(engine, { kind: 'bridge' })).toBe(false)
+  expect(isPersonsChange(engine, { kind: 'sdk' })).toBe(false)
+  expect(isPersonsChange(engine, null)).toBe(false)
+  expect(isPersonsChange(engine, 'composer')).toBe(false)
+  for (const caller of [{ plugin: 'other', tier: 'user' }, { plugin: 'subagent-router', tier: 'user' }, undefined, null, 'engine']) {
+    expect(isPersonsChange(caller, { kind: 'composer' })).toBe(false)
+  }
 })

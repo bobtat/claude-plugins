@@ -1,9 +1,10 @@
 import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
-import type { AgentSpawnInput, CommandRunInput, CommandSpec, ModelCompleteRequest, ModelCompleteResult, On, SessionMessage } from 'claude-code'
+import type { AgentSpawnInput, CommandRunInput, CommandSpec, ConfigSetInput, ModelCompleteRequest, ModelCompleteResult, On, SessionMessage } from 'claude-code'
 import type { DecisionRecord, Index } from '../types'
 import { DENY_TEXT, MARKER, routerNote } from './note'
 import { estimateUsd, priceOf } from './prices'
+import { GUARD_FAILED, SETTINGS_DENIED, register, settingsGuardFailed } from './register'
 
 // The kit has setTimeout, though the engine's typings omit it.
 declare const setTimeout: (run: () => void, ms: number) => unknown
@@ -906,4 +907,92 @@ test('a report that cannot be built answers one display-only line saying so', as
   expect(r.context).toBe(undefined)
   expect(r.text?.startsWith('subagent-router: the report could not be built')).toBe(true)
   expect(r.text?.includes('\n')).toBe(false)
+})
+
+// --- the settings guard ---
+
+// The plugin sets the key turn.start's text names and reports the answer back in that text: an inline plugin's
+// register closes over nothing of this file.
+const SETTER = {
+  name: 'other',
+  register(on: On) {
+    on('turn.start', async ($, e, next) => {
+      const result = await $.config.set({ key: e.text, value: 'route' })
+      return next({ ...e, text: JSON.stringify(result) })
+    })
+  },
+}
+
+// The engine beneath: it writes every change that reaches it.
+function configAt(on: On) {
+  const written: string[] = []
+  const texts: string[] = []
+  on('config.set', (_$, e) => {
+    written.push(e.key)
+    return { value: e.value }
+  })
+  on('turn.start', (_$, e) => {
+    texts.push(e.text)
+    return { turnId: e.turnId }
+  })
+  const setByPlugin = async ($: Engine, key: string) => {
+    await $.turn.start({ text: key, turnId: `t${texts.length}` })
+    return JSON.parse(texts.at(-1) ?? 'null') as unknown
+  }
+  return { written, setByPlugin }
+}
+
+const change = (key: string, origin: ConfigSetInput['origin']): ConfigSetInput => ({
+  key, value: 'route', previous: 'observe', provider: { plugin: 'subagent-router', tier: 'user' }, origin,
+})
+
+test("another plugin's attempt to change a setting is refused", { plugins: [SETTER] }, async ($, on) => {
+  const { written, setByPlugin } = configAt(on)
+
+  expect(await setByPlugin($, 'subagent-router.mode')).toEqual({ deny: SETTINGS_DENIED })
+  expect(await setByPlugin($, 'pluginConfigs.subagent-router@inline.options.mode')).toEqual({ deny: SETTINGS_DENIED })
+  expect(written).toEqual([])
+  expect(await setByPlugin($, 'subagent-router-extra.mode')).toEqual({ value: 'route' })
+  expect(written).toEqual(['subagent-router-extra.mode'])
+})
+
+test('the person changing a setting in /config goes through, and a change marked as from anywhere else is refused', async ($, on) => {
+  const { written } = configAt(on)
+
+  expect(await $.config.set(change('subagent-router.mode', { kind: 'composer' }))).toEqual({ value: 'route' })
+  expect(await $.config.set(change('subagent-router.mode', { kind: 'plugin', name: 'x' }))).toEqual({ deny: SETTINGS_DENIED })
+  expect(await $.config.set(change('subagent-router.mode', { kind: 'bridge' }))).toEqual({ deny: SETTINGS_DENIED })
+  expect(await $.config.set(change('theme', { kind: 'plugin', name: 'x' }))).toEqual({ value: 'route' })
+  expect(written).toEqual(['subagent-router.mode', 'theme'])
+})
+
+test('a failure inside the settings guard refuses the change unless next had already answered', async () => {
+  const replayed = { value: 'route' } as const
+  const caught = (called: boolean) => Object.assign(async () => replayed, { called }) as never
+  const e = change('subagent-router.mode', { kind: 'composer' })
+
+  expect(await settingsGuardFailed(e, caught(false))).toEqual({ deny: GUARD_FAILED })
+  expect(await settingsGuardFailed(e, caught(true))).toEqual(replayed)
+  expect(await settingsGuardFailed({ ...e, key: 'theme' }, caught(false))).toEqual(replayed)
+})
+
+test('the guard and the spawn hook are registered with the .catch each needs', async () => {
+  type Handler = (...args: unknown[]) => unknown
+  const hooks: { event: string; handler: Handler; onFailure?: Handler }[] = []
+  const recordingOn = ((event: string, ...rest: unknown[]) => {
+    const hook: (typeof hooks)[number] = { event, handler: rest.at(-1) as Handler }
+    hooks.push(hook)
+    return {
+      catch: (onFailure: Handler) => {
+        hook.onFailure = onFailure
+      },
+    }
+  }) as unknown as On
+  register(recordingOn, {} as never)
+  const failureOf = (event: string) => hooks.find((h) => h.event === event)?.onFailure
+  const passedOn = { model: 'claude-opus-5-5', agentId: 'a1' } as const
+  const notCalled = <T>(answer: T) => Object.assign(async () => answer, { called: false, origin: ENGINE }) as never
+
+  expect(await failureOf('config.set')?.({}, change('subagent-router.mode', { kind: 'composer' }), notCalled({ value: 'route' }))).toEqual({ deny: GUARD_FAILED })
+  expect(await failureOf('agent.spawn')?.({}, input(), notCalled(passedOn))).toEqual(passedOn)
 })
