@@ -16,6 +16,14 @@ test('an id naming two families is not recognised', async () => {
   expect(familyOf('sonnet-via-opus-gateway')).toBe(undefined)
 })
 
+test('a family word counts only where no letter touches it', async () => {
+  expect(familyOf('affable-7b')).toBe(undefined)
+  expect(familyOf('xhaiku')).toBe(undefined)
+  expect(familyOf('haikus')).toBe(undefined)
+  expect(familyOf('claude-haiku-5-5')).toBe('haiku')
+  expect(familyOf('HAIKU')).toBe('haiku')
+})
+
 test('a model id that is not a string is not recognised', async () => {
   expect(familyOf(undefined as never)).toBe(undefined)
   expect(familyOf(7 as never)).toBe(undefined)

@@ -21,6 +21,14 @@ test('a value that is not recognised never makes routing more active', async () 
   expect(s.notes.length).toBe(3)
 })
 
+test('a route value with a space in it, or a family word inside another word, is not recognised', async () => {
+  const s = parseSettings({ locatingRoute: 'not haiku', readingRoute: 'affable' }, undefined)
+  expect(s.routes).toEqual({ locating: 'parent', reading: 'parent' })
+  expect(s.notes.length).toBe(2)
+  expect(s.notes.some(n => n.includes('locatingRoute') && n.includes('not haiku'))).toBe(true)
+  expect(s.notes.some(n => n.includes('readingRoute') && n.includes('affable'))).toBe(true)
+})
+
 test('values of the wrong type are handled the same way and nothing throws', async () => {
   for (const bad of [true, [], 7, null, { a: 1 }]) {
     const s = parseSettings({ mode: bad, locatingRoute: bad, readingRoute: bad }, undefined)

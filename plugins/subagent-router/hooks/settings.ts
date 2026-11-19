@@ -44,7 +44,8 @@ function parseRoute(field: string, value: unknown, fallback: Route, notes: strin
   if (value === undefined) return fallback
   const name = typeof value === 'string' ? value.trim().toLowerCase() : ''
   if (name === 'parent') return 'parent'
-  const family = name === '' ? undefined : familyOf(name)
+  // "not haiku" holds a family word but does not name one.
+  const family = name === '' || /\s/u.test(name) ? undefined : familyOf(name)
   if (family) return family
   notes.push(`${field} ${shown(value)} is not a model family or parent, so the parent model is used`)
   return 'parent'
