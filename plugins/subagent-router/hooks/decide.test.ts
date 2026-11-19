@@ -17,6 +17,7 @@ test('a spawn under a routed agent is refused whatever the mode, except a fork o
   expect(precheck({ ...base, standingDown: true, spawnerWasRouted: true })).toBe('deny')
   expect(precheck({ ...base, spawnerWasRouted: true, subagentType: 'feature-dev:code-explorer', isBuiltIn: false })).toBe('deny')
   expect(precheck({ ...base, spawnerWasRouted: true, hasExplicitModel: true })).toBe('deny')
+  for (const k of ['isTeammate', 'isWorkflow', 'byOtherPlugin'] as const) expect(precheck({ ...base, spawnerWasRouted: true, [k]: true })).toBe('deny')
   expect(precheck({ ...base, spawnerWasRouted: true, isFork: true })).toBe('pass')
   expect(precheck({ ...base, spawnerWasRouted: true, isResume: true })).toBe('pass')
 })

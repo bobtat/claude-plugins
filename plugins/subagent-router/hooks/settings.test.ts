@@ -208,6 +208,14 @@ test('a conflict inside policy is not overridden by the user value', async () =>
   expect(s.notes.some(n => n.includes('mode') && n.includes('policy'))).toBe(true)
 })
 
+test('a field that conflicts inside policy and inside user settings gives one note, the policy one', async () => {
+  const { host } = fakeHost({ user: entries({ mode: 'route' }, { mode: 'observe' }), policy: entries({ mode: 'off' }, { mode: 'observe' }) })
+  const s = await readSettings(host)
+  expect(s.mode).toBe('off')
+  expect(s.notes.length).toBe(1)
+  expect(s.notes[0]!.startsWith('policy:') && s.notes[0]!.includes('mode')).toBe(true)
+})
+
 test('a route conflict inside policy gives the parent model whatever the user says', async () => {
   const { host } = fakeHost({
     user: withOptions({ locatingRoute: 'haiku' }),
