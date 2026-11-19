@@ -30,6 +30,20 @@ test('a value that is not a string is shown as text and never throws', async () 
   expect(clean({ a: 1 }, 80).length > 0).toBe(true)
 })
 
+test('no more than three combining marks in a run survive', async () => {
+  const stacked = 'a' + String.fromCharCode(0x0301).repeat(500) + 'b'
+  expect(clean(stacked, 80)).toBe('a' + String.fromCharCode(0x0301).repeat(3) + 'b')
+  // A removed character between two runs does not let them join into a longer one.
+  const split = 'a' + '\u0301\u0302\u0303\u200B\u0304\u0305' + 'b'
+  expect(clean(split, 80)).toBe('a\u0301\u0302\u0303b')
+})
+
+test('an accented word, a flag and a skin-tone emoji are unchanged', async () => {
+  for (const text of ['caf\u00E9', 'cafe\u0301', 'Vie\u0302\u0323t', '\u{1F1EC}\u{1F1E7}', '\u{1F44D}\u{1F3FD}', '\u2764\uFE0F']) {
+    expect(clean(text, 80)).toBe(text)
+  }
+})
+
 test('removing a hidden character never leaves a run of spaces', async () => {
   expect(clean('a \u200B b\u001b\tc', 80)).toBe('a b c')
 })
