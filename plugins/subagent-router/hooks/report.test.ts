@@ -83,6 +83,15 @@ test('a run priced for only some of its turns says its cost covers the priced tu
   expect(whole.includes('at least')).toBe(false)
 })
 
+test('a total that is at least a figure rounding to $0.00 says the cost is not known', async () => {
+  const total = (usd: number) => show([rec({ usd, partial: true })]).split('\n').find((l) => l.startsWith('locating: '))
+  expect(total(0)).toBe('locating: 1 run(s), 1 would be routed, estimated cost not known')
+  expect(total(0.004)).toBe('locating: 1 run(s), 1 would be routed, estimated cost not known')
+  expect(total(0.01)).toBe('locating: 1 run(s), 1 would be routed, estimated cost at least $0.01')
+  const withUnpriced = show([rec({ usd: 0, partial: true }), rec({ agentId: 'a2', usd: null })])
+  expect(withUnpriced.includes('at least $0.00')).toBe(false)
+})
+
 test('observe and off name the one thing they still do: refuse spawns by an agent already routed', async () => {
   const observe = show([]).split('\n')[0]!
   expect(observe.startsWith('subagent-router, mode: observe')).toBe(true)

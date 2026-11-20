@@ -55,7 +55,11 @@ function grouped(n: number): string | undefined {
 
 function dollars(usd: number, isAtLeast = false): string | undefined {
   if (!printable(usd)) return undefined
-  if (isAtLeast) return `estimated cost at least $${usd.toFixed(2)}`
+  if (isAtLeast) {
+    const shown = usd.toFixed(2)
+    // "At least $0.00" is true of every cost, so it would say nothing.
+    return shown === '0.00' ? 'estimated cost not known' : `estimated cost at least $${shown}`
+  }
   return usd > 0 && usd < 0.005 ? 'estimated cost under $0.01' : `estimated cost $${usd.toFixed(2)}`
 }
 
