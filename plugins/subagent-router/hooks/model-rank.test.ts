@@ -24,6 +24,11 @@ test('a family word counts only where no letter touches it', async () => {
   expect(familyOf('HAIKU')).toBe('haiku')
 })
 
+test('opusplan names no one family, so it is not recognised', async () => {
+  // The alias runs Opus while planning and Sonnet otherwise, so an agent on it is left unrouted rather than ranked.
+  expect(familyOf('opusplan')).toBe(undefined)
+})
+
 test('a model id that is not a string is not recognised', async () => {
   expect(familyOf(undefined as never)).toBe(undefined)
   expect(familyOf(7 as never)).toBe(undefined)
