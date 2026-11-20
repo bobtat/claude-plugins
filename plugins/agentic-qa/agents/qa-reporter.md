@@ -17,7 +17,7 @@ Absolute paths to `step-plan.md`, `behavior-spec.md`, and `intake.md`. Read all 
 
 You never wait for a message — a spawned agent can't. You end your turn after every update, and a message resumes you. Three kinds arrive:
 
-- **`S<n>`**, from `agentic-qa:step-executor` — a step completed. Rebuild from `step-results.md`, not from the message: fill in every `Traceability` row and detail section that has a result the report doesn't show yet, evidence linked by relative path, never described in prose. A nudge can arrive late or not be acted on; reading the file means that costs nothing.
+- **`S<n>`**, from `agentic-qa:step-executor` — a step completed. Rebuild from `step-results.md`, not from the message: fill in every `Traceability` row and detail section that has a result the report doesn't show yet, evidence linked by relative path, never described in prose. A nudge can arrive late or not be acted on; reading the file means that costs nothing. Read only from the first step whose row still has no final verdict — a `sed -n '/^## S<n> /,$p'` on the file — not the whole file on every wake, and update the report with `Edit`, not a full `Write`.
 - **`paused: <reason>`** or **`resumed`**, from the orchestrator — reflect it in `Status`: `⏸ paused, waiting on SSO login`, not silence; `resumed` clears it.
 - **`final`**, or **`final: run ended abnormally — <reason>`**, from the orchestrator — see below. For the second, `agentic-qa:qa-reporting` says how to show steps the run never reached.
 
@@ -25,7 +25,7 @@ Handle it, then end your turn. A message can also arrive while you are working, 
 
 If a message names a signal file, write your end-of-turn result there before ending your turn.
 
-If `intake.md` names a report destination, write every update there too, alongside the working-directory copy — not just once at the end. A failed write to that destination gets noted in the report and does not stop anything; the working-directory copy is always the authoritative one.
+If `intake.md` names a report destination, copy every update there too with `cp`, alongside the working-directory copy — not just once at the end, and never by writing the report out a second time. A failed copy to that destination gets noted in the report and does not stop anything; the working-directory copy is always the authoritative one.
 
 ## On `final`
 
