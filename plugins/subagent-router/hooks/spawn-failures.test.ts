@@ -105,6 +105,26 @@ test('a routed spawn that starts at or above its baseline is marked and turns th
   expect(isDenied(await spawn({ parentAgentId: 'a2', parentModel: 'claude-opus-5-5' }))).toBe(false)
 })
 
+test('a routed start on the baseline family turns the route off even when it lists cheaper than the baseline', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.startModel = 'claude-opus-4-8'
+  const older = { parentModel: 'claude-opus-4-8' }
+  await spawn(older)
+
+  w.answer = () => ({ model: 'claude-opus-5-5', agentId: `a${w.seen.length}` })
+  await spawn(older)
+  expect(w.seen[1]?.model).toBe('haiku')
+  expect(written(w, 'routed')).toEqual([])
+  expect(written(w, 'routeOff').map((s) => s.id)).toEqual(['locating'])
+  expect(w.lines).toEqual([expect.stringContaining('Asked for haiku; the locating route is off for this session; started on claude-opus-5-5')])
+
+  w.answer = w.start
+  await spawn(older)
+  expect(w.seen[2]?.model).toBe(undefined)
+  expect(records(w)[2]?.reason).toBe('no-route-applies')
+})
+
 for (const started of ['arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/abc123', 'fast']) {
   test(`a routed start on a model whose family cannot be read (${started.slice(0, 12)}) is kept routed and turns the route off`, async ($, on) => {
     const w = world(on)

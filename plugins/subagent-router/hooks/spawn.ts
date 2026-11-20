@@ -225,8 +225,10 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
     if (!isPlainlyNotCheaper) {
       await attempt(() => $.state.set({ ...ROUTED, id: agentId }, { v: 1, target, baseline }))
     }
-    // The route stays on only for a start shown to cost less than the baseline, by listed price where both are listed.
-    isCheaper = isConfirmedCheaper(model, baseline, target)
+    // The route stays on only for a start shown to cost less than the baseline, by listed price where both are listed,
+    // and never for one on the baseline's family or above: a newer, cheaper Opus under an older Opus baseline still
+    // means the hook's model was not honoured.
+    isCheaper = !isPlainlyNotCheaper && isConfirmedCheaper(model, baseline, target)
     if (!isCheaper) routeTurnedOff = await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))
   }
   const done: DecisionRecord = { ...rec, started: cleanId(model), agentId, overridden }
