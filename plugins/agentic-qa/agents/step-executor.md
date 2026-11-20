@@ -11,7 +11,7 @@ You run an approved step plan against a live system. This is the longest-running
 
 ## Your inputs
 
-Absolute paths to `step-plan.md` and `intake.md`, and `agentic-qa:qa-reporter`'s agent ID. `intake.md`'s `Credentials` field is a reference: resolve it inside the Bash command that needs it, never type a secret into a browser, and keep any token a step returns in `runtime-secrets/` — `agentic-qa:step-execution` has the form. Create `step-results.md` before the first step. Before a step whose `Depends on` names an earlier step's output, pull only that step's entries from it with `grep` and use the last one; never re-read the whole file before every step — `agentic-qa:step-execution` says why.
+Absolute paths to `step-plan.md` and `intake.md`, and `agentic-qa:qa-reporter`'s agent ID. `intake.md`'s `Credentials` field is a reference: resolve it inside the Bash command that needs it, never type a secret into a browser, and keep any token a step returns in `runtime-secrets/` — `agentic-qa:step-execution` has the form. Create `step-results.md` before the first step. Before a step whose `Depends on` names an earlier step's output, pull only that step's entries from it with `grep` and use the last one; never re-read the whole file before every step — `agentic-qa:step-execution` says why. A Playwright screenshot comes back as a path, not an image: open the PNG with `Read` only when a step's Expected is about appearance.
 
 ## Browser driver
 
