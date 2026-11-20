@@ -146,31 +146,6 @@ for (const started of ['arn:aws:bedrock:us-east-1:123456789012:application-infer
   })
 }
 
-// Opus by family, so it ranks below a Fable baseline, but priced by the table as Fable 5.1 ($10/$50), which is dearer
-// than Fable 5.2 ($8/$40): it stands for an opus alias pinned to an older, dearer version.
-const DEARER_OPUS = 'claude-opus-affable-5-1'
-
-test('a routed start that ranks below the baseline but costs more by listed price turns the route off', async ($, on) => {
-  const w = world(on)
-  const spawn = spawner($)
-  w.routes = { readingRoute: 'opus' }
-  w.kinds = ['reading']
-  w.startModel = 'claude-fable-5-2'
-  const fable = { parentModel: 'claude-fable-5-2' }
-  await spawn(fable)
-
-  w.answer = () => ({ model: DEARER_OPUS, agentId: `a${w.seen.length}` })
-  await spawn(fable)
-  expect(w.seen[1]?.model).toBe('opus')
-  expect(w.lines).toEqual([expect.stringContaining('Asked for opus; the reading route is off for this session; started on ' + DEARER_OPUS)])
-  expect(written(w, 'routeOff').map((s) => s.id)).toEqual(['reading'])
-
-  w.answer = w.start
-  await spawn(fable)
-  expect(w.seen[2]?.model).toBe(undefined)
-  expect(records(w)[2]?.reason).toBe('route-off')
-})
-
 test('a routed start confirmed cheaper by listed price keeps the route on', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)

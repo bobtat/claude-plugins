@@ -27,10 +27,15 @@ export const PRICES: readonly [string, Price][] = [
 // Family rank is not a price rank across generations: an alias pinned to an older Opus can cost more than a newer
 // Fable. So where both are listed the prices decide. Haiku is the cheapest family in every generation, so a Haiku
 // start alone may be confirmed by rank when a price is missing; any other unlisted start cannot be confirmed.
-export function isConfirmedCheaper(started: string | undefined, baseline: string, target: Family): boolean {
+export function isConfirmedCheaper(
+  started: string | undefined,
+  baseline: string,
+  target: Family,
+  price: (modelId: string) => Price | undefined = priceOf,
+): boolean {
   if (started === undefined) return false
-  const startedPrice = priceOf(started)
-  const baselinePrice = priceOf(baseline)
+  const startedPrice = price(started)
+  const baselinePrice = price(baseline)
   if (startedPrice !== undefined && baselinePrice !== undefined) {
     return startedPrice.input < baselinePrice.input && startedPrice.output < baselinePrice.output
   }
@@ -42,10 +47,12 @@ export function priceOf(modelId: string): Price | undefined {
   return PRICES.find(([key]) => containsVersion(modelId, key))?.[1]
 }
 
-// A key must end where the id does or at a character that is not a letter or digit, so opus-5-5 does not claim opus-5-50.
+// A key must begin where the id does or after a character that is not a letter or digit, and end where the id does or
+// at such a character, so opus-5-5 claims neither opus-5-50 nor xopus-5-5, and fable-5-1 does not claim affable-5-1.
 function containsVersion(modelId: string, key: string): boolean {
   for (let at = modelId.indexOf(key); at !== -1; at = modelId.indexOf(key, at + 1)) {
-    if (!/^[A-Za-z0-9]/.test(modelId.slice(at + key.length))) return true
+    const startsWord = at === 0 || !/[A-Za-z0-9]/.test(modelId.charAt(at - 1))
+    if (startsWord && !/^[A-Za-z0-9]/.test(modelId.slice(at + key.length))) return true
   }
   return false
 }
