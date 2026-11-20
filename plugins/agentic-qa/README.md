@@ -46,12 +46,13 @@ Playwright acts on element references from an accessibility snapshot rather than
 
 What does differ is the session. Playwright launches its own browser, not yours, so the first interactive run is expected to be unauthenticated: it stops and asks you to log in live, and the profile persists from there. An agent-invoked run loads the brief's `browser_session` storage state instead and escalates if it's missing or expired.
 
-Four things about the shipped Playwright config worth knowing before you install:
+Five things about the shipped Playwright config worth knowing before you install:
 
 - **It runs in every session.** Claude Code starts a plugin's stdio MCP servers when the plugin is enabled, not on first use, so enabling `agentic-qa` means a small Node process starts each session whether or not you ever run a browser step. Its 48 tools, including `browser_run_code_unsafe`, are also offered to your main session, not only to the executor.
 - **The version is pinned**, deliberately. A walkthrough's worth as evidence depends on knowing what produced it, and `@latest` would mean the same walkthrough run two months apart used provably different tools.
 - **`--caps=testing,storage` is required, not optional.** The verification tools and both storage-state tools sit behind non-default capability groups; without that flag the server silently doesn't expose them. Note that `--caps --help` lists only `vision, pdf, devtools` — `testing` and `storage` are real, working values the CLI's own help text omits. Don't remove the flag on the strength of that help output.
 - **Its files go to the plugin's data directory, not your repository.** Playwright writes snapshots, screenshots and storage states to an output directory, and confines file access to that directory and the session's working root. Left at the default, both are your repository. `--output-dir` points it at the plugin's data directory instead; the executor copies each screenshot from there into the run's `evidence/`. `--allow-unrestricted-file-access` would also remove the confinement, and is deliberately not used: it lets the browser open `file://` URLs.
+- **Screenshots come back as a path, not an image.** `--image-responses omit` keeps the server writing every screenshot to disk while leaving the image out of the tool result, which otherwise stays in the executor's context and is paid for again on every later call of the run. The executor judges from the accessibility snapshot, and opens a screenshot only when a step's expected result concerns appearance. This affects only your main session if you call Playwright's tools yourself: their screenshots won't show inline either.
 
 The persistent Playwright profile is keyed by a hash of the working directory, so running a walkthrough from a different directory gets a different — also persistent — profile, and a fresh login.
 
@@ -78,6 +79,8 @@ A login provider is handled separately. Staging behind single sign-on usually re
 ## Invocation names
 
 Everything this plugin ships is namespaced, with no bare-name fallback. The command is `/agentic-qa:walkthrough`. The five skills are `agentic-qa:agentic-qa`, `agentic-qa:behavior-coverage`, `agentic-qa:step-planning`, `agentic-qa:step-execution`, and `agentic-qa:qa-reporting`. The seven agents are `agentic-qa:behavior-extractor`, `agentic-qa:behavior-coverage-critic`, `agentic-qa:step-planner`, `agentic-qa:step-plan-critic`, `agentic-qa:step-executor`, `agentic-qa:qa-reporter`, and `agentic-qa:qa-runner`.
+
+`agentic-qa:qa-reporter` runs on Sonnet: its work is filling a template from `step-results.md` and rendering the HTML with a script. Every other agent uses your session's model, because each of them makes a call a weaker model could get wrong without anything noticing: what the ticket asks for, whether a step reaches something real, whether a page passed.
 
 ## Settings
 
