@@ -112,6 +112,19 @@ test('observe mode: a nested spawn is asked about so its kind is recorded, and i
   expect(NESTED_KEYS.flatMap((key) => written(w, key, from))).toEqual([])
 })
 
+test('observe mode: a nested spawn whose picker call fails or is unparseable is recorded as other, as a top-level one is', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.mode = 'observe'
+
+  w.reply = () => FAILED
+  await spawn({ parentAgentId: 'x1' })
+  w.reply = () => ({ isAnswered: true, text: 'This looks like a search.', usage: USAGE })
+  await spawn({ parentAgentId: 'x1' })
+  expect(w.picks.length).toBe(2)
+  expect(records(w).map((r) => [r.kind, r.reason])).toEqual([['other', 'nested-unverified'], ['other', 'nested-unverified']])
+})
+
 test('a nested spawn under a routed agent is still refused, and a nested explicit model is still recorded as explicit', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)

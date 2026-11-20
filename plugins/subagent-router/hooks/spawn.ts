@@ -247,10 +247,7 @@ function routedLine(done: DecisionRecord, s: Settled): string {
 // Observe mode still asks the picker, so its counts by kind stay complete; route mode makes no call it would not act on.
 async function leaveNested($: $, e: AgentSpawnInput, next: Next, mode: Settings['mode']): Promise<Answer> {
   let kind: Kind | null = null
-  if (mode === 'observe' && (await $.state.get(PICKER_OFF)).value !== true) {
-    const pick = await pickCounted($, e.prompt)
-    if (pick.reason === 'answered') kind = pick.kind
-  }
+  if (mode === 'observe' && (await $.state.get(PICKER_OFF)).value !== true) kind = (await pickCounted($, e.prompt)).kind
   return leaveAlone($, e, next, { kind, reason: 'nested-unverified' })
 }
 
