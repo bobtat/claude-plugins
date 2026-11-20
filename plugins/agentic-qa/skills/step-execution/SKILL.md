@@ -11,7 +11,7 @@ This is the longest-running, most context-heavy stage in the pipeline, which is 
 
 ## Per-step loop
 
-Before each step, read `step-results.md` for any output value an earlier step produced that this step's action depends on. After each step, append its own entry there — verdict, evidence path, outputs later steps might need — then, unless it was the last step, send `S<n>` via `SendMessage` to the reporter's agent ID so the report grows step by step. After the last step `final` is about to follow, and a nudge would only start a turn for it to land in. It is a nudge, not the result: the reporter rebuilds from `step-results.md` whenever it wakes, so a nudge that arrives late loses nothing. `SendMessage` accepts only an agent ID — never `agentic-qa:qa-reporter`.
+Before a step whose `Depends on` names an earlier step's output, pull that step's entries out of `step-results.md` — `grep -A 12 '^## S<n> '` on the file — and take the value from the last of them, which is its result. Don't read the whole file before every step: you wrote every entry in it and still hold them, and re-reading a file that grows by one entry per step makes a long run's cost grow with the square of its length. After each step, append its own entry there — verdict, evidence path, outputs later steps might need — then, unless it was the last step, send `S<n>` via `SendMessage` to the reporter's agent ID so the report grows step by step. After the last step `final` is about to follow, and a nudge would only start a turn for it to land in. It is a nudge, not the result: the reporter rebuilds from `step-results.md` whenever it wakes, so a nudge that arrives late loses nothing. `SendMessage` accepts only an agent ID — never `agentic-qa:qa-reporter`.
 
 ### Ending a turn
 
