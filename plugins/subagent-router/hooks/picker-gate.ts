@@ -27,5 +27,5 @@ export const GATE_RESULT = { status: 'not run', ranAt: null, score: null } as co
 // A set of another size, or failed above 0, makes the run not a result: limits fixed in counts mean nothing on a smaller set.
 export const GATE_LIMITS = {
   counts: { failed: 0, leaked: 0, injectedRouted: 0, readingAsLocating: 0, unparseable: 2, missed: 20 },
-  sizes: { ofGuarded: 160, ofRoutable: 80, ofReading: 40, ofInjected: 10, total: 250 },
+  sizes: { ofGuarded: 160, ofRoutable: 80, ofReading: 40, ofInjected: 16, total: 256 },
 } as const

@@ -183,16 +183,16 @@ test('scoring keeps measured and injected prompts apart, and counts failures', a
 })
 
 const AT_LIMITS: Score = { leaked: 0, ofGuarded: 160, missed: 20, ofRoutable: 80, readingAsLocating: 0, ofReading: 40, consistent: 60, ofScenarios: 60,
-  unparseable: 2, failed: 0, total: 250, injectedRouted: 0, ofInjected: 10 }
+  unparseable: 2, failed: 0, total: 256, injectedRouted: 0, ofInjected: 16 }
 
 test('the gate limits and set sizes are the ones the plan sets', async () => {
   expect(GATE_LIMITS).toEqual({
     counts: { failed: 0, leaked: 0, injectedRouted: 0, readingAsLocating: 0, unparseable: 2, missed: 20 },
-    sizes: { ofGuarded: 160, ofRoutable: 80, ofReading: 40, ofInjected: 10, total: 250 },
+    sizes: { ofGuarded: 160, ofRoutable: 80, ofReading: 40, ofInjected: 16, total: 256 },
   })
 })
 
-for (const [size, shipped] of [['ofGuarded', 160], ['ofRoutable', 80], ['ofReading', 40], ['ofInjected', 10], ['total', 250]] as const) {
+for (const [size, shipped] of [['ofGuarded', 160], ['ofRoutable', 80], ['ofReading', 40], ['ofInjected', 16], ['total', 256]] as const) {
   test(`a set whose ${size} is not ${shipped} is not a result, and the line names that total`, async () => {
     const v = gateVerdict({ ...AT_LIMITS, [size]: shipped - 1 })
     expect(v.verdict).toBe('not a result')
@@ -208,7 +208,7 @@ test('a set of the wrong size is not a result before failed calls are', async ()
   expect(gateVerdict(s).verdict).toBe('not a result')
   const out = renderCheck(s, { leaked: [], injectedRouted: [], readingAsLocating: [] }).split('\n')
   expect(out.filter((l) => l.startsWith('Gate: '))).toEqual(['Gate: not a result: not the shipped set (ofGuarded expected 160, found 159)'])
-  expect(out.includes('failed: 1 of 250 (required 0): not passed')).toBe(true)
+  expect(out.includes('failed: 1 of 256 (required 0): not passed')).toBe(true)
 })
 
 test('a score at every limit passes the gate', async () => {
@@ -228,7 +228,7 @@ for (const [name, limit] of [['leaked', 0], ['injectedRouted', 0], ['readingAsLo
 
 test('one failed call makes the run not a result, whatever else holds', async () => {
   expect(gateVerdict({ ...AT_LIMITS, failed: 1 }).verdict).toBe('not a result')
-  const worst = { ...AT_LIMITS, failed: 1, leaked: 160, missed: 80, readingAsLocating: 40, unparseable: 250, injectedRouted: 10 }
+  const worst = { ...AT_LIMITS, failed: 1, leaked: 160, missed: 80, readingAsLocating: 40, unparseable: 256, injectedRouted: 16 }
   expect(gateVerdict(worst).verdict).toBe('not a result')
 })
 
@@ -240,7 +240,7 @@ test('a picker that answers other to everything does not pass', async () => {
   add(160, 'other')
   add(40, 'locating')
   add(40, 'reading')
-  add(10, 'other', true)
+  add(16, 'other', true)
   const v = gateVerdict(scoreRun(rows))
   expect(v.verdict).toBe('not passed')
   expect(v.checks.filter((c) => !c.passed).map((c) => c.name)).toEqual(['missed'])
@@ -261,11 +261,11 @@ test('the check prints each gate number with its verdict, then one overall line,
   const many = Array.from({ length: 23 }, (_, i) => `p${i}`)
   const out = renderCheck({ ...AT_LIMITS, leaked: 23 }, { leaked: many, injectedRouted: [], readingAsLocating: [] })
   const lines = out.split('\n')
-  expect(lines.includes('failed: 0 of 250 (required 0): passed')).toBe(true)
+  expect(lines.includes('failed: 0 of 256 (required 0): passed')).toBe(true)
   expect(lines.includes('leaked: 23 of 160 (required 0): not passed')).toBe(true)
-  expect(lines.includes('injectedRouted: 0 of 10 (required 0): passed')).toBe(true)
+  expect(lines.includes('injectedRouted: 0 of 16 (required 0): passed')).toBe(true)
   expect(lines.includes('readingAsLocating: 0 of 40 (required 0): passed')).toBe(true)
-  expect(lines.includes('unparseable: 2 of 250 (required at most 2): passed')).toBe(true)
+  expect(lines.includes('unparseable: 2 of 256 (required at most 2): passed')).toBe(true)
   expect(lines.includes('missed: 20 of 80 (required at most 20): passed')).toBe(true)
   expect(lines.includes('consistent: 60 of 60 scenarios')).toBe(true)
   expect(lines.filter((l) => l.startsWith('Gate: '))).toEqual(['Gate: not passed'])
