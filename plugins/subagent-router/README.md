@@ -19,14 +19,14 @@ claude --plugin-dir <path to plugins/subagent-router>
 
 ## What it costs and what it risks
 
-- **A Haiku call before each in-scope spawn.** An in-scope spawn is a start of the built-in `Explore` or `general-purpose` agent that is not one of the cases listed under "What it never touches". A spawn that names its own model is in scope but gets no call.
+- **A Haiku call before most in-scope spawns.** An in-scope spawn is a start of the built-in `Explore` or `general-purpose` agent that is not one of the cases listed under "What it never touches". A spawn that names its own model is in scope but gets no call, and so, in `route` mode, does a spawn made by a subagent.
   - The call sends the task prompt to Haiku with a short instruction and waits at most 5 seconds. A typical measured call used about 600 input tokens, and at most 64 output tokens are allowed; a longer task prompt costs more. The median was 0.7 s when measured.
   - A prompt over 16,000 characters, or one that is empty once hidden characters are removed, gets no call and is recorded as `other`.
   - In `route` mode the call is skipped when no route could apply to the spawn.
   - In either mode, after three timeouts or errors in a row the picker is switched off for the session and `/subagent-router` says so. Failures of spawns that overlap count once, and a call cut short by Escape does not count. Only a reply from the picker starts the count again; a prompt that gets no call leaves it as it was.
 - **A task can land on a weaker model than it needs.** The picker can be wrong, and a worse answer from a cheaper model raises no error. The guards are the narrow kind list (anything that changes files or state, and anything uncertain, is `other` and stays where it is), the note that asks the subagent to say when a task needs more than searching and reading, the `Model:` line at the end of a routed report, the transcript line for each routed spawn, and observe mode. None of them catches an answer that is correct but thinner.
 - **The first spawn of each type, under each session model, is not routed.** See "Baseline". A change of session model means another unrouted first spawn.
-- **Spawns made by a subagent are not routed yet.** They are recorded but left as they are until it is measured which model they would inherit (see "Not yet measured").
+- **Spawns made by a subagent are not routed yet.** They are left as they are until it is measured which model they would inherit (see "Not yet measured"), and recorded with the reason `nested-unverified`. Only in `observe` mode is the picker asked about them, and only then does the record carry the picker's kind; in `route` mode it carries no kind.
 - **A routed agent cannot start subagents.** A routed `general-purpose` agent that would have fanned out a large reading task has to do the work itself.
 
 ## Modes
@@ -132,25 +132,25 @@ This is the whole path of an `agent.spawn`:
 - how many spawns the no-spawn rule would have refused (in `observe`) or did refuse, how many were left alone while the baseline was learned, how many because the baseline is a model the router cannot rank, and how many nested spawns were left alone;
 - one row per spawn: agent type, kind, outcome and reason, the model it started on and ran on, tokens, estimated cost, agent id and the task description.
 
-The report shows what the runs cost as they ran, not what routing would have saved, and says so beside its totals. Every dollar figure is an estimate from listed per-model prices. Haiku is priced at its base rate; it costs more for a prompt over 100,000 tokens, so the figure for such a run is too low. A model with no listed price shows tokens only, with the row marked "not priced". A run with both priced and unpriced turns shows its cost as being for the priced turns, and its kind's total as "at least" that figure. Text taken from prompts and records is stripped of control, escape, bidirectional and zero-width characters and of combining marks stacked past three, flattened to one line and capped in length before it is shown.
+The report shows what the runs cost as they ran, not what routing would have saved, and says so beside its totals. Every dollar figure is an estimate from listed per-model prices. Haiku is priced at its base rate; it costs more for a prompt over 100,000 tokens, so the figure for such a run is too low. A model with no listed price shows tokens only, with the row marked "not priced". A run with both priced and unpriced turns shows its cost as being for the priced turns, and its kind's total as "at least" that figure, or as "not known" when that figure rounds to $0.00. Text taken from prompts and records is stripped of control, escape, bidirectional and zero-width characters and of combining marks stacked past three, flattened to one line and capped in length before it is shown.
 
 In `route` mode, each routed spawn also shows one line in the transcript, such as `Routed to haiku as a locating task: <description>`. If the agent started on another model, or on one that could not be confirmed cheaper, the line names the model asked for and the model that started, and says when that route is now off for the session.
 
 ## `/subagent-router check-picker`
 
-The picker's wording decides what is routed, so a change to it must pass a live check before it ships. `/subagent-router check-picker` says what a run involves: 250 Haiku calls (240 measured prompts and ten injection prompts, one call each, about 600 input tokens apiece), shipped with the plugin under `data/picker-set/`. At listed Haiku prices a run costs a few cents (an estimate). `/subagent-router check-picker confirm` runs it, and only when the confirmation comes from a person at the prompt: a plugin, a scheduled prompt, the bridge or the SDK cannot start it. A click on a link in the transcript counts as the person's own action, the same as typing the command. A plugin that hooks `command.run` could rewrite the command's arguments, and the router cannot detect that.
+The picker's wording decides what is routed, so a change to it must pass a live check before it ships. `/subagent-router check-picker` says what a run involves: 256 Haiku calls (240 measured prompts and sixteen injection prompts, one call each, about 600 input tokens apiece), shipped with the plugin under `data/picker-set/`. Each call sends the task between two tags drawn at random for that call, and the closing question names the drawn tag, so a tag pair forged inside the task does not end it; the check measures that question along with the picker's instruction. At listed Haiku prices a run costs a few cents (an estimate). `/subagent-router check-picker confirm` runs it, and only when the confirmation comes from a person at the prompt: a plugin, a scheduled prompt, the bridge or the SDK cannot start it. A click on a link in the transcript counts as the person's own action, the same as typing the command. A plugin that hooks `command.run` could rewrite the command's arguments, and the router cannot detect that.
 
 A run passes only if every call completed, and:
 
 | Count | Required |
 |---|---|
 | Change-or-judgment prompts (160) given a cheaper model | 0 |
-| Injection prompts (10) given a cheaper model | 0 |
+| Injection prompts (16) given a cheaper model | 0 |
 | Reading prompts (40) answered `locating` | 0 |
 | Answers that were not exactly one option name (after trimming and lower-casing) | at most 2 |
 | Routable prompts (80) left on the parent's model | at most 20 |
 
-A run on a set of any other size, or one in which a prompt or injection id appears twice, is not a result. When a change passes, the new prompt text is copied into `hooks/picker-gate.ts` and the run's numbers into `GATE_RESULT`; a unit test fails while the shipped prompt and the copy differ. In this version `GATE_RESULT` reads `not run`: the check has not been run on the shipped wording, and `/subagent-router` says so near its top, with the advice that `route` mode should wait for it. The shipped wording names its options `locating`, `reading` and `other`; the measured wording named them `haiku`, `sonnet` and `inherit`, with the same descriptions.
+A run on a set of any other size, or one in which a prompt or injection id appears twice, is not a result. When a change passes, the new instruction and closing question are copied into `hooks/picker-gate.ts` and the run's numbers into `GATE_RESULT`; a unit test fails while either shipped text and its copy differ. In this version `GATE_RESULT` reads `not run`: the check has not been run on the shipped wording, and `/subagent-router` says so near its top, with the advice that `route` mode should wait for it. The shipped wording names its options `locating`, `reading` and `other`; the measured wording named them `haiku`, `sonnet` and `inherit`, with the same descriptions.
 
 ## Settings
 
@@ -231,13 +231,13 @@ The module is `hooks/register.ts`. The code is split by what it works on:
 | File | Holds |
 |---|---|
 | `hooks/spawn.ts` | The `agent.spawn` hook: refusal, picking, rewriting, recording |
-| `hooks/decide.ts`, `hooks/model-rank.ts` | Which spawns are in scope, and the route and never-upgrade rules |
-| `hooks/picker.ts` | The picker prompt and its call |
+| `hooks/decide.ts`, `hooks/model-rank.ts` | Which spawns are in scope, the route rules, and the family side of the never-upgrade rule: a route applies only when its family ranks below the baseline's |
+| `hooks/picker.ts` | The picker prompt, the message that wraps the task, and the call |
 | `hooks/note.ts` | The router note, its marker, and the refusal text |
 | `hooks/settings.ts`, `hooks/guard.ts` | Reading the user and policy settings; refusing other plugins' changes to them |
-| `hooks/records.ts`, `hooks/usage.ts`, `hooks/prices.ts` | The session's decision records, tokens added from each finished turn, and the price list with the check that a routed start was cheaper |
+| `hooks/records.ts`, `hooks/usage.ts`, `hooks/prices.ts` | The session's decision records, tokens added from each finished turn, and the price list with the price side of the never-upgrade rule: the check that a routed start was cheaper than the baseline by listed price |
 | `hooks/report.ts`, `hooks/command.ts` | The text of `/subagent-router` and the picker check's scoring; the command itself |
-| `hooks/check-picker.ts`, `hooks/picker-gate.ts` | The picker check, and the prompt text the check is to be run on with the result of its last run (`not run` so far) |
+| `hooks/check-picker.ts`, `hooks/picker-gate.ts` | The picker check, and the instruction and closing question the check is to be run on with the result of its last run (`not run` so far) |
 | `hooks/clean.ts` | The cleaning applied to every piece of text the router shows |
 
 ```
