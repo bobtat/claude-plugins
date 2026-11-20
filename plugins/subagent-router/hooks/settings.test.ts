@@ -54,6 +54,18 @@ test('a note on a value that held hidden characters says they were removed from 
   expect(parseSettings({ mode: 'turbo' }, undefined).notes[0]!.includes('hidden')).toBe(false)
 })
 
+test('a tab, newline or carriage return alone is ordinary whitespace, so the note does not say hidden characters were removed', async () => {
+  // Trimmed, this is a valid mode, so no note at all.
+  expect(parseSettings({ mode: 'route\n' }, undefined)).toEqual(expect.objectContaining({ mode: 'route', notes: [] }))
+  for (const mode of ['ro\tute', 'ro\nute', 'ro\r\nute', 'turbo\n']) {
+    const s = parseSettings({ mode }, undefined)
+    expect(s.notes.length).toBe(1)
+    expect(s.notes[0]!.includes('hidden')).toBe(false)
+  }
+  const s = parseSettings({ mode: 'route' + String.fromCodePoint(0x200B) }, undefined)
+  expect(s.notes[0]!.includes('(hidden characters removed)')).toBe(true)
+})
+
 test('a forced subagent model makes the router stand down', async () => {
   for (const v of ['1', 'true', 'yes'])
     expect(parseSettings({ mode: 'route' }, v).standingDown).toBe('CLAUDE_CODE_SUBAGENT_MODEL_FORCE is set')

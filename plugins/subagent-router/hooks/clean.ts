@@ -26,8 +26,9 @@ export function clean(text: unknown, max: number): string {
   return points.slice(0, Math.max(0, max - 1)).join('') + '…'
 }
 
+// Tab, LF and CR are ordinary whitespace that clean turns into a space, so they do not count as hidden.
 export function hasHidden(text: unknown): boolean {
-  const raw = asText(text)
+  const raw = asText(text).replace(/[\t\n\r]/gu, ' ')
   return raw.replace(HIDDEN, '') !== raw
 }
 
