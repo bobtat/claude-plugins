@@ -52,6 +52,17 @@ test('nothing a record holds can add a row or a control character', async () => 
   expect(long.split('\n').every(l => Array.from(l).length <= 240)).toBe(true)
 })
 
+test('two model ids that differ only at their tail are shown as different, and as a run that moved', async () => {
+  const arn = (name: string) => `arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/us.anthropic.claude-${name}-5-5-v1:0`
+  const row = show([rec({ started: arn('haiku'), ran: arn('opus'), description: 'find the arn one' })]).split('\n').find((l) => l.includes('find the arn one'))!
+  const ran = row.split(', ran on ')
+  expect(ran.length).toBe(2)
+  expect(ran[0]!.endsWith('haiku-5-5-v1:0')).toBe(true)
+  expect(ran[1]!.includes('opus-5-5-v1:0')).toBe(true)
+  const same = show([rec({ started: arn('haiku'), ran: arn('haiku'), description: 'find the same one' })])
+  expect(same.includes('ran on')).toBe(false)
+})
+
 test('standing down, bad settings, a route that turned itself off and a stopped picker are each explained', async () => {
   const out = renderReport({ settings: settings({ mode: 'route', standingDown: 'CLAUDE_CODE_SUBAGENT_MODEL_FORCE is set', notes: ['locatingRoute "off" is not recognised; that route is off'] }),
     records: [], outOfScope: 0, wouldRefuse: 0, routeOff: ['locating'], pickerOff: true })

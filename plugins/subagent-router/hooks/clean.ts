@@ -43,6 +43,17 @@ export function jsonOf(value: unknown): string {
   }
 }
 
+// A model id can carry its name at its tail (a Bedrock ARN ends with the profile), so an over-long one keeps a third of
+// the limit from its head and the rest from its tail, around one ellipsis.
+export function cleanMiddle(text: unknown, max: number): string {
+  const visible = clean(text, Number.MAX_SAFE_INTEGER)
+  const points = Array.from(visible)
+  if (points.length <= max) return visible
+  const head = Math.floor((max - 1) / 3)
+  const tail = Math.max(0, max - 1 - head)
+  return points.slice(0, head).join('') + '…' + points.slice(points.length - tail).join('')
+}
+
 export const ID_MAX = 80
 
-export const cleanId = (value: unknown): string | null => clean(value, ID_MAX) || null
+export const cleanId = (value: unknown): string | null => cleanMiddle(value, ID_MAX) || null

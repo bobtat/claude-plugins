@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { clean } from './clean'
+import { ID_MAX, clean, cleanId, cleanMiddle } from './clean'
 
 const LONE = /[\uD800-\uDFFF]/u   // with the u flag this matches only an unpaired surrogate
 
@@ -18,6 +18,25 @@ test('long text is capped by code points and marked', async () => {
   const out = clean('😀'.repeat(10), 6)
   expect(Array.from(out).length).toBe(6)
   expect(LONE.test(out)).toBe(false)
+})
+
+const ARN = 'arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/us.anthropic.claude-'
+const ELLIPSIS = String.fromCodePoint(0x2026)
+
+test('an over-long model id keeps its head and its tail around one ellipsis, within the limit', async () => {
+  const haiku = cleanId(ARN + 'haiku-5-5-20261101-v1:0')
+  const opus = cleanId(ARN + 'opus-5-5-20261101-v1:0')
+  expect(haiku !== opus).toBe(true)
+  for (const id of [haiku, opus]) {
+    expect(Array.from(id ?? '').length).toBe(ID_MAX)
+    expect(id?.startsWith('arn:aws:')).toBe(true)
+    expect(id?.split(ELLIPSIS).length).toBe(2)
+  }
+  expect(haiku?.endsWith('haiku-5-5-20261101-v1:0')).toBe(true)
+  expect(cleanMiddle('abcdefghij', 7)).toBe('ab' + ELLIPSIS + 'ghij')
+  expect(cleanMiddle('abcdefg', 7)).toBe('abcdefg')
+  expect(cleanId('claude-opus-5-5')).toBe('claude-opus-5-5')
+  expect(cleanId('')).toBe(null)
 })
 
 test('a lone surrogate does not throw and is not shown', async () => {

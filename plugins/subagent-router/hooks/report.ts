@@ -1,5 +1,5 @@
 import type { Kind, PickReason, Route, Settings } from '../types'
-import { ID_MAX, clean } from './clean'
+import { ID_MAX, clean, cleanMiddle } from './clean'
 import { GATE_LIMITS } from './picker-gate'
 import { tokenCount } from './prices'
 
@@ -46,6 +46,8 @@ const printable = (n: unknown): n is number => typeof n === 'number' && Number.i
 const count = (n: unknown): number => (printable(n) ? Math.floor(n) : 0)
 // Text only: anything else would print as "[object Object]" or "a,b" where a name belongs.
 const field = (value: unknown): string => (typeof value === 'string' ? clean(value, FIELD_MAX) : '')
+// A model id keeps its tail, where an ARN names the model.
+const modelId = (value: unknown, max: number): string => (typeof value === 'string' ? cleanMiddle(value, max) : '')
 
 // Every figure is printed through these two, so none can show as Infinity, NaN or exponent form.
 function grouped(n: number): string | undefined {
@@ -81,9 +83,11 @@ function outcomeText(outcome: string, hasStarted: boolean, target: string, overr
   return overridden ? `${text} (overridden)` : text
 }
 
+// Compared at the stored length and shown at the field's, so two ids that differ only past the shown head still differ.
 function modelText(started: string, ran: string): string {
-  if (started !== '' && ran !== '' && started !== ran) return `started on ${started}, ran on ${ran}`
-  return `on ${ran || started || 'a model not named'}`
+  const shown = (id: string) => cleanMiddle(id, FIELD_MAX)
+  if (started !== '' && ran !== '' && started !== ran) return `started on ${shown(started)}, ran on ${shown(ran)}`
+  return `on ${shown(ran || started) || 'a model not named'}`
 }
 
 function costText(usd: number | undefined, tokens: number, isPartial: boolean): string {
@@ -98,8 +102,8 @@ function costText(usd: number | undefined, tokens: number, isPartial: boolean): 
 function runOf(value: Record<string, unknown>): Run {
   const kind = isKind(value.kind) ? value.kind : null
   const outcome = field(value.outcome)
-  const started = field(value.started)
-  const ran = field(value.ran)
+  const started = modelId(value.started, ID_MAX)
+  const ran = modelId(value.ran, ID_MAX)
   const agentId = field(value.agentId)
   // A start that named no model still has an agent id, and that agent did run.
   const hasStarted = started !== '' || agentId !== ''

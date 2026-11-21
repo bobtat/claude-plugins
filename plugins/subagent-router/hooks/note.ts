@@ -9,7 +9,8 @@ export const DENY_TEXT =
 // True pending probe Q8: it stays true until Q8 shows a resumed routed agent stays on its routed model.
 export const NO_RESUME = true
 
-const PLAIN_ID = /^[A-Za-z0-9._:[\]-]{1,80}$/
+// @ and / admit a Vertex id (claude-opus-4-8@20260301) and an ARN; neither can end a line or open markup.
+const PLAIN_ID = /^[A-Za-z0-9._:@/[\]-]{1,80}$/
 
 // The baseline comes from session state, so it is printed only in a form that cannot carry a line break or markup.
 // With nothing safe to print the respawn line is left out: a stand-in phrase could be passed on as a model name.
