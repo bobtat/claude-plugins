@@ -59,9 +59,10 @@ const PROTECTED_DIR = /(^|[/\\])(\.ssh|\.git|\.husky|\.kube|\.aws|\.config|\.doc
 // refused because `RUNNER~1` is an ordinary part of a CI temp path.
 const PROTECTED_SHORT_NAME = /(^|[/\\])_?(AGENTI|CURLRC|NETRC|CLAUDE|BASHRC|BASH_|PROFIL|ZSHRC|ZSHENV|ZPROFI|GITCON|SETTIN|MCP|SSH|GIT|HUSKY|KUBE|AWS|CONFIG|DOCKER|GNUPG|TARGET|HOOKS)[A-Z0-9_-]*~\d/i;
 const CLAUDE_DIR = /(^|[/\\])\.claude([/\\]|$)/i;
-// A run's own files can legitimately live here: the session scratchpad and
-// Playwright's output directory.
-const CLAUDE_DIR_EXEMPT = /(^|[/\\])\.claude[/\\](jobs|plugins[/\\]data)[/\\]/i;
+// A run's own files can legitimately live here: the session scratchpad.
+// Playwright's output used to, under plugins/data, which also holds every other
+// plugin's stored data. It now writes outside .claude, so that is no longer exempt.
+const CLAUDE_DIR_EXEMPT = /(^|[/\\])\.claude[/\\]jobs[/\\]/i;
 
 function protectedForm(text) {
   if (PROTECTED_FILE.test(text) || PROTECTED_DIR.test(text)) return `"${text}" touches a file that controls this guard or what runs later`;
