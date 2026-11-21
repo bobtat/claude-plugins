@@ -2,7 +2,8 @@
 
 A review of `agentic-qa` 0.5.0, read at `1932953`, for one question: where does a
 walkthrough's cost go, and what can be removed without the testing getting worse. The
-changes it led to are 0.6.0. Finding numbers are local to this review (C1 to C7); the
+changes it led to are 0.6.0, and 0.7.0 for the decisions it left open, which the
+Resolution section records. Finding numbers are local to this review (C1 to C7); the
 earlier reviews are about safety and are cited where they bear on cost.
 
 ## Conclusion
@@ -292,7 +293,8 @@ doesn't defer tool schemas carries all 48 whenever the plugin is enabled.
 ## Decisions left open
 
 Each of these would save more than anything in 0.6.0, and each changes something a
-person chose.
+person chose. They were open when 0.6.0 shipped. The owner then left them to the
+maintainer, and the Resolution section below says how each was settled.
 
 ### The reporter's per-step updates (C4)
 
@@ -353,12 +355,93 @@ read like any other.
 
 ---
 
+## Resolution — 0.7.0
+
+The owner left the open decisions to the maintainer on 21 November 2026. Changes are
+named by their commit subject, since a rebase merge gives each commit a new hash.
+
+### The reporter's per-step updates: on when someone can watch, off otherwise
+
+Option 1 above. A run has live updates on or off, and its orchestrator tells both
+agents which. `/agentic-qa:walkthrough` always turns them on. `qa-runner` turns them on
+when the brief names a `report_destination` or sets the new `live_report` field, and
+otherwise off. Off, the executor sends no nudge, and the reporter fills the report in
+from `step-results.md` on `paused` and on `final`.
+
+Change: "update the report after each step only when someone can watch".
+
+Two more fixture runs, both on the 0.7.0 text and the standard plan:
+
+| Run | Live updates | Outcome | Cost | Reporter |
+|---|---|---|---|---|
+| d1 | on, as the command runs it | 7 of 7 correct | $0.80 | 19 calls, 561,000 input tokens, 7,200 output |
+| d2 | off, as `qa-runner` runs a brief with no destination | 7 of 7 correct | $0.57 | 7 calls, 183,000 input tokens, 4,500 output |
+
+Both reports were complete: seven step sections, five embedded screenshots, no script
+element, the content security policy present. d1 ran first, on a plugin copy nothing
+had cached, so part of the $0.22 between them is cache writes d2 didn't have to make.
+The reporter's own figures don't have that problem, and they fell by two thirds.
+
+The fixture's orchestrator was told to do what `qa-runner` does. `qa-runner` itself,
+reading a brief and choosing, was not run.
+
+### A refused program: the rule stays
+
+A refusal still ends the executor's turn, a refused program included. The rule is what
+stops an executor working its way round the guard, and nothing here showed that
+loosening it is safe. The second November review's answer to refusals of ordinary
+operations (F55) was to list them in the executor's instructions rather than widen the
+guard. 0.6.0's exact program list does that, and in d1 and d2 the guard refused
+nothing.
+
+If refusals over incidental programs keep ending runs after this, the next step is to
+add the program to the guard's list where that is safe, as it was for the ones already
+there, and not to let the executor judge which refusals matter.
+
+### Where Playwright writes: out of `~/.claude`
+
+Six permission settings were tried against a one-command headless session: an `Edit`
+rule on the directory in two spellings, `Bash(cp:*)`, `--add-dir` alone and with an
+`Edit` rule, and `acceptEdits`. None lifted the refusal. `cat` out of the directory
+ran; `cp` out of it, `rm` inside it and any write into it did not. The same commands on
+a directory under `~/.cache` all ran.
+
+So the directory moved, to `.cache/agentic-qa/playwright-output` in the user's home.
+A plugin's `.mcp.json` has no variable for the home directory that exists on every
+platform, so the setting climbs out of `CLAUDE_PLUGIN_DATA`, which sits four levels
+below it. With a relocated Claude config directory it lands four levels above that
+instead. The guard's exemption for `.claude/plugins/data` existed only for the old
+location, covered every other plugin's stored data too, and is removed.
+
+Change: "write Playwright's files outside ~/.claude". d1 and d2 used the directory as
+shipped, with a list of allowed tools and no bypass, and every copy and delete ran.
+
+Not tested: Windows, where the owner's machine is. The path is built with forward
+slashes and resolved by Node, which accepts them there, but no run has confirmed it.
+
+### Which model each agent runs on: unchanged
+
+No agent moves to a smaller model until an eval suite can show its verdicts hold. That
+suite is the next piece of work on cost, ahead of anything else in this review, because
+on an Opus-class session the inherited model is most of what a run costs and nothing
+measured here touches it.
+
+### Phases 0 to 3
+
+Still unmeasured. A fixture for them needs a repository with a real merged pull
+request for the critics to read.
+
+---
+
 ## What still needs a live walkthrough
 
-- 0.6.0 as committed. c3 lacked only the program list, which changes one line of the
-  skill, but no run used the final text.
-- A refusal of form after `fb9c95a`, to see the executor resend the command once and
-  continue.
+- `qa-runner` itself deciding live updates from a brief, and an agent-invoked run with a
+  `report_destination`, where updates stay on.
+- A pause with live updates off: the reporter rebuilding on `paused`, so the paused
+  report is current.
+- Playwright's output directory on Windows.
+- A refusal of form, to see the executor resend the command once and continue. It is
+  covered by the guard's tests and has not occurred in a run since.
 - An escalation answered by a person, with an orchestrator that hasn't loaded
   `step-execution`.
 - Any of the above on the model the plugin is actually used with.
