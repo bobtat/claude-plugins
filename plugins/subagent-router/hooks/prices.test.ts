@@ -56,7 +56,11 @@ test('no key is listed after a shorter key it contains', async () => {
 
 test('a start is confirmed cheaper by listed price where both are listed, and by family only for haiku', async () => {
   expect(isConfirmedCheaper('claude-sonnet-5-5', 'claude-opus-5-5', 'sonnet')).toBe(true)
-  expect(isConfirmedCheaper('claude-opus-4-8', 'claude-fable-5-2', 'opus')).toBe(true)
+  // Opus 4.8 lists lower input and output than Fable 5.2 but dearer cache reads, which most subagent tokens are.
+  expect(isConfirmedCheaper('claude-opus-4-8', 'claude-fable-5-2', 'opus')).toBe(false)
+  expect(isConfirmedCheaper('claude-opus-5-5', 'claude-fable-5-2', 'opus')).toBe(true)
+  // Priced as Opus 5.5, but naming two families: an unreadable start is never confirmed.
+  expect(isConfirmedCheaper('claude-opus-5-5-sonnet', 'claude-fable-5-2', 'opus')).toBe(false)
   expect(isConfirmedCheaper('claude-sonnet-5-5', 'claude-sonnet-5-5', 'sonnet')).toBe(false)
   expect(isConfirmedCheaper('claude-haiku-4-5', 'claude-opus-5-5', 'haiku')).toBe(true)
   expect(isConfirmedCheaper('haiku', 'claude-opus-5-5', 'haiku')).toBe(true)
@@ -67,14 +71,22 @@ test('a start is confirmed cheaper by listed price where both are listed, and by
   expect(isConfirmedCheaper('claude-haiku-4-5', 'claude-haiku-5-5', 'haiku')).toBe(false)
 })
 
-test('where both prices are given, a start is confirmed cheaper only when both its input and output cost less', async () => {
-  const at = (input: number, output: number) => ({ input, output, cacheRead: 0.1, cacheWrite5m: 1, cacheWrite1h: 2 })
+test('where both prices are given, a start is confirmed cheaper only when input and output cost less and no cache price is higher', async () => {
+  const at = (input: number, output: number, cache: Partial<{ cacheRead: number; cacheWrite5m: number; cacheWrite1h: number }> = {}) =>
+    ({ input, output, cacheRead: 0.1, cacheWrite5m: 1, cacheWrite1h: 2, ...cache })
   const lookup = (table: Record<string, ReturnType<typeof at>>) => (id: string) => table[id]
+  const check = (started: ReturnType<typeof at>, baseline: ReturnType<typeof at>) =>
+    isConfirmedCheaper('claude-sonnet-x', 'claude-opus-x', 'sonnet', lookup({ 'claude-sonnet-x': started, 'claude-opus-x': baseline }))
   // Sonnet ranks below Opus by family, but these prices make it the dearer of the two.
-  expect(isConfirmedCheaper('claude-sonnet-x', 'claude-opus-x', 'sonnet', lookup({ 'claude-sonnet-x': at(6, 30), 'claude-opus-x': at(5, 25) }))).toBe(false)
-  expect(isConfirmedCheaper('claude-sonnet-x', 'claude-opus-x', 'sonnet', lookup({ 'claude-sonnet-x': at(5, 25), 'claude-opus-x': at(5, 25) }))).toBe(false)
-  expect(isConfirmedCheaper('claude-sonnet-x', 'claude-opus-x', 'sonnet', lookup({ 'claude-sonnet-x': at(4, 30), 'claude-opus-x': at(5, 25) }))).toBe(false)
-  expect(isConfirmedCheaper('claude-sonnet-x', 'claude-opus-x', 'sonnet', lookup({ 'claude-sonnet-x': at(4, 20), 'claude-opus-x': at(5, 25) }))).toBe(true)
+  expect(check(at(6, 30), at(5, 25))).toBe(false)
+  expect(check(at(5, 25), at(5, 25))).toBe(false)
+  expect(check(at(4, 30), at(5, 25))).toBe(false)
+  expect(check(at(4, 20), at(5, 25))).toBe(true)
+  // Equal cache prices still confirm; one dearer cache price alone does not.
+  expect(check(at(4, 20, { cacheRead: 0.1, cacheWrite5m: 1, cacheWrite1h: 2 }), at(5, 25))).toBe(true)
+  expect(check(at(4, 20, { cacheRead: 0.2 }), at(5, 25))).toBe(false)
+  expect(check(at(4, 20, { cacheWrite5m: 1.5 }), at(5, 25))).toBe(false)
+  expect(check(at(4, 20, { cacheWrite1h: 3 }), at(5, 25))).toBe(false)
 })
 
 test('a key matches only where a word starts in the id', async () => {
@@ -83,6 +95,10 @@ test('a key matches only where a word starts in the id', async () => {
   const opus55 = PRICES.find(([key]) => key === 'opus-5-5')?.[1]
   expect(opus55 !== undefined).toBe(true)
   for (const id of ['claude-opus-5-5', 'us.anthropic.claude-opus-5-5-v1:0', 'claude-opus-5-5[1m]']) expect(priceOf(id)).toEqual(opus55)
+})
+
+test('an id that two listed keys claim has no price', async () => {
+  for (const id of ['opus-4-8/claude-haiku-5-5', 'claude-opus-5-5-via-haiku-5-5']) expect(priceOf(id)).toBe(undefined)
 })
 
 test('only listed model versions have a price', async () => {

@@ -12,7 +12,7 @@ export type Price = { input: number; output: number; cacheRead: number; cacheWri
 // $0.25 (models.md); Opus 4.8 at $5/$25 (models.md, "Opus 4.8's pricing ($5/$25 per MTok)") with cache reads at 0.1
 // times input (prompt-caching.md, "0.1x elsewhere"). Opus 5, Sonnet 5 and Fable 5 are listed there too but left out:
 // their keys (opus-5) would also claim an unlisted later minor version such as opus-5-50.
-// A key is never listed after a shorter key it contains, which would claim its ids first.
+// A key is never listed after a shorter key it contains, and an id that two keys claim has no price.
 export const PRICES: readonly [string, Price][] = [
   ['haiku-5-5', { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite5m: 0.125, cacheWrite1h: 0.2 }],
   ['sonnet-5-5', { input: 2, output: 10, cacheRead: 0.1, cacheWrite5m: 2.5, cacheWrite1h: 4 }],
@@ -25,8 +25,10 @@ export const PRICES: readonly [string, Price][] = [
 ]
 
 // Family rank is not a price rank across generations: an alias pinned to an older Opus can cost more than a newer
-// Fable. So where both are listed the prices decide. Haiku is the cheapest family in every generation, so a Haiku
-// start alone may be confirmed by rank when a price is missing; any other unlisted start cannot be confirmed.
+// Fable. So where both are listed the prices decide, and every one of them: subagent runs are mostly cache reads, so
+// lower input and output with a dearer cache read can still cost more. Haiku is the cheapest family in every
+// generation, so a Haiku start alone may be confirmed by rank when a price is missing; any other unlisted start
+// cannot be confirmed. A start whose family cannot be read is never confirmed, so it always turns the route off.
 export function isConfirmedCheaper(
   started: string | undefined,
   baseline: string,
@@ -37,14 +39,22 @@ export function isConfirmedCheaper(
   const startedPrice = price(started)
   const baselinePrice = price(baseline)
   if (startedPrice !== undefined && baselinePrice !== undefined) {
-    return startedPrice.input < baselinePrice.input && startedPrice.output < baselinePrice.output
+    return (
+      familyOf(started) !== undefined &&
+      startedPrice.input < baselinePrice.input &&
+      startedPrice.output < baselinePrice.output &&
+      startedPrice.cacheRead <= baselinePrice.cacheRead &&
+      startedPrice.cacheWrite5m <= baselinePrice.cacheWrite5m &&
+      startedPrice.cacheWrite1h <= baselinePrice.cacheWrite1h
+    )
   }
   return target === 'haiku' && familyOf(started) === 'haiku' && ranksBelow(started, baseline)
 }
 
 export function priceOf(modelId: string): Price | undefined {
   if (typeof modelId !== 'string') return undefined
-  return PRICES.find(([key]) => containsVersion(modelId, key))?.[1]
+  const claimed = PRICES.filter(([key]) => containsVersion(modelId, key))
+  return claimed.length === 1 ? claimed[0]?.[1] : undefined
 }
 
 // A key must begin where the id does or after a character that is not a letter or digit, and end where the id does or
