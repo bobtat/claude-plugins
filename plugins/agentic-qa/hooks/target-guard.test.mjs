@@ -166,7 +166,11 @@ test('ordinary writes still work', () => {
   allowed('curl -q -sS -o evidence/s1.txt https://staging.example.com/x');
   allowed('curl -q -sSo evidence/s1.txt https://staging.example.com/x');
   allowed('curl -q -XPOST https://staging.example.com/x');
-  allowed('cp C:/Users/x/.claude/plugins/data/agentic-qa-inline/playwright-output/a.png evidence/s1.png');
+  allowed('cp C:/Users/x/.cache/agentic-qa/playwright-output/a.png evidence/s1.png');
+  allowed('cp ../../../root/.cache/agentic-qa/playwright-output/a.png evidence/s1.png && rm ../../../root/.cache/agentic-qa/playwright-output/a.png');
+  // Playwright's output left this directory, and every other plugin keeps its data there.
+  refused('cp C:/Users/x/.claude/plugins/data/agentic-qa-inline/playwright-output/a.png evidence/s1.png');
+  refused('rm C:/Users/x/.claude/plugins/data/cost-ledger/store.json');
   allowed('cat > ~/.claude/jobs/abc/tmp/run/step-results.md <<\'EOF\'\nmentions .curlrc and settings.json\nEOF');
   allowed('rm evidence/*.tmp');
   allowed(`sed -E 's/.*/x/' -i evidence/s1.txt`);
