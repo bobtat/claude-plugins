@@ -21,7 +21,7 @@ You never wait for a message — a spawned agent can't. You end your turn after 
 - **`paused: <reason>`** or **`resumed`**, from the orchestrator — reflect it in `Status`: `⏸ paused, waiting on SSO login`, not silence; `resumed` clears it.
 - **`final`**, or **`final: run ended abnormally — <reason>`**, from the orchestrator — see below. For the second, `agentic-qa:qa-reporting` says how to show steps the run never reached.
 
-Handle it, then end your turn. A message can also arrive while you are working, between tool calls, and it does not get a turn of its own. Handle it in the turn it landed in. **`final` outranks everything:** if it arrived at any point, finalize before ending your turn, whatever the turn began as.
+Handle it, then end your turn with the single word `ok`: nobody reads the result of a turn that isn't finalization, so a summary of what you just wrote is paid for and thrown away. A message can also arrive while you are working, between tool calls, and it does not get a turn of its own. Handle it in the turn it landed in. **`final` outranks everything:** if it arrived at any point, finalize before ending your turn, whatever the turn began as.
 
 If a message names a signal file, write your end-of-turn result there before ending your turn.
 
