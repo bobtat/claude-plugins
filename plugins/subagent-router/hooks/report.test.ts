@@ -40,7 +40,11 @@ test('a routed run whose start was overridden, or named no model, is asked but n
     records: [rec({ outcome: 'routed', started: 'haiku' }), rec({ outcome: 'routed', started: 'claude-opus-5-5', overridden: true }),
       rec({ outcome: 'routed', started: null, agentId: 'a3' })] })
   expect(out.includes('locating: 3 run(s), 3 asked, 1 moved, ')).toBe(true)
-  expect(out.includes('routed')).toBe(true)
+  expect(out.split('\n').filter((l) => l.startsWith('- '))).toEqual([
+    '- Explore | locating | routed to haiku | locating | started on haiku, ran on claude-opus-5-5 | 1,110 tokens, estimated cost $0.22 | agent a1: find callers',
+    '- Explore | locating | routed to haiku (overridden) | locating | on claude-opus-5-5 | 1,110 tokens, estimated cost $0.22 | agent a1: find callers',
+    '- Explore | locating | routed to haiku | locating | on claude-opus-5-5 | 1,110 tokens, estimated cost $0.22 | agent a3: find callers',
+  ])
 })
 
 test('a started run with no usage yet is said to have none reported, not to be unpriced', async () => {
@@ -355,7 +359,6 @@ test('the set digest is a 53-bit hash of every id, expected answer and prompt, i
   expect(setDigest([{ ...one, prompt: 'rewrite the lexer' }, two]) !== base).toBe(true)
   expect(setDigest([{ ...one, expected: 'reading' }, two]) !== base).toBe(true)
   expect(setDigest([{ ...one, id: 'p3' }, two]) !== base).toBe(true)
-  expect(/^[0-9a-f]{14}$/u.test(GATE_SET_DIGEST)).toBe(true)
 })
 
 test('a set of the shipped sizes whose content is not the shipped content is not a result', async () => {

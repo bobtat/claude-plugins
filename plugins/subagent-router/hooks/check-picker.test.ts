@@ -3,6 +3,8 @@ import type { Engine } from 'claude-code/testing'
 import type { ModelCompleteRequest, ModelCompleteResult, On, PromptOrigin } from 'claude-code'
 import { parsePickerSet } from './check-picker'
 import { PICKER_SYSTEM } from './picker'
+import { GATE_SET_DIGEST } from './picker-gate'
+import { setDigest } from './report'
 import { unfenced, until } from './test-support'
 
 // The kit has setTimeout, though the engine's typings omit it.
@@ -396,9 +398,11 @@ test('a run in which some picker calls fail still finishes, as not a result', as
   expect(b.picks.length).toBe(262)
   const out = lines(r.text)
   expect(out.includes('failed: 5 of 262 (required 0): not passed')).toBe(true)
-  // Not the shipped content, so the content is named first; the failed-call line is tested on renderCheck.
-  expect(out.filter((l) => l.startsWith('Gate: ')).length).toBe(1)
-  expect(out.some((l) => l.startsWith('Gate: not a result: '))).toBe(true)
+  // The kit cannot load the shipped set, so the content is the reason given here; that failed calls alone make a run
+  // not a result is tested on renderCheck.
+  const set = parsePickerSet({ scenarios: b.files['scenarios.json']!, prompts: b.files['prompts.json']!, injection: b.files['injection.json']! })
+  const digest = 'items' in set ? setDigest(set.items) : 'no set'
+  expect(out.filter((l) => l.startsWith('Gate: '))).toEqual([`Gate: not a result: not the shipped set (content digest ${digest}, shipped ${GATE_SET_DIGEST})`])
   expect(b.checkSets).toEqual([NOW, 0])
 })
 

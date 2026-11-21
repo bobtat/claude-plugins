@@ -80,9 +80,11 @@ test('a row this plugin owns is guarded whatever its key says', async ($, on) =>
   expect(await settingsGuardFailed(ours, caught)).toEqual({ deny: GUARD_FAILED })
 })
 
-test('a person on the Remote Control bridge is told the change must be made at the terminal', async () => {
-  expect(SETTINGS_DENIED_BRIDGE).toBe('subagent-router: its settings can be changed only at the terminal, in /config, not over Remote Control')
-  expect(SETTINGS_DENIED.includes('by you')).toBe(true)
+test('a person on the Remote Control bridge is told the change must be made at the terminal', async ($, on) => {
+  configAt(on)
+  expect(await $.config.set(change('subagent-router.mode', { kind: 'bridge' }))).toEqual({
+    deny: 'subagent-router: its settings can be changed only at the terminal, in /config, not over Remote Control',
+  })
 })
 
 test('a failure inside the settings guard refuses the change unless next had already answered', async () => {
