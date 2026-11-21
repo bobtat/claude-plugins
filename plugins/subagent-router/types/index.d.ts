@@ -28,6 +28,7 @@ declare module 'claude-code' {
       baseline: StateFamily<string>
       routed: StateFamily<RoutedEntry>
       observed: StateFamily<{ v: 1 }>
+      unmoved: StateFamily<{ v: 1 }>
       routeOff: StateFamily<true>
       pickerOff: boolean
       checkStartedAt: number

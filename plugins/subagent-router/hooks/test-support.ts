@@ -21,6 +21,7 @@ export type World = {
   routes: Record<string, string>
   kinds: string[]
   startModel: string
+  sessionModel: string
   env: Record<string, string>
   settings: ((source: string | undefined) => unknown) | null
   reply: (e: ModelCompleteRequest) => ModelCompleteResult | Promise<ModelCompleteResult>
@@ -45,6 +46,7 @@ export function world(on: On): World {
     routes: {},
     kinds: ['locating'],
     startModel: 'claude-opus-5-5',
+    sessionModel: 'claude-opus-5-5',
     env: {},
     settings: null,
     reply: () => ({ isAnswered: true, text: w.kinds.length > 1 ? (w.kinds.shift() ?? 'other') : (w.kinds[0] ?? 'other'), usage: USAGE }),
@@ -66,7 +68,7 @@ export function world(on: On): World {
   // A switchable env.get in place of mock.env, which takes one fixed set of variables per test.
   on('env.get', (_$, e) => ({ value: w.env[e.name] }))
   mock.clock(on)
-  on('session.model', () => ({ value: 'claude-opus-5-5' }))
+  on('session.model', () => ({ value: w.sessionModel }))
   on('session.messages', (_$, e) => {
     w.messageReads += 1
     return { value: w.messages(e.agentId) as never }

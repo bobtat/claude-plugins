@@ -121,12 +121,59 @@ test('an unreadable observed entry is not a failure of the hook', async ($, on) 
   expect(records(w).length).toBe(1)
 })
 
+// The session runs on Fable and Explore starts on Opus 5.5, so the learned baseline is Opus 5.5 and a rewritten start
+// back on Opus 5.5 was not moved, though Opus ranks below the session's model and its first message carries the marker.
+test('an agent whose rewritten start came back at the baseline is not refused by its marker', async ($, on) => {
+  const w = world(on)
+  w.sessionModel = 'claude-fable-5-2'
+  const spawn = spawner($)
+  const fable = { parentModel: 'claude-fable-5-2' }
+  await spawn(fable)
+
+  w.answer = () => ({ model: 'claude-opus-5-5', agentId: `a${w.seen.length}` })
+  await spawn(fable)
+  expect(w.seen[1]?.model).toBe('haiku')
+  expect(written(w, 'unmoved').map((s) => s.id)).toEqual(['a2'])
+
+  w.answer = w.start
+  w.messages = first('find X\n\n' + markedNote)
+  expect(isDenied(await spawn({ parentAgentId: 'a2', parentModel: 'claude-opus-5-5' }))).toBe(false)
+  expect(w.messageReads).toBe(0)
+})
+
+test('a spawner recognised by its marker is stored as routed, so its next spawn reads no transcript', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.messages = first('find X\n\n' + markedNote)
+  const under = { parentAgentId: 'u1', parentModel: 'claude-haiku-5-5' }
+
+  expect(await spawn(under)).toEqual({ deny: DENY_TEXT })
+  expect(written(w, 'routed').map((s) => s.id)).toEqual(['u1'])
+  expect(await spawn(under)).toEqual({ deny: DENY_TEXT })
+  expect(w.messageReads).toBe(1)
+})
+
+test('a transcript read that fails stores nothing, and the next spawn reads again', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  const under = { parentAgentId: 'u1', parentModel: 'claude-haiku-5-5' }
+
+  expect(isDenied(await spawn(under))).toBe(false)
+  expect(written(w, 'routed')).toEqual([])
+  expect(written(w, 'unmoved')).toEqual([])
+  w.messages = first('find X\n\n' + markedNote)
+  expect(await spawn(under)).toEqual({ deny: DENY_TEXT })
+  expect(w.messageReads).toBe(2)
+})
+
 test('an unrecognised spawner is refused only on the marker and a cheaper model', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)
   w.mode = 'observe'
   const note = routerNote({ target: 'haiku', baseline: 'claude-opus-5-5', kind: 'locating', noResume: true })
-  const under = (parentModel: string) => ({ parentAgentId: 'u1', parentModel })
+  // A new spawner for each case: one recognised by its marker is then stored as routed.
+  let n = 0
+  const under = (parentModel: string) => ({ parentAgentId: `u${++n}`, parentModel })
 
   w.messages = first('find X\n\n' + note)
   expect(await spawn(under('claude-haiku-5-5'))).toEqual({ deny: DENY_TEXT })

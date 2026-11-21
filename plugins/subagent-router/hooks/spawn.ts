@@ -1,5 +1,5 @@
 import type { AgentSpawnInput, AgentSpawnResult, EngineInterface, Next as NextOf, NextResult } from 'claude-code'
-import type { DecisionRecord, Family, Kind, Outcome, PickResult, Route, Settings } from '../types'
+import type { DecisionRecord, Family, Kind, Outcome, PickResult, Route, RoutedEntry, Settings } from '../types'
 import { ID_MAX, clean, cleanId } from './clean'
 import { registerCommand } from './command'
 import { anyRouteApplies, factsOf, precheck, resolve } from './decide'
@@ -12,6 +12,7 @@ import { readSettings } from './settings'
 
 const ROUTED = { plugin: 'subagent-router', key: 'routed' } as const
 const OBSERVED = { plugin: 'subagent-router', key: 'observed' } as const
+const UNMOVED = { plugin: 'subagent-router', key: 'unmoved' } as const
 const BASELINE = { plugin: 'subagent-router', key: 'baseline' } as const
 const ROUTE_OFF = { plugin: 'subagent-router', key: 'routeOff' } as const
 const BY_AGENT = { plugin: 'subagent-router', key: 'byAgent' } as const
@@ -108,8 +109,21 @@ async function spawnerOf($: $, e: AgentSpawnInput): Promise<Spawner> {
   if (routed !== undefined) return { wasRouted: true, entry: routed, isObserved: false }
   const observed = await $.state.get({ ...OBSERVED, id: e.parentAgentId }).then((read) => read.value, unknown)
   if (observed !== undefined) return { ...none, isObserved: true }
-  return { ...none, wasRouted: await looksRouted($, e) }
+  // Rewritten but started on the baseline's family or above: its first message carries the marker, yet it was not moved.
+  const unmoved = await $.state.get({ ...UNMOVED, id: e.parentAgentId }).then((read) => read.value, unknown)
+  if (unmoved !== undefined) return none
+  // A negative answer is never kept: it also comes from a failed or full read.
+  if (!(await looksRouted($, e))) return none
+  const spawnerId = e.parentAgentId
+  routedHere.add(spawnerId)
+  const entry = builtEntry(e)
+  // Stored so the transcript is not read again, and so compaction of the first message cannot release the agent later.
+  await attempt(() => $.state.set({ ...ROUTED, id: spawnerId }, entry))
+  return { wasRouted: true, entry, isObserved: false }
 }
+
+// For an agent known to be routed with no entry to copy: refusing must not depend on what state remembered.
+const builtEntry = (e: AgentSpawnInput): RoutedEntry => ({ v: 1, target: familyOf(e.parentModel) ?? 'haiku', baseline: '' })
 
 // Resolves whether the write landed; a failed write never stops the ones after it.
 async function attempt(write: () => Promise<unknown>): Promise<boolean> {
@@ -136,10 +150,9 @@ async function passOn($: $, e: AgentSpawnInput, next: Next, settings: Settings, 
   if (settings.mode !== 'off' && settings.standingDown === null) await bump($, 'outOfScope')
   const result = await next(e)
   if (e.fork === true && spawner.wasRouted && isStarted(result)) {
-    // A fork is the routed agent continuing, so its own spawns must be refused too. A spawner known only by
-    // its marker has no entry to copy, so one is built: refusing must not depend on what state remembered.
+    // A fork is the routed agent continuing, so its own spawns must be refused too.
     routedHere.add(result.agentId)
-    const entry = spawner.entry ?? { v: 1, target: familyOf(e.parentModel) ?? 'haiku', baseline: '' }
+    const entry = spawner.entry ?? builtEntry(e)
     await attempt(() => $.state.set({ ...ROUTED, id: result.agentId }, entry as never))
   } else if (e.fork === true && spawner.isObserved && isStarted(result)) {
     // Likewise in observe mode, so the fork's own spawns count toward what the rule would have refused.
@@ -207,7 +220,7 @@ async function choose($: $, e: AgentSpawnInput, mode: Settings['mode'], routes: 
   return { kind: pick.kind, target, reason }
 }
 
-// After next has answered. The writes that carry a decision forward (routed, routeOff, baseline, observed) come
+// After next has answered. The writes that carry a decision forward (routed, unmoved, routeOff, baseline, observed) come
 // first and each stands alone, so no failure of bookkeeping can release a routed agent or keep a failed route on.
 // The record follows, and byAgent only once the record is saved, so the cost hook finds only a finished record.
 async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer; rewrote: boolean; baseline: string; baselineId: string }): Promise<Settled> {
@@ -235,6 +248,8 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
     if (!isPlainlyNotCheaper) {
       routedHere.add(agentId)
       await attempt(() => $.state.set({ ...ROUTED, id: agentId }, { v: 1, target, baseline }))
+    } else {
+      await attempt(() => $.state.set({ ...UNMOVED, id: agentId }, { v: 1 }))
     }
     // The route stays on only for a start on the family asked for and shown to cost less than the baseline, by listed
     // price where both are listed. A start on the baseline's family or above (a newer, cheaper Opus under an older Opus
