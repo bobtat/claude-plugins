@@ -24,11 +24,13 @@ export function isPersonsChange(caller: unknown, origin: unknown): boolean {
 }
 
 export const SETTINGS_DENIED = 'subagent-router: its settings can be changed only by you, in /config'
+// A bridge change may well be the person's own, so they are told where it can be made instead.
+export const SETTINGS_DENIED_BRIDGE = 'subagent-router: its settings can be changed only at the terminal, in /config, not over Remote Control'
 export const GUARD_FAILED = 'subagent-router: its settings guard failed, so the change was refused'
 
 export function guardSettings(e: ConfigSetInput, next: NextOf<'config.set'>): ConfigSetResult | Promise<ConfigSetResult> {
   if (!isOurRow(e) || isPersonsChange(next.origin, e.origin)) return next(e)
-  return { deny: SETTINGS_DENIED }
+  return { deny: isRecord(e.origin) && e.origin.kind === 'bridge' ? SETTINGS_DENIED_BRIDGE : SETTINGS_DENIED }
 }
 
 // Exported so its refusal can be tested: nothing the guard calls can be made to fail under the test kit.

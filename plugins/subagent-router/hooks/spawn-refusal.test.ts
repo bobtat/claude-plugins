@@ -15,6 +15,7 @@ test('a spawn under a routed agent is refused, and stays refused after the mode 
   expect(await spawn(child)).toEqual({ deny: DENY_TEXT })
   expect(records(w).at(-1)).toEqual(expect.objectContaining({ outcome: 'refused', reason: 'spawner-routed' }))
   expect(w.lines.filter((line) => line.includes('Refused')).length).toBe(1)
+  expect(w.lines.at(-1)).toBe('Refused a spawn by an agent subagent-router treats as routed: find callers')
   expect(w.seen.length).toBe(2)
 
   w.mode = 'observe'

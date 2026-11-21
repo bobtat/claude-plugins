@@ -142,7 +142,7 @@ async function refuse($: $, e: AgentSpawnInput): Promise<{ deny: string }> {
     await newRecord($, rec)
   })
   // A refusal is an action the router takes, so it is shown in every mode, observe included.
-  log($, `Refused a spawn by an agent subagent-router moved to a cheaper model: ${clean(e.description, DESCRIPTION_MAX)}`)
+  log($, `Refused a spawn by an agent subagent-router treats as routed: ${clean(e.description, DESCRIPTION_MAX)}`)
   return { deny: DENY_TEXT }
 }
 

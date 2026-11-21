@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
-import { GUARD_FAILED, SETTINGS_DENIED, isPersonsChange, namesThisPlugin, settingsGuardFailed } from './guard'
+import { GUARD_FAILED, SETTINGS_DENIED, SETTINGS_DENIED_BRIDGE, isPersonsChange, namesThisPlugin, settingsGuardFailed } from './guard'
 import { ENGINE, change } from './test-support'
 
 // --- the settings guard ---
@@ -52,7 +52,7 @@ test('the person changing a setting in /config goes through, and a change marked
 
   expect(await $.config.set(change('subagent-router.mode', { kind: 'composer' }))).toEqual({ value: 'route' })
   expect(await $.config.set(change('subagent-router.mode', { kind: 'plugin', name: 'x' }))).toEqual({ deny: SETTINGS_DENIED })
-  expect(await $.config.set(change('subagent-router.mode', { kind: 'bridge' }))).toEqual({ deny: SETTINGS_DENIED })
+  expect(await $.config.set(change('subagent-router.mode', { kind: 'bridge' }))).toEqual({ deny: SETTINGS_DENIED_BRIDGE })
   expect(await $.config.set({ ...change('theme', { kind: 'plugin', name: 'x' }), provider: ENGINE })).toEqual({ value: 'route' })
   expect(written).toEqual(['subagent-router.mode', 'theme'])
 })
@@ -71,13 +71,18 @@ test('a row this plugin owns is guarded whatever its key says', async ($, on) =>
   const ours = change('locatingRoute', { kind: 'plugin', name: 'x' })
 
   expect(await $.config.set(ours)).toEqual({ deny: SETTINGS_DENIED })
-  expect(await $.config.set({ ...ours, origin: { kind: 'bridge' } })).toEqual({ deny: SETTINGS_DENIED })
+  expect(await $.config.set({ ...ours, origin: { kind: 'bridge' } })).toEqual({ deny: SETTINGS_DENIED_BRIDGE })
   expect(await $.config.set({ ...ours, origin: { kind: 'composer' } })).toEqual({ value: 'route' })
   expect(await $.config.set({ ...ours, provider: { plugin: 'subagent-router-extra', tier: 'user' } })).toEqual({ value: 'route' })
   expect(written).toEqual(['locatingRoute', 'locatingRoute'])
 
   const caught = Object.assign(async () => ({ value: 'route' }), { called: false }) as never
   expect(await settingsGuardFailed(ours, caught)).toEqual({ deny: GUARD_FAILED })
+})
+
+test('a person on the Remote Control bridge is told the change must be made at the terminal', async () => {
+  expect(SETTINGS_DENIED_BRIDGE).toBe('subagent-router: its settings can be changed only at the terminal, in /config, not over Remote Control')
+  expect(SETTINGS_DENIED.includes('by you')).toBe(true)
 })
 
 test('a failure inside the settings guard refuses the change unless next had already answered', async () => {
