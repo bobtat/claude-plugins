@@ -29,6 +29,8 @@ export type World = {
   start: (e: AgentSpawnInput) => Started
   messages: (agentId: string | undefined) => SessionMessage[] | { deny: string }
   failSet: string | null
+  // A write is held open until the promise this answers settles.
+  holdSet: (e: Write) => Promise<void> | undefined
   onLog: (text: string) => void
   registration: 'answers' | 'refuses' | 'hangs'
   registered: CommandSpec[]
@@ -54,6 +56,7 @@ export function world(on: On): World {
     start: (e) => ({ model: e.model ?? w.startModel, agentId: `a${w.seen.length}` }),
     messages: () => ({ deny: 'not readable' }),
     failSet: null,
+    holdSet: () => undefined,
     onLog: () => {},
     registration: 'answers',
     registered: [],
@@ -94,7 +97,8 @@ export function world(on: On): World {
     return { value: { command: e.name } }
   })
   // A thrown stand-in is skipped and the kit's own state writes anyway; a deny makes the plugin's write reject.
-  on('state.set', (_$, e, next) => {
+  on('state.set', async (_$, e, next) => {
+    await w.holdSet(e)
     if (e.key === w.failSet) return { deny: 'refused' } as never
     w.sets.push(e)
     return next(e)

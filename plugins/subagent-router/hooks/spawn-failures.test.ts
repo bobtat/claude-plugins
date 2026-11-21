@@ -367,6 +367,49 @@ test('a route turned off while another spawn waits at the picker leaves that spa
   expect(records(w).find((r) => r.description === 'B')).toEqual(expect.objectContaining({ outcome: 'unchanged', target: null, reason: 'no-route-applies' }))
 })
 
+test('a route turned off is in force for a spawn at the picker while the start that turned it off is still writing', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await spawn()
+
+  let releaseB = () => {}
+  const bAsked = new Promise<void>((resolve) => {
+    releaseB = resolve
+  })
+  let bWaiting = false
+  w.reply = async (e) => {
+    if (typeof e.prompt === 'string' && e.prompt.includes('task B')) {
+      bWaiting = true
+      await bAsked
+    }
+    return { isAnswered: true, text: 'locating', usage: USAGE }
+  }
+  w.answer = (e) => ({ model: e.prompt.includes('task A') ? 'claude-opus-5-5' : (e.model ?? w.startModel), agentId: `a${w.seen.length}` })
+  let releaseWrite = () => {}
+  const writeHeld = new Promise<void>((resolve) => {
+    releaseWrite = resolve
+  })
+  let aWriting = false
+  w.holdSet = (e) => {
+    if (e.key !== 'unmoved') return undefined
+    aWriting = true
+    return writeHeld
+  }
+
+  const b = spawn({ description: 'B', prompt: 'task B' })
+  await until(() => bWaiting)
+  const a = spawn({ description: 'A', prompt: 'task A' })
+  await until(() => aWriting)
+  releaseB()
+  await b
+  releaseWrite()
+  await a
+  const bSeen = w.seen.find((s) => s.prompt.startsWith('task B'))
+  expect(bSeen?.model).toBe(undefined)
+  expect(bSeen?.prompt).toBe('task B')
+  expect(records(w).find((r) => r.description === 'B')).toEqual(expect.objectContaining({ outcome: 'unchanged', target: null, reason: 'no-route-applies' }))
+})
+
 test('a failed baseline write after an unchanged start keeps the record and teaches nothing', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)

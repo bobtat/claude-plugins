@@ -44,8 +44,8 @@ let lastCountedFailureEnded = -1
 
 // What this load decided, beside the state that carries it across loads. A spawn's state read is one moment, so a
 // child dispatched before a routed write lands, or a spawn read before a routeOff write lands, would not see it; and a
-// refused write would release the agent or keep the route on. Each is added with no await after next answers or as
-// the write is issued, and only ever adds to what state says.
+// refused write would release the agent or keep the route on. Each is added before the write that carries it is
+// awaited (after a start, with no await after next answers), and only ever adds to what state says.
 const routedHere = new Set<string>()
 const routeOffHere = new Set<Kind>()
 
@@ -247,21 +247,17 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
     // or one whose family cannot be read (an ARN, a gateway alias), may well be the cheaper model, so the agent is
     // kept as routed and the route is turned off: both are the cautious reading.
     const isPlainlyNotCheaper = model !== undefined && familyOf(model) !== undefined && !ranksBelow(model, baseline)
-    if (!isPlainlyNotCheaper) {
-      routedHere.add(agentId)
-      await attempt(() => $.state.set({ ...ROUTED, id: agentId }, { v: 1, target, baseline }))
-    } else {
-      await attempt(() => $.state.set({ ...UNMOVED, id: agentId }, { v: 1 }))
-    }
     // The route stays on only for a start on the family asked for and shown to cost less than the baseline, by listed
     // price where both are listed. A start on the baseline's family or above (a newer, cheaper Opus under an older Opus
     // baseline) means the hook's model was not honoured, and one on another cheaper family runs on a model the route
     // was never measured for, so each turns the route off.
     isCheaper = !isPlainlyNotCheaper && !overridden && isConfirmedCheaper(model, baseline, target)
-    if (!isCheaper) {
-      routeOffHere.add(kind)
-      routeTurnedOff = await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))
-    }
+    // Into memory before the first write is awaited: a spawn whose picker answers meanwhile must already see both.
+    if (!isPlainlyNotCheaper) routedHere.add(agentId)
+    if (!isCheaper) routeOffHere.add(kind)
+    if (!isPlainlyNotCheaper) await attempt(() => $.state.set({ ...ROUTED, id: agentId }, { v: 1, target, baseline }))
+    else await attempt(() => $.state.set({ ...UNMOVED, id: agentId }, { v: 1 }))
+    if (!isCheaper) routeTurnedOff = await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))
   }
   const done: DecisionRecord = { ...rec, started: cleanId(model), agentId, overridden }
   if (await attempt(() => saveRecord($, id, done))) await attempt(() => $.state.set({ ...BY_AGENT, id: agentId }, id))
