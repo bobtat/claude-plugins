@@ -160,9 +160,10 @@ function headerLines(a: ReportInput): string[] {
     lines.push(`Standing down: ${clean(a.settings.standingDown, NOTE_MAX)}, so the router routes nothing; it still refuses spawns by an agent it already routed.`)
   }
   for (const note of a.settings.notes) lines.push(`Settings: ${clean(note, NOTE_MAX)}`)
-  // A route is turned off by a start at or above its usual model, one that named no model, or one not shown cheaper.
+  // A route is turned off by a start at or above its usual model, one that named no model, one on another family than
+  // the route's, or one not shown cheaper.
   for (const kind of KINDS) {
-    if (a.routeOff.includes(kind)) lines.push(`The ${kind} route is off for this session: a run routed on it started on a model not confirmed cheaper than its usual one.`)
+    if (a.routeOff.includes(kind)) lines.push(`The ${kind} route is off for this session: a run routed on it started on a model other than the one asked for, or one not confirmed cheaper than its usual one.`)
   }
   if (a.pickerOff) lines.push('The picker is off for this session after three failures in a row.')
   return lines

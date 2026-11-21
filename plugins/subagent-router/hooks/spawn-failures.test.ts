@@ -203,6 +203,33 @@ test('listed prices overrule family rank: an Opus 4.8 start under a Fable 5.2 ba
   expect(w.lines).toEqual([expect.stringContaining('Asked for opus; the locating route is off for this session; started on claude-opus-4-8')])
 })
 
+test('a sonnet route whose start lands on haiku turns the route off and still treats the agent as routed', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.routes = { readingRoute: 'sonnet' }
+  w.kinds = ['reading']
+  await spawn()
+
+  w.answer = (e) => ({ model: e.model === 'sonnet' ? 'claude-haiku-5-5' : w.startModel, agentId: `a${w.seen.length}` })
+  await spawn()
+  expect(w.seen[1]?.model).toBe('sonnet')
+  expect(written(w, 'routeOff').map((s) => s.id)).toEqual(['reading'])
+  expect(w.lines).toEqual([expect.stringContaining('Asked for sonnet; the reading route is off for this session; started on claude-haiku-5-5')])
+  w.answer = w.start
+  expect(await spawn({ parentAgentId: 'a2', subagentType: 'general-purpose' })).toEqual({ deny: DENY_TEXT })
+})
+
+test('a haiku route whose start lands on sonnet under an Opus baseline turns the route off', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await spawn()
+
+  w.answer = (e) => ({ model: e.model === 'haiku' ? 'claude-sonnet-5-5' : w.startModel, agentId: `a${w.seen.length}` })
+  await spawn()
+  expect(written(w, 'routeOff').map((s) => s.id)).toEqual(['locating'])
+  expect(w.lines).toEqual([expect.stringContaining('Asked for haiku; the locating route is off for this session; started on claude-sonnet-5-5')])
+})
+
 test('a haiku route that starts on an unpriced haiku is confirmed by family and stays on', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)

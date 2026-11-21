@@ -121,7 +121,7 @@ test('a baseline the router cannot rank is its own line, not baseline learning',
 
 test('a route turned off says why in words true of every way it is turned off', async () => {
   const out = show([], { routeOff: ['reading'] })
-  expect(out.includes('The reading route is off for this session: a run routed on it started on a model not confirmed cheaper than its usual one')).toBe(true)
+  expect(out.includes('The reading route is off for this session: a run routed on it started on a model other than the one asked for, or one not confirmed cheaper than its usual one')).toBe(true)
   expect(out.includes('started at or above')).toBe(false)
 })
 
