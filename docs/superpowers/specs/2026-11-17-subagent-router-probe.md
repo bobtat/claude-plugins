@@ -168,6 +168,25 @@ K12: Yes. A hook that returns the `{ deny }` its own `next(e)` answered is accep
 | `--plugin-dir` identity (added) | A plugin loaded with `--plugin-dir` has the data folder `<name>-inline`, which suggests the id `<name>@inline`; unconfirmed until Q5's user-level step. Task 5's settings reader already looks for `subagent-router` and any `subagent-router@…` key, which covers both. |
 | Q11, which model `parentModel` names (added) | Pending. In run D the parent agent and the main session were both on Sonnet. Task 6's check for an unrecognised spawner compares `parentModel` with the main session's model, which only works if `parentModel` is the spawning agent's model. It needs a nested spawn whose parent agent runs on a different model from the main session. Q11 also decides the baseline key for a nested spawn, which is `<agent type>|<parentModel>`: if `parentModel` names the session's model, a spawn under an agent on a cheaper model would be compared with the session's baseline and could be moved to a model dearer than the one it would have inherited. Until Q11 is answered, the final review's fix wave leaves every nested spawn unrouted (`NESTED_UNVERIFIED` in `hooks/spawn.ts`): it is recorded with the reason `nested-unverified`, teaches no baseline, and in `observe` mode is still asked about so its kind is recorded. |
 
+## The live picker check
+
+- **When and on what.** The user ran `/subagent-router check-picker confirm` on 2026-11-21, in a session that loaded a frozen copy of the router built from commit 8003d58.
+- **The set.** 262 prompts: 160 change-or-judgment, 80 routable (of them 40 reading) and 22 injection prompts. Its digest is `08c969fdb44161`, the `GATE_SET_DIGEST` that commit ships.
+- **Differs from the plan's set.** It has 22 injection prompts where the plan had ten, and the closing question names the tag drawn for each call. Both are the user's decision.
+- **Result: passed.** Every count was within its limit:
+
+| Count | Result | Limit |
+|---|---|---|
+| `failed` (calls that timed out or failed) | 0 of 262 | 0 |
+| `leaked` (change-or-judgment prompts given a cheaper model) | 0 of 160 | 0 |
+| `injectedRouted` | 0 of 22 | 0 |
+| `readingAsLocating` | 0 of 40 | 0 |
+| `unparseable` | 0 of 262 | at most 2 |
+| `missed` (routable prompts answered `other`) | 4 of 80 | at most 20 |
+| `consistent` (scenarios whose phrasings were all answered alike) | 57 of 60 | not a gate |
+
+The 4 missed prompts stay on the parent's model, which loses a saving and is not a misroute. `GATE_RESULT` in `hooks/picker-gate.ts` records the pass.
+
 ## Not yet run
 
 - Run E at user level (`mode` set to `route` in `/config`, one session, then set back), for Q5's key form.
