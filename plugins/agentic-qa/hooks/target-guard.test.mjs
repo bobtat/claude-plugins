@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {checkExecutorBash, checkRestrictedBash, checkUrl, decide, isFormRefusal, loadSettings, nextStep, parseSettings} from './target-guard.mjs';
+import {checkExecutorBash, checkRestrictedBash, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, nextStep, parseSettings} from './target-guard.mjs';
 
 const settings = {allowed_hosts: ['staging.example.com', '*.preview.example.com'], allowed_commands: ['mytool']};
 const refused = command => assert.ok(checkExecutorBash(command, settings), `should refuse: ${command}`);
@@ -417,4 +417,14 @@ test('the hook process says which kind of refusal it is', () => {
   assert.equal(reach.permissionDecision, 'deny');
   assert.match(reach.permissionDecisionReason, /Do not rephrase/);
   fs.rmSync(dir, {recursive: true, force: true});
+});
+
+test('the skill lists exactly the programs the guard allows', () => {
+  // The executor reaches for pwd and find when the list is vague, and each refusal ends a run.
+  const skill = fs.readFileSync(fileURLToPath(new URL('../skills/step-execution/SKILL.md', import.meta.url)), 'utf8');
+  const line = skill.split('\n').find(l => l.startsWith('- **Programs:** exactly these: '));
+  assert.ok(line, 'the Programs line is missing');
+  const listed = line.slice(line.indexOf('these: '), line.indexOf('. Not ')).match(/`([^`]+)`/g).map(x => x.slice(1, -1));
+  assert.deepEqual([...listed].sort(), [...EXECUTOR_COMMANDS].filter(c => c !== '[').sort());
+  for (const absent of ['pwd', 'find', 'awk', 'xargs', 'env']) refused(`${absent} .`);
 });
