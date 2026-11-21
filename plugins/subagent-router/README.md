@@ -35,7 +35,7 @@ claude --plugin-dir <path to plugins/subagent-router>
 |---|---|
 | `observe` (default) | Asks the picker about every in-scope spawn that does not name its own model, and records what it would have done. Changes no model, adds no note to any prompt, and refuses nothing except under an agent that was already routed. |
 | `route` | Does what `observe` records: starts a spawn on the cheaper model when its kind has a route and the route's model is cheaper than the one the agent would have run on. |
-| `off` | Does nothing, except that an agent already moved to a cheaper model is still refused its own spawns. |
+| `off` | Does nothing, except that an agent subagent-router treats as routed is still refused its own spawns. |
 
 Set `mode` in `/config` under `subagent-router`. The setting is a user-level one, so a change applies to every running session at the next spawn, not only the one you changed it in. `/config` offers exactly `observe`, `route` and `off`, and the router accepts only those, written exactly: a value written by hand in another spelling, such as `" Route"` or `ROUTE`, turns the router off, and `/subagent-router` says it must be written exactly (lower case, no spaces). The first line of `/subagent-router` shows the mode the router is using.
 
@@ -53,7 +53,7 @@ The picker names one of three kinds of task:
 
 A route is `parent` (leave the model alone, which turns the route off), a model family written as the whole value (`haiku`, `sonnet`, `opus` or `fable`), or a model id that begins with `claude-` and names exactly one family as a whole word, which is read as that family. Anything else is not recognised and leaves the route at `parent`: `not-haiku`, `haiku-off`, `my-haiku`, `not haiku` and `mythos` are not routes, and neither is `affable`, whose `fable` is part of a longer word. A route value is read without regard to case and with surrounding spaces ignored; `mode` is not (see "Modes"). The router asks for the family name, not a full model id.
 
-A route applies to a spawn only when its model is cheaper than the model that agent would have run on without the router (the baseline, below); that decision is made by family, since which version an alias such as `opus` resolves to is known only once the agent starts. Family is not a price across model generations, so the start is checked too. A route stays on only while the model that actually started is on the family the route asked for and can be confirmed cheaper than the baseline. Where both models have a listed price, every listed price decides: input and output must both be lower, and no cache read or cache write price may be higher, since a subagent's tokens are mostly cache reads. For a `haiku` route only, a start with no listed price is confirmed by family, Haiku being the cheapest family in every generation; a route to any other family whose start has no listed price cannot be confirmed. A model id that two listed prices both claim has no price, and a start whose family cannot be read is never confirmed. A start that is not confirmed, including one at or above the baseline, one on a cheaper family other than the one asked for, and one whose reply names no model, turns that route off, and both the transcript line and the report say so. That a route is off is kept in session state (see "Baseline"), so it stays off, even if its setting is changed, until that state is gone.
+A route applies to a spawn only when its model is cheaper than the model that agent would have run on without the router (the baseline, below); that decision is made by family, since which version an alias such as `opus` resolves to is known only once the agent starts. Family is not a price across model generations, so the start is checked too. A route stays on only while the model that actually started is on the family the route asked for and can be confirmed cheaper than the baseline. Where both models have a listed price, every listed price decides: input and output must both be lower, and no cache read or cache write price may be higher, since a subagent's tokens are mostly cache reads. For a `haiku` route only, a Haiku start is confirmed by family when either price is not listed, Haiku being the cheapest family in every generation; for a route to any other family, a start cannot be confirmed when either price is not listed. A model id that two listed prices both claim has no price, and a start whose family cannot be read is never confirmed. A start that is not confirmed, including one at or above the baseline, one on a cheaper family other than the one asked for, and one whose reply names no model, turns that route off, and both the transcript line and the report say so. That a route is off is kept in session state (see "Baseline"), so it stays off, even if its setting is changed, until that state is gone. If session state refuses that write, the route is still off in the router's own memory, and both lines say it is off until the router reloads.
 
 `readingRoute` ships off because Sonnet's reading answers were less complete than Opus's in 17 of 20 measured pairs and materially wrong in 1 (see "What was measured"). Set it to `sonnet` to turn it on, ideally after `observe` mode has shown how many reading tasks your sessions contain. The route accepts any family, but only Sonnet was measured on reading tasks; Haiku on reading tasks was never run, and no measured reading prompt was sent to Haiku.
 
@@ -127,7 +127,7 @@ This is the whole path of an `agent.spawn`:
 
 `/subagent-router` prints the decisions kept in session state. Its output is display-only: it is not sent to the model and costs no parent tokens. It is drawn as one literal block, so nothing in it, a task description included, is drawn as a link, emphasis or a table. It shows:
 
-- the mode and the two routes in force, whether this version shipped with a passed picker check (see below), whether the router is standing down, and any setting it did not recognise;
+- the mode and the two routes in force, a warning if this version shipped without a passed picker check (see below), whether the router is standing down, and any setting it did not recognise;
 - any route that is off, and whether the picker is off;
 - for each kind: how many runs there were; in `route` mode, how many were asked to move to a cheaper model and how many of those started on the family asked for (`3 asked, 2 moved`); in `observe` mode, how many would be routed (a route that is off routes none); and what those runs cost;
 - how many in-scope spawns there were, out of every spawn with a record plus those passed through untouched (a refusal has a record but is not counted in scope, since the spawn refused can be of any type; and the passed-through count is not kept while the router is off or standing down);
@@ -153,7 +153,21 @@ A run passes only if every call completed, and:
 | Answers that were not exactly one option name (after trimming and lower-casing) | at most 2 |
 | Routable prompts (80) left on the parent's model | at most 20 |
 
-A set in which a prompt or injection id appears twice is refused before any call. A run on a set of any other size, or of other content, is not a result: the shipped set is known by its sizes and by a digest of every item's id, expected answer and prompt, in order, which `hooks/picker-gate.ts` records as `GATE_SET_DIGEST`. The digest catches a set whose prompts changed under the same ids; it is not a guard against someone who means to change the set, who can change the digest as well. After the verdict, one line says what to do with it: for a pass, copy the new instruction and closing question into `hooks/picker-gate.ts` and the run's numbers into `GATE_RESULT`; otherwise, the run changes nothing, and the line says what to look at. A unit test fails while either shipped text and its copy differ. In this version `GATE_RESULT` reads `not run`: the check has not been run on the shipped wording, and `/subagent-router` says near its top that this version shipped without a passed picker check, with the advice that `route` mode should wait for one. The shipped wording names its options `locating`, `reading` and `other`; the measured wording named them `haiku`, `sonnet` and `inherit`, with the same descriptions.
+A set in which a prompt or injection id appears twice is refused before any call. A run on a set of any other size, or of other content, is not a result: the shipped set is known by its sizes and by a digest of every item's id, expected answer and prompt, in order, which `hooks/picker-gate.ts` records as `GATE_SET_DIGEST`. The digest catches a set whose prompts changed under the same ids; it is not a guard against someone who means to change the set, who can change the digest as well. After the verdict, one line says what to do with it: for a pass, copy the new instruction and closing question into `hooks/picker-gate.ts` and the run's numbers into `GATE_RESULT`; otherwise, the run changes nothing, and the line says what to look at. A unit test fails while either shipped text and its copy differ.
+
+The shipped wording passed the check on 2026-11-21, on the 262-prompt set:
+
+| Count | Result | Required |
+|---|---|---|
+| Calls that did not complete | 0 of 262 | 0 |
+| Change-or-judgment prompts (160) given a cheaper model | 0 | 0 |
+| Injection prompts (22) given a cheaper model | 0 | 0 |
+| Reading prompts (40) answered `locating` | 0 | 0 |
+| Answers that were not exactly one option name | 0 of 262 | at most 2 |
+| Routable prompts (80) left on the parent's model | 4 | at most 20 |
+| Scenarios whose four phrasings were all answered alike | 57 of 60 | not a gate |
+
+The 4 routable prompts were answered `other`, which leaves them where they were: a saving missed, not a misroute. `GATE_RESULT` in `hooks/picker-gate.ts` records the pass, and a unit test ties it to the shipped wording, the set's digest and the sizes and limits above. A change to the wording or to the set needs a new pass. A version whose `GATE_RESULT` is not a pass says near the top of `/subagent-router` that it shipped without a passed picker check, with the advice that `route` mode should wait for one. The shipped wording names its options `locating`, `reading` and `other`; the measured wording named them `haiku`, `sonnet` and `inherit`, with the same descriptions.
 
 ## Settings
 
@@ -182,7 +196,7 @@ The picker and the downgrade were measured on 2026-11-18, from a Fable session w
 | Reading prompts sent to Haiku | 0 |
 | Answers that were a sentence instead of an option name | 22 of 240 (all treated as no change) |
 
-0 of 160 puts the true misroute rate probably under 2%; it does not show that it is zero. Every scenario whose four phrasings were handled differently was a locating or reading task, which costs saving and not quality. These are the figures for the original wording; the shipped wording has not had its own run (see above).
+0 of 160 puts the true misroute rate probably under 2%; it does not show that it is zero. Every scenario whose four phrasings were handled differently was a locating or reading task, which costs saving and not quality. These are the figures for the original wording; the shipped wording's own run, on a set with injection prompts added, is under "`/subagent-router check-picker`".
 
 **Searches on Opus, Sonnet and Haiku.** 12 search scenarios on the `Explore` agent, scored against an answer key from the code: each model found 106 of 106 items.
 
@@ -241,7 +255,7 @@ The module is `hooks/register.ts`. The code is split by what it works on:
 | `hooks/settings.ts`, `hooks/guard.ts` | Reading the user and policy settings; refusing other plugins' changes to them |
 | `hooks/records.ts`, `hooks/usage.ts`, `hooks/prices.ts` | The session's decision records, tokens added from each finished turn, and the price list with the price side of the never-upgrade rule: the check that a routed start was cheaper than the baseline by listed price |
 | `hooks/report.ts`, `hooks/command.ts` | The text of `/subagent-router` and the picker check's scoring; the command itself |
-| `hooks/check-picker.ts`, `hooks/picker-gate.ts` | The picker check, and the instruction and closing question the check is to be run on, the shipped set's sizes and digest, and the result of its last run (`not run` so far) |
+| `hooks/check-picker.ts`, `hooks/picker-gate.ts` | The picker check, and the instruction and closing question the check passed on, the shipped set's sizes and digest, and the result of its last run (passed on 2026-11-21) |
 | `hooks/clean.ts` | The cleaning applied to every piece of text the router shows, and the literal block the command's answer is drawn in |
 
 ```
