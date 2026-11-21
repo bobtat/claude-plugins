@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {checkExecutorBash, checkRestrictedBash, checkUrl, decide, loadSettings, parseSettings} from './target-guard.mjs';
+import {checkExecutorBash, checkRestrictedBash, checkUrl, decide, isFormRefusal, loadSettings, nextStep, parseSettings} from './target-guard.mjs';
 
 const settings = {allowed_hosts: ['staging.example.com', '*.preview.example.com'], allowed_commands: ['mytool']};
 const refused = command => assert.ok(checkExecutorBash(command, settings), `should refuse: ${command}`);
@@ -367,5 +367,54 @@ test('the hook process denies by writing the documented JSON and fails closed', 
   fs.mkdirSync(path.join(dir, '.claude', 'agentic-qa.local.md'));
   const crashed = runHook(evil.replace('curl -q https://evil.example.org', 'echo hi'), {CLAUDE_PROJECT_DIR: dir, HOME: dir, USERPROFILE: dir});
   assert.equal(JSON.parse(crashed.stdout).hookSpecificOutput.permissionDecision, 'deny');
+  fs.rmSync(dir, {recursive: true, force: true});
+});
+
+test('a refusal of how a command is written may be resent spelled out, a refusal of what it reaches may not', () => {
+  const form = command => {
+    const reason = checkExecutorBash(command, settings);
+    assert.ok(reason, `should refuse: ${command}`);
+    assert.ok(isFormRefusal(reason), `should ask for literal paths: ${reason}`);
+    assert.match(nextStep(reason), /once more with every path spelled out/);
+  };
+  const final = command => {
+    const reason = checkExecutorBash(command, settings);
+    assert.ok(reason, `should refuse: ${command}`);
+    assert.ok(!isFormRefusal(reason), `should not invite another attempt: ${reason}`);
+    assert.match(nextStep(reason), /^Do not rephrase/);
+  };
+  // What the executor did in two of five fixture runs, each of which then ended with no step verified.
+  form('P=/tmp/run\ncp "$P/pw-out/page.png" "$P/evidence/s1.png"');
+  form('D=/tmp/out; cp "$D/page.png" /tmp/run/evidence/s1.png');
+  form('echo x > "$OUT/step-results.md"');
+  form('cp /tmp/out/page-*.png /tmp/run/evidence/');
+  form('cd "$RUN" && ls');
+  form('curl -q -o "$F" https://staging.example.com/x');
+  form('cat $FILE');
+  // The same commands spelled out are judged on what they reach.
+  allowed('cp /tmp/out/page.png /tmp/run/evidence/s1.png');
+  final('cp /tmp/out/page.png /tmp/run/.claude/agentic-qa.local.md');
+  final('curl -q https://evil.example.org/x');
+  final('curl -q -L https://staging.example.com/x');
+  final('find / -name page.png');
+  final('python3 x.py');
+  final('"$TOOL" --version');
+  final('PATH=/tmp/bin cat a');
+  final('cat <<EOF\n$(id)\nEOF');
+  // A spelled-out path that is protected stays refused for good, whatever came before it.
+  final('cp /tmp/out/page.png ~/.claude/settings.json');
+});
+
+test('the hook process says which kind of refusal it is', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-'));
+  const env = {CLAUDE_PROJECT_DIR: dir, HOME: dir, USERPROFILE: dir};
+  const run = command => JSON.parse(runHook(JSON.stringify({agent_type: 'agentic-qa:step-executor', tool_name: 'Bash', tool_input: {command}, cwd: dir}), env).stdout).hookSpecificOutput;
+  const form = run('P=/tmp/run; cp "$P/a.png" "$P/evidence/a.png"');
+  assert.equal(form.permissionDecision, 'deny');
+  assert.match(form.permissionDecisionReason, /once more with every path spelled out/);
+  assert.doesNotMatch(form.permissionDecisionReason, /Do not rephrase/);
+  const reach = run('curl -q https://evil.example.org');
+  assert.equal(reach.permissionDecision, 'deny');
+  assert.match(reach.permissionDecisionReason, /Do not rephrase/);
   fs.rmSync(dir, {recursive: true, force: true});
 });
