@@ -1,13 +1,11 @@
 ---
 name: step-execution
-description: Use when running an approved step plan against a live system — spawning agentic-qa:step-executor to drive the browser, API, and CLI. Governs the five verdicts (pass/fail/blocked/skipped/not verified), which evidence is required by surface, the choice between the claude-in-chrome and playwright browser drivers, the backoff retry policy for environment failures, the irreversible-step check, and the rule against adapting an action to force a pass. Invoked by /agentic-qa:walkthrough after the User Gate, alongside agentic-qa:qa-reporting.
+description: The procedure agentic-qa:step-executor follows when running an approved step plan against a live system — browser, API, and CLI. Governs the five verdicts (pass/fail/blocked/skipped/not verified), which evidence is required by surface, how a page is read, the choice between the claude-in-chrome and playwright browser drivers, the backoff retry policy for environment failures, the irreversible-step check, and the rule against adapting an action to force a pass. Loaded by that agent. An orchestrator runs this phase from /agentic-qa:walkthrough or agentic-qa:qa-runner and does not load it.
 ---
 
 ## Overview
 
-This is Phase 4: running the approved `step-plan.md` one step at a time against the live system. Spawn `agentic-qa:qa-reporter` first — it writes the report skeleton and returns — then spawn `agentic-qa:step-executor` with the absolute paths to `step-plan.md` and `intake.md` and the reporter's agent ID. The reporter has to exist before the first step completes, since the report is built incrementally as steps complete, not assembled afterward. See `agentic-qa:qa-reporting` for that agent's half.
-
-This is the longest-running, most context-heavy stage in the pipeline, which is exactly why it is a spawned agent rather than main-thread work — the bulk of what it does (screenshots, response bodies, command output, tool-call history) should never accumulate in the thread that has to survive the whole session.
+This is Phase 4: running the approved `step-plan.md` one step at a time against the live system. `agentic-qa:step-executor` does it, given absolute paths to `step-plan.md` and `intake.md` and the reporter's agent ID. The orchestrator's half is in `/agentic-qa:walkthrough` and `agentic-qa:qa-runner`, and the reporter's in `agentic-qa:qa-reporting`.
 
 ## Per-step loop
 
@@ -41,11 +39,11 @@ Append a `pending` entry to `step-results.md` naming the exact action **before**
 
 ### When the executor ends some other way
 
-A context limit, a crash, or a result that is neither `ESCALATION:` nor `COMPLETE` is an abnormal end. The orchestrator resumes it by ID once, asking only which of those it is. If that doesn't produce one, it sends the reporter `final: run ended abnormally — <reason>` and tells whoever it answers to. It **never** spawns a new executor to carry on: a new one would have no memory of what the old one sent.
+A context limit, a crash, or a result that is neither `ESCALATION:` nor `COMPLETE` is an abnormal end. The orchestrator resumes you once, asking only which of those it is: answer with one of the two. It never spawns a new executor to carry on, because a new one would have no memory of what you sent.
 
 ### Rerunning after an interrupted run
 
-A rerun is a new run, in a new directory, and any grant it holds was given without knowledge of what the earlier run already did. So when a person or the brief's `previous_run` names an earlier working directory, Intake copies into `intake.md`'s `Earlier run` field every irreversible action that directory's `step-results.md` shows as sent, `pending` entries above all. A step matching one is not covered by any grant: escalate it individually, saying what was already sent.
+A rerun is a new run, in a new directory, and any grant it holds was given without knowledge of what the earlier run already did. `intake.md`'s `Earlier run` field lists every irreversible action the earlier run's `step-results.md` shows as sent, `pending` entries above all. A step matching one is not covered by any grant: escalate it individually, saying what was already sent.
 
 ### Evidence, fixed by surface, not judgment
 

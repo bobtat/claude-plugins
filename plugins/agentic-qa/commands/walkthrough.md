@@ -15,7 +15,7 @@ Walk through a described feature or fix by actually running it — a live browse
 
 This is the **interactive** entry point. An agent invoking this plugin unattended calls `agentic-qa:qa-runner`, or the `agentic-qa:agentic-qa` skill directly, with a brief instead of running this command — see that skill for the agent-invoked contract and the brief format.
 
-**Load the `agentic-qa:agentic-qa` skill now.** It carries the safety posture, the artifact discipline, and the escalation mechanism every phase below depends on. Each phase also loads its own skill at the point it's needed.
+**Load the `agentic-qa:agentic-qa` skill now.** It carries the safety posture, the artifact discipline, and the escalation mechanism every phase below depends on. Phases 1 and 2 also load their own skill at the point it's needed.
 
 ### Requires the `testing` plugin
 
@@ -36,7 +36,7 @@ Every phase hands off through files in a working directory **new to this run**: 
 | `walkthrough-report.html` | `qa-reporter` | The rendered, self-contained deliverable — generated once, at finalization |
 | `signals/report-done.txt` | `qa-reporter` | The path to the finished report, written last — the signal Phase 5 waits on |
 
-Pass **absolute paths** to every spawned agent — they cannot see your conversation. Tell the user where the directory is **when you create it**, not only when the run finishes: if the session dies, that path is what a rerun needs in order to know what was already sent. If they say an earlier run of this ticket was interrupted, ask for its directory (see `agentic-qa:step-execution`'s Rerunning). Tell them where the report landed if a report destination was configured.
+Pass **absolute paths** to every spawned agent — they cannot see your conversation. Tell the user where the directory is **when you create it**, not only when the run finishes: if the session dies, that path is what a rerun needs in order to know what was already sent. If they say an earlier run of this ticket was interrupted, ask for its directory (see `agentic-qa:agentic-qa`'s Intake). Tell them where the report landed if a report destination was configured.
 
 ### Everything here is namespaced
 
@@ -134,7 +134,7 @@ Fold the remaining answers back into `step-plan.md` before moving on — a struc
 
 ## Phase 4 — Execute Steps & Write Report
 
-Load `agentic-qa:step-execution` and `agentic-qa:qa-reporting` for the full procedure — the five verdicts, the surface-driven evidence rule, the backoff policy, the never-adapt-to-force-a-pass rule, and the report template — before spawning either agent.
+Don't load `agentic-qa:step-execution` or `agentic-qa:qa-reporting` here. They are the executor's and the reporter's procedures, each agent loads its own, and everything this phase asks of you is below. Loaded here they add well over 10,000 tokens that this session then carries on every call until it ends.
 
 Spawn `agentic-qa:qa-reporter` **first**: it writes the report skeleton before a single step runs, and returns. Keep its agent ID. Then spawn `agentic-qa:step-executor`, passing that ID in its prompt — the executor nudges the reporter after every step but the last, and only an ID is an address `SendMessage` accepts.
 
@@ -145,7 +145,7 @@ The executor returns one of two results:
 
 The reporter's other completion notices carry nothing you need; ignore them.
 
-Any other ending is an **abnormal end**: follow `agentic-qa:step-execution`'s rule — one resume to ask, then `final: run ended abnormally — <reason>` to the reporter, never a new executor. The user still gets a report, marked incomplete.
+Any other ending — a context limit, a crash, a result that is neither of those — is an **abnormal end**. Resume the executor by its ID once, asking only which of the two it is. If that doesn't produce one, send the reporter `final: run ended abnormally — <reason>`. Never spawn a new executor to carry on: a new one would have no memory of what the old one sent. The user still gets a report, marked incomplete.
 
 ## Phase 5 — Wrap-up
 
