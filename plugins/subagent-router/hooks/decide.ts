@@ -22,6 +22,8 @@ const IN_SCOPE_TYPES: readonly string[] = ['Explore', 'general-purpose']
 
 export type SpawnEvent = Pick<AgentSpawnInput, 'subagentType' | 'fork' | 'resume' | 'isTeammate' | 'workflow' | 'provider' | 'model'>
 
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
+
 // Every field is read as if it could be missing or of the wrong type, because at run time it can be.
 export function factsOf(
   e: SpawnEvent,
@@ -31,7 +33,8 @@ export function factsOf(
   return {
     ...known,
     isFork: e.fork === true,
-    isResume: e.resume !== undefined,
+    // A resume lets a routed agent's spawn through, so only the documented shape counts as one.
+    isResume: isRecord(e.resume) && typeof e.resume.agentId === 'string' && e.resume.agentId !== '',
     isTeammate: e.isTeammate === true,
     isWorkflow: e.workflow !== undefined,
     // A plugin's spawn arrives exactly like an engine one (probe Q13); only the origin tells them apart.

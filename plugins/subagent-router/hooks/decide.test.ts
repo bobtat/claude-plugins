@@ -112,6 +112,12 @@ test('resume, workflow, teammate and fork each set their flag', async () => {
   expect([plain.isResume, plain.isWorkflow, plain.isTeammate, plain.isFork]).toEqual([false, false, false, false])
 })
 
+test('only a resume naming an agent id is a resume', async () => {
+  for (const resume of [null, '', false, {}, { agentId: '' }, { agentId: 7 }, 'a9'])
+    expect(factsOf({ ...event, resume: resume as never }, ENGINE, known).isResume).toBe(false)
+  expect(factsOf({ ...event, resume: { agentId: 'a9' } }, ENGINE, known).isResume).toBe(true)
+})
+
 test('an unset model is not explicit, whether undefined or null, and a named one is', async () => {
   expect(factsOf({ ...event, model: undefined }, ENGINE, known).hasExplicitModel).toBe(false)
   expect(factsOf({ ...event, model: null as never }, ENGINE, known).hasExplicitModel).toBe(false)

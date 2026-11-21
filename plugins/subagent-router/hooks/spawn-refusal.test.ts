@@ -26,6 +26,15 @@ test('a spawn under a routed agent is refused, and stays refused after the mode 
   expect(isDenied(await spawn({ parentAgentId: 'a2', fork: true }))).toBe(false)
 })
 
+test('a spawn by a routed agent carrying resume: null is not a resume and is refused', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await routeA2(spawn)
+
+  expect(await spawn({ parentAgentId: 'a2', resume: null as never })).toEqual({ deny: DENY_TEXT })
+  expect(w.seen.length).toBe(2)
+})
+
 test('a fork of a routed agent is itself treated as routed', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)
