@@ -73,7 +73,7 @@ One kind is different, and the guard says so in the refusal itself: it refused h
 
 What the guard permits:
 
-- **Programs:** basic file and text tools (`cat`, `sed`, `grep`, `jq`, `cp`, `rm` and the like) and `curl`. Anything else, interpreters and your CLI under test included, must be in `allowed_commands`, because a person listing it is the only thing that can say a run may start it.
+- **Programs:** exactly these: `base64`, `basename`, `cat`, `cd`, `cp`, `curl`, `cut`, `date`, `dirname`, `echo`, `false`, `grep`, `head`, `jq`, `ls`, `mkdir`, `mv`, `printf`, `rm`, `sed`, `sleep`, `sort`, `tail`, `tee`, `test`, `touch`, `tr`, `true`, `uniq`, `wc`. Not `pwd`, `find`, `awk`, `xargs` or `env`, and no interpreter. Anything else, your CLI under test included, must be in `allowed_commands`, because a person listing it is the only thing that can say a run may start it. A refused program is a refusal like any other: don't drop it from the command and carry on.
 - **`curl`:** `-q` as the first argument, so no config file applies, then every URL literal and on an allowed host. Options come from a fixed list of the common ones: `-sS`, `-H`, `-d`, `-X`, `-o`, `-w`, `-m` and their relatives. That list has no redirects (`-L`), proxies, or server-named output files (`-O`, `-J`). To test a redirect, read its `Location` and judge that host yourself.
 - **`sed` and `sort`:** only their common options. A `sed` script may use `s`, `p`, `d`, `q` and `n` and nothing else, and must be literal.
 - **Shell:** every expansion in double quotes, since the shell can split an unquoted one into extra arguments. No variable set in front of a command, and no assigning to a variable that's already exported.

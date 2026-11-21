@@ -20,7 +20,7 @@ const ALWAYS_ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 // curl and sort options, sed commands. Each denylist this guard started with was
 // bypassed by something it hadn't named, such as an abbreviated long option.
 // awk, find, xargs and env are absent because each can start another program.
-const EXECUTOR_COMMANDS = new Set([
+export const EXECUTOR_COMMANDS = new Set([
   'base64', 'basename', 'cat', 'cd', 'cp', 'curl', 'cut', 'date', 'dirname', 'echo',
   'false', 'grep', 'head', 'jq', 'ls', 'mkdir', 'mv', 'printf', 'rm', 'sed', 'sleep',
   'sort', 'tail', 'tee', 'test', 'touch', 'tr', 'true', 'uniq', 'wc', '[',
