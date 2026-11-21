@@ -1,6 +1,6 @@
 import type { CommandRunInput, CommandRunResult, EngineInterface } from 'claude-code'
 import type { Kind } from '../types'
-import { clean } from './clean'
+import { clean, jsonOf } from './clean'
 import { GATE_LIMITS } from './picker-gate'
 import { MAX_PROMPT, pickKind, unpickable } from './picker'
 import { offenders, renderCheck, scoreRun, sizesOf, wrongSizesOf } from './report'
@@ -58,7 +58,10 @@ export function parsePickerSet(texts: { scenarios: string; prompts: string; inje
   for (const [i, s] of scenarios.entries()) {
     if (!isRecord(s) || !isName(s.id)) return { problem: `scenarios.json row ${i + 1} has no id` }
     const expected = EXPECTED.get(s.expected)
-    if (expected === undefined) return { problem: `scenario ${named(s.id)} expects ${named(s.expected)}, not haiku, sonnet or inherit` }
+    if (expected === undefined) {
+      const shown = typeof s.expected === 'string' ? s.expected : jsonOf(s.expected)
+      return { problem: `scenario ${named(s.id)} expects ${named(shown)}, not haiku, sonnet or inherit` }
+    }
     if (expectedOf.has(s.id)) return { problem: `scenario ${named(s.id)} appears twice in scenarios.json` }
     expectedOf.set(s.id, expected)
   }

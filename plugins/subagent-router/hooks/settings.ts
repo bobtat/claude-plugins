@@ -1,11 +1,13 @@
 import type { EngineInterface } from 'claude-code'
 import type { Mode, Route, Settings } from '../types'
-import { clean, hasHidden } from './clean'
+import type { Family } from '../types'
+import { clean, hasHidden, jsonOf } from './clean'
 import { familyOf } from './model-rank'
 
 const PLUGIN = 'subagent-router'
 const FORCE_VARIABLE = 'CLAUDE_CODE_SUBAGENT_MODEL_FORCE'
 const MODES: readonly Mode[] = ['observe', 'route', 'off']
+const FAMILIES: readonly Family[] = ['haiku', 'sonnet', 'opus', 'fable']
 
 export type SettingsHost = {
   settings: { read: (args: { source: 'user' | 'policy' }) => Promise<unknown> }
@@ -29,26 +31,37 @@ function sameValue(a: unknown, b: unknown): boolean {
 
 // Without the remark, "route" with a zero-width space would be reported as an unrecognised "route".
 function shown(value: unknown): string {
-  if (value === null) return 'null'
+  if (typeof value !== 'string') return clean(jsonOf(value), 40)
   return hasHidden(value) ? `"${clean(value, 40)}" (hidden characters removed)` : `"${clean(value, 40)}"`
 }
 
+// Exactly as the manifest lists it: the engine treats any other value as unset, so /config would show the default
+// observe while a loosely read " Route" ran as route.
 function parseMode(value: unknown, notes: string[]): Mode {
   if (value === undefined) return 'observe'
-  const name = typeof value === 'string' ? value.trim().toLowerCase() : ''
-  const found = MODES.find(mode => mode === name)
+  const found = MODES.find(mode => mode === value)
   if (found) return found
-  notes.push(`mode ${shown(value)} is not observe, route or off, so the router is off`)
+  const loosely = typeof value === 'string' && MODES.some(mode => mode === value.trim().toLowerCase())
+  notes.push(loosely
+    ? `mode ${shown(value)} must be written exactly (lower case, no spaces) as observe, route or off, so the router is off`
+    : `mode ${shown(value)} is not observe, route or off, so the router is off`)
   return 'off'
+}
+
+// A route names a family only as the whole value or as a claude- model id with one readable family: "not-haiku",
+// "my-haiku" and "not haiku" hold a family word but do not name one.
+function routeOf(name: string): Route | undefined {
+  if (name === 'parent') return 'parent'
+  const family = FAMILIES.find(f => f === name)
+  if (family) return family
+  if (!name.startsWith('claude-') || /\s/u.test(name)) return undefined
+  return familyOf(name)
 }
 
 function parseRoute(field: string, value: unknown, fallback: Route, notes: string[]): Route {
   if (value === undefined) return fallback
-  const name = typeof value === 'string' ? value.trim().toLowerCase() : ''
-  if (name === 'parent') return 'parent'
-  // "not haiku" holds a family word but does not name one.
-  const family = name === '' || /\s/u.test(name) ? undefined : familyOf(name)
-  if (family) return family
+  const route = typeof value === 'string' ? routeOf(value.trim().toLowerCase()) : undefined
+  if (route) return route
   notes.push(`${field} ${shown(value)} is not a model family or parent, so the parent model is used`)
   return 'parent'
 }

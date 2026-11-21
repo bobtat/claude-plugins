@@ -7,11 +7,45 @@ test('defaults: observe, locating to haiku, reading off', async () => {
     { mode: 'observe', routes: { locating: 'haiku', reading: 'parent' }, standingDown: null, notes: [] })
 })
 
-test('names are read without regard to case, and a route accepts a full model id', async () => {
-  const s = parseSettings({ mode: ' Route ', locatingRoute: 'Sonnet', readingRoute: 'claude-sonnet-5-5' }, undefined)
+test('a route is read without regard to case or surrounding spaces, and accepts a full model id', async () => {
+  const s = parseSettings({ mode: 'route', locatingRoute: ' Sonnet ', readingRoute: 'claude-sonnet-5-5' }, undefined)
   expect(s.mode).toBe('route')
   expect(s.routes).toEqual({ locating: 'sonnet', reading: 'sonnet' })
   expect(s.notes).toEqual([])
+})
+
+// The engine treats a value outside the manifest's options as unset, so /config would show the default observe.
+test('a mode must match one of the three options exactly, or the router is off', async () => {
+  for (const mode of [' Route', 'ROUTE', 'Observe', 'route\n', ' off ']) {
+    const s = parseSettings({ mode }, undefined)
+    expect(s.mode).toBe('off')
+    expect(s.notes.length).toBe(1)
+    expect(s.notes[0]!.includes('must be written exactly (lower case, no spaces)')).toBe(true)
+  }
+  for (const mode of ['observe', 'route', 'off']) expect(parseSettings({ mode }, undefined)).toEqual(expect.objectContaining({ mode, notes: [] }))
+  const hidden = parseSettings({ mode: 'route' + String.fromCodePoint(0x200B) }, undefined)
+  expect(hidden.mode).toBe('off')
+  expect(hidden.notes[0]!.includes('(hidden characters removed)')).toBe(true)
+  expect(parseSettings({ mode: 'turbo' }, undefined).notes[0]!.includes('exactly')).toBe(false)
+})
+
+test('a route names a family only as the whole value or as a claude- model id', async () => {
+  for (const route of ['not-haiku', 'haiku-off', 'my-haiku', 'mythos', 'claude- haiku', 'haiku 5', 'claude-opus-haiku']) {
+    const s = parseSettings({ locatingRoute: route }, undefined)
+    expect(s.routes.locating).toBe('parent')
+    expect(s.notes.length).toBe(1)
+  }
+  const known = [['haiku', 'haiku'], ['OPUS', 'opus'], ['claude-haiku-5-5', 'haiku'], ['claude-opus-4-8', 'opus'], ['parent', 'parent']]
+  for (const [route, family] of known) expect(parseSettings({ readingRoute: route }, undefined).routes.reading).toBe(family)
+})
+
+test('a value that is not text is shown as JSON in its note', async () => {
+  const s = parseSettings({ mode: ['route'], locatingRoute: { family: 'haiku' } }, undefined)
+  expect(s.notes[0]!.startsWith('mode ["route"] is not')).toBe(true)
+  expect(s.notes[1]!.startsWith('locatingRoute {"family":"haiku"} is not')).toBe(true)
+  expect(parseSettings({ mode: 7 }, undefined).notes[0]!.startsWith('mode 7 is not')).toBe(true)
+  const long = parseSettings({ mode: ['x'.repeat(100)] }, undefined).notes[0]!
+  expect(long.startsWith('mode ["' + 'x'.repeat(37) + String.fromCodePoint(0x2026) + ' is not')).toBe(true)
 })
 
 test('a value that is not recognised never makes routing more active', async () => {
@@ -54,16 +88,16 @@ test('a note on a value that held hidden characters says they were removed from 
   expect(parseSettings({ mode: 'turbo' }, undefined).notes[0]!.includes('hidden')).toBe(false)
 })
 
-test('a tab, newline or carriage return alone is ordinary whitespace, so the note does not say hidden characters were removed', async () => {
-  // Trimmed, this is a valid mode, so no note at all.
-  expect(parseSettings({ mode: 'route\n' }, undefined)).toEqual(expect.objectContaining({ mode: 'route', notes: [] }))
-  for (const mode of ['ro\tute', 'ro\nute', 'ro\r\nute', 'turbo\n']) {
+test('a tab, newline, vertical tab, form feed or carriage return alone is ordinary whitespace, so the note does not say hidden characters were removed', async () => {
+  for (const mode of ['ro\tute', 'ro\nute', 'ro\r\nute', 'turbo\n', 'ro\vute', 'ro\fute']) {
     const s = parseSettings({ mode }, undefined)
     expect(s.notes.length).toBe(1)
     expect(s.notes[0]!.includes('hidden')).toBe(false)
   }
-  const s = parseSettings({ mode: 'route' + String.fromCodePoint(0x200B) }, undefined)
-  expect(s.notes[0]!.includes('(hidden characters removed)')).toBe(true)
+  for (const hidden of [0x200B, 0xFEFF]) {
+    const s = parseSettings({ mode: 'route' + String.fromCodePoint(hidden) }, undefined)
+    expect(s.notes[0]!.includes('(hidden characters removed)')).toBe(true)
+  }
 })
 
 test('a forced subagent model makes the router stand down', async () => {

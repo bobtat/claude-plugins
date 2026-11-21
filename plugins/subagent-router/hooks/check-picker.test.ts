@@ -142,6 +142,11 @@ test('a prompt id or an injection id that appears twice rejects the set with one
   expect(line).toBe('prompt x[2J y appears twice in prompts.json')
 })
 
+test('an expected model that is not text is named as JSON in the problem', async () => {
+  const set = parsePickerSet({ scenarios: JSON.stringify([{ ...scenario('S1', 'haiku'), expected: ['haiku'] }]), prompts: JSON.stringify(PROMPTS), injection: JSON.stringify(INJECTION) })
+  expect('problem' in set && set.problem).toBe('scenario S1 expects ["haiku"], not haiku, sonnet or inherit')
+})
+
 // Built from code points so no raw zero-width character sits in the source.
 const ZERO_WIDTH = String.fromCharCode(0x200b, 0x200b, 0x2060)
 

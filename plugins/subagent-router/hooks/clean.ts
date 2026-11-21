@@ -26,10 +26,21 @@ export function clean(text: unknown, max: number): string {
   return points.slice(0, Math.max(0, max - 1)).join('') + '…'
 }
 
-// Tab, LF and CR are ordinary whitespace that clean turns into a space, so they do not count as hidden.
+// The five ASCII whitespace controls are ordinary whitespace that clean turns into a space, so they do not count as
+// hidden. Other whitespace, such as U+FEFF, still does.
 export function hasHidden(text: unknown): boolean {
-  const raw = asText(text).replace(/[\t\n\r]/gu, ' ')
+  const raw = asText(text).replace(/[\t\n\v\f\r]/gu, ' ')
   return raw.replace(HIDDEN, '') !== raw
+}
+
+// A value that is not text, as JSON, so ["route"] is not shown as route. Uncleaned: the caller cleans it.
+export function jsonOf(value: unknown): string {
+  try {
+    const text = JSON.stringify(value)
+    return typeof text === 'string' ? text : asText(value)
+  } catch {
+    return asText(value)
+  }
 }
 
 export const ID_MAX = 80
