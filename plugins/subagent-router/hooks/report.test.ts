@@ -148,7 +148,7 @@ test('a refused spawn is not counted as an in-scope run', async () => {
   const refused = rec({ agentType: 'Plan', kind: null, outcome: 'refused', reason: 'spawner-routed', target: null, started: null, agentId: null, tokens: null, usd: null })
   const out = show([rec(), refused], { outOfScope: 3 })
   expect(out.includes('In scope: 1 of 5 spawns')).toBe(true)
-  expect(out.includes('Spawns refused under an agent the router moved: 1')).toBe(true)
+  expect(out.includes('Spawns refused under an agent subagent-router treats as routed: 1')).toBe(true)
   expect(show([refused]).includes('No subagent spawns in scope yet.')).toBe(true)
 })
 

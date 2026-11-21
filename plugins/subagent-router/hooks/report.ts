@@ -212,7 +212,7 @@ export function renderReport(a: ReportInput): string {
   if (runs.length + outOfScope > 0) lines.push(`In scope: ${inScope} of ${runs.length + outOfScope} spawns`)
   if (wouldRefuse > 0 || runs.some((r) => r.outcome === 'would-route')) lines.push(`Spawns the no-spawn rule would have refused: ${wouldRefuse}`)
   const refused = runs.filter((r) => r.outcome === 'refused').length
-  if (refused > 0) lines.push(`Spawns refused under an agent the router moved: ${refused}`)
+  if (refused > 0) lines.push(`Spawns refused under an agent subagent-router treats as routed: ${refused}`)
   const learning = runs.filter((r) => r.reason === 'baseline-unknown').length
   if (learning > 0) lines.push(`Left alone while the baseline was learned: ${learning}`)
   const unranked = runs.filter((r) => r.reason === 'baseline-unrecognised').length
