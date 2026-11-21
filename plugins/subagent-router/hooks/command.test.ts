@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import { GATE_RESULT } from './picker-gate'
-import { RUN, report, spawner, unfenced, until, world } from './test-support'
+import { FAILED, RUN, report, spawner, unfenced, until, world } from './test-support'
 
 // The kit has setTimeout, though the engine's typings omit it.
 declare const setTimeout: (run: () => void, ms: number) => unknown
@@ -127,4 +127,51 @@ test('a usage answer and a check answer are fenced too', async ($, on) => {
     expect(text.startsWith('```\n')).toBe(true)
     expect(text.endsWith('\n```')).toBe(true)
   }
+})
+
+// --- what the report reads from live state and settings ---
+
+test('after three failed picks in a row, the report says the picker is off', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.mode = 'observe'
+  w.reply = () => FAILED
+  for (let i = 0; i < 3; i++) await spawn()
+
+  expect((await report($)).split('\n').includes('The picker is off for this session after three failures in a row.')).toBe(true)
+})
+
+for (const [kind, other] of [['locating', 'reading'], ['reading', 'locating']] as const) {
+  test(`a routed ${kind} start that comes back at the baseline makes the report say the ${kind} route is off, and not the ${other} one`, async ($, on) => {
+    const w = world(on)
+    const spawn = spawner($)
+    w.routes = { readingRoute: 'sonnet' }
+    w.kinds = [kind]
+    await spawn()
+    w.answer = () => ({ model: 'claude-opus-5-5', agentId: `a${w.seen.length}` })
+    await spawn()
+
+    const text = await report($)
+    expect(text.includes(`The ${kind} route is off for this session:`)).toBe(true)
+    expect(text.includes(`The ${other} route is off`)).toBe(false)
+    expect(text.includes('The picker is off')).toBe(false)
+  })
+}
+
+test('with the force variable set, the report says the router is standing down', async ($, on) => {
+  const w = world(on)
+  w.env = { CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '1' }
+
+  expect((await report($)).includes('Standing down: CLAUDE_CODE_SUBAGENT_MODEL_FORCE is set, so the router routes nothing')).toBe(true)
+  w.env = {}
+  expect((await report($)).includes('Standing down')).toBe(false)
+})
+
+test('an unrecognised mode makes the report show mode off with its note', async ($, on) => {
+  const w = world(on)
+  w.mode = 'turbo'
+
+  const lines = (await report($)).split('\n')
+  expect(lines[0]?.startsWith('subagent-router, mode: off (')).toBe(true)
+  expect(lines.includes('Settings: mode "turbo" is not observe, route or off, so the router is off')).toBe(true)
 })
