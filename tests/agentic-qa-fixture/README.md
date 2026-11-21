@@ -1,0 +1,89 @@
+# agentic-qa fixture
+
+Runs the real Phase 4 and 5 of an `agentic-qa` walkthrough — the orchestration,
+`step-executor` and `qa-reporter` — against a small local web app with a plan written
+by hand, then reports what each agent spent. It answers two questions about a change
+to the plugin: did the verdicts hold, and what did the run cost.
+
+It lives outside `plugins/` so it is never published.
+
+**It spends real tokens.** Each run starts a headless Claude Code session. In November
+2026, on `claude-sonnet-5-5` and Claude Code 2.1.330, a completed run cost $0.68 to
+$0.97 at list prices, and one that stalled at its first step still cost $0.45 to $0.55.
+It is for measuring a change, not a gate before every commit.
+
+## What it runs
+
+- `app.mjs` is the system under test: an orders list, an order page with a Cancel
+  button, and a JSON API, with its state in memory. `ROWS` sets the size of the list,
+  and so the size of that page's accessibility snapshot. It has two planted defects:
+  the list spells a cancelled order's status "Canceled" where the ticket says
+  "Cancelled", and a cancelled order's page still shows the "Cancel order" button.
+- `make-run.sh` writes the artifacts Phases 0 to 3 would have produced: `intake.md`,
+  `behavior-spec.md` and an approved `step-plan.md` of seven steps, five in the browser
+  and two against the API, one of them irreversible, contained and pre-authorized.
+- `make-run-listfirst.sh` writes the same plan in another order, so the first page the
+  executor sees is the large list rather than the small order page.
+- `orchestrator-prompt.txt` is Phases 4 and 5 of `commands/walkthrough.md`, copied,
+  with nobody to answer an escalation. **Keep it in step with the command**, or the
+  fixture measures an orchestrator the plugin no longer ships.
+- `make-plugin.sh` copies the plugin and changes only Playwright's launch flags.
+
+A correct run gives these verdicts, and anything else is a regression in the testing
+rather than in its cost:
+
+| Behavior | Verdict | `make-run.sh` | `make-run-listfirst.sh` |
+|---|---|---|---|
+| A paid order shows Cancel | pass | S1 | S2 |
+| Cancelling confirms and updates the status | pass | S2 | S3 |
+| The API shows the cancellation | pass | S3 | S4 |
+| The list shows "Cancelled" | **fail** — it shows "Canceled" | S4 | S5 |
+| A cancelled order offers no Cancel | **fail** — the button is still there | S5 | S6 |
+| The API refuses a refunded order | pass | S6 | S7 |
+| Search reports one result | pass | S7 | S1 |
+
+## Running it
+
+```
+tests/agentic-qa-fixture/run.sh <label>
+MAKE=make-run-listfirst.sh tests/agentic-qa-fixture/run.sh <label>
+```
+
+It needs `claude`, `node`, `npx` and a Chromium that Playwright can launch. In a
+container, or as root:
+
+```
+PW_FLAGS="--headless --isolated --no-sandbox" CHROMIUM=/path/to/chrome tests/agentic-qa-fixture/run.sh <label>
+```
+
+To measure an earlier version of the plugin, extract it and pass its directory:
+
+```
+git archive <commit> plugins/agentic-qa | tar -x -C /tmp/old
+tests/agentic-qa-fixture/run.sh <label> /tmp/old/plugins/agentic-qa
+```
+
+The prompt copies the current command, so for a version before 0.6.0 put the old
+command's Phase 4 text back in it first.
+
+The session is given a list of allowed tools and no permission bypass, which is how an
+unattended run should be set up. `run.sh` prints the verdicts and a table of calls and
+tokens per agent. `turns.mjs <run dir> <agent>` splits one agent's usage by the message
+that woke it, and `trace.mjs <run dir> <agent>` lists its tool calls and their results.
+
+## What it can't tell you
+
+- **One run is not a measurement.** Across runs of the same seven steps the reporter
+  made 18 to 25 calls. Compare a structural number where there is one, such as an agent's
+  context per call, and treat a difference in total cost of less than about 10% as
+  noise until it repeats.
+- **A warm cache flatters the second run.** A run that follows another with the same
+  agent text reads a cached prompt where the first one paid to write it.
+- **Phases 0 to 3 aren't run.** Intake, the two drafters and the two critics are not
+  measured here.
+- **Only Sonnet has been measured.** Which tools an executor reaches for is the model's
+  choice, and another model will choose differently.
+- **Whether an installed plugin's output directory is readable.** A headless session
+  that wasn't in bypass mode refused `cp` out of `~/.claude/plugins/data` as a
+  sensitive file, which ended the run at its first screenshot. `make-plugin.sh` moves
+  Playwright's output elsewhere, so the fixture never meets that refusal.
