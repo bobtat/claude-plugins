@@ -35,10 +35,11 @@ function shown(value: unknown): string {
   return hasHidden(value) ? `"${clean(value, 40)}" (hidden characters removed)` : `"${clean(value, 40)}"`
 }
 
-// As JSON, so a value that differs from an option only by a newline shows the difference ("route\n").
+// As JSON with everything outside printable ASCII escaped, so a value that differs from an option only by a newline or
+// a no-break space shows the difference, with the character written as its escape.
 function shownAsJson(value: unknown): string {
-  const json = jsonOf(value)
-  return hasHidden(json) ? `${clean(json, 40)} (hidden characters removed)` : clean(json, 40)
+  const escaped = jsonOf(value).replace(/[^\x20-\x7e]/g, (unit) => `\\u${unit.charCodeAt(0).toString(16).padStart(4, '0')}`)
+  return clean(escaped, 40)
 }
 
 // Exactly as the manifest lists it: the engine treats any other value as unset, so /config would show the default

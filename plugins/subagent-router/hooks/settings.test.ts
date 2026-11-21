@@ -32,7 +32,8 @@ test('a mode must match one of the three options exactly, or the router is off',
 test('a mode that must be written exactly is shown as JSON, so whitespace around it is visible', async () => {
   const exactly = 'must be written exactly (lower case, no spaces) as observe, route or off, so the router is off'
   expect(parseSettings({ mode: 'route\n' }, undefined).notes).toEqual([`mode "route\\n" ${exactly}`])
-  expect(parseSettings({ mode: 'route' + String.fromCodePoint(0xa0) }, undefined).notes).toEqual([`mode "route " ${exactly}`])
+  expect(parseSettings({ mode: 'route' + String.fromCodePoint(0xa0) }, undefined).notes).toEqual([`mode "route\\u00a0" ${exactly}`])
+  expect(parseSettings({ mode: String.fromCodePoint(0x3000) + 'off' + String.fromCodePoint(0xfeff) }, undefined).notes).toEqual([`mode "\\u3000off\\ufeff" ${exactly}`])
   expect(parseSettings({ mode: ' Route' }, undefined).notes).toEqual([`mode " Route" ${exactly}`])
   const long = parseSettings({ mode: 'route' + '\n'.repeat(30) }, undefined).notes[0]!
   expect(long).toBe(`mode ${('"route' + '\\n'.repeat(30)).slice(0, 39)}${String.fromCodePoint(0x2026)} ${exactly}`)
@@ -103,10 +104,9 @@ test('a tab, newline, vertical tab, form feed or carriage return alone is ordina
     expect(s.notes.length).toBe(1)
     expect(s.notes[0]!.includes('hidden')).toBe(false)
   }
-  for (const hidden of [0x200B, 0xFEFF]) {
-    const s = parseSettings({ mode: 'route' + String.fromCodePoint(hidden) }, undefined)
-    expect(s.notes[0]!.includes('(hidden characters removed)')).toBe(true)
-  }
+  expect(parseSettings({ mode: 'route' + String.fromCodePoint(0x200B) }, undefined).notes[0]!.includes('(hidden characters removed)')).toBe(true)
+  // trim removes U+FEFF, so this one is a mode to be written exactly, and that note shows the character escaped.
+  expect(parseSettings({ mode: 'route' + String.fromCodePoint(0xFEFF) }, undefined).notes[0]!.startsWith('mode "route\\ufeff" must be written exactly')).toBe(true)
 })
 
 test('a forced subagent model makes the router stand down', async () => {
