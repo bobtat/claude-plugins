@@ -1,0 +1,1 @@
+Live updates are off for this run: nobody is here to watch a report change. Spawn `agentic-qa:qa-reporter` **first**, telling it `live updates: off` — it writes the report skeleton before a single step runs, and returns. Keep its agent ID. Then spawn `agentic-qa:step-executor`, with the words `live updates: off` in its prompt in place of the reporter's agent ID.

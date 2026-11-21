@@ -25,8 +25,10 @@ It is for measuring a change, not a gate before every commit.
 - `make-run-listfirst.sh` writes the same plan in another order, so the first page the
   executor sees is the large list rather than the small order page.
 - `orchestrator-prompt.txt` is Phases 4 and 5 of `commands/walkthrough.md`, copied,
-  with nobody to answer an escalation. **Keep it in step with the command**, or the
-  fixture measures an orchestrator the plugin no longer ships.
+  with nobody to answer an escalation. `spawn-live-on.txt` is the command's paragraph
+  that spawns the two agents, and `spawn-live-off.txt` is what `qa-runner` does instead
+  when a brief names no report destination. **Keep all three in step with the plugin**,
+  or the fixture measures an orchestrator it no longer ships.
 - `make-plugin.sh` copies the plugin and changes only Playwright's launch flags.
 
 A correct run gives these verdicts, and anything else is a regression in the testing
@@ -47,6 +49,7 @@ rather than in its cost:
 ```
 tests/agentic-qa-fixture/run.sh <label>
 MAKE=make-run-listfirst.sh tests/agentic-qa-fixture/run.sh <label>
+LIVE_REPORT=off tests/agentic-qa-fixture/run.sh <label>
 ```
 
 It needs `claude`, `node`, `npx` and a Chromium that Playwright can launch. In a
@@ -83,7 +86,3 @@ that woke it, and `trace.mjs <run dir> <agent>` lists its tool calls and their r
   measured here.
 - **Only Sonnet has been measured.** Which tools an executor reaches for is the model's
   choice, and another model will choose differently.
-- **Whether an installed plugin's output directory is readable.** A headless session
-  that wasn't in bypass mode refused `cp` out of `~/.claude/plugins/data` as a
-  sensitive file, which ended the run at its first screenshot. `make-plugin.sh` moves
-  Playwright's output elsewhere, so the fixture never meets that refusal.

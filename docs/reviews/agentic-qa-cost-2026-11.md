@@ -2,7 +2,8 @@
 
 A review of `agentic-qa` 0.5.0, read at `1932953`, for one question: where does a
 walkthrough's cost go, and what can be removed without the testing getting worse. The
-changes it led to are 0.6.0. Finding numbers are local to this review (C1 to C7); the
+changes it led to are 0.6.0, and 0.7.0 for the decisions it left open, which the
+Resolution section records. Finding numbers are local to this review (C1 to C7); the
 earlier reviews are about safety and are cited where they bear on cost.
 
 ## Conclusion
@@ -122,12 +123,12 @@ Changed in 0.6.0:
 - The guard now tells apart a refusal of how a command is written from a refusal of what
   it reaches, and for the first asks for the command once more with every path spelled
   out. What it allows is unchanged, and the literal command is checked in full
-  (`2ee4fa5`).
+  (`fb9c95a`).
 - The skill says what a reported path is relative to, and that one climbing into
-  `.claude` must be written out as an absolute path (`3b6f6d2`). c2 and c3 were not told
+  `.claude` must be written out as an absolute path (`9b7049c`). c2 and c3 were not told
   the output directory and both resolved it.
 - The skill lists the guard's programs exactly, with a test holding the two lists
-  together (`7d5a056`).
+  together (`e1a6339`).
 
 Not changed: the sensitive-file refusal. It comes from where Playwright's output lives,
 and moving it is a decision with a history (see "Decisions left open").
@@ -146,7 +147,7 @@ is. In a1 it reached 77,000 tokens. In c1 and c3, without the two skills, 61,000
 
 Basis: **Measured (run)** for the context sizes, **Projected** for the skill sizes.
 
-Changed in 0.6.0 (`47374dd`): neither orchestrator loads them. The two rules an
+Changed in 0.6.0 (`b9ad6a3`): neither orchestrator loads them. The two rules an
 orchestrator did need from `step-execution` moved to where it already reads: the
 abnormal-end rule into the command, `qa-runner` and the umbrella skill, and the rerun
 rule into the umbrella's Intake section. That second move also fixes part of F53, since
@@ -183,7 +184,7 @@ carried on every later call. The executor's context peaked at 73,000 tokens in a
 
 Basis: **Measured (server)** and **Measured (run).**
 
-Changed in 0.6.0 (`e139f18`): the executor holds `browser_find`, and reads the element
+Changed in 0.6.0 (`ebe9153`): the executor holds `browser_find`, and reads the element
 the plan names. In c3, on the list-first plan, it took no whole-page snapshot and peaked
 at 56,000 tokens.
 
@@ -231,7 +232,7 @@ notices.
 
 Basis: **Measured (run).**
 
-Changed in 0.6.0 (`a364cb3`): a turn that isn't finalization ends with `ok`. In c1 every
+Changed in 0.6.0 (`5f15870`): a turn that isn't finalization ends with `ok`. In c1 every
 such turn did. The saving is small, a few hundred output tokens a run.
 
 ### C6 — A step's entry could be written after the next step ran
@@ -245,7 +246,7 @@ ending in between would have lost a verdict the executor had reached.
 Basis: **Measured (run)**, under a draft that never shipped. 0.5.0 did not do this in
 a1 or a2.
 
-Changed in 0.6.0 (`972ef29`): the entry is in the file before its nudge and before the
+Changed in 0.6.0 (`e64deb9`): the entry is in the file before its nudge and before the
 next step's action, and is appended with a quoted heredoc, which the guard requires
 whenever an entry quotes something shaped like a substitution.
 
@@ -292,7 +293,8 @@ doesn't defer tool schemas carries all 48 whenever the plugin is enabled.
 ## Decisions left open
 
 Each of these would save more than anything in 0.6.0, and each changes something a
-person chose.
+person chose. They were open when 0.6.0 shipped. The owner then left them to the
+maintainer, and the Resolution section below says how each was settled.
 
 ### The reporter's per-step updates (C4)
 
@@ -353,12 +355,93 @@ read like any other.
 
 ---
 
+## Resolution — 0.7.0
+
+The owner left the open decisions to the maintainer on 21 November 2026. Changes are
+named by their commit subject, since a rebase merge gives each commit a new hash.
+
+### The reporter's per-step updates: on when someone can watch, off otherwise
+
+Option 1 above. A run has live updates on or off, and its orchestrator tells both
+agents which. `/agentic-qa:walkthrough` always turns them on. `qa-runner` turns them on
+when the brief names a `report_destination` or sets the new `live_report` field, and
+otherwise off. Off, the executor sends no nudge, and the reporter fills the report in
+from `step-results.md` on `paused` and on `final`.
+
+Change: "update the report after each step only when someone can watch".
+
+Two more fixture runs, both on the 0.7.0 text and the standard plan:
+
+| Run | Live updates | Outcome | Cost | Reporter |
+|---|---|---|---|---|
+| d1 | on, as the command runs it | 7 of 7 correct | $0.80 | 19 calls, 561,000 input tokens, 7,200 output |
+| d2 | off, as `qa-runner` runs a brief with no destination | 7 of 7 correct | $0.57 | 7 calls, 183,000 input tokens, 4,500 output |
+
+Both reports were complete: seven step sections, five embedded screenshots, no script
+element, the content security policy present. d1 ran first, on a plugin copy nothing
+had cached, so part of the $0.22 between them is cache writes d2 didn't have to make.
+The reporter's own figures don't have that problem, and they fell by two thirds.
+
+The fixture's orchestrator was told to do what `qa-runner` does. `qa-runner` itself,
+reading a brief and choosing, was not run.
+
+### A refused program: the rule stays
+
+A refusal still ends the executor's turn, a refused program included. The rule is what
+stops an executor working its way round the guard, and nothing here showed that
+loosening it is safe. The second November review's answer to refusals of ordinary
+operations (F55) was to list them in the executor's instructions rather than widen the
+guard. 0.6.0's exact program list does that, and in d1 and d2 the guard refused
+nothing.
+
+If refusals over incidental programs keep ending runs after this, the next step is to
+add the program to the guard's list where that is safe, as it was for the ones already
+there, and not to let the executor judge which refusals matter.
+
+### Where Playwright writes: out of `~/.claude`
+
+Six permission settings were tried against a one-command headless session: an `Edit`
+rule on the directory in two spellings, `Bash(cp:*)`, `--add-dir` alone and with an
+`Edit` rule, and `acceptEdits`. None lifted the refusal. `cat` out of the directory
+ran; `cp` out of it, `rm` inside it and any write into it did not. The same commands on
+a directory under `~/.cache` all ran.
+
+So the directory moved, to `.cache/agentic-qa/playwright-output` in the user's home.
+A plugin's `.mcp.json` has no variable for the home directory that exists on every
+platform, so the setting climbs out of `CLAUDE_PLUGIN_DATA`, which sits four levels
+below it. With a relocated Claude config directory it lands four levels above that
+instead. The guard's exemption for `.claude/plugins/data` existed only for the old
+location, covered every other plugin's stored data too, and is removed.
+
+Change: "write Playwright's files outside ~/.claude". d1 and d2 used the directory as
+shipped, with a list of allowed tools and no bypass, and every copy and delete ran.
+
+Not tested: Windows, where the owner's machine is. The path is built with forward
+slashes and resolved by Node, which accepts them there, but no run has confirmed it.
+
+### Which model each agent runs on: unchanged
+
+No agent moves to a smaller model until an eval suite can show its verdicts hold. That
+suite is the next piece of work on cost, ahead of anything else in this review, because
+on an Opus-class session the inherited model is most of what a run costs and nothing
+measured here touches it.
+
+### Phases 0 to 3
+
+Still unmeasured. A fixture for them needs a repository with a real merged pull
+request for the critics to read.
+
+---
+
 ## What still needs a live walkthrough
 
-- 0.6.0 as committed. c3 lacked only the program list, which changes one line of the
-  skill, but no run used the final text.
-- A refusal of form after `2ee4fa5`, to see the executor resend the command once and
-  continue.
+- `qa-runner` itself deciding live updates from a brief, and an agent-invoked run with a
+  `report_destination`, where updates stay on.
+- A pause with live updates off: the reporter rebuilding on `paused`, so the paused
+  report is current.
+- Playwright's output directory on Windows.
+- A refusal of form, to see the executor resend the command once and continue. It is
+  covered by the guard's tests and has not occurred in a run since.
 - An escalation answered by a person, with an orchestrator that hasn't loaded
   `step-execution`.
 - Any of the above on the model the plugin is actually used with.

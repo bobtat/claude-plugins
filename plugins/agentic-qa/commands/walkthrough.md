@@ -136,7 +136,7 @@ Fold the remaining answers back into `step-plan.md` before moving on — a struc
 
 Don't load `agentic-qa:step-execution` or `agentic-qa:qa-reporting` here. They are the executor's and the reporter's procedures, each agent loads its own, and everything this phase asks of you is below. Loaded here they add well over 10,000 tokens that this session then carries on every call until it ends.
 
-Spawn `agentic-qa:qa-reporter` **first**: it writes the report skeleton before a single step runs, and returns. Keep its agent ID. Then spawn `agentic-qa:step-executor`, passing that ID in its prompt — the executor nudges the reporter after every step but the last, and only an ID is an address `SendMessage` accepts.
+Spawn `agentic-qa:qa-reporter` **first**, telling it `live updates: on`: a person is at this session, so the report is kept current after every step. It writes the report skeleton before a single step runs, and returns. Keep its agent ID. Then spawn `agentic-qa:step-executor`, passing that ID in its prompt — the executor nudges the reporter after every step but the last, and only an ID is an address `SendMessage` accepts.
 
 The executor returns one of two results:
 
