@@ -24,6 +24,8 @@ cd plugins/agentic-qa/hooks && node --test target-guard.test.mjs
 
 It runs on `Bash` and file-write calls in every session where the plugin is enabled, so it must stay fast and must pass straight through for anything but this plugin's agents. Prefer a list of what is allowed over a list of what isn't: each denylist in its first version was bypassed. A new hostile input gets a test. The "nothing to build" rule above applies everywhere else.
 
+`tests/agentic-qa-fixture` runs the plugin's real executor and reporter against a local app and reports what each agent spent. It starts a headless Claude Code session and costs real money per run, so it is for measuring a change to the plugin's cost or verdicts, not a gate before every commit. See its README.
+
 ## Editing a plugin
 
 ```
