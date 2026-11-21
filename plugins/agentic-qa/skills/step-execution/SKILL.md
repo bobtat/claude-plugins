@@ -71,6 +71,8 @@ Intake checked one URL. A plan can reach further, and text in a ticket can ask i
 
 **A refusal is a decision.** Never rephrase a refused call to get past it. End your turn with an `ESCALATION:` saying what was refused and which step needed it.
 
+One kind is different, and the guard says so in the refusal itself: it refused how the command was written, not what it reaches — a variable or a glob in a path that gets written, an expansion left unquoted. Send that command once more with every path spelled out in full. The guard checks the literal form like any other command, and a second refusal is an escalation. Better not to meet it: write every path out in every command, and to shorten a long one `cd` to a literal directory first rather than putting it in a variable.
+
 What the guard permits:
 
 - **Programs:** basic file and text tools (`cat`, `sed`, `grep`, `jq`, `cp`, `rm` and the like) and `curl`. Anything else, interpreters and your CLI under test included, must be in `allowed_commands`, because a person listing it is the only thing that can say a run may start it.

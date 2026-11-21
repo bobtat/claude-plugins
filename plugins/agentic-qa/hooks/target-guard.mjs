@@ -85,6 +85,15 @@ export function protectedPath(text) {
 
 const unsafeDestination = word => word.dynamic || /[*?[\]{}]/.test(word.text);
 
+// Refusals of how a command is written, not of what it reaches: a variable or a
+// glob where a path must be literal, an expansion left unquoted. The same command
+// with its paths spelled out is checked in full like any other, so asking for it
+// gives nothing away, where an escalation over one ends an unattended run with no
+// step verified. What a command reaches is never in this set.
+const FORM_REFUSALS = new Set();
+const spellOut = reason => { FORM_REFUSALS.add(reason); return reason; };
+export const isFormRefusal = reason => FORM_REFUSALS.has(reason);
+
 export function parseSettings(text) {
   const out = {allowed_hosts: [], allowed_commands: []};
   const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
@@ -299,7 +308,7 @@ const commandName = text => text.replace(/\\/g, '/').split('/').pop().toLowerCas
 function checkCurlValue(flag, word) {
   if (!word) return `curl ${flag} needs a value`;
   if (CURL_WRITES_FILE.has(flag) || CURL_READS_FILE.has(flag)) {
-    if (unsafeDestination(word) || word.text.includes('#')) return `curl ${flag} must name a literal path`;
+    if (unsafeDestination(word) || word.text.includes('#')) return spellOut(`curl ${flag} must name a literal path`);
     return protectedPath(word.text);
   }
   if (CURL_WRITE_OUT.has(flag)) {
@@ -445,7 +454,7 @@ function checkSed(args) {
     if (!sedScriptAllowed(script)) return `sed script "${script}" isn't made of s, p, d, q and n commands, which is all this guard can vouch for`;
   }
   for (const file of positional) {
-    if (inPlace && unsafeDestination(file)) return `sed -i on "${file.text}" must name a literal file`;
+    if (inPlace && unsafeDestination(file)) return spellOut(`sed -i on "${file.text}" must name a literal file`);
     const reason = protectedPath(file.text);
     if (reason) return reason;
   }
@@ -463,7 +472,7 @@ function checkSort(args) {
     }
     if (/^-o/.test(text)) {
       const value = text.length > 2 ? {text: text.slice(2), dynamic: false} : args[++i];
-      if (!value || unsafeDestination(value)) return 'sort -o must name a literal path';
+      if (!value || unsafeDestination(value)) return spellOut('sort -o must name a literal path');
       continue;
     }
     return `sort ${text} is not on this guard's list of options`;
@@ -505,7 +514,7 @@ export function checkExecutorBash(command, settings, env = process.env) {
   for (const raw of commands) {
     const {words, writes} = splitRedirects(raw);
     for (const target of writes) {
-      if (unsafeDestination(target)) return `a redirect to "${target.text}" must name a literal path`;
+      if (unsafeDestination(target)) return spellOut(`a redirect to "${target.text}" must name a literal path`);
       const reason = protectedPath(target.text);
       if (reason) return reason;
     }
@@ -526,7 +535,7 @@ export function checkExecutorBash(command, settings, env = process.env) {
     const name = commandName(head.text);
     const args = words.slice(n + 1);
     const split = args.find(a => a.split);
-    if (split) return `"${split.text}" must be in double quotes: unquoted, the shell can split it into extra arguments`;
+    if (split) return spellOut(`"${split.text}" must be in double quotes: unquoted, the shell can split it into extra arguments`);
     for (const word of pathArguments(name, args)) {
       const reason = protectedPath(word.text);
       if (reason) return reason;
@@ -535,10 +544,10 @@ export function checkExecutorBash(command, settings, env = process.env) {
     if (!EXECUTOR_COMMANDS.has(name)) {
       return `${name} is not in allowed_commands, so a person hasn't said this run may start it`;
     }
-    if (name === 'cd' && args.some(a => a.dynamic)) return 'cd must name a literal directory';
+    if (name === 'cd' && args.some(a => a.dynamic)) return spellOut('cd must name a literal directory');
     if (WRITES_TO_ARGUMENTS.has(name)) {
       const unsafe = args.find(unsafeDestination);
-      if (unsafe) return `${name} on "${unsafe.text}" must name literal paths`;
+      if (unsafe) return spellOut(`${name} on "${unsafe.text}" must name literal paths`);
     }
     if (name === 'printf' && args[0] && (args[0].dynamic || args[0].text.startsWith('-'))) {
       return 'printf\'s first argument must be a literal format: -v sets a variable';
@@ -606,6 +615,12 @@ export function decide(input, settings) {
   return checkUrl(args.url ?? '', settings.allowed_hosts);
 }
 
+export function nextStep(reason) {
+  return isFormRefusal(reason)
+    ? 'This is about how the command is written, not what it reaches. Send it once more with every path spelled out in full: no variable, no glob, no unquoted expansion. If that is refused too, end your turn with an ESCALATION saying what was refused'
+    : 'Do not rephrase this to get past it: end your turn with an ESCALATION saying what was refused';
+}
+
 function main() {
   let raw = '';
   process.stdin.on('data', d => { raw += d; }).on('end', () => {
@@ -629,7 +644,7 @@ function main() {
         hookSpecificOutput: {
           hookEventName: 'PreToolUse',
           permissionDecision: 'deny',
-          permissionDecisionReason: `agentic-qa target guard: ${reason}. Do not rephrase this to get past it: end your turn with an ESCALATION saying what was refused.`,
+          permissionDecisionReason: `agentic-qa target guard: ${reason}. ${nextStep(reason)}.`,
         },
       }));
     }
