@@ -33,7 +33,7 @@ test('the report says when the shipped picker wording has not passed its check',
   world(on)
   const text = (await $.command.run(RUN)).text ?? ''
   const passed = GATE_RESULT.status === ('passed' as string)
-  expect(text.includes('The picker check has not been passed on this wording')).toBe(!passed)
+  expect(text.includes('This version shipped without a passed picker check')).toBe(!passed)
 })
 
 test('with no session start, the first hook after a load registers the command, and only once', async ($, on) => {

@@ -59,6 +59,17 @@ test('observe mode: a fork of an agent that would have been routed is counted th
   expect(index(w)?.wouldRefuse).toBe(1)
 })
 
+test('route mode with both routes set to parent records no route applies, not baseline learning', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.routes = { locatingRoute: 'parent' }
+
+  await spawn()
+  await spawn()
+  expect(records(w).map((r) => r.reason)).toEqual(['no-route-applies', 'no-route-applies'])
+  expect(w.picks.length).toBe(0)
+})
+
 test('a learned baseline the router cannot rank is recorded as such, in route and observe mode', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)

@@ -31,8 +31,36 @@ test('totals are per picked kind, with runs, routed runs and estimated cost', as
 test('route mode says routed, and a run with no price shows tokens', async () => {
   const out = renderReport({ settings: settings({ mode: 'route' }), outOfScope: 0, wouldRefuse: 0, routeOff: [], pickerOff: false,
     records: [rec({ outcome: 'routed', started: 'haiku', ran: 'made-up', usd: null })] })
-  expect(out.includes('locating: 1 run(s), 1 routed, cost not priced')).toBe(true)
+  expect(out.includes('locating: 1 run(s), 1 asked, 1 moved, cost not priced')).toBe(true)
   expect(out.includes('1,110 tokens')).toBe(true)
+})
+
+test('a routed run whose start was overridden, or named no model, is asked but not counted as moved', async () => {
+  const out = renderReport({ settings: settings({ mode: 'route' }), outOfScope: 0, wouldRefuse: 0, routeOff: [], pickerOff: false,
+    records: [rec({ outcome: 'routed', started: 'haiku' }), rec({ outcome: 'routed', started: 'claude-opus-5-5', overridden: true }),
+      rec({ outcome: 'routed', started: null, agentId: 'a3' })] })
+  expect(out.includes('locating: 3 run(s), 3 asked, 1 moved, ')).toBe(true)
+  expect(out.includes('routed')).toBe(true)
+})
+
+test('a started run with no usage yet is said to have none reported, not to be unpriced', async () => {
+  const waiting = rec({ tokens: null, usd: null, description: 'find the waiting one' })
+  const alone = show([waiting]).split('\n').find((l) => l.startsWith('locating: '))
+  expect(alone).toBe('locating: 1 run(s), 1 would be routed, 1 with no usage reported yet')
+  const mixed = show([rec({ usd: 0.2 }), rec({ agentId: 'a2', usd: null }), waiting]).split('\n').find((l) => l.startsWith('locating: '))
+  expect(mixed).toBe('locating: 3 run(s), 3 would be routed, estimated cost $0.20, plus 1 run(s) not priced (1,110 tokens), 1 with no usage reported yet')
+})
+
+test('the run list shows the latest 200 rows and says how many earlier ones are not shown, while totals cover all', async () => {
+  const many = Array.from({ length: 205 }, (_, i) => rec({ agentId: `a${i}`, usd: 0.01, description: `find number ${i}` }))
+  const lines = show(many).split('\n')
+  expect(lines.filter((l) => l.startsWith('- ')).length).toBe(200)
+  expect(lines.includes('5 earlier row(s) are not shown.')).toBe(true)
+  expect(lines.some((l) => l.endsWith(': find number 4'))).toBe(false)
+  expect(lines.some((l) => l.endsWith(': find number 5'))).toBe(true)
+  expect(lines.some((l) => l.endsWith(': find number 204'))).toBe(true)
+  expect(lines.includes('locating: 205 run(s), 205 would be routed, estimated cost $2.05')).toBe(true)
+  expect(show([rec()]).includes('not shown')).toBe(false)
 })
 
 test('each record is one row with its type, kind, outcome, reason, model and description', async () => {
@@ -144,7 +172,7 @@ test('the totals say once that their dollar figures are estimated costs, not a s
 })
 
 test('a picker wording that has not passed the live check is said near the top, and only when told', async () => {
-  const warning = 'The picker check has not been passed on this wording, so route mode should wait for it.'
+  const warning = 'This version shipped without a passed picker check, so route mode should wait for one.'
   const lines = show([rec()], { pickerCheckStatus: 'not run' }).split('\n')
   expect(lines.indexOf(warning)).toBe(2)
   expect(show([rec()], { pickerCheckStatus: 'passed' }).includes('picker check')).toBe(false)
@@ -156,10 +184,12 @@ test('a record that never started is shown as not started', async () => {
   expect(row.includes('not started')).toBe(true)
 })
 
-test('a record left by another version of the mod is skipped and counted', async () => {
-  const out = show([{ at: 1, type: 'Explore', picked: 'haiku' }, null, 'x', rec()])
+test('a record left by another version of the mod is skipped and counted apart from one that could not be read', async () => {
+  const out = show([{ at: 1, type: 'Explore', picked: 'haiku' }, null, 'x', undefined, rec()])
   expect(out.includes('locating: 1 run(s), 1 would be routed')).toBe(true)
-  expect(out.includes('3 record(s) from another version skipped')).toBe(true)
+  expect(out.includes('1 record(s) from another version skipped')).toBe(true)
+  expect(out.includes('3 unreadable record(s) skipped')).toBe(true)
+  expect(show([undefined]).includes('another version')).toBe(false)
 })
 
 test('a record whose cost or tokens are not numbers prints no NaN and does not throw', async () => {
@@ -298,4 +328,16 @@ test('the check prints each gate number with its verdict, then one overall line,
 test('a check with a failed call says it is not a result', async () => {
   const out = renderCheck({ ...AT_LIMITS, failed: 3 }, { leaked: [], injectedRouted: [], readingAsLocating: [] })
   expect(out.split('\n').filter((l) => l.startsWith('Gate: '))).toEqual(['Gate: not a result: 3 call(s) timed out or failed, so run it again'])
+})
+
+test('after the verdict, one line says what to do with it', async () => {
+  const none = { leaked: [], injectedRouted: [], readingAsLocating: [] }
+  const after = (s: Score) => {
+    const lines = renderCheck(s, none).split('\n')
+    return lines[lines.findIndex((l) => l.startsWith('Gate: ')) + 1]
+  }
+  expect(after(AT_LIMITS)).toBe('To record the pass, copy the picker\'s system text and message into GATED_SYSTEM and GATED_MESSAGE in hooks/picker-gate.ts, and these numbers into GATE_RESULT.')
+  expect(after({ ...AT_LIMITS, leaked: 1 })).toBe('This run changes nothing. Look at the checks marked not passed and the ids listed below.')
+  expect(after({ ...AT_LIMITS, failed: 1 })).toBe('This run changes nothing. Look at why the calls failed, then run it again.')
+  expect(after({ ...AT_LIMITS, total: 1 })).toBe('This run changes nothing. Only the shipped set gives a result: look at the sizes named above.')
 })

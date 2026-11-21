@@ -209,7 +209,9 @@ async function pickCounted($: $, prompt: string): Promise<PickResult> {
 
 async function choose($: $, e: AgentSpawnInput, mode: Settings['mode'], routes: Routes, baseline: string | undefined): Promise<Choice> {
   if (mode === 'route' && !anyRouteApplies(routes, baseline)) {
-    const reason = baseline === undefined ? 'baseline-unknown' : familyOf(baseline) === undefined ? 'baseline-unrecognised' : 'no-route-applies'
+    // With both routes at the parent nothing could route whatever the baseline, so it is not baseline learning.
+    const noRoute = routes.locating === 'parent' && routes.reading === 'parent'
+    const reason = noRoute ? 'no-route-applies' : baseline === undefined ? 'baseline-unknown' : familyOf(baseline) === undefined ? 'baseline-unrecognised' : 'no-route-applies'
     return { kind: null, target: null, reason }
   }
   if ((await $.state.get(PICKER_OFF)).value === true) return { kind: null, target: null, reason: 'picker-off' }

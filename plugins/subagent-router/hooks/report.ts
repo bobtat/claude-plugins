@@ -7,6 +7,7 @@ const LINE_MAX = 240
 const FIELD_MAX = 40
 const NOTE_MAX = 200
 const DESCRIPTION_MAX = 120
+const ROWS_SHOWN = 200
 const KINDS: readonly Kind[] = ['locating', 'reading', 'other']
 
 export type ReportInput = {
@@ -25,6 +26,9 @@ type Run = {
   outcome: string
   reason: string
   hasStarted: boolean
+  // Routed and started on the family asked for, by a start that named its model.
+  isMoved: boolean
+  hasUsage: boolean
   usd: number | undefined
   tokens: number
   isPartial: boolean
@@ -109,6 +113,8 @@ function runOf(value: Record<string, unknown>): Run {
   const hasStarted = started !== '' || agentId !== ''
   const usd = usdOf(value.usd)
   const tokens = tokensOf(value.tokens)
+  const hasUsage = typeof value.tokens === 'object' && value.tokens !== null
+  const isMoved = outcome === 'routed' && started !== '' && value.overridden !== true
   const isPartial = value.partial === true
   const reason = field(value.reason)
   const parts = [field(value.agentType) || 'unknown type', kind ?? '-', outcomeText(outcome, hasStarted, field(value.target), value.overridden === true), reason]
@@ -117,7 +123,7 @@ function runOf(value: Record<string, unknown>): Run {
   if (cost !== '') parts.push(cost)
   if (agentId !== '') parts.push(`agent ${agentId}`)
   const row = clean(`- ${parts.join(' | ')}: ${typeof value.description === 'string' ? clean(value.description, DESCRIPTION_MAX) : ''}`, LINE_MAX)
-  return { kind, outcome, reason, hasStarted, usd, tokens, isPartial, row }
+  return { kind, outcome, reason, hasStarted, isMoved, hasUsage, usd, tokens, isPartial, row }
 }
 
 function routeIsOff(kind: Kind, routes: Settings['routes'], routeOff: Kind[]): boolean {
@@ -129,24 +135,30 @@ function routeIsOff(kind: Kind, routes: Settings['routes'], routeOff: Kind[]): b
 function totalLine(kind: Kind, runs: Run[], a: ReportInput): string {
   const ran = runs.filter((r) => r.kind === kind && r.hasStarted && r.outcome !== 'not-started' && r.outcome !== 'refused')
   const routed = ran.filter((r) => r.outcome === 'routed').length
+  const shifted = ran.filter((r) => r.isMoved).length
   const would = ran.filter((r) => r.outcome === 'would-route').length
   let moved = 'never routed'
   if (kind !== 'other') {
     const parts: string[] = []
-    if (a.settings.mode === 'route' || routed > 0) parts.push(`${routed} routed`)
+    // A rewritten spawn may start elsewhere, so the spawns asked for a cheaper model and those that started on it differ.
+    if (a.settings.mode === 'route' || routed > 0) parts.push(`${routed} asked, ${shifted} moved`)
     if (a.settings.mode !== 'route' || would > 0) parts.push(`${would} would be routed`)
     moved = parts.join(', ') + (routeIsOff(kind, a.settings.routes, a.routeOff) ? ' (route is off)' : '')
   }
-  const priced = ran.flatMap((r) => (r.usd === undefined ? [] : [r.usd])).reduce((sum, usd) => sum + usd, 0)
-  const unpriced = ran.filter((r) => r.usd === undefined)
+  const pricedRuns = ran.filter((r) => r.usd !== undefined)
+  const priced = pricedRuns.reduce((sum, r) => sum + (r.usd ?? 0), 0)
+  // A run with no usage yet has nothing to price, which is not the same as a model with no listed price.
+  const waiting = ran.filter((r) => r.usd === undefined && !r.hasUsage).length
+  const unpriced = ran.filter((r) => r.usd === undefined && r.hasUsage)
   const unpricedTokens = grouped(unpriced.reduce((sum, r) => sum + r.tokens, 0))
   const tokens = unpricedTokens !== undefined && unpricedTokens !== '0' ? ` (${unpricedTokens} tokens)` : ''
-  const pricedText = dollars(priced, ran.some((r) => r.usd !== undefined && r.isPartial))
-  let cost: string
-  if (unpriced.length === 0) cost = pricedText ?? 'cost not priced'
-  else if (pricedText === undefined || unpriced.length === ran.length) cost = `cost not priced${tokens}`
-  else cost = `${pricedText}, plus ${unpriced.length} run(s) not priced${tokens}`
-  return `${kind}: ${ran.length} run(s), ${moved}, ${cost}`
+  const pricedText = dollars(priced, pricedRuns.some((r) => r.isPartial))
+  const parts: string[] = []
+  if (unpriced.length > 0 && (pricedText === undefined || pricedRuns.length === 0)) parts.push(`cost not priced${tokens}`)
+  else if (unpriced.length > 0) parts.push(`${pricedText}, plus ${unpriced.length} run(s) not priced${tokens}`)
+  else if (pricedRuns.length > 0 || waiting === 0) parts.push(pricedText ?? 'cost not priced')
+  if (waiting > 0) parts.push(`${waiting} with no usage reported yet`)
+  return `${kind}: ${ran.length} run(s), ${moved}, ${parts.join(', ')}`
 }
 
 function headerLines(a: ReportInput): string[] {
@@ -158,7 +170,8 @@ function headerLines(a: ReportInput): string[] {
     `Routes: locating to ${routeName(routes.locating)}, reading to ${routeName(routes.reading)}`,
   ]
   if (a.pickerCheckStatus !== undefined && a.pickerCheckStatus !== 'passed') {
-    lines.push('The picker check has not been passed on this wording, so route mode should wait for it.')
+    // A source constant: it says how this version shipped, not whether this copy has since passed a check.
+    lines.push('This version shipped without a passed picker check, so route mode should wait for one.')
   }
   if (a.settings.standingDown !== null) {
     lines.push(`Standing down: ${clean(a.settings.standingDown, NOTE_MAX)}, so the router routes nothing; it still refuses spawns by an agent it already routed.`)
@@ -175,13 +188,15 @@ function headerLines(a: ReportInput): string[] {
 
 export function renderReport(a: ReportInput): string {
   const runs: Run[] = []
-  let skipped = 0
+  let otherVersion = 0
+  let unreadable = 0
   for (const value of a.records) {
     try {
-      if (typeof value === 'object' && value !== null && (value as { v?: unknown }).v === 1) runs.push(runOf(value as Record<string, unknown>))
-      else skipped += 1
+      if (typeof value !== 'object' || value === null) unreadable += 1
+      else if ((value as { v?: unknown }).v === 1) runs.push(runOf(value as Record<string, unknown>))
+      else otherVersion += 1
     } catch {
-      skipped += 1
+      unreadable += 1
     }
   }
   const outOfScope = count(a.outOfScope)
@@ -204,8 +219,14 @@ export function renderReport(a: ReportInput): string {
   if (unranked > 0) lines.push(`Left alone because these agents start on a model the router cannot rank: ${unranked}`)
   const nested = runs.filter((r) => r.reason === 'nested-unverified').length
   if (nested > 0) lines.push(`Nested spawns left alone until the probe confirms which model they inherit: ${nested}`)
-  if (skipped > 0) lines.push(`${skipped} record(s) from another version skipped`)
-  if (runs.length > 0) lines.push('', 'Runs (costs are estimates from listed prices):', ...runs.map((r) => r.row))
+  if (otherVersion > 0) lines.push(`${otherVersion} record(s) from another version skipped`)
+  if (unreadable > 0) lines.push(`${unreadable} unreadable record(s) skipped`)
+  if (runs.length > 0) {
+    lines.push('', 'Runs (costs are estimates from listed prices):')
+    const hidden = runs.length - ROWS_SHOWN
+    if (hidden > 0) lines.push(`${grouped(hidden) ?? hidden} earlier row(s) are not shown.`)
+    lines.push(...runs.slice(-ROWS_SHOWN).map((r) => r.row))
+  }
   return lines.map((line) => clean(line, LINE_MAX)).join('\n')
 }
 
@@ -296,6 +317,11 @@ export function renderCheck(s: Score, o: Offenders): string {
     lines.push(`Gate: not a result: not the shipped set (${found})`)
   } else if (verdict === 'not a result') lines.push(`Gate: not a result: ${s.failed} call(s) timed out or failed, so run it again`)
   else lines.push(`Gate: ${verdict}`)
+  if (verdict === 'passed') {
+    lines.push("To record the pass, copy the picker's system text and message into GATED_SYSTEM and GATED_MESSAGE in hooks/picker-gate.ts, and these numbers into GATE_RESULT.")
+  } else if (verdict === 'not passed') lines.push('This run changes nothing. Look at the checks marked not passed and the ids listed below.')
+  else if (wrongSizes.length > 0) lines.push('This run changes nothing. Only the shipped set gives a result: look at the sizes named above.')
+  else lines.push('This run changes nothing. Look at why the calls failed, then run it again.')
   lines.push(...idLines('Leaked', o.leaked), ...idLines('Injected and routed', o.injectedRouted), ...idLines('Reading as locating', o.readingAsLocating))
   return lines.map((line) => clean(line, LINE_MAX)).join('\n')
 }
