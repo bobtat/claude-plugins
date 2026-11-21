@@ -122,12 +122,12 @@ Changed in 0.6.0:
 - The guard now tells apart a refusal of how a command is written from a refusal of what
   it reaches, and for the first asks for the command once more with every path spelled
   out. What it allows is unchanged, and the literal command is checked in full
-  (`2ee4fa5`).
+  (`fb9c95a`).
 - The skill says what a reported path is relative to, and that one climbing into
-  `.claude` must be written out as an absolute path (`3b6f6d2`). c2 and c3 were not told
+  `.claude` must be written out as an absolute path (`9b7049c`). c2 and c3 were not told
   the output directory and both resolved it.
 - The skill lists the guard's programs exactly, with a test holding the two lists
-  together (`7d5a056`).
+  together (`e1a6339`).
 
 Not changed: the sensitive-file refusal. It comes from where Playwright's output lives,
 and moving it is a decision with a history (see "Decisions left open").
@@ -146,7 +146,7 @@ is. In a1 it reached 77,000 tokens. In c1 and c3, without the two skills, 61,000
 
 Basis: **Measured (run)** for the context sizes, **Projected** for the skill sizes.
 
-Changed in 0.6.0 (`47374dd`): neither orchestrator loads them. The two rules an
+Changed in 0.6.0 (`b9ad6a3`): neither orchestrator loads them. The two rules an
 orchestrator did need from `step-execution` moved to where it already reads: the
 abnormal-end rule into the command, `qa-runner` and the umbrella skill, and the rerun
 rule into the umbrella's Intake section. That second move also fixes part of F53, since
@@ -183,7 +183,7 @@ carried on every later call. The executor's context peaked at 73,000 tokens in a
 
 Basis: **Measured (server)** and **Measured (run).**
 
-Changed in 0.6.0 (`e139f18`): the executor holds `browser_find`, and reads the element
+Changed in 0.6.0 (`ebe9153`): the executor holds `browser_find`, and reads the element
 the plan names. In c3, on the list-first plan, it took no whole-page snapshot and peaked
 at 56,000 tokens.
 
@@ -231,7 +231,7 @@ notices.
 
 Basis: **Measured (run).**
 
-Changed in 0.6.0 (`a364cb3`): a turn that isn't finalization ends with `ok`. In c1 every
+Changed in 0.6.0 (`5f15870`): a turn that isn't finalization ends with `ok`. In c1 every
 such turn did. The saving is small, a few hundred output tokens a run.
 
 ### C6 — A step's entry could be written after the next step ran
@@ -245,7 +245,7 @@ ending in between would have lost a verdict the executor had reached.
 Basis: **Measured (run)**, under a draft that never shipped. 0.5.0 did not do this in
 a1 or a2.
 
-Changed in 0.6.0 (`972ef29`): the entry is in the file before its nudge and before the
+Changed in 0.6.0 (`e64deb9`): the entry is in the file before its nudge and before the
 next step's action, and is appended with a quoted heredoc, which the guard requires
 whenever an entry quotes something shaped like a substitution.
 
@@ -357,7 +357,7 @@ read like any other.
 
 - 0.6.0 as committed. c3 lacked only the program list, which changes one line of the
   skill, but no run used the final text.
-- A refusal of form after `2ee4fa5`, to see the executor resend the command once and
+- A refusal of form after `fb9c95a`, to see the executor resend the command once and
   continue.
 - An escalation answered by a person, with an orchestrator that hasn't loaded
   `step-execution`.
