@@ -75,6 +75,33 @@ test('a refused or id-less start writes nothing but its record', async ($, on) =
   expect(((await spawn()) as { model: string }).model).toBe('haiku')
 })
 
+// The engine's type gives the started arm `deny?: undefined`, so the key may be present with no refusal in it.
+const startedWithDenyKey = (w: ReturnType<typeof world>) => (e: { model?: string | null }) =>
+  ({ model: e.model ?? w.startModel, agentId: `a${w.seen.length}`, deny: undefined }) as never
+
+test('a start whose answer carries deny: undefined teaches the baseline in observe mode', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.mode = 'observe'
+  w.answer = startedWithDenyKey(w)
+
+  await spawn()
+  expect(records(w)[0]).toEqual(expect.objectContaining({ outcome: 'unchanged', started: 'claude-opus-5-5', agentId: 'a1' }))
+  expect(written(w, 'baseline').map((s) => s.value)).toEqual(['claude-opus-5-5'])
+})
+
+test('a routed start whose answer carries deny: undefined is marked routed and shown', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.answer = startedWithDenyKey(w)
+
+  await spawn()
+  await spawn()
+  expect(written(w, 'routed').map((s) => s.id)).toEqual(['a2'])
+  expect(w.lines).toEqual([expect.stringContaining('Routed to haiku')])
+  expect(await spawn({ parentAgentId: 'a2' })).toEqual({ deny: DENY_TEXT })
+})
+
 test('a routed spawn that starts at or above its baseline is marked and turns that route off', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)

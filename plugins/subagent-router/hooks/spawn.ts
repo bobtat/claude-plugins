@@ -41,8 +41,9 @@ let failuresInARow = 0
 let tick = 0
 let lastCountedFailureEnded = -1
 
+// The started arm may carry `deny: undefined`, so only a deny that is text is a refusal.
 function isStarted(result: Answer): result is Started {
-  return typeof result === 'object' && result !== null && !('deny' in result) && typeof result.agentId === 'string' && result.agentId !== ''
+  return typeof result === 'object' && result !== null && typeof result.deny !== 'string' && typeof result.agentId === 'string' && result.agentId !== ''
 }
 
 const modelOf = (result: Answer): string | undefined =>
