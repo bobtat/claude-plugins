@@ -32,7 +32,7 @@ type $ = EngineInterface
 type Next = NextOf<'agent.spawn'>
 type Answer = NextResult<'agent.spawn'>
 type Started = AgentSpawnResult & { agentId: string }
-type Spawner = { wasRouted: boolean; entry: unknown; isObserved: boolean }
+type Spawner = { wasRouted: boolean; entry: unknown; isObserved: boolean; isUnmoved: boolean }
 type Routes = { locating: Route; reading: Route }
 type Choice = { kind: Kind | null; target: Family | null; reason: string }
 type Settled = { done: DecisionRecord; routeTurnedOff: boolean; isCheaper: boolean }
@@ -44,9 +44,11 @@ let lastCountedFailureEnded = -1
 
 // What this load decided, beside the state that carries it across loads. A spawn's state read is one moment, so a
 // child dispatched before a routed write lands, or a spawn read before a routeOff write lands, would not see it; and a
-// refused write would release the agent or keep the route on. Each is added before the write that carries it is
-// awaited (after a start, with no await after next answers), and only ever adds to what state says.
-const routedHere = new Set<string>()
+// refused write would release the agent, keep the route on, or leave an unmoved agent to be refused by its marker. Each
+// is added before the write that carries it is awaited (after a start, with no await after next answers), and only ever
+// adds to what state says. Routed ids hold the entry their write carries, so a fork stores its spawner's own target.
+const routedHere = new Map<string, unknown>()
+const unmovedHere = new Set<string>()
 const routeOffHere = new Set<Kind>()
 
 // The started arm may carry `deny: undefined`, so only a deny that is text is a refusal.
@@ -99,27 +101,28 @@ async function looksRouted($: $, e: AgentSpawnInput): Promise<boolean> {
 }
 
 async function spawnerOf($: $, e: AgentSpawnInput): Promise<Spawner> {
-  const none = { wasRouted: false, entry: undefined, isObserved: false }
+  const none = { wasRouted: false, entry: undefined, isObserved: false, isUnmoved: false }
   if (typeof e.parentAgentId !== 'string') return none
-  if (routedHere.has(e.parentAgentId)) return { wasRouted: true, entry: undefined, isObserved: false }
+  const spawnerId = e.parentAgentId
+  if (routedHere.has(spawnerId)) return { ...none, wasRouted: true, entry: routedHere.get(spawnerId) }
   // An unreadable entry counts as one state does not know, so the marker check still decides, as after a resume;
   // letting the read fail the hook would pass a routed agent's child on.
   const unknown = () => undefined
-  const routed = await $.state.get({ ...ROUTED, id: e.parentAgentId }).then((read) => read.value, unknown)
-  if (routed !== undefined) return { wasRouted: true, entry: routed, isObserved: false }
-  const observed = await $.state.get({ ...OBSERVED, id: e.parentAgentId }).then((read) => read.value, unknown)
+  const routed = await $.state.get({ ...ROUTED, id: spawnerId }).then((read) => read.value, unknown)
+  if (routed !== undefined) return { ...none, wasRouted: true, entry: routed }
+  const observed = await $.state.get({ ...OBSERVED, id: spawnerId }).then((read) => read.value, unknown)
   if (observed !== undefined) return { ...none, isObserved: true }
   // Rewritten but started on the baseline's family or above: its first message carries the marker, yet it was not moved.
-  const unmoved = await $.state.get({ ...UNMOVED, id: e.parentAgentId }).then((read) => read.value, unknown)
-  if (unmoved !== undefined) return none
+  if (unmovedHere.has(spawnerId)) return { ...none, isUnmoved: true }
+  const unmoved = await $.state.get({ ...UNMOVED, id: spawnerId }).then((read) => read.value, unknown)
+  if (unmoved !== undefined) return { ...none, isUnmoved: true }
   // A negative answer is never kept: it also comes from a failed or full read.
   if (!(await looksRouted($, e))) return none
-  const spawnerId = e.parentAgentId
-  routedHere.add(spawnerId)
   const entry = builtEntry(e)
+  routedHere.set(spawnerId, entry)
   // Stored so the transcript is not read again, and so compaction of the first message cannot release the agent later.
   await attempt(() => $.state.set({ ...ROUTED, id: spawnerId }, entry))
-  return { wasRouted: true, entry, isObserved: false }
+  return { ...none, wasRouted: true, entry }
 }
 
 // For an agent known to be routed with no entry to copy: refusing must not depend on what state remembered.
@@ -151,12 +154,16 @@ async function passOn($: $, e: AgentSpawnInput, next: Next, settings: Settings, 
   const result = await next(e)
   if (e.fork === true && spawner.wasRouted && isStarted(result)) {
     // A fork is the routed agent continuing, so its own spawns must be refused too.
-    routedHere.add(result.agentId)
     const entry = spawner.entry ?? builtEntry(e)
+    routedHere.set(result.agentId, entry)
     await attempt(() => $.state.set({ ...ROUTED, id: result.agentId }, entry as never))
   } else if (e.fork === true && spawner.isObserved && isStarted(result)) {
     // Likewise in observe mode, so the fork's own spawns count toward what the rule would have refused.
     await attempt(() => $.state.set({ ...OBSERVED, id: result.agentId }, { v: 1 }))
+  } else if (e.fork === true && spawner.isUnmoved && isStarted(result)) {
+    // The fork carries its spawner's first message, marker and all, so it is not moved either.
+    unmovedHere.add(result.agentId)
+    await attempt(() => $.state.set({ ...UNMOVED, id: result.agentId }, { v: 1 }))
   }
   return result
 }
@@ -253,9 +260,11 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
     // was never measured for, so each turns the route off.
     isCheaper = !isPlainlyNotCheaper && !overridden && isConfirmedCheaper(model, baseline, target)
     // Into memory before the first write is awaited: a spawn whose picker answers meanwhile must already see both.
-    if (!isPlainlyNotCheaper) routedHere.add(agentId)
+    const entry: RoutedEntry = { v: 1, target, baseline }
+    if (!isPlainlyNotCheaper) routedHere.set(agentId, entry)
+    else unmovedHere.add(agentId)
     if (!isCheaper) routeOffHere.add(kind)
-    if (!isPlainlyNotCheaper) await attempt(() => $.state.set({ ...ROUTED, id: agentId }, { v: 1, target, baseline }))
+    if (!isPlainlyNotCheaper) await attempt(() => $.state.set({ ...ROUTED, id: agentId }, entry))
     else await attempt(() => $.state.set({ ...UNMOVED, id: agentId }, { v: 1 }))
     if (!isCheaper) routeTurnedOff = await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))
   }

@@ -142,6 +142,50 @@ test('an agent whose rewritten start came back at the baseline is not refused by
   expect(w.messageReads).toBe(0)
 })
 
+async function unmovedA2(w: ReturnType<typeof world>, spawn: ReturnType<typeof spawner>) {
+  w.sessionModel = 'claude-fable-5-2'
+  const fable = { parentModel: 'claude-fable-5-2' }
+  await spawn(fable)
+  w.answer = () => ({ model: 'claude-opus-5-5', agentId: `a${w.seen.length}` })
+  await spawn(fable)
+  w.answer = w.start
+  w.messages = first('find X\n\n' + markedNote)
+}
+
+test('an agent whose unmoved write was refused is still not refused by its marker', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  w.failSet = 'unmoved'
+  await unmovedA2(w, spawn)
+  expect(written(w, 'unmoved')).toEqual([])
+
+  expect(isDenied(await spawn({ parentAgentId: 'a2', parentModel: 'claude-opus-5-5' }))).toBe(false)
+  expect(w.messageReads).toBe(0)
+})
+
+test('a fork of an unmoved agent is unmoved too, so its own spawn is not refused by the marker', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await unmovedA2(w, spawn)
+
+  expect(await spawn({ parentAgentId: 'a2', fork: true })).toEqual({ model: 'claude-opus-5-5', agentId: 'a3' })
+  expect(written(w, 'unmoved').map((s) => s.id)).toEqual(['a2', 'a3'])
+  expect(isDenied(await spawn({ parentAgentId: 'a3', parentModel: 'claude-opus-5-5' }))).toBe(false)
+  expect(w.messageReads).toBe(0)
+})
+
+test("a fork of an agent routed in this load stores that agent's own entry", async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await routeA2(spawn)
+
+  await spawn({ parentAgentId: 'a2', fork: true })
+  expect(written(w, 'routed').map((s) => [s.id, s.value])).toEqual([
+    ['a2', { v: 1, target: 'haiku', baseline: 'claude-opus-5-5' }],
+    ['a3', { v: 1, target: 'haiku', baseline: 'claude-opus-5-5' }],
+  ])
+})
+
 test('a spawner recognised by its marker is stored as routed, so its next spawn reads no transcript', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)
