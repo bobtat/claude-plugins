@@ -172,6 +172,15 @@ test('a route whose routeOff write was refused is reported off until the router 
   expect(lines.some((l) => l.startsWith('locating: ') && l.includes('(route is off)'))).toBe(true)
 })
 
+// Runs straight after the test above, which leaves the locating route off in memory only.
+test('a route turned off in memory in one test is not off in the next', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  expect((await report($)).includes('route is off')).toBe(false)
+  await spawn()
+  expect(await spawn()).toEqual({ model: 'haiku', agentId: 'a2' })
+})
+
 test('with the force variable set, the report says the router is standing down', async ($, on) => {
   const w = world(on)
   w.env = { CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '1' }

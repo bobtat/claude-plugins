@@ -8,6 +8,7 @@ import { DENY_TEXT, NO_RESUME, endsWithMarker, routerNote } from './note'
 import { pickKind } from './picker'
 import { isConfirmedCheaper } from './prices'
 import { bump, newRecord, saveRecord } from './records'
+import { routeOffHere } from './route-memory'
 import { readSettings } from './settings'
 
 const ROUTED = { plugin: 'subagent-router', key: 'routed' } as const
@@ -48,9 +49,9 @@ let lastCountedFailureEnded = -1
 // refused write would release the agent, keep the route on, or leave an unmoved agent to be refused by its marker. Each
 // is added before the write that carries it is awaited (after a start, with no await after next answers), and only ever
 // adds to what state says. Routed ids hold the entry their write carries, so a fork stores its spawner's own target.
+// routeOffHere lives in route-memory.ts, since the command reports it too.
 const routedHere = new Map<string, unknown>()
 const unmovedHere = new Set<string>()
-const routeOffHere = new Set<Kind>()
 
 // The started arm may carry `deny: undefined`, so only a deny that is text is a refusal.
 function isStarted(result: Answer): result is Started {
@@ -284,10 +285,6 @@ function routedLine(done: DecisionRecord, s: Settled): string {
   if (routeOff !== null) return `Asked for ${done.target}; the ${done.kind} route is off ${until}; started on ${started}: ${done.description}`
   return `Asked for ${done.target}, but the agent started on ${started}: ${done.description}`
 }
-
-// The routes this load turned off, whether or not state took the write.
-export const routesOffInMemory = (): Kind[] => [...routeOffHere]
-
 // Observe mode still asks the picker, so its counts by kind stay complete; route mode makes no call it would not act on.
 async function leaveNested($: $, e: AgentSpawnInput, next: Next, mode: Settings['mode']): Promise<Answer> {
   let kind: Kind | null = null

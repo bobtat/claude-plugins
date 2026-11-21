@@ -5,8 +5,8 @@ import { clean, fenced } from './clean'
 import { GATE_RESULT } from './picker-gate'
 import { snapshot } from './records'
 import { renderReport } from './report'
+import { routesOffInMemory } from './route-memory'
 import { readSettings } from './settings'
-import { routesOffInMemory } from './spawn'
 
 const ROUTE_OFF = { plugin: 'subagent-router', key: 'routeOff' } as const
 const PICKER_OFF = { plugin: 'subagent-router', key: 'pickerOff' } as const
