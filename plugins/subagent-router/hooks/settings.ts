@@ -35,6 +35,12 @@ function shown(value: unknown): string {
   return hasHidden(value) ? `"${clean(value, 40)}" (hidden characters removed)` : `"${clean(value, 40)}"`
 }
 
+// As JSON, so a value that differs from an option only by a newline shows the difference ("route\n").
+function shownAsJson(value: unknown): string {
+  const json = jsonOf(value)
+  return hasHidden(json) ? `${clean(json, 40)} (hidden characters removed)` : clean(json, 40)
+}
+
 // Exactly as the manifest lists it: the engine treats any other value as unset, so /config would show the default
 // observe while a loosely read " Route" ran as route.
 function parseMode(value: unknown, notes: string[]): Mode {
@@ -43,7 +49,7 @@ function parseMode(value: unknown, notes: string[]): Mode {
   if (found) return found
   const loosely = typeof value === 'string' && MODES.some(mode => mode === value.trim().toLowerCase())
   notes.push(loosely
-    ? `mode ${shown(value)} must be written exactly (lower case, no spaces) as observe, route or off, so the router is off`
+    ? `mode ${shownAsJson(value)} must be written exactly (lower case, no spaces) as observe, route or off, so the router is off`
     : `mode ${shown(value)} is not observe, route or off, so the router is off`)
   return 'off'
 }

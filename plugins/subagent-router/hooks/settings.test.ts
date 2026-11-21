@@ -29,6 +29,15 @@ test('a mode must match one of the three options exactly, or the router is off',
   expect(parseSettings({ mode: 'turbo' }, undefined).notes[0]!.includes('exactly')).toBe(false)
 })
 
+test('a mode that must be written exactly is shown as JSON, so whitespace around it is visible', async () => {
+  const exactly = 'must be written exactly (lower case, no spaces) as observe, route or off, so the router is off'
+  expect(parseSettings({ mode: 'route\n' }, undefined).notes).toEqual([`mode "route\\n" ${exactly}`])
+  expect(parseSettings({ mode: 'route' + String.fromCodePoint(0xa0) }, undefined).notes).toEqual([`mode "route " ${exactly}`])
+  expect(parseSettings({ mode: ' Route' }, undefined).notes).toEqual([`mode " Route" ${exactly}`])
+  const long = parseSettings({ mode: 'route' + '\n'.repeat(30) }, undefined).notes[0]!
+  expect(long).toBe(`mode ${('"route' + '\\n'.repeat(30)).slice(0, 39)}${String.fromCodePoint(0x2026)} ${exactly}`)
+})
+
 test('a route names a family only as the whole value or as a claude- model id', async () => {
   for (const route of ['not-haiku', 'haiku-off', 'my-haiku', 'mythos', 'claude- haiku', 'haiku 5', 'claude-opus-haiku']) {
     const s = parseSettings({ locatingRoute: route }, undefined)

@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import type { DecisionRecord, Kind, Settings } from '../types'
 import { GATE_LIMITS, GATE_SET_DIGEST } from './picker-gate'
 import { gateVerdict, offenders, renderCheck, renderReport, scoreRun, setDigest } from './report'
-import type { Score, ScoreRow } from './report'
+import type { Offenders, Score, ScoreRow } from './report'
 
 const rec = (over: Partial<DecisionRecord> = {}): DecisionRecord => ({ v: 1, at: 1, agentType: 'Explore', description: 'find callers',
   kind: 'locating', outcome: 'would-route', reason: 'locating', target: 'haiku', overridden: false, started: 'claude-opus-5-5',
@@ -331,13 +331,15 @@ test('a check with a failed call says it is not a result', async () => {
 })
 
 test('after the verdict, one line says what to do with it', async () => {
-  const none = { leaked: [], injectedRouted: [], readingAsLocating: [] }
-  const after = (s: Score) => {
-    const lines = renderCheck(s, none, GATE_SET_DIGEST).split('\n')
+  const none: Offenders = { leaked: [], injectedRouted: [], readingAsLocating: [] }
+  const after = (s: Score, o: Offenders = none) => {
+    const lines = renderCheck(s, o, GATE_SET_DIGEST).split('\n')
     return lines[lines.findIndex((l) => l.startsWith('Gate: ')) + 1]
   }
   expect(after(AT_LIMITS)).toBe('To record the pass, copy the picker\'s system text and message into GATED_SYSTEM and GATED_MESSAGE in hooks/picker-gate.ts, and these numbers into GATE_RESULT.')
-  expect(after({ ...AT_LIMITS, leaked: 1 })).toBe('This run changes nothing. Look at the checks marked not passed and the ids listed below.')
+  expect(after({ ...AT_LIMITS, leaked: 1 }, { ...none, leaked: ['p1'] })).toBe('This run changes nothing. Look at the checks marked not passed and the ids listed below.')
+  expect(after({ ...AT_LIMITS, missed: 21 })).toBe('This run changes nothing. Look at the checks marked not passed.')
+  expect(after({ ...AT_LIMITS, unparseable: 3 })).toBe('This run changes nothing. Look at the checks marked not passed.')
   expect(after({ ...AT_LIMITS, failed: 1 })).toBe('This run changes nothing. Look at why the calls failed, then run it again.')
   expect(after({ ...AT_LIMITS, total: 1 })).toBe('This run changes nothing. Only the shipped set gives a result: look at the sizes named above.')
 })

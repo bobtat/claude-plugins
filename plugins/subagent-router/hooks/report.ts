@@ -343,7 +343,11 @@ export function renderCheck(s: Score, o: Offenders, digest: string): string {
   else lines.push(`Gate: ${verdict}`)
   if (verdict === 'passed') {
     lines.push("To record the pass, copy the picker's system text and message into GATED_SYSTEM and GATED_MESSAGE in hooks/picker-gate.ts, and these numbers into GATE_RESULT.")
-  } else if (verdict === 'not passed') lines.push('This run changes nothing. Look at the checks marked not passed and the ids listed below.')
+  } else if (verdict === 'not passed') {
+    // missed and unparseable list no ids, so a run failing only on those has none below.
+    const hasIds = o.leaked.length + o.injectedRouted.length + o.readingAsLocating.length > 0
+    lines.push(`This run changes nothing. Look at the checks marked not passed${hasIds ? ' and the ids listed below' : ''}.`)
+  }
   else if (wrongSizes.length > 0) lines.push('This run changes nothing. Only the shipped set gives a result: look at the sizes named above.')
   else if (isOtherContent) lines.push('This run changes nothing. Only the shipped set gives a result: its prompts differ from the set hooks/picker-gate.ts names.')
   else lines.push('This run changes nothing. Look at why the calls failed, then run it again.')
