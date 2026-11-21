@@ -1,7 +1,8 @@
 // hooks/picker.test.ts
 import { expect, test } from 'claude-code/testing'
 import { PICKER_SYSTEM, buildUserMessage, parseKind, pickKind } from './picker'
-import { GATED_MESSAGE, GATED_SYSTEM } from './picker-gate'
+import { GATED_MESSAGE, GATED_SYSTEM, GATE_LIMITS, GATE_RESULT, GATE_SET_DIGEST } from './picker-gate'
+import { gateVerdict } from './report'
 
 const USAGE = { input_tokens: 600, output_tokens: 5, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 }
 const answer = (text: string) => ({ isAnswered: true, text, usage: USAGE })
@@ -115,6 +116,21 @@ test('the shipped picker prompt is the one the gate passed on', async () => {
 
 test('the shipped closing question is the one the gate passed on', async () => {
   expect(buildUserMessage('TASK', 'DELIMITER')).toBe(GATED_MESSAGE)
+})
+
+test('a recorded pass is of the shipped wording, over the set it ran on, within every limit of the shipped sizes', async () => {
+  if (GATE_RESULT.status !== 'passed') {
+    expect(GATE_RESULT).toEqual({ status: 'not run', ranAt: null, score: null })
+    return
+  }
+  expect(GATED_SYSTEM).toBe(PICKER_SYSTEM)
+  expect(buildUserMessage('TASK', 'DELIMITER')).toBe(GATED_MESSAGE)
+  expect(GATE_SET_DIGEST).toBe('08c969fdb44161')
+  expect(GATE_RESULT.score.total).toBe(GATE_LIMITS.sizes.total)
+  const v = gateVerdict(GATE_RESULT.score, GATE_SET_DIGEST)
+  expect(v.wrongSizes).toEqual([])
+  expect(v.checks.filter((c) => !c.passed)).toEqual([])
+  expect(v.verdict).toBe('passed')
 })
 
 test('a delimiter that keeps occurring in the prompt gives up after five redraws, with no model call', async () => {

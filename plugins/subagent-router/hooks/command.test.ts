@@ -29,11 +29,10 @@ test('the command answers display-only text and nothing for the model', async ($
   expect(await $.command.run({ ...RUN, command: 'other' })).toEqual({ text: 'the engine ran other' })
 })
 
-test('the report says when the shipped picker wording has not passed its check', async ($, on) => {
+test('the shipped picker wording passed its check, so the report gives no warning about it', async ($, on) => {
   world(on)
-  const text = (await $.command.run(RUN)).text ?? ''
-  const passed = GATE_RESULT.status === ('passed' as string)
-  expect(text.includes('This version shipped without a passed picker check')).toBe(!passed)
+  expect(GATE_RESULT.status).toBe('passed')
+  expect((await report($)).includes('picker check')).toBe(false)
 })
 
 test('with no session start, the first hook after a load registers the command, and only once', async ($, on) => {
