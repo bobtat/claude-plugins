@@ -35,7 +35,8 @@ type Started = AgentSpawnResult & { agentId: string }
 type Spawner = { wasRouted: boolean; entry: unknown; isObserved: boolean; isUnmoved: boolean }
 type Routes = { locating: Route; reading: Route }
 type Choice = { kind: Kind | null; target: Family | null; reason: string }
-type Settled = { done: DecisionRecord; routeTurnedOff: boolean; isCheaper: boolean }
+// Where a route this start turned off is kept: in state for the session, or in this load's memory alone.
+type Settled = { done: DecisionRecord; routeOff: 'state' | 'memory' | null; isCheaper: boolean }
 
 // Picker failures in a row. Ticks order call starts and ends, so failures whose calls overlap count once.
 let failuresInARow = 0
@@ -237,10 +238,10 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
   if (!isStarted(result)) {
     const notStarted: DecisionRecord = { ...rec, outcome: 'not-started' }
     await attempt(() => saveRecord($, id, notStarted))
-    return { done: notStarted, routeTurnedOff: false, isCheaper: false }
+    return { done: notStarted, routeOff: null, isCheaper: false }
   }
   const agentId = result.agentId
-  let routeTurnedOff = false
+  let routeOff: Settled['routeOff'] = null
   let isCheaper = false
   const model = modelOf(result)
   const target = rec.target
@@ -266,22 +267,26 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
     if (!isCheaper) routeOffHere.add(kind)
     if (!isPlainlyNotCheaper) await attempt(() => $.state.set({ ...ROUTED, id: agentId }, entry))
     else await attempt(() => $.state.set({ ...UNMOVED, id: agentId }, { v: 1 }))
-    if (!isCheaper) routeTurnedOff = await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))
+    if (!isCheaper) routeOff = (await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))) ? 'state' : 'memory'
   }
   const done: DecisionRecord = { ...rec, started: cleanId(model), agentId, overridden }
   if (await attempt(() => saveRecord($, id, done))) await attempt(() => $.state.set({ ...BY_AGENT, id: agentId }, id))
-  return { done, routeTurnedOff, isCheaper }
+  return { done, routeOff, isCheaper }
 }
 
 // The line never says an agent was routed to a model it is not on, or one not shown to be cheaper. The route being off
 // comes before the model id, which can be long enough (an ARN) to push anything after it past the line's limit.
 function routedLine(done: DecisionRecord, s: Settled): string {
-  const { routeTurnedOff, isCheaper } = s
+  const { routeOff, isCheaper } = s
   if (isCheaper && done.started !== null && !done.overridden) return `Routed to ${done.target} as a ${done.kind} task: ${done.description}`
   const started = done.started ?? 'a model the start did not name'
-  if (routeTurnedOff) return `Asked for ${done.target}; the ${done.kind} route is off for this session; started on ${started}: ${done.description}`
+  const until = routeOff === 'state' ? 'for this session' : 'until the router reloads'
+  if (routeOff !== null) return `Asked for ${done.target}; the ${done.kind} route is off ${until}; started on ${started}: ${done.description}`
   return `Asked for ${done.target}, but the agent started on ${started}: ${done.description}`
 }
+
+// The routes this load turned off, whether or not state took the write.
+export const routesOffInMemory = (): Kind[] => [...routeOffHere]
 
 // Observe mode still asks the picker, so its counts by kind stay complete; route mode makes no call it would not act on.
 async function leaveNested($: $, e: AgentSpawnInput, next: Next, mode: Settings['mode']): Promise<Answer> {

@@ -336,6 +336,17 @@ test('a refused routeOff write still keeps the route off for the next spawn', as
   expect(records(w)[2]?.reason).toBe('no-route-applies')
 })
 
+test('a route turned off in memory only is said to be off until the router reloads', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await spawn()
+
+  w.failSet = 'routeOff'
+  w.answer = () => ({ model: 'claude-opus-5-5', agentId: `a${w.seen.length}` })
+  await spawn()
+  expect(w.lines).toEqual(['Asked for haiku; the locating route is off until the router reloads; started on claude-opus-5-5: find callers'])
+})
+
 test('a route turned off while another spawn waits at the picker leaves that spawn unchanged', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)

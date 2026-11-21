@@ -157,6 +157,21 @@ for (const [kind, other] of [['locating', 'reading'], ['reading', 'locating']] a
   })
 }
 
+test('a route whose routeOff write was refused is reported off until the router reloads', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await spawn()
+  w.failSet = 'routeOff'
+  w.answer = () => ({ model: 'claude-opus-5-5', agentId: `a${w.seen.length}` })
+  await spawn()
+
+  const lines = (await report($)).split('\n')
+  expect(lines.filter((l) => l.startsWith('The locating route is off'))).toEqual([
+    'The locating route is off until the router reloads: a run routed on it started on a model other than the one asked for, or one not confirmed cheaper than its usual one.',
+  ])
+  expect(lines.some((l) => l.startsWith('locating: ') && l.includes('(route is off)'))).toBe(true)
+})
+
 test('with the force variable set, the report says the router is standing down', async ($, on) => {
   const w = world(on)
   w.env = { CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '1' }

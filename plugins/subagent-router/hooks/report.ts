@@ -16,6 +16,8 @@ export type ReportInput = {
   outOfScope: number
   wouldRefuse: number
   routeOff: Kind[]
+  // Routes this load turned off whose routeOff write state did not take.
+  routeOffInMemory?: Kind[]
   pickerOff: boolean
   // GATE_RESULT.status for the shipped picker wording; absent, the report says nothing about the check.
   pickerCheckStatus?: string
@@ -126,10 +128,10 @@ function runOf(value: Record<string, unknown>): Run {
   return { kind, outcome, reason, hasStarted, isMoved, hasUsage, usd, tokens, isPartial, row }
 }
 
-function routeIsOff(kind: Kind, routes: Settings['routes'], routeOff: Kind[]): boolean {
+function routeIsOff(kind: Kind, a: ReportInput): boolean {
   if (kind === 'other') return true
-  const route: Route = routes[kind]
-  return route === 'parent' || routeOff.includes(kind)
+  const route: Route = a.settings.routes[kind]
+  return route === 'parent' || a.routeOff.includes(kind) || (a.routeOffInMemory ?? []).includes(kind)
 }
 
 function totalLine(kind: Kind, runs: Run[], a: ReportInput): string {
@@ -143,7 +145,7 @@ function totalLine(kind: Kind, runs: Run[], a: ReportInput): string {
     // A rewritten spawn may start elsewhere, so the spawns asked for a cheaper model and those that started on it differ.
     if (a.settings.mode === 'route' || routed > 0) parts.push(`${routed} asked, ${shifted} moved`)
     if (a.settings.mode !== 'route' || would > 0) parts.push(`${would} would be routed`)
-    moved = parts.join(', ') + (routeIsOff(kind, a.settings.routes, a.routeOff) ? ' (route is off)' : '')
+    moved = parts.join(', ') + (routeIsOff(kind, a) ? ' (route is off)' : '')
   }
   const pricedRuns = ran.filter((r) => r.usd !== undefined)
   const priced = pricedRuns.reduce((sum, r) => sum + (r.usd ?? 0), 0)
@@ -180,7 +182,8 @@ function headerLines(a: ReportInput): string[] {
   // A route is turned off by a start at or above its usual model, one that named no model, one on another family than
   // the route's, or one not shown cheaper.
   for (const kind of KINDS) {
-    if (a.routeOff.includes(kind)) lines.push(`The ${kind} route is off for this session: a run routed on it started on a model other than the one asked for, or one not confirmed cheaper than its usual one.`)
+    const until = a.routeOff.includes(kind) ? 'for this session' : (a.routeOffInMemory ?? []).includes(kind) ? 'until the router reloads' : undefined
+    if (until !== undefined) lines.push(`The ${kind} route is off ${until}: a run routed on it started on a model other than the one asked for, or one not confirmed cheaper than its usual one.`)
   }
   if (a.pickerOff) lines.push('The picker is off for this session after three failures in a row.')
   return lines

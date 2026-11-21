@@ -6,6 +6,7 @@ import { GATE_RESULT } from './picker-gate'
 import { snapshot } from './records'
 import { renderReport } from './report'
 import { readSettings } from './settings'
+import { routesOffInMemory } from './spawn'
 
 const ROUTE_OFF = { plugin: 'subagent-router', key: 'routeOff' } as const
 const PICKER_OFF = { plugin: 'subagent-router', key: 'pickerOff' } as const
@@ -52,7 +53,8 @@ async function buildReport($: $): Promise<string> {
   const routeOff: Kind[] = []
   if (locatingOff.value !== undefined) routeOff.push('locating')
   if (readingOff.value !== undefined) routeOff.push('reading')
-  return renderReport({ settings, ...recorded, routeOff, pickerOff: pickerOff.value === true, pickerCheckStatus: GATE_RESULT.status })
+  const routeOffInMemory = routesOffInMemory().filter((kind) => !routeOff.includes(kind))
+  return renderReport({ settings, ...recorded, routeOff, routeOffInMemory, pickerOff: pickerOff.value === true, pickerCheckStatus: GATE_RESULT.status })
 }
 
 async function answerReport($: $): Promise<CommandRunResult> {
