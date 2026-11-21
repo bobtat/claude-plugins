@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import { GATE_RESULT } from './picker-gate'
-import { RUN, spawner, until, world } from './test-support'
+import { RUN, report, spawner, unfenced, until, world } from './test-support'
 
 // The kit has setTimeout, though the engine's typings omit it.
 declare const setTimeout: (run: () => void, ms: number) => unknown
@@ -93,6 +93,38 @@ test('a report that cannot be built answers one display-only line saying so', as
   const r = await $.command.run(RUN)
   expect(r.isTextDisplayOnly).toBe(true)
   expect(r.context).toBe(undefined)
-  expect(r.text?.startsWith('subagent-router: the report could not be built')).toBe(true)
-  expect(r.text?.includes('\n')).toBe(false)
+  const body = unfenced(r.text)
+  expect(body.startsWith('subagent-router: the report could not be built')).toBe(true)
+  expect(body.includes('\n')).toBe(false)
+})
+
+// --- the answer is drawn as literal text ---
+
+test('the whole answer is one fenced block longer than any run of backticks in it, so nothing in it is drawn as markdown', async ($, on) => {
+  world(on)
+  const spawn = spawner($)
+  await spawn({ description: '[x](https://e.example) **b** __c__ <d>' })
+  await spawn({ description: 'find ```` here' })
+
+  const text = (await $.command.run(RUN)).text ?? ''
+  const lines = text.split('\n')
+  const fence = lines[0] ?? ''
+  const longest = Math.max(...Array.from(text.slice(fence.length, -fence.length).matchAll(/`+/gu), (m) => m[0].length))
+  expect(longest).toBe(4)
+  expect(/^`+$/u.test(fence)).toBe(true)
+  expect(fence.length > longest).toBe(true)
+  expect(lines.at(-1)).toBe(fence)
+  expect(lines.filter((l) => l === fence).length).toBe(2)
+  const body = await report($)
+  expect(body.includes('[x](https://e.example) **b** __c__ <d>')).toBe(true)
+  expect(body.includes('find ```` here')).toBe(true)
+})
+
+test('a usage answer and a check answer are fenced too', async ($, on) => {
+  world(on)
+  for (const args of ['help', 'check-picker']) {
+    const text = (await $.command.run({ ...RUN, args })).text ?? ''
+    expect(text.startsWith('```\n')).toBe(true)
+    expect(text.endsWith('\n```')).toBe(true)
+  }
 })

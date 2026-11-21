@@ -1,7 +1,7 @@
 import type { CommandRunInput, CommandRunResult, EngineInterface } from 'claude-code'
 import type { Kind } from '../types'
 import { answerCheckPicker } from './check-picker'
-import { clean } from './clean'
+import { clean, fenced } from './clean'
 import { GATE_RESULT } from './picker-gate'
 import { snapshot } from './records'
 import { renderReport } from './report'
@@ -63,11 +63,17 @@ async function answerReport($: $): Promise<CommandRunResult> {
   }
 }
 
-// Display-only: the report costs the conversation nothing and puts none of the records' text before the model.
-export async function answerCommand($: $, e: CommandRunInput): Promise<CommandRunResult> {
+function answerFor($: $, e: CommandRunInput): Promise<CommandRunResult> | CommandRunResult {
   const words = typeof e?.args === 'string' ? e.args.trim().split(/\s+/u).filter((word) => word !== '') : []
   if (words.length === 0) return answerReport($)
   if (words[0] === 'check-picker' && words.length === 1) return answerCheckPicker($, e, false)
   if (words[0] === 'check-picker' && words[1] === 'confirm' && words.length === 2) return answerCheckPicker($, e, true)
   return { text: USAGE, isTextDisplayOnly: true }
+}
+
+// Display-only: the report costs the conversation nothing and puts none of the records' text before the model. The
+// answer prints descriptions, agent types, ids and settings notes that others wrote, so it is all one literal block.
+export async function answerCommand($: $, e: CommandRunInput): Promise<CommandRunResult> {
+  const answer = await answerFor($, e)
+  return { ...answer, text: fenced(answer.text ?? '') }
 }

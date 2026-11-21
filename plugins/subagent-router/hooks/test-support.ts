@@ -142,7 +142,16 @@ export async function until(holds: () => boolean): Promise<void> {
 export const first = (text: string) => () => [{ role: 'user' as const, text, toolUses: [] }]
 
 export const RUN: CommandRunInput = { command: 'subagent-router', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } }
-export const report = async ($: Engine) => (await $.command.run(RUN)).text ?? ''
+
+// The command's answer is one fenced block: this checks the fence and gives back what is inside it.
+export function unfenced(text: string | undefined): string {
+  const lines = (text ?? '').split('\n')
+  const fence = lines[0] ?? ''
+  if (!/^`{3,}$/u.test(fence) || lines.length < 2 || lines.at(-1) !== fence) throw new Error(`not one fenced block: ${text}`)
+  return lines.slice(1, -1).join('\n')
+}
+
+export const report = async ($: Engine) => unfenced((await $.command.run(RUN)).text)
 
 export const change = (key: string, origin: ConfigSetInput['origin']): ConfigSetInput => ({
   key, value: 'route', previous: 'observe', provider: { plugin: 'subagent-router', tier: 'user' }, origin,

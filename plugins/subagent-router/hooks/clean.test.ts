@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { ID_MAX, clean, cleanId, cleanMiddle } from './clean'
+import { ID_MAX, clean, cleanId, cleanMiddle, fenced } from './clean'
 
 const LONE = /[\uD800-\uDFFF]/u   // with the u flag this matches only an unpaired surrogate
 
@@ -65,4 +65,11 @@ test('an accented word, a flag and a skin-tone emoji are unchanged', async () =>
 
 test('removing a hidden character never leaves a run of spaces', async () => {
   expect(clean('a \u200B b\u001b\tc', 80)).toBe('a b c')
+})
+
+test('a fenced block uses a fence longer than any run of backticks in its body, and at least three', async () => {
+  expect(fenced('plain text')).toBe('```\nplain text\n```')
+  expect(fenced('')).toBe('```\n\n```')
+  expect(fenced('a ``` b')).toBe('````\na ``` b\n````')
+  expect(fenced('one\n```````\ntwo `` three')).toBe('````````\none\n```````\ntwo `` three\n````````')
 })

@@ -3,7 +3,7 @@ import type { Engine } from 'claude-code/testing'
 import type { ModelCompleteRequest, ModelCompleteResult, On, PromptOrigin } from 'claude-code'
 import { parsePickerSet } from './check-picker'
 import { PICKER_SYSTEM } from './picker'
-import { until } from './test-support'
+import { unfenced, until } from './test-support'
 
 // The kit has setTimeout, though the engine's typings omit it.
 declare const setTimeout: (run: () => void, ms: number) => unknown
@@ -96,8 +96,10 @@ function bench(on: On): Bench {
   return b
 }
 
-const run = ($: Engine, args: string, origin: PromptOrigin = { kind: 'composer' }) =>
-  $.command.run({ command: 'subagent-router', args, origin, presentation: { isFullscreen: false, columns: 80 } })
+const run = async ($: Engine, args: string, origin: PromptOrigin = { kind: 'composer' }) => {
+  const r = await $.command.run({ command: 'subagent-router', args, origin, presentation: { isFullscreen: false, columns: 80 } })
+  return { ...r, text: unfenced(r.text) }
+}
 
 const lines = (text: string | undefined) => (text ?? '').split('\n')
 const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))

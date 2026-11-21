@@ -54,6 +54,14 @@ export function cleanMiddle(text: unknown, max: number): string {
   return points.slice(0, head).join('') + '…' + points.slice(points.length - tail).join('')
 }
 
+// A command's answer is drawn as markdown. Inside a fenced block nothing is, so no list of characters to escape can be
+// incomplete; the fence is longer than any run of backticks in the body, so no line of it can close the block.
+export function fenced(body: string): string {
+  const longest = Math.max(0, ...Array.from(body.matchAll(/`+/gu), (run) => run[0].length))
+  const fence = '`'.repeat(Math.max(3, longest + 1))
+  return `${fence}\n${body}\n${fence}`
+}
+
 export const ID_MAX = 80
 
 export const cleanId = (value: unknown): string | null => cleanMiddle(value, ID_MAX) || null
