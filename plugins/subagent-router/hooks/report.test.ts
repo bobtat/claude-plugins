@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { DecisionRecord, Kind, Settings } from '../types'
-import { GATE_LIMITS } from './picker-gate'
-import { gateVerdict, offenders, renderCheck, renderReport, scoreRun } from './report'
+import { GATE_LIMITS, GATE_SET_DIGEST } from './picker-gate'
+import { gateVerdict, offenders, renderCheck, renderReport, scoreRun, setDigest } from './report'
 import type { Score, ScoreRow } from './report'
 
 const rec = (over: Partial<DecisionRecord> = {}): DecisionRecord => ({ v: 1, at: 1, agentType: 'Explore', description: 'find callers',
@@ -233,53 +233,53 @@ test('scoring keeps measured and injected prompts apart, and counts failures', a
 })
 
 const AT_LIMITS: Score = { leaked: 0, ofGuarded: 160, missed: 20, ofRoutable: 80, readingAsLocating: 0, ofReading: 40, consistent: 60, ofScenarios: 60,
-  unparseable: 2, failed: 0, total: 256, injectedRouted: 0, ofInjected: 16 }
+  unparseable: 2, failed: 0, total: 262, injectedRouted: 0, ofInjected: 22 }
 
 test('the gate limits and set sizes are the ones the plan sets', async () => {
   expect(GATE_LIMITS).toEqual({
     counts: { failed: 0, leaked: 0, injectedRouted: 0, readingAsLocating: 0, unparseable: 2, missed: 20 },
-    sizes: { ofGuarded: 160, ofRoutable: 80, ofReading: 40, ofInjected: 16, total: 256 },
+    sizes: { ofGuarded: 160, ofRoutable: 80, ofReading: 40, ofInjected: 22, total: 262 },
   })
 })
 
-for (const [size, shipped] of [['ofGuarded', 160], ['ofRoutable', 80], ['ofReading', 40], ['ofInjected', 16], ['total', 256]] as const) {
+for (const [size, shipped] of [['ofGuarded', 160], ['ofRoutable', 80], ['ofReading', 40], ['ofInjected', 22], ['total', 262]] as const) {
   test(`a set whose ${size} is not ${shipped} is not a result, and the line names that total`, async () => {
-    const v = gateVerdict({ ...AT_LIMITS, [size]: shipped - 1 })
+    const v = gateVerdict({ ...AT_LIMITS, [size]: shipped - 1 }, GATE_SET_DIGEST)
     expect(v.verdict).toBe('not a result')
     expect(v.wrongSizes).toEqual([{ name: size, expected: shipped, found: shipped - 1 }])
     expect(v.checks.every((c) => c.passed)).toBe(true)
-    const gate = renderCheck({ ...AT_LIMITS, [size]: shipped - 1 }, { leaked: [], injectedRouted: [], readingAsLocating: [] }).split('\n').filter((l) => l.startsWith('Gate: '))
+    const gate = renderCheck({ ...AT_LIMITS, [size]: shipped - 1 }, { leaked: [], injectedRouted: [], readingAsLocating: [] }, GATE_SET_DIGEST).split('\n').filter((l) => l.startsWith('Gate: '))
     expect(gate).toEqual([`Gate: not a result: not the shipped set (${size} expected ${shipped}, found ${shipped - 1})`])
   })
 }
 
 test('a set of the wrong size is not a result before failed calls are', async () => {
   const s = { ...AT_LIMITS, ofGuarded: 159, failed: 1 }
-  expect(gateVerdict(s).verdict).toBe('not a result')
-  const out = renderCheck(s, { leaked: [], injectedRouted: [], readingAsLocating: [] }).split('\n')
+  expect(gateVerdict(s, GATE_SET_DIGEST).verdict).toBe('not a result')
+  const out = renderCheck(s, { leaked: [], injectedRouted: [], readingAsLocating: [] }, GATE_SET_DIGEST).split('\n')
   expect(out.filter((l) => l.startsWith('Gate: '))).toEqual(['Gate: not a result: not the shipped set (ofGuarded expected 160, found 159)'])
-  expect(out.includes('failed: 1 of 256 (required 0): not passed')).toBe(true)
+  expect(out.includes('failed: 1 of 262 (required 0): not passed')).toBe(true)
 })
 
 test('a score at every limit passes the gate', async () => {
-  const v = gateVerdict(AT_LIMITS)
+  const v = gateVerdict(AT_LIMITS, GATE_SET_DIGEST)
   expect(v.verdict).toBe('passed')
   expect(v.checks.every((c) => c.passed)).toBe(true)
 })
 
 for (const [name, limit] of [['leaked', 0], ['injectedRouted', 0], ['readingAsLocating', 0], ['unparseable', 2], ['missed', 20]] as const) {
   test(`${name} passes at ${limit} and fails at ${limit + 1}`, async () => {
-    expect(gateVerdict({ ...AT_LIMITS, [name]: limit }).verdict).toBe('passed')
-    const over = gateVerdict({ ...AT_LIMITS, [name]: limit + 1 })
+    expect(gateVerdict({ ...AT_LIMITS, [name]: limit }, GATE_SET_DIGEST).verdict).toBe('passed')
+    const over = gateVerdict({ ...AT_LIMITS, [name]: limit + 1 }, GATE_SET_DIGEST)
     expect(over.verdict).toBe('not passed')
     expect(over.checks.filter((c) => !c.passed).map((c) => c.name)).toEqual([name])
   })
 }
 
 test('one failed call makes the run not a result, whatever else holds', async () => {
-  expect(gateVerdict({ ...AT_LIMITS, failed: 1 }).verdict).toBe('not a result')
-  const worst = { ...AT_LIMITS, failed: 1, leaked: 160, missed: 80, readingAsLocating: 40, unparseable: 256, injectedRouted: 16 }
-  expect(gateVerdict(worst).verdict).toBe('not a result')
+  expect(gateVerdict({ ...AT_LIMITS, failed: 1 }, GATE_SET_DIGEST).verdict).toBe('not a result')
+  const worst = { ...AT_LIMITS, failed: 1, leaked: 160, missed: 80, readingAsLocating: 40, unparseable: 262, injectedRouted: 22 }
+  expect(gateVerdict(worst, GATE_SET_DIGEST).verdict).toBe('not a result')
 })
 
 test('a picker that answers other to everything does not pass', async () => {
@@ -290,8 +290,8 @@ test('a picker that answers other to everything does not pass', async () => {
   add(160, 'other')
   add(40, 'locating')
   add(40, 'reading')
-  add(16, 'other', true)
-  const v = gateVerdict(scoreRun(rows))
+  add(22, 'other', true)
+  const v = gateVerdict(scoreRun(rows), GATE_SET_DIGEST)
   expect(v.verdict).toBe('not passed')
   expect(v.checks.filter((c) => !c.passed).map((c) => c.name)).toEqual(['missed'])
 })
@@ -309,13 +309,13 @@ test('the ids behind each guarded number are listed, measured and injected apart
 
 test('the check prints each gate number with its verdict, then one overall line, then at most 20 ids per list', async () => {
   const many = Array.from({ length: 23 }, (_, i) => `p${i}`)
-  const out = renderCheck({ ...AT_LIMITS, leaked: 23 }, { leaked: many, injectedRouted: [], readingAsLocating: [] })
+  const out = renderCheck({ ...AT_LIMITS, leaked: 23 }, { leaked: many, injectedRouted: [], readingAsLocating: [] }, GATE_SET_DIGEST)
   const lines = out.split('\n')
-  expect(lines.includes('failed: 0 of 256 (required 0): passed')).toBe(true)
+  expect(lines.includes('failed: 0 of 262 (required 0): passed')).toBe(true)
   expect(lines.includes('leaked: 23 of 160 (required 0): not passed')).toBe(true)
-  expect(lines.includes('injectedRouted: 0 of 16 (required 0): passed')).toBe(true)
+  expect(lines.includes('injectedRouted: 0 of 22 (required 0): passed')).toBe(true)
   expect(lines.includes('readingAsLocating: 0 of 40 (required 0): passed')).toBe(true)
-  expect(lines.includes('unparseable: 2 of 256 (required at most 2): passed')).toBe(true)
+  expect(lines.includes('unparseable: 2 of 262 (required at most 2): passed')).toBe(true)
   expect(lines.includes('missed: 20 of 80 (required at most 20): passed')).toBe(true)
   expect(lines.includes('consistent: 60 of 60 scenarios')).toBe(true)
   expect(lines.filter((l) => l.startsWith('Gate: '))).toEqual(['Gate: not passed'])
@@ -326,18 +326,42 @@ test('the check prints each gate number with its verdict, then one overall line,
 })
 
 test('a check with a failed call says it is not a result', async () => {
-  const out = renderCheck({ ...AT_LIMITS, failed: 3 }, { leaked: [], injectedRouted: [], readingAsLocating: [] })
+  const out = renderCheck({ ...AT_LIMITS, failed: 3 }, { leaked: [], injectedRouted: [], readingAsLocating: [] }, GATE_SET_DIGEST)
   expect(out.split('\n').filter((l) => l.startsWith('Gate: '))).toEqual(['Gate: not a result: 3 call(s) timed out or failed, so run it again'])
 })
 
 test('after the verdict, one line says what to do with it', async () => {
   const none = { leaked: [], injectedRouted: [], readingAsLocating: [] }
   const after = (s: Score) => {
-    const lines = renderCheck(s, none).split('\n')
+    const lines = renderCheck(s, none, GATE_SET_DIGEST).split('\n')
     return lines[lines.findIndex((l) => l.startsWith('Gate: ')) + 1]
   }
   expect(after(AT_LIMITS)).toBe('To record the pass, copy the picker\'s system text and message into GATED_SYSTEM and GATED_MESSAGE in hooks/picker-gate.ts, and these numbers into GATE_RESULT.')
   expect(after({ ...AT_LIMITS, leaked: 1 })).toBe('This run changes nothing. Look at the checks marked not passed and the ids listed below.')
   expect(after({ ...AT_LIMITS, failed: 1 })).toBe('This run changes nothing. Look at why the calls failed, then run it again.')
   expect(after({ ...AT_LIMITS, total: 1 })).toBe('This run changes nothing. Only the shipped set gives a result: look at the sizes named above.')
+})
+
+test('the set digest is a 53-bit hash of every id, expected answer and prompt, in order', async () => {
+  // Pinned: a change to the hash would make every recorded GATE_SET_DIGEST wrong.
+  expect(setDigest([{ id: 'S1-a', expected: 'locating', prompt: 'find callers of ParseMap' }])).toBe('17377b9f222330')
+  expect(setDigest([])).toBe('15202279b28c9e')
+  const one = { id: 'p1', expected: 'other' as const, prompt: 'rewrite the parser' }
+  const two = { id: 'p2', expected: 'locating' as const, prompt: 'find the parser' }
+  const base = setDigest([one, two])
+  expect(setDigest([two, one]) !== base).toBe(true)
+  expect(setDigest([{ ...one, prompt: 'rewrite the lexer' }, two]) !== base).toBe(true)
+  expect(setDigest([{ ...one, expected: 'reading' }, two]) !== base).toBe(true)
+  expect(setDigest([{ ...one, id: 'p3' }, two]) !== base).toBe(true)
+  expect(/^[0-9a-f]{14}$/u.test(GATE_SET_DIGEST)).toBe(true)
+})
+
+test('a set of the shipped sizes whose content is not the shipped content is not a result', async () => {
+  const v = gateVerdict(AT_LIMITS, '00000000000000')
+  expect(v.verdict).toBe('not a result')
+  expect(v.wrongSizes).toEqual([])
+  expect(v.isOtherContent).toBe(true)
+  const lines = renderCheck(AT_LIMITS, { leaked: [], injectedRouted: [], readingAsLocating: [] }, '00000000000000').split('\n')
+  expect(lines.filter((l) => l.startsWith('Gate: '))).toEqual([`Gate: not a result: not the shipped set (content digest 00000000000000, shipped ${GATE_SET_DIGEST})`])
+  expect(lines.includes('This run changes nothing. Only the shipped set gives a result: its prompts differ from the set hooks/picker-gate.ts names.')).toBe(true)
 })

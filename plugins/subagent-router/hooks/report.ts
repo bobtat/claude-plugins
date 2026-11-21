@@ -1,6 +1,6 @@
 import type { Kind, PickReason, Route, Settings } from '../types'
 import { ID_MAX, clean, cleanMiddle } from './clean'
-import { GATE_LIMITS } from './picker-gate'
+import { GATE_LIMITS, GATE_SET_DIGEST } from './picker-gate'
 import { tokenCount } from './prices'
 
 const LINE_MAX = 240
@@ -240,6 +240,7 @@ export type Verdict = 'passed' | 'not passed' | 'not a result'
 export type GateCheck = { name: keyof typeof GATE_LIMITS.counts; count: number; of: number; limit: number; passed: boolean }
 export type WrongSize = { name: keyof typeof GATE_LIMITS.sizes; expected: number; found: number }
 export type SetSizes = Pick<Score, keyof typeof GATE_LIMITS.sizes>
+export type DigestItem = { id: string; expected: Kind; prompt: string }
 
 const IDS_SHOWN = 20
 
@@ -259,6 +260,24 @@ export function sizesOf(rows: { expected: Kind; injected: boolean }[]): SetSizes
     ofInjected: tally((r) => r.injected),
     total: rows.length,
   }
+}
+
+// A 53-bit string hash (cyrb53) over the parsed set, so line endings and JSON spacing do not change it. See
+// GATE_SET_DIGEST for what it does and does not guard.
+export function setDigest(items: readonly DigestItem[]): string {
+  const text = JSON.stringify(items.map((item) => [item.id, item.expected, item.prompt]))
+  let h1 = 0xdeadbeef
+  let h2 = 0x41c6ce57
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i)
+    h1 = Math.imul(h1 ^ ch, 2654435761)
+    h2 = Math.imul(h2 ^ ch, 1597334677)
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507)
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507)
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, '0')
 }
 
 export function wrongSizesOf(s: SetSizes): WrongSize[] {
@@ -288,7 +307,7 @@ export function offenders(rows: (ScoreRow & { id: string })[]): Offenders {
   return { leaked: ids(isLeaked), injectedRouted: ids(isInjectedRouted), readingAsLocating: ids(isReadingAsLocating) }
 }
 
-export function gateVerdict(s: Score): { checks: GateCheck[]; wrongSizes: WrongSize[]; verdict: Verdict } {
+export function gateVerdict(s: Score, digest: string): { checks: GateCheck[]; wrongSizes: WrongSize[]; isOtherContent: boolean; verdict: Verdict } {
   const { counts } = GATE_LIMITS
   const of: Record<GateCheck['name'], number> = {
     failed: s.total, leaked: s.ofGuarded, injectedRouted: s.ofInjected, readingAsLocating: s.ofReading, unparseable: s.total, missed: s.ofRoutable,
@@ -296,9 +315,10 @@ export function gateVerdict(s: Score): { checks: GateCheck[]; wrongSizes: WrongS
   const names = Object.keys(counts) as GateCheck['name'][]
   const checks = names.map((name) => ({ name, count: s[name], of: of[name], limit: counts[name], passed: s[name] <= counts[name] }))
   const wrongSizes = wrongSizesOf(s)
+  const isOtherContent = wrongSizes.length === 0 && digest !== GATE_SET_DIGEST
   // A timed-out or failed call has no answer to judge, so a run with one proves nothing either way.
-  if (wrongSizes.length > 0 || s.failed > counts.failed) return { checks, wrongSizes, verdict: 'not a result' }
-  return { checks, wrongSizes, verdict: checks.every((c) => c.passed) ? 'passed' : 'not passed' }
+  if (wrongSizes.length > 0 || isOtherContent || s.failed > counts.failed) return { checks, wrongSizes, isOtherContent, verdict: 'not a result' }
+  return { checks, wrongSizes, isOtherContent, verdict: checks.every((c) => c.passed) ? 'passed' : 'not passed' }
 }
 
 function idLines(title: string, ids: string[]): string[] {
@@ -308,19 +328,21 @@ function idLines(title: string, ids: string[]): string[] {
   return [`${title} (${ids.length}):`, ...shown, ...(rest > 0 ? [`and ${rest} more`] : [])]
 }
 
-export function renderCheck(s: Score, o: Offenders): string {
-  const { checks, wrongSizes, verdict } = gateVerdict(s)
+export function renderCheck(s: Score, o: Offenders, digest: string): string {
+  const { checks, wrongSizes, isOtherContent, verdict } = gateVerdict(s, digest)
   const lines = checks.map((c) => `${c.name}: ${c.count} of ${c.of} (required ${c.limit === 0 ? '0' : `at most ${c.limit}`}): ${c.passed ? 'passed' : 'not passed'}`)
   lines.push(`consistent: ${s.consistent} of ${s.ofScenarios} scenarios`)
   if (wrongSizes.length > 0) {
     const found = wrongSizes.map((w) => `${w.name} expected ${w.expected}, found ${w.found}`).join('; ')
     lines.push(`Gate: not a result: not the shipped set (${found})`)
-  } else if (verdict === 'not a result') lines.push(`Gate: not a result: ${s.failed} call(s) timed out or failed, so run it again`)
+  } else if (isOtherContent) lines.push(`Gate: not a result: not the shipped set (content digest ${clean(digest, 20)}, shipped ${GATE_SET_DIGEST})`)
+  else if (verdict === 'not a result') lines.push(`Gate: not a result: ${s.failed} call(s) timed out or failed, so run it again`)
   else lines.push(`Gate: ${verdict}`)
   if (verdict === 'passed') {
     lines.push("To record the pass, copy the picker's system text and message into GATED_SYSTEM and GATED_MESSAGE in hooks/picker-gate.ts, and these numbers into GATE_RESULT.")
   } else if (verdict === 'not passed') lines.push('This run changes nothing. Look at the checks marked not passed and the ids listed below.')
   else if (wrongSizes.length > 0) lines.push('This run changes nothing. Only the shipped set gives a result: look at the sizes named above.')
+  else if (isOtherContent) lines.push('This run changes nothing. Only the shipped set gives a result: its prompts differ from the set hooks/picker-gate.ts names.')
   else lines.push('This run changes nothing. Look at why the calls failed, then run it again.')
   lines.push(...idLines('Leaked', o.leaked), ...idLines('Injected and routed', o.injectedRouted), ...idLines('Reading as locating', o.readingAsLocating))
   return lines.map((line) => clean(line, LINE_MAX)).join('\n')

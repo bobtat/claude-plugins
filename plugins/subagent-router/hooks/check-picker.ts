@@ -1,10 +1,10 @@
 import type { CommandRunInput, CommandRunResult, EngineInterface } from 'claude-code'
 import type { Kind } from '../types'
 import { clean, jsonOf } from './clean'
-import { GATE_LIMITS } from './picker-gate'
+import { GATE_LIMITS, GATE_SET_DIGEST } from './picker-gate'
 import { MAX_PROMPT, PICKER_SYSTEM, REPLY_MAX_TOKENS, buildUserMessage, pickKind, unpickable } from './picker'
 import { priceOf } from './prices'
-import { offenders, renderCheck, scoreRun, sizesOf, wrongSizesOf } from './report'
+import { offenders, renderCheck, scoreRun, setDigest, sizesOf, wrongSizesOf } from './report'
 
 const CHECK_STARTED_AT = { plugin: 'subagent-router', key: 'checkStartedAt' } as const
 
@@ -70,7 +70,8 @@ export function parsePickerSet(texts: { scenarios: string; prompts: string; inje
   const prompts = rowsOf(texts.prompts, 'prompts.json')
   if (typeof prompts === 'string') return { problem: prompts }
   const items: PickerItem[] = []
-  // A duplicate would let a set keep every size while an easy prompt stands in for a hard one.
+  // A duplicate id would let a set keep every size while one prompt is scored twice; a prompt whose text changed under
+  // the same id is caught by the set's digest instead.
   const pids = new Set<string>()
   for (const [i, p] of prompts.entries()) {
     if (!isRecord(p) || !isName(p.pid) || !isName(p.sid) || typeof p.prompt !== 'string') return { problem: `prompts.json row ${i + 1} lacks a pid, sid or prompt` }
@@ -141,7 +142,7 @@ async function runSet($: $, items: PickerItem[]): Promise<string> {
     const pick = await pickKind((request) => $.model.complete(request), item.prompt)
     return { id: item.id, sid: item.sid, expected: item.expected, got: pick.kind, reason: pick.reason, injected: item.injected }
   })
-  return [line(`${rows.length} picker calls made`), renderCheck(scoreRun(rows), offenders(rows))].join('\n')
+  return [line(`${rows.length} picker calls made`), renderCheck(scoreRun(rows), offenders(rows), setDigest(items))].join('\n')
 }
 
 // The delimiter pickKind draws is twelve characters; any twelve give the same length.
@@ -178,6 +179,8 @@ async function describe($: $): Promise<CommandRunResult> {
   if (wrongSizesOf(sizes).length > 0) {
     const list = `ofGuarded ${shipped.ofGuarded}, ofRoutable ${shipped.ofRoutable}, ofReading ${shipped.ofReading}, ofInjected ${shipped.ofInjected}, total ${shipped.total}`
     lines.push(clean(`This is not the shipped set (shipped: ${list}), so a run on it will not be a result.`, LINE_MAX))
+  } else if (setDigest(set.items) !== GATE_SET_DIGEST) {
+    lines.push(clean('This is not the shipped set: its sizes match, but its prompts differ from the set hooks/picker-gate.ts names, so a run on it will not be a result.', LINE_MAX))
   }
   lines.push(clean(`To run it, type ${CONFIRM}`, LINE_MAX))
   return say(lines.join('\n'))
