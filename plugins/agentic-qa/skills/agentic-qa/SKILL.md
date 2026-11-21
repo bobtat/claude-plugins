@@ -67,10 +67,13 @@ docs: [https://wiki.example.com/notifications]
 isolation: sandboxed
 pre_authorize_contained: true
 report_destination: /shared/qa-reports/ABC-123
+live_report: true  # update the report after every step — omitted, on when report_destination is set and off otherwise
 previous_run: <working directory of an interrupted earlier run of this ticket, if any>
 ```
 
 `browser_driver` is stated, not detected. `agentic-qa:qa-runner` holds no browser tools, so it cannot see which drivers the session has — the caller, which can, says which one to record. Omitted, it is `playwright`, the driver this plugin ships; if Playwright then can't start, that surfaces as an environment failure on the first browser step. `claude-in-chrome` acts as whoever is logged in to the user's own Chrome, so name it only when the person who owns that browser has chosen it.
+
+`live_report` decides whether the report is brought up to date after every step. That is for someone watching it, and it is most of what the reporter costs: in a fixture run the per-step updates were six to seven tenths of what the reporter read. Interactively a person is there, so it is always on. Agent-invoked it is on when the brief names a `report_destination`, where the copy can be watched, or asks for it, and off otherwise. Off, the report is filled in from `step-results.md` when the run pauses and when it ends, and the finished report is the same.
 
 A brief that fails a validity gate triggers the same escalation as everything else that needs a human — see below — rather than erroring out and forcing the caller to reconstruct a new brief from scratch.
 
@@ -128,7 +131,7 @@ Three harness facts shape every hand-off between agents in this pipeline. Each w
 3. **A finished agent resumes when messaged by ID, context intact — but its result does not wake a spawned agent that resumed it.** The completion notice goes to the top-level session. A spawned agent that ends its turn after `SendMessage` returns to its own caller with the resumed agent still running, and is never woken. One that stays alive by making tool calls receives the notice at its next one.
 4. **A message sent to an agent that is still running joins its current turn.** It does not start a new one, and only one completion notice follows, so a `final` can land inside a turn a nudge began.
 
-So the orchestrator — `/agentic-qa:walkthrough`, `agentic-qa:qa-runner`, or an agent running this skill directly — keeps every agent ID its spawns return, and does every resume whose result it needs. Agents never hold a conversation with each other directly. The one peer message in the pipeline is `agentic-qa:step-executor`'s per-step nudge to `agentic-qa:qa-reporter`, which is fire-and-forget by design: the reporter rebuilds from `step-results.md` on every wake, so a nudge it never acts on loses nothing. Its completion notices carry nothing the orchestrator needs; ignore them.
+So the orchestrator — `/agentic-qa:walkthrough`, `agentic-qa:qa-runner`, or an agent running this skill directly — keeps every agent ID its spawns return, and does every resume whose result it needs. Agents never hold a conversation with each other directly. The one peer message in the pipeline is `agentic-qa:step-executor`'s per-step nudge to `agentic-qa:qa-reporter`, sent only when the run has live updates, which is fire-and-forget by design: the reporter rebuilds from `step-results.md` on every wake, so a nudge it never acts on loses nothing. Its completion notices carry nothing the orchestrator needs; ignore them.
 
 ### Signal files
 
