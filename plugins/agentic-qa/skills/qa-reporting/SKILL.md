@@ -1,6 +1,6 @@
 ---
 name: qa-reporting
-description: Use when building the walkthrough report — spawning agentic-qa:qa-reporter just before agentic-qa:step-executor to write a live, incrementally-updated report and render the finished, self-contained HTML deliverable at finalization. Governs the report template, the Traceability table, the report-destination sync, the finalization self-check, and screenshot embedding. Invoked by /agentic-qa:walkthrough alongside agentic-qa:step-execution.
+description: The procedure agentic-qa:qa-reporter follows when building the walkthrough report — a live, incrementally-updated report while agentic-qa:step-executor runs, and the finished, self-contained HTML deliverable at finalization. Governs the report template, the Traceability table, the report-destination sync, the finalization self-check, and screenshot embedding. Loaded by that agent. An orchestrator runs this phase from /agentic-qa:walkthrough or agentic-qa:qa-runner and does not load it.
 ---
 
 ## Overview

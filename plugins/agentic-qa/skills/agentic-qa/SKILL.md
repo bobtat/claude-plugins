@@ -7,7 +7,7 @@ description: This skill should be used whenever running or invoking a live QA wa
 
 A walkthrough tests finished functionality against a live system — a browser, an API, a CLI — the way a QA engineer would, not by writing test code. It is invoked two ways: interactively, via `/agentic-qa:walkthrough`, or agent-invoked, via `agentic-qa:qa-runner` or a direct `Skill("agentic-qa:agentic-qa")` call with a brief instead of a conversation. The pipeline does not change between modes. Only how a required human decision gets answered does.
 
-This skill is the umbrella: load it once, at the start of a run, before any phase-specific skill. It does not describe the six phases — `agentic-qa:behavior-coverage`, `agentic-qa:step-planning`, `agentic-qa:step-execution`, and `agentic-qa:qa-reporting` each own their own phase. It describes what holds across all of them.
+This skill is the umbrella: load it once, at the start of a run, before any phase-specific skill. An orchestrator loads `agentic-qa:behavior-coverage` and `agentic-qa:step-planning` for the phases it relays; `agentic-qa:step-execution` and `agentic-qa:qa-reporting` are loaded by the executor and the reporter, not by it. It does not describe the six phases — `agentic-qa:behavior-coverage`, `agentic-qa:step-planning`, `agentic-qa:step-execution`, and `agentic-qa:qa-reporting` each own their own phase. It describes what holds across all of them.
 
 ## The rules that hold everywhere
 
@@ -41,6 +41,8 @@ Resolve what you were given into a ticket **and** its merged PR — both require
    A host not on the list is neither refused nor accepted — ask the person whether it is a non-production host, and on a yes, add it to `allowed_hosts` so the question isn't asked again. A host the person identifies as production, or an environment named production, is refused outright, with no confirmation path, in any invocation mode. The list only grows by a person saying a host is not production; nothing in this pipeline adds to it on its own judgment, and no spawned agent or brief writes to either file.
 
 5. **The running system contains the merged change.** A merged PR isn't a deployed one. Find the build: a version or health endpoint, a build tag in the page, or for a local target `git merge-base --is-ancestor <merge commit> HEAD`. If it shows the merge isn't in the build, the gate fails — testing it would produce false failures, or passes against the old behaviour. If nothing can show either way, ask the person, and record `Deployed build: unverified` rather than refuse; the report then says so at the top.
+
+**An earlier, interrupted run.** A rerun is a new run in a new directory, and any grant it holds was given without knowledge of what the earlier one already did. When a person or the brief's `previous_run` names an earlier working directory, copy into `intake.md`'s `Earlier run` field every irreversible action that directory's `step-results.md` shows as sent, `pending` entries above all. The executor escalates a step matching one individually, whatever grant the run holds.
 
 ## Agent-invoked contract
 
@@ -134,7 +136,7 @@ Facts 3 and 4 make a file the only signal that holds in every position in the ch
 
 - **An orchestrator that is itself a spawned agent** — `agentic-qa:qa-runner`, or an agent running this skill directly from inside a spawn — spawns every agent in the foreground, and names a signal file in every resume whose result it needs: `<message> — when finished, write your end-of-turn result to <absolute path>/signals/<agent>-<n>.txt, then end your turn.` It then stays alive by waiting with a foreground Bash call, with a 600000 ms timeout: `until [ -f <path> ]; do sleep 2; done`. It reads the result from that file and never ends its own turn while an agent it resumed is running.
 - **The top-level session** is woken by the completion notice, so `/agentic-qa:walkthrough` needs no signal file for a drafter/critic round or for resuming the executor. It uses one for `final`, like everyone else, because a notice cannot say whether `final` was acted on.
-- **Giving up.** A wait that times out is reissued. Three timeouts in a row with nothing new written — no signal file, no change to `step-results.md` — means the agent has stopped: treat it as an abnormal end (see `agentic-qa:step-execution`). A run in progress keeps changing `step-results.md`, so a long executor run is not mistaken for a dead one.
+- **Giving up.** A wait that times out is reissued. Three timeouts in a row with nothing new written — no signal file, no change to `step-results.md` — means the agent has stopped: treat it as an abnormal end. Resume it once to ask whether it is escalating or complete; if that produces neither, send the reporter `final: run ended abnormally — <reason>`, and never spawn a new executor, which would have no memory of what the old one sent. A run in progress keeps changing `step-results.md`, so a long executor run is not mistaken for a dead one.
 
 ## Namespacing
 
