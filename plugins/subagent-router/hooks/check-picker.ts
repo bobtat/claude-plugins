@@ -2,7 +2,8 @@ import type { CommandRunInput, CommandRunResult, EngineInterface } from 'claude-
 import type { Kind } from '../types'
 import { clean, jsonOf } from './clean'
 import { GATE_LIMITS } from './picker-gate'
-import { MAX_PROMPT, pickKind, unpickable } from './picker'
+import { MAX_PROMPT, PICKER_SYSTEM, REPLY_MAX_TOKENS, buildUserMessage, pickKind, unpickable } from './picker'
+import { priceOf } from './prices'
 import { offenders, renderCheck, scoreRun, sizesOf, wrongSizesOf } from './report'
 
 const CHECK_STARTED_AT = { plugin: 'subagent-router', key: 'checkStartedAt' } as const
@@ -143,13 +144,35 @@ async function runSet($: $, items: PickerItem[]): Promise<string> {
   return [line(`${rows.length} picker calls made`), renderCheck(scoreRun(rows), offenders(rows))].join('\n')
 }
 
+// The delimiter pickKind draws is twelve characters; any twelve give the same length.
+const DELIMITER_LENGTH = 12
+
+// Four characters a token, over the system text and the whole message as sent, so the figures follow the set. The
+// output is counted at its cap, so the estimate does not fall short of a run whose replies are one word.
+function costOf(items: PickerItem[]): { perCall: number; usd: number | undefined } {
+  const delimiter = 'x'.repeat(DELIMITER_LENGTH)
+  const input = items.reduce((sum, item) => sum + (PICKER_SYSTEM.length + buildUserMessage(item.prompt, delimiter).length) / 4, 0)
+  const perCall = items.length === 0 ? 0 : Math.round(input / items.length / 50) * 50
+  const price = priceOf('claude-haiku-5-5')
+  const usd = price === undefined ? undefined : (input * price.input + items.length * REPLY_MAX_TOKENS * price.output) / 1_000_000
+  return { perCall, usd }
+}
+
+function costText(usd: number | undefined): string {
+  if (usd === undefined) return 'Estimated cost: not known, as Haiku 5.5 has no listed price.'
+  const shown = usd < 0.005 ? 'under $0.01' : `about $${usd.toFixed(2)}`
+  return `Estimated cost: ${shown} at the listed Haiku 5.5 price, with each reply counted at its ${REPLY_MAX_TOKENS}-token cap.`
+}
+
 async function describe($: $): Promise<CommandRunResult> {
   const set = await loadSet($)
   if ('problem' in set) return say(line(`${set.problem}, so the check cannot run.`))
   const sizes = sizesOf(set.items)
   const shipped = GATE_LIMITS.sizes
+  const cost = costOf(set.items)
   const lines = [
-    line(`a run makes ${set.items.length} Haiku calls, one per prompt in the regression set, about 600 input tokens each.`),
+    line(`a run makes ${set.items.length} Haiku calls, one per prompt in the regression set, about ${String(cost.perCall).replace(/\B(?=(\d{3})+(?!\d))/gu, ',')} input tokens per call on average.`),
+    clean(costText(cost.usd), LINE_MAX),
     clean(`Set sizes: ofGuarded ${sizes.ofGuarded}, ofRoutable ${sizes.ofRoutable}, ofReading ${sizes.ofReading}, ofInjected ${sizes.ofInjected}, total ${sizes.total}`, LINE_MAX),
   ]
   if (wrongSizesOf(sizes).length > 0) {

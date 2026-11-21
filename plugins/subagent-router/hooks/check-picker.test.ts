@@ -218,6 +218,28 @@ test('before a run, the message gives the set sizes and says when the set is not
   expect(b.checkSets).toEqual([])
 })
 
+test("the preview's token and cost figures follow the loaded set", async ($, on) => {
+  const b = bench(on)
+  const perCall = (text: string | undefined) => Number(/about ([\d,]+) input tokens per call on average/u.exec(text ?? '')?.[1]?.replace(/,/gu, '') ?? 'NaN')
+  const costLine = (text: string | undefined) => lines(text).find((l) => l.startsWith('Estimated cost: '))
+
+  const short = (await run($, 'check-picker')).text
+  expect(perCall(short) % 50).toBe(0)
+  expect(costLine(short)).toBe('Estimated cost: under $0.01 at the listed Haiku 5.5 price, with each reply counted at its 64-token cap.')
+  expect((short ?? '').includes('600 input tokens')).toBe(false)
+
+  // 4,000 more characters in every prompt is 1,000 more tokens a call at four characters a token.
+  const longer = (p: { prompt: string }) => ({ ...p, prompt: p.prompt + 'x'.repeat(4000) })
+  b.files = { ...small(), 'prompts.json': JSON.stringify(PROMPTS.map(longer)), 'injection.json': JSON.stringify(INJECTION.map(longer)) }
+  const long = (await run($, 'check-picker')).text
+  expect(perCall(long)).toBe(perCall(short) + 1000)
+
+  const many = Array.from({ length: 40 }, (_, i) => row(`S1-${i}`, 'S1', 'find ' + 'x'.repeat(14000)))
+  b.files = { ...small(), 'prompts.json': JSON.stringify(many) }
+  expect(costLine((await run($, 'check-picker')).text)).toBe('Estimated cost: about $0.02 at the listed Haiku 5.5 price, with each reply counted at its 64-token cap.')
+  expect(b.picks.length).toBe(0)
+})
+
 test('a second confirm while one is running makes no call, and the start is set back to 0 after', async ($, on) => {
   const b = bench(on)
   let release = () => {}
