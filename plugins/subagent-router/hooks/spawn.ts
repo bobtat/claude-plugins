@@ -41,6 +41,13 @@ let failuresInARow = 0
 let tick = 0
 let lastCountedFailureEnded = -1
 
+// What this load decided, beside the state that carries it across loads. A spawn's state read is one moment, so a
+// child dispatched before a routed write lands, or a spawn read before a routeOff write lands, would not see it; and a
+// refused write would release the agent or keep the route on. Each is added with no await after next answers or as
+// the write is issued, and only ever adds to what state says.
+const routedHere = new Set<string>()
+const routeOffHere = new Set<Kind>()
+
 // The started arm may carry `deny: undefined`, so only a deny that is text is a refusal.
 function isStarted(result: Answer): result is Started {
   return typeof result === 'object' && result !== null && typeof result.deny !== 'string' && typeof result.agentId === 'string' && result.agentId !== ''
@@ -93,6 +100,7 @@ async function looksRouted($: $, e: AgentSpawnInput): Promise<boolean> {
 async function spawnerOf($: $, e: AgentSpawnInput): Promise<Spawner> {
   const none = { wasRouted: false, entry: undefined, isObserved: false }
   if (typeof e.parentAgentId !== 'string') return none
+  if (routedHere.has(e.parentAgentId)) return { wasRouted: true, entry: undefined, isObserved: false }
   // An unreadable entry counts as one state does not know, so the marker check still decides, as after a resume;
   // letting the read fail the hook would pass a routed agent's child on.
   const unknown = () => undefined
@@ -130,6 +138,7 @@ async function passOn($: $, e: AgentSpawnInput, next: Next, settings: Settings, 
   if (e.fork === true && spawner.wasRouted && isStarted(result)) {
     // A fork is the routed agent continuing, so its own spawns must be refused too. A spawner known only by
     // its marker has no entry to copy, so one is built: refusing must not depend on what state remembered.
+    routedHere.add(result.agentId)
     const entry = spawner.entry ?? { v: 1, target: familyOf(e.parentModel) ?? 'haiku', baseline: '' }
     await attempt(() => $.state.set({ ...ROUTED, id: result.agentId }, entry as never))
   } else if (e.fork === true && spawner.isObserved && isStarted(result)) {
@@ -161,8 +170,8 @@ async function routesNow($: $, settings: Settings): Promise<Routes> {
     $.state.get({ ...ROUTE_OFF, id: 'reading' }),
   ])
   return {
-    locating: locating.value === undefined ? settings.routes.locating : 'parent',
-    reading: reading.value === undefined ? settings.routes.reading : 'parent',
+    locating: locating.value === undefined && !routeOffHere.has('locating') ? settings.routes.locating : 'parent',
+    reading: reading.value === undefined && !routeOffHere.has('reading') ? settings.routes.reading : 'parent',
   }
 }
 
@@ -224,6 +233,7 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
     // kept as routed and the route is turned off: both are the cautious reading.
     const isPlainlyNotCheaper = model !== undefined && familyOf(model) !== undefined && !ranksBelow(model, baseline)
     if (!isPlainlyNotCheaper) {
+      routedHere.add(agentId)
       await attempt(() => $.state.set({ ...ROUTED, id: agentId }, { v: 1, target, baseline }))
     }
     // The route stays on only for a start on the family asked for and shown to cost less than the baseline, by listed
@@ -231,7 +241,10 @@ async function settle($: $, a: { id: string; rec: DecisionRecord; result: Answer
     // baseline) means the hook's model was not honoured, and one on another cheaper family runs on a model the route
     // was never measured for, so each turns the route off.
     isCheaper = !isPlainlyNotCheaper && !overridden && isConfirmedCheaper(model, baseline, target)
-    if (!isCheaper) routeTurnedOff = await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))
+    if (!isCheaper) {
+      routeOffHere.add(kind)
+      routeTurnedOff = await attempt(() => $.state.set({ ...ROUTE_OFF, id: kind }, true))
+    }
   }
   const done: DecisionRecord = { ...rec, started: cleanId(model), agentId, overridden }
   if (await attempt(() => saveRecord($, id, done))) await attempt(() => $.state.set({ ...BY_AGENT, id: agentId }, id))
@@ -261,7 +274,11 @@ async function pickAndRoute($: $, e: AgentSpawnInput, next: Next, settings: Sett
   const stored = (await $.state.get({ ...BASELINE, id: baselineId })).value
   const baseline = typeof stored === 'string' ? stored : undefined
   const routes = await routesNow($, settings)
-  const choice = await choose($, e, settings.mode, routes, baseline)
+  const chosen = await choose($, e, settings.mode, routes, baseline)
+  // The routes were read before the picker was asked; another spawn's start may have turned this kind off meanwhile.
+  const choice: Choice = chosen.target !== null && chosen.kind !== null && routeOffHere.has(chosen.kind)
+    ? { kind: chosen.kind, target: null, reason: 'no-route-applies' }
+    : chosen
   const rewrites = settings.mode === 'route' && choice.target !== null
   const outcome: Outcome = choice.target === null ? 'unchanged' : rewrites ? 'routed' : 'would-route'
   const rec = await draft($, e, { kind: choice.kind, outcome, reason: choice.reason, target: choice.target })

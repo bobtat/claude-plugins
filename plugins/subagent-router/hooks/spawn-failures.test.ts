@@ -308,6 +308,65 @@ test('a failed routed write after a routed start leaves the record and byAgent w
   expect(w.lines.filter((line) => line.startsWith('Routed to haiku')).length).toBe(1)
 })
 
+test('a refused routed write does not release the agent: its next spawn is still refused', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await spawn()
+
+  w.failSet = 'routed'
+  expect(await spawn()).toEqual({ model: 'haiku', agentId: 'a2' })
+  w.failSet = null
+  expect(written(w, 'routed')).toEqual([])
+  expect(await spawn({ parentAgentId: 'a2', subagentType: 'general-purpose' })).toEqual({ deny: DENY_TEXT })
+})
+
+test('a refused routeOff write still keeps the route off for the next spawn', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await spawn()
+
+  w.failSet = 'routeOff'
+  w.answer = () => ({ model: 'claude-opus-5-5', agentId: `a${w.seen.length}` })
+  await spawn()
+  expect(written(w, 'routeOff')).toEqual([])
+  w.failSet = null
+  w.answer = w.start
+  await spawn()
+  expect(w.seen[2]?.model).toBe(undefined)
+  expect(records(w)[2]?.reason).toBe('no-route-applies')
+})
+
+test('a route turned off while another spawn waits at the picker leaves that spawn unchanged', async ($, on) => {
+  const w = world(on)
+  const spawn = spawner($)
+  await spawn()
+
+  let releaseB = () => {}
+  const bAsked = new Promise<void>((resolve) => {
+    releaseB = resolve
+  })
+  let bWaiting = false
+  w.reply = async (e) => {
+    if (typeof e.prompt === 'string' && e.prompt.includes('task B')) {
+      bWaiting = true
+      await bAsked
+    }
+    return { isAnswered: true, text: 'locating', usage: USAGE }
+  }
+  w.answer = (e) => ({ model: e.prompt.includes('task A') ? 'claude-opus-5-5' : (e.model ?? w.startModel), agentId: `a${w.seen.length}` })
+
+  const b = spawn({ description: 'B', prompt: 'task B' })
+  await until(() => bWaiting)
+  await spawn({ description: 'A', prompt: 'task A' })
+  expect(written(w, 'routeOff').map((s) => s.id)).toEqual(['locating'])
+  releaseB()
+  await b
+  const bSeen = w.seen.find((s) => s.prompt.startsWith('task B'))
+  expect(bSeen?.model).toBe(undefined)
+  expect(bSeen?.prompt).toBe('task B')
+  expect(records(w).find((r) => r.description === 'B')).toEqual(expect.objectContaining({ outcome: 'unchanged', target: null, reason: 'no-route-applies' }))
+})
+
 test('a failed baseline write after an unchanged start keeps the record and teaches nothing', async ($, on) => {
   const w = world(on)
   const spawn = spawner($)
