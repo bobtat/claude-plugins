@@ -27,6 +27,7 @@ An unattended run needs these in place first, because nobody is there to supply 
 - A `browser_session` storage state for any browser step, since a live login needs a person.
 - A caller holding `SendMessage`, and a brief with `pre_authorize_contained` if `contained` steps should run without one escalation each.
 - Permission for `Bash` in `qa-runner` and the executor. A permission mode that prompts will hang, and a classifier may refuse broad grants: check this in your environment before relying on it.
+- Permission for the executor to copy out of the plugin's data directory, where Playwright saves screenshots. On Claude Code 2.1.330 a headless session given an allowlist of tools, and not bypass mode, refused that `cp` as touching a sensitive file under `~/.claude`, and the run ended at its first browser step.
 
 Steps classified `escapes` never run unattended. They finish as `not verified`, and need a person.
 
@@ -42,7 +43,7 @@ Whichever driver runs, the executor checks that the browser is logged in as the 
 
 If **neither** is available, browser steps are still planned — and then marked `blocked — no browser driver`, with the count surfaced at the User Gate before you approve anything. They are never quietly re-planned onto the API: an API check would pass even if the button were broken, and a behavior about what's rendered has no API equivalent at all. You decide whether to fix the environment, narrow the run, or proceed knowing what won't be covered.
 
-Playwright acts on element references from an accessibility snapshot rather than screenshot coordinates, which makes a failed action attributable to the page instead of to a misplaced click, and it captures console messages and network requests — evidence for a step whose expected result concerns something the rendered page can hide.
+Playwright acts on element references from an accessibility snapshot rather than screenshot coordinates, which makes a failed action attributable to the page instead of to a misplaced click, and it captures console messages and network requests — evidence for a step whose expected result concerns something the rendered page can hide. The executor reads the part of a page a step names, with `browser_find`, and takes the whole snapshot only when that can't carry the verdict: an element that isn't there, an expectation that something is absent, a page that could show a secret.
 
 What does differ is the session. Playwright launches its own browser, not yours, so the first interactive run is expected to be unauthenticated: it stops and asks you to log in live, and the profile persists from there. An agent-invoked run loads the brief's `browser_session` storage state instead and escalates if it's missing or expired.
 
@@ -64,6 +65,8 @@ That refusal is enforced by an allowlist, not by guessing from a hostname. A tar
 
 The list applies to every step, not only the first URL. Each step declares its target, and the planner, critic and executor each check it. A `PreToolUse` hook, `hooks/target-guard.mjs`, enforces it for the executor: `Bash` runs only basic file and text tools and `curl`, every `curl` must start with `-q` and use only literal allowed hosts with no redirects or proxies, browser navigation must go to an allowed host, and any other program must be listed by you in `allowed_commands`, including the CLI you're testing. It acts only on this plugin's own agents, and adds a short Node process to `Bash` and file-write calls in any session where the plugin is enabled.
 
+A refusal ends the executor's turn in an escalation, and it doesn't try another way. The exception is a refusal of how a command was written rather than what it reaches, such as a shell variable in a path that gets written: the guard says so, and the executor sends the command once more with every path spelled out, to be checked in full like any other.
+
 **Know what the hook doesn't do.** It isn't a sandbox:
 
 - It can't see where a click or a server redirect lands in the browser. That rule is still an instruction to the agent. Point Playwright at a host that can't reach production if that matters to you.
@@ -79,6 +82,15 @@ A login provider is handled separately. Staging behind single sign-on usually re
 ## Invocation names
 
 Everything this plugin ships is namespaced, with no bare-name fallback. The command is `/agentic-qa:walkthrough`. The five skills are `agentic-qa:agentic-qa`, `agentic-qa:behavior-coverage`, `agentic-qa:step-planning`, `agentic-qa:step-execution`, and `agentic-qa:qa-reporting`. The seven agents are `agentic-qa:behavior-extractor`, `agentic-qa:behavior-coverage-critic`, `agentic-qa:step-planner`, `agentic-qa:step-plan-critic`, `agentic-qa:step-executor`, `agentic-qa:qa-reporter`, and `agentic-qa:qa-runner`.
+
+## What a run costs
+
+Measured on a fixture, not on your tickets: seven steps, five of them in a browser, against a small local app, with the earlier phases prepared by hand, on `claude-sonnet-5-5` and Claude Code 2.1.330. `tests/agentic-qa-fixture` in this repository reruns it, and `docs/reviews/agentic-qa-cost-2026-11.md` has the runs.
+
+- Execution and reporting cost about $0.70 a run at list prices ($0.68 and $0.70 in two runs). Intake, the two drafters and the two critics are extra and weren't measured.
+- Less than half of that is the testing. Of the input tokens processed, the executor took about 47%, the reporter about 36% and the orchestrator about 17%, because every agent pays for its own instructions before it does anything.
+- The reporter's update after each step is the largest part of its share: six to seven tenths of what it read. It is what keeps `walkthrough-report.md` current while the run is going.
+- A run that stops at its first step costs about two thirds of one that finishes. The orchestrator and both agents have already loaded everything by then.
 
 `agentic-qa:qa-reporter` runs on Sonnet: its work is filling a template from `step-results.md` and rendering the HTML with a script. Every other agent uses your session's model, because each of them makes a call a weaker model could get wrong without anything noticing: what the ticket asks for, whether a step reaches something real, whether a page passed.
 
