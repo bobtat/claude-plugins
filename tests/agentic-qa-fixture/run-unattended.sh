@@ -30,3 +30,5 @@ set -e
 echo "output: $OUT"
 node -e 'const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); console.log(r.result);' "$OUT/result.json"
 node "$HERE/analyze.mjs" "$OUT"
+# The scorer is for a run on the default caller and ticket: it says which of the six criteria were judged right.
+node "$HERE/score.mjs" "$OUT" || true
