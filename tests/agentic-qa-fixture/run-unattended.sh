@@ -19,7 +19,10 @@ ROWS="${ROWS:-100}" PORT=8765 REQ_LOG="$OUT/requests.log" node "$HERE/app.mjs" &
 trap 'kill $APP 2>/dev/null' EXIT
 sleep 1
 cd "$OUT/cwd"
+# A headless session stops agents still running ten minutes after its last turn, and a run on a slower
+# model takes longer than that. Forty-five minutes lets one finish and still ends one that hangs.
 set +e
+CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS="${BG_WAIT_MS:-2700000}" \
 PATH="$HERE/unattended/bin:$PATH" GH_STUB_LOG="$OUT/gh.log" \
 claude -p "$(cat "$HERE/unattended/${CALLER:-caller-prompt.txt}")" --model "${MODEL:-claude-sonnet-5-5}" \
   --plugin-dir "$WORK/.claude/plugins/agentic-qa-$LABEL" --plugin-dir "$REPO/plugins/testing" \

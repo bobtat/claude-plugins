@@ -29,7 +29,10 @@ const [prompt, spawn, run, out] = process.argv.slice(1);
 fs.writeFileSync(out, fs.readFileSync(prompt, "utf8").replace("__SPAWN__", fs.readFileSync(spawn, "utf8").trim()).replaceAll("__W__", run));' \
   "$HERE/orchestrator-prompt.txt" "$HERE/spawn-live-${LIVE_REPORT:-on}.txt" "$RUN" "$RUN/prompt.txt"
 cd "$WORK/cwd"
+# A headless session stops agents still running ten minutes after its last turn, and a run on a slower
+# model takes longer than that. Forty-five minutes lets one finish and still ends one that hangs.
 set +e
+CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS="${BG_WAIT_MS:-2700000}" \
 claude -p "$(cat "$RUN/prompt.txt")" --model "${MODEL:-claude-sonnet-5-5}" \
   --plugin-dir "$WORK/.claude/plugins/agentic-qa-$LABEL" --plugin-dir "$REPO/plugins/testing" \
   --allowedTools Agent SendMessage Skill Read Write Edit Glob Grep Bash mcp__plugin_agentic-qa_playwright \
