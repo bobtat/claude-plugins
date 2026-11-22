@@ -10,8 +10,8 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 const PLUGIN_AGENT = 'agentic-qa:';
 const EXECUTOR = 'agentic-qa:step-executor';
 const RUNNER = 'agentic-qa:qa-runner';
+const REPORTER = 'agentic-qa:qa-reporter';
 const NETWORK_RESTRICTED = new Set([
-  'agentic-qa:qa-reporter',
   'agentic-qa:behavior-coverage-critic',
   'agentic-qa:step-plan-critic',
 ]);
@@ -869,10 +869,61 @@ const RUNNER_PROFILE = {
   readable: text => /(^|[/\\])\.claude([/\\]agentic-qa\.local\.md|[/\\]?)$/i.test(text),
 };
 
+// The script the reporter runs to render the HTML report. It is this plugin's own
+// file, beside this hook, and a plugin is normally installed under ~/.claude, which
+// is protected as a whole. So it is allowed by being exactly this file, and only as
+// what `node` is asked to run.
+export const RENDERER = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'qa-reporting', 'scripts', 'render-report.mjs');
+
+function isRenderer(text, renderer) {
+  if (!text || !path.isAbsolute(text)) return false;
+  try {
+    return fs.realpathSync(text) === fs.realpathSync(renderer);
+  } catch {
+    return false;
+  }
+}
+
+// The reporter fills in a report, renders it, and copies both to a report
+// destination. Its list is the executor's file and text tools without curl, and node
+// for one thing: this plugin's renderer, given the run's working directory. It had
+// been barred from network programs by name, which any interpreter gets round.
+export const REPORTER_COMMANDS = new Set([...[...EXECUTOR_COMMANDS].filter(name => name !== 'curl'), 'node']);
+
+function checkRendererCall(args, uses, renderer) {
+  if (args.some(word => word.dynamic || word.glob || word.brace)) return spellOut('node must be given the renderer and the working directory as literal paths');
+  if (args.length !== 2 || !isRenderer(args[0].text, renderer) || args[1].text.startsWith('-')) {
+    return spellOut('node runs one thing for the reporter: this plugin\'s render-report.mjs, by its full path, with the working directory after it',
+      'Send it once more as: node "<the qa-reporting skill\'s base directory>/scripts/render-report.mjs" "<working directory>"');
+  }
+  // It writes the page into that directory, which therefore has to be a run's.
+  uses.push({text: path.join(args[1].text, 'walkthrough-report.html'), writes: true});
+  return null;
+}
+
+// The evidence folder goes to a report destination whole. A directory copied whole
+// has to be inside a run directory itself, which is what marking the source as
+// written checks: cp -r of anything else would carry it to wherever reports go.
+function checkReporterCp(args, uses) {
+  const isRecursive = word => !word.dynamic && /^-[A-Za-z]*[rR][A-Za-z]*$/.test(word.text);
+  const recursive = args.some(isRecursive);
+  const plain = args.map(word => isRecursive(word) ? {...word, text: word.text.replace(/[rR]/g, '')} : word).filter(word => word.text !== '-');
+  const before = uses.length;
+  const reason = fileUses('cp', plain, uses);
+  if (!reason && recursive) for (let i = before; i < uses.length; i++) uses[i].writes = true;
+  return reason;
+}
+
+const reporterProfile = renderer => ({
+  programs: REPORTER_COMMANDS, listed: false, wait: false, who: 'the reporter', readable: () => false,
+  handlers: {node: (args, uses) => checkRendererCall(args, uses, renderer), cp: checkReporterCp},
+});
+
 // `place` says where the command runs, and turns on the rules about where it may
 // write. The hook always passes one. Without it only the text is judged.
 export const checkExecutorBash = (command, settings, env = process.env, place = null) => checkHeldBash(command, settings, env, place, EXECUTOR_PROFILE);
 export const checkRunnerBash = (command, settings, env = process.env, place = null) => checkHeldBash(command, settings, env, place, RUNNER_PROFILE);
+export const checkReporterBash = (command, settings, env = process.env, place = null, renderer = RENDERER) => checkHeldBash(command, settings, env, place, reporterProfile(renderer));
 
 function checkHeldBash(command, settings, env, place, profile) {
   if (profile.wait) {
@@ -972,21 +1023,6 @@ function checkHeldBash(command, settings, env, place, profile) {
   return null;
 }
 
-// The script the reporter runs to render the HTML report. It is this plugin's own
-// file, beside this hook, and a plugin is normally installed under ~/.claude, which
-// is protected as a whole. So it is allowed by being exactly this file, and only as
-// what `node` is asked to run.
-export const RENDERER = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'qa-reporting', 'scripts', 'render-report.mjs');
-
-function isRenderer(text, renderer) {
-  if (!text || !path.isAbsolute(text)) return false;
-  try {
-    return fs.realpathSync(text) === fs.realpathSync(renderer);
-  } catch {
-    return false;
-  }
-}
-
 export function checkRestrictedBash(command, renderer = RENDERER) {
   let commands;
   try {
@@ -1026,9 +1062,11 @@ export function decide(input, settings, env = process.env) {
   // The hook always knows where it is. Tests that judge text alone leave cwd out.
   // A critic may be spawned before the plan exists, so like qa-runner it knows a run
   // directory by its name.
-  const named = agent === RUNNER || CRITICS.has(agent);
+  const named = agent === RUNNER || CRITICS.has(agent) || agent === REPORTER;
+  // A report destination can be anywhere a person chose, the project included. What
+  // makes it a place the reporter may write is that its folder is named for the run.
   const place = (agent === EXECUTOR || named) && input.cwd
-    ? makePlace({cwd: input.cwd, env, named, project: env.CLAUDE_PROJECT_DIR || input.cwd}) : null;
+    ? makePlace({cwd: input.cwd, env, named, project: agent === REPORTER ? null : env.CLAUDE_PROJECT_DIR || input.cwd}) : null;
   if (tool === 'Write' || tool === 'Edit' || tool === 'NotebookEdit') {
     const file = args.file_path ?? args.notebook_path ?? '';
     const reason = checkFileTool(file);
@@ -1047,6 +1085,7 @@ export function decide(input, settings, env = process.env) {
     return tool === 'Bash' ? checkRestrictedBash(args.command ?? '') : null;
   }
   if (agent === RUNNER) return tool === 'Bash' ? checkRunnerBash(args.command ?? '', settings, env, place) : null;
+  if (agent === REPORTER) return tool === 'Bash' ? checkReporterBash(args.command ?? '', settings, env, place) : null;
   if (agent !== EXECUTOR) return null;
   if (tool === 'Bash') return checkExecutorBash(args.command ?? '', settings, env, place);
   if (args.url === 'about:blank') return null;
