@@ -164,6 +164,9 @@ it, which is the weak part: a row it cannot place is printed, not guessed at.
 relay canary, and the scorer cannot tell a slip from a step that ran when it should not
 have: read the transcript before calling it either.
 
+It has run five times. The last scored 16 of 16, on text the first four had shaped,
+so that is not yet a pass rate.
+
 It needs `127.0.0.2` to be a loopback address the machine can listen on, which Linux
 allows and macOS does not without `ifconfig lo0 alias 127.0.0.2`.
 
