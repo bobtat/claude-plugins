@@ -170,6 +170,23 @@ so that is not yet a pass rate.
 It needs `127.0.0.2` to be a loopback address the machine can listen on, which Linux
 allows and macOS does not without `ifconfig lo0 alias 127.0.0.2`.
 
+## Several runs, scored
+
+```
+tests/agentic-qa-fixture/eval.sh <label> [runs of each fixture]
+```
+
+One run is an anecdote. `eval.sh` runs the plugin as it stands several times against
+both fixtures, side by side, and `tabulate.mjs` says how often each check held and what
+the runs cost. Run it before a change and after it, and compare the two tables.
+
+`score.mjs` scores one orders run and `team/score.mjs` one team run. Both place each row
+of the report against a criterion by the ticket's words that the behavior spec quotes
+as its anchor, so they do not depend on how a run numbered or named its behaviors. A
+row they cannot place is printed, never guessed at. Neither uses a model.
+
+Five runs of each cost about $18 when this was written.
+
 ## What it can't tell you
 
 - **One run is not a measurement.** Across runs of the same seven steps the reporter
