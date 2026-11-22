@@ -22,6 +22,8 @@ The absolute path to `intake.md`. Your entire input is that file's `Ticket` and 
 
 A doc that actively disagrees with the acceptance criteria goes in `Conflicts`, not picked one way. You do not resolve it.
 
+A question in `Unspecified` names the behaviors it touches. For each one from the acceptance criteria, say whether it can still be judged as written. A question about a case beside a criterion leaves the criterion testable, and the planner needs to be told so, or it may block what the ticket plainly asked for.
+
 Once the draft is written, end your turn.
 
 ## Revising against the critic

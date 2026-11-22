@@ -55,6 +55,7 @@ The two agents never message each other: neither holds the other's ID, and neith
 ## Unspecified — needs an answer before these become steps
 | # | Question | Affects | Options |
 |---|---|---|---|
+| Q1 | Must the search also find a cancelled order? | B7 (testable as written) | (a) any order (b) a cancelled one too |
 
 ## Conflicts — doc/ticket disagreement
 | Behavior | Ticket says | Doc says | Needs a decision from |
@@ -76,5 +77,7 @@ The two agents never message each other: neither holds the other's ID, and neith
 ### Round 2 (if any)
 …
 ```
+
+In `Affects`, say for each behavior from the acceptance criteria whether it can still be judged as written: `B7 (testable as written)`, or `B5 (no result stated without this)`. Most questions are about a case beside the behavior — a boundary, a second time, another role — and the behavior is still what the ticket says. The planner blocks only the second kind.
 
 Every behavior from the acceptance criteria and every `Added`/`Unspecified`/`Conflicts` entry gets resolved or explicitly carried to the User Gate — nothing gets silently dropped. Hand `behavior-spec.md`'s absolute path to Phase 2 (`agentic-qa:step-planning`) once the pairing settles.
