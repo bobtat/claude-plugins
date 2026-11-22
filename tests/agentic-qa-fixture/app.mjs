@@ -18,7 +18,8 @@ http.createServer((req, res) => {
   const json = (code, body) => { res.writeHead(code, {'content-type': 'application/json'}); res.end(JSON.stringify(body)); };
   // The build the unattended fixture's Intake checks against the pull request's merge commit.
   if (req.url === '/api/version') return json(200, {commit: '4f2a9c1e7b3d5a60c8e9f1a2b3c4d5e6f7a8b9c0', pr: 7});
-  const api = /^\/api\/orders\/(ORD-\d+)(\/cancel)?$/.exec(req.url);
+  // Any id reaches the API, so an unknown one gets the JSON error the pull request's diff shows.
+  const api = /^\/api\/orders\/([^/?#]+)(\/cancel)?$/.exec(req.url);
   if (api) {
     const o = find(api[1]);
     if (!o) return json(404, {error: 'No such order'});

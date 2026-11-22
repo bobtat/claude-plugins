@@ -2,11 +2,12 @@
 # Prepares a working directory with Phases 0-3 already done, for a Phase 4-5 fixture run.
 set -e
 W="$1"; mkdir -p "$W/evidence" "$W/signals"
+cp "$(dirname "$0")/unattended/pr-7.diff" "$W/pr.diff"
 cat > "$W/intake.md" <<'DOC'
 # Intake: Let support cancel a paid order from the order page
 
 **Source:** SHOP-42 + merged PR #7 (fixture)
-**Diff:** gh pr diff 7 --repo fixture/shop
+**Diff:** pr.diff — saved from `gh pr diff 7 --repo fixture/shop`
 **Docs:** none provided
 
 **Environment:** local
