@@ -18,6 +18,7 @@ const NETWORK_RESTRICTED = new Set([
 // The critics hold no Bash. Each writes one thing, its findings, into the run's
 // working directory, so that is the only place its file tools may write.
 const CRITICS = new Set(['agentic-qa:behavior-coverage-critic', 'agentic-qa:step-plan-critic']);
+const SHELL_KEYWORDS = new Set(['for', 'while', 'until', 'if', 'case', 'select', 'function', 'do', 'done', 'then', 'else', 'elif', 'fi', 'esac', '{', '}', '[[', '!', 'time']);
 const ALWAYS_ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 
 // Throughout, these are lists of what may run, not of what may not: programs,
@@ -934,6 +935,12 @@ function checkHeldBash(command, settings, env, place, profile) {
           if (reason) return reason;
         }
       } else {
+        // A loop or a condition is a way of writing commands, not a program to be
+        // allowed or refused: say so, and the same commands can come back one by one.
+        if (SHELL_KEYWORDS.has(name)) {
+          return spellOut(`"${name}" is shell syntax this guard does not read: no loop and no condition is accepted, but for the wait on a signal file`,
+            'Send it once more as plain commands, one for each item, joined by ; or && if you like');
+        }
         if (!profile.programs.has(name)) {
           return profile.listed ? `${name} is not in allowed_commands, so a person hasn't said this run may start it`
             : `${name} is not a program ${profile.who} may start`;
