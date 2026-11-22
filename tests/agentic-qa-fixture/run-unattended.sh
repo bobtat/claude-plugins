@@ -4,6 +4,9 @@
 # This starts a headless Claude Code session with several agents in it and spends real tokens: more than run.sh.
 # usage: run-unattended.sh <label> [plugin dir]
 #   MODEL, ROWS, FIXTURE_WORK, PW_FLAGS, CHROMIUM   as for run.sh
+#   CALLER   caller-prompt.txt (default): a brief that grants contained steps, and a caller that answers nothing.
+#            caller-prompt-escalation.txt: a brief that grants nothing, so the run stops at its first
+#            irreversible step, and a caller that answers that once and waits for the report.
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"; REPO="$(cd "$HERE/../.." && pwd)"
 LABEL="$1"; PLUGIN="${2:-$REPO/plugins/agentic-qa}"
@@ -18,7 +21,7 @@ sleep 1
 cd "$OUT/cwd"
 set +e
 PATH="$HERE/unattended/bin:$PATH" GH_STUB_LOG="$OUT/gh.log" \
-claude -p "$(cat "$HERE/unattended/caller-prompt.txt")" --model "${MODEL:-claude-sonnet-5-5}" \
+claude -p "$(cat "$HERE/unattended/${CALLER:-caller-prompt.txt}")" --model "${MODEL:-claude-sonnet-5-5}" \
   --plugin-dir "$WORK/plugin-$LABEL" --plugin-dir "$REPO/plugins/testing" \
   --allowedTools Agent SendMessage Skill Read Write Edit Glob Grep Bash WebFetch mcp__plugin_agentic-qa_playwright \
   --output-format json > "$OUT/result.json" 2> "$OUT/stderr.txt"
