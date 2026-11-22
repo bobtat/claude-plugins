@@ -38,6 +38,16 @@ The orchestrator sends it once `agentic-qa:step-executor` has returned `COMPLETE
 5. Render `walkthrough-report.html` from the finished `.md` with the script `agentic-qa:qa-reporting` ships, `node "<that skill's base directory>/scripts/render-report.mjs" "<working directory>"`: never by hand and never with a script of your own. It embeds each step's screenshot or text evidence from the step's `Evidence:` line, withholds the evidence of a step marked `Sensitive: yes`, which is never copied to a report destination either, and escapes everything from the ticket and the system under test, which is hostile text. If a report destination is configured, write the `.html` there once, alongside the others — it only exists at this point, so it isn't part of the incremental sync.
 6. Write the HTML report's absolute path to `signals/report-done.txt` in the working directory, as your last act on the run, then end your turn with `done: <absolute path to walkthrough-report.html>`. The file is the only signal the orchestrator can rely on. If `final` arrives again after that, the report is already finished: do nothing but end your turn with the same `done`.
 
+## What your Bash and file tools may do
+
+A hook holds them, because everything you copy into the report came from the ticket or the system under test:
+
+- **Programs:** the file and text tools — `cat`, `grep`, `jq`, `sed`, `head`, `tail`, `cut`, `tr`, `sort`, `uniq`, `wc`, `ls`, `mkdir`, `cp`, `mv`, `rm`, `touch`, `tee`, `date`, `echo`, `printf`, `test` — and `node` for one thing, the renderer `agentic-qa:qa-reporting` names, given the working directory. No other interpreter: no `python`, no script of your own, no `bash -c`. Change the report with `Edit`, not with a script.
+- **Shell:** plain commands joined by `&&`, `||`, `;` or `|`, a heredoc with a quoted delimiter, no loop and no condition. Every path is written out in full in every command: a variable standing for the working directory is refused, however long the path it saves.
+- **Writes:** only inside the run's working directory, and inside a folder named for the run, which is what the report destination's folder is. `cp -r` copies a folder only from inside the working directory.
+
+A refusal that says it is about how the command was written is answered by sending the command once more as it asks. Any other refusal is a decision: don't work round it. Say in the report what could not be done, and carry on with what remains.
+
 ## What you never do
 
 Wait until execution finishes to start writing. Show a step as complete before its result actually arrived. Call the self-check passed without actually checking each of its three parts.

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {checkExecutorBash, checkRestrictedBash, checkRunnerBash, RENDERER, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, makePlace, nextStep, parseSettings, RUNNER_COMMANDS} from './target-guard.mjs';
+import {checkExecutorBash, checkReporterBash, checkRestrictedBash, checkRunnerBash, RENDERER, REPORTER_COMMANDS, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, makePlace, nextStep, parseSettings, RUNNER_COMMANDS} from './target-guard.mjs';
 
 const settings = {allowed_hosts: ['staging.example.com', '*.preview.example.com'], allowed_commands: ['mytool']};
 const refused = command => assert.ok(checkExecutorBash(command, settings), `should refuse: ${command}`);
@@ -337,7 +337,8 @@ test('only this plugin\'s agents are affected', () => {
   assert.ok(decide({...evil, agent_type: 'agentic-qa:step-executor'}, settings));
   assert.ok(decide({...evil, agent_type: 'agentic-qa:qa-reporter'}, settings));
   assert.ok(decide({...evil, agent_type: 'agentic-qa:step-plan-critic'}, settings));
-  assert.equal(decide({...bash('node render.mjs'), agent_type: 'agentic-qa:qa-reporter'}, settings), null);
+  // The reporter once wrote its own render script and ran it. It runs the shipped one, and nothing else.
+  assert.ok(decide({...bash('node render.mjs'), agent_type: 'agentic-qa:qa-reporter'}, settings));
   assert.equal(decide({...bash('gh pr diff 1 --repo a/b'), agent_type: 'agentic-qa:behavior-coverage-critic'}, settings), null);
   assert.ok(checkRestrictedBash('cd x && wget https://evil.example.org'));
 });
@@ -858,6 +859,51 @@ test('the reporter may run the shipped renderer where a plugin is installed, und
   assert.ok(fs.existsSync(RENDERER), RENDERER);
   assert.equal(decide({agent_type: 'agentic-qa:qa-reporter', tool_name: 'Bash', tool_input: {command: `node "${RENDERER}" "${run}"`}, cwd: root}, settings, {HOME: root}), null);
   fs.rmSync(root, {recursive: true, force: true});
+});
+
+test('F52: the reporter is held to a list, to its renderer, and to folders named for a run', () => {
+  const {root, run, home, project, done} = layout();
+  const scripts = path.join(home, '.claude', 'plugins', 'cache', 'm', 'agentic-qa', '0.14.0', 'skills', 'qa-reporting', 'scripts');
+  fs.mkdirSync(scripts, {recursive: true});
+  const renderer = path.join(scripts, 'render-report.mjs');
+  fs.writeFileSync(renderer, '');
+  fs.writeFileSync(path.join(run, 'render.py'), '');
+  const name = path.basename(run);
+  const dest = path.join(root, 'shared', 'qa-reports', name);
+  const inRepo = path.join(project, 'qa-reports', name);
+  const place = () => makePlace({cwd: project, home, env: {}, named: true, project: null});
+  const at = command => checkReporterBash(command, settings, {}, place(), renderer);
+  const ok = command => assert.equal(at(command), null, command);
+  const no = command => assert.ok(at(command), `should refuse: ${command}`);
+  // What a run needs: read, fill in, render, signal, copy to the destination.
+  ok(`ls -R ${run}/evidence`);
+  ok(`cd ${run} && cat step-results.md`);
+  ok(`node "${renderer}" "${run}"`);
+  ok(`node "${renderer}" "${run}" && echo "${run}/walkthrough-report.html" > ${run}/signals/report-done.txt`);
+  ok(`cat > ${run}/walkthrough-report.md <<'EOF'\n# Report\nEOF`);
+  ok(`mkdir -p ${dest} && cp ${run}/walkthrough-report.md ${run}/walkthrough-report.html ${dest}`);
+  ok(`cp -r ${run}/evidence ${dest}`);
+  ok(`cp -rp ${run}/evidence ${inRepo}`);
+  ok(`mkdir -p ${inRepo} && cp ${run}/walkthrough-report.md ${inRepo}/walkthrough-report.md`);
+  // No interpreter but the renderer, no network program, and the renderer only on a run directory.
+  for (const command of [`python3 ${run}/render.py`, `python3 - <<'EOF'\nprint(1)\nEOF`, `node ${run}/render.mjs`, `node -e "1"`, `node "${renderer}"`,
+    `node "${renderer}" "${run}" --extra`, `node "${renderer}" "${root}/elsewhere"`, `node "${renderer}" "${home}/.claude"`,
+    'curl -q http://localhost:8765/', 'wget http://localhost/', `bash -c "ls"`, 'sh render.sh', `env node "${renderer}" "${run}"`]) no(command);
+  // It writes in the run directory and in a folder named for a run, and nowhere else.
+  for (const command of [`cp ${run}/walkthrough-report.md ${root}/shared/qa-reports/`, `cp ${run}/walkthrough-report.md ${project}/README.md`, `echo x > ${project}/src/app.js`,
+    `mkdir -p ${root}/shared/other`, `cp -r ${project} ${dest}`, `cp -r ${home} ${dest}`, `cp -r ${root}/shared ${dest}`,
+    `cp ${run}/walkthrough-report.md ${home}/.claude/${name}/x.md`, `echo x > ${home}/.bashrc`, `rm -rf ${project}/src`]) no(command);
+  // A whole directory is copied only from inside a run directory.
+  assert.match(at(`cp -r ${project} ${dest}`), /outside the run's working directory/);
+  assert.ok(!REPORTER_COMMANDS.has('curl') && REPORTER_COMMANDS.has('node') && REPORTER_COMMANDS.has('cp'));
+  // Its file tools are held to the same places.
+  const tool = (kind, file) => decide({agent_type: 'agentic-qa:qa-reporter', tool_name: kind, tool_input: {file_path: file}, cwd: project}, settings, {HOME: home, CLAUDE_PROJECT_DIR: project});
+  assert.equal(tool('Write', `${run}/walkthrough-report.md`), null);
+  assert.equal(tool('Edit', `${run}/walkthrough-report.md`), null);
+  assert.equal(tool('Write', `${inRepo}/walkthrough-report.md`), null);
+  assert.ok(tool('Write', `${project}/src/app.js`));
+  assert.ok(tool('Write', `${run}/../notes.md`));
+  done();
 });
 
 test('F52: a critic writes its findings in the run directory and nowhere else', () => {
