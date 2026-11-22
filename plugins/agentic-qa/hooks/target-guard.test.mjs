@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {checkExecutorBash, checkRestrictedBash, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, nextStep, parseSettings} from './target-guard.mjs';
+import {checkExecutorBash, checkRestrictedBash, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, makePlace, nextStep, parseSettings} from './target-guard.mjs';
 
 const settings = {allowed_hosts: ['staging.example.com', '*.preview.example.com'], allowed_commands: ['mytool']};
 const refused = command => assert.ok(checkExecutorBash(command, settings), `should refuse: ${command}`);
@@ -172,7 +172,8 @@ test('ordinary writes still work', () => {
   refused('cp C:/Users/x/.claude/plugins/data/agentic-qa-inline/playwright-output/a.png evidence/s1.png');
   refused('rm C:/Users/x/.claude/plugins/data/cost-ledger/store.json');
   allowed('cat > ~/.claude/jobs/abc/tmp/run/step-results.md <<\'EOF\'\nmentions .curlrc and settings.json\nEOF');
-  allowed('rm evidence/*.tmp');
+  // A glob names files nobody checked, so it is refused as a matter of form.
+  assert.ok(isFormRefusal(checkExecutorBash('rm evidence/*.tmp', settings)));
   allowed(`sed -E 's/.*/x/' -i evidence/s1.txt`);
   allowed(`sed -e 's/.*/x/' -i evidence/s1.txt`);
   allowed('echo "a > b" | grep a');
@@ -511,4 +512,181 @@ test('F45: a backslash inside double quotes stays, as it does in bash', () => {
   allowed('cp a.png "C:\\temp\\run\\evidence\\s1.png"');
   // Before these four bash does drop it.
   allowed('echo "a \\"quoted\\" word, a \\$ sign, a \\\\ backslash" > note.txt');
+});
+
+// A run as it is on disk: a working directory holding the two files Intake and the
+// planner write, a home with Playwright's output directory, and the session's own
+// directory, where a relative path starts.
+function layout() {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'guard-run-')));
+  const run = path.join(root, 'walkthrough-ABC-1');
+  const home = path.join(root, 'home');
+  const out = path.join(home, '.cache', 'agentic-qa', 'playwright-output');
+  const project = path.join(root, 'project');
+  for (const dir of [path.join(run, 'evidence'), out, project]) fs.mkdirSync(dir, {recursive: true});
+  for (const file of ['intake.md', 'step-plan.md']) fs.writeFileSync(path.join(run, file), '');
+  const at = (command, cwd = project) => checkExecutorBash(command, settings, {}, makePlace({cwd, home, env: {}}));
+  const ok = (command, cwd) => assert.equal(at(command, cwd), null, command);
+  const no = (command, cwd) => assert.ok(at(command, cwd), `should refuse: ${command}`);
+  const elsewhere = (command, cwd) => {
+    const reason = at(command, cwd);
+    assert.match(reason ?? 'allowed', /outside the run's working directory/, command);
+    assert.match(nextStep(reason), /once more writing only inside the run's working directory/);
+  };
+  return {root, run, home, out, project, ok, no, elsewhere, done: () => fs.rmSync(root, {recursive: true, force: true})};
+}
+
+test('the executor writes only inside its run directory and Playwright\'s output', () => {
+  const {run, home, out, project, ok, elsewhere, done} = layout();
+  ok(`cp ${out}/page-1.png ${run}/evidence/s1-order.png && rm ${out}/page-1.png ${out}/page-1.yml`);
+  ok(`cat >> ${run}/step-results.md <<'ENTRY'\n## S1\n- **Verdict:** pass\nENTRY`);
+  ok(`mkdir -p ${run}/evidence ${run}/runtime-secrets`);
+  ok(`curl -q -sS -o ${run}/evidence/s3.json https://staging.example.com/x`);
+  ok(`curl -q -sS https://staging.example.com/x | tee ${run}/evidence/s3.txt > /dev/null`);
+  ok(`sed -E 's/sig=[^"&]*/sig=<masked>/' -i ${run}/evidence/s3.txt`);
+  ok(`cp ${home}/session.json ${out}/state.json`);
+  ok('cp ../home/.cache/agentic-qa/playwright-output/page-1.png ../walkthrough-ABC-1/evidence/s1.png');
+  // F48: a file that changes later sessions has no name on any list. It has a place.
+  for (const file of [`${home}/.bash_aliases`, `${home}/.zlogin`, `${home}/.npmrc`, `${home}/Documents/PowerShell/Microsoft.PowerShell_profile.ps1`,
+    `${project}/.github/workflows/ci.yml`, `${project}/src/app.js`, '/opt/plugins/agentic-qa/agents/evil.md', '/opt/plugins/agentic-qa/.claude-plugin/plugin.json', '/tmp/scratch.txt', 'notes.txt']) {
+    elsewhere(`echo x >> ${file}`);
+    elsewhere(`cp ${run}/intake.md ${file}`);
+    elsewhere(`curl -q -o ${file} https://staging.example.com/x`);
+    elsewhere(`touch ${file}`);
+  }
+  elsewhere(`sed -i 's/a/b/' ${project}/src/app.js`);
+  elsewhere(`sort -o ${project}/sorted.txt ${run}/intake.md`);
+  elsewhere(`uniq ${run}/intake.md ${project}/out.txt`);
+  elsewhere(`mv ${run}/intake.md ${project}/intake.md`);
+  // The same for the file tools.
+  const write = (file, tool = 'Write') => decide({agent_type: 'agentic-qa:step-executor', tool_name: tool, tool_input: {file_path: file}, cwd: project}, settings, {HOME: home});
+  assert.equal(decide({agent_type: 'agentic-qa:step-executor', tool_name: 'Write', tool_input: {file_path: `${run}/step-results.md`}, cwd: project}, settings, {}), null);
+  assert.match(write(`${project}/src/app.js`), /outside the run's working directory/);
+  assert.match(write(`${home}/.bash_aliases`, 'Edit'), /outside the run's working directory/);
+  // Another plugin agent has no run directory to be held to: the planner writes one of the two files.
+  assert.equal(decide({agent_type: 'agentic-qa:step-planner', tool_name: 'Write', tool_input: {file_path: `${project}/new-run/step-plan.md`}, cwd: project}, settings), null);
+  done();
+});
+
+test('F43: the executor cannot remove or move the guard', () => {
+  const {run, home, out, project, no, done} = layout();
+  const plugin = fileURLToPath(new URL('..', import.meta.url));
+  no(`rm -rf ${plugin}hooks`);
+  no(`rm ${plugin}hooks/target-guard.mjs`);
+  no(`rm ${plugin}hooks/target-gu*`);
+  no(`mv ${plugin}hooks ${plugin}h2`);
+  no(`mv ${plugin}hooks ${run}/hooks`);
+  no(`cd ${plugin} && mv hooks h2`);
+  no(`cd ${plugin} && rm -rf hooks`);
+  no(`cd ${path.dirname(plugin)}/agentic-q* && rm -rf hooks`);
+  no('rm -rf /home/u/.cl*/plugins/cache/m/agentic-qa/0.8.0/hooks');
+  no(`rm -rf ${home}`);
+  no('rm -rf /');
+  no(`rm -rf ${path.dirname(run)}`);
+  // A link inside the run directory does not lead a write out of it.
+  fs.symlinkSync(project, path.join(run, 'link'));
+  no(`echo x > ${run}/link/app.js`);
+  no(`rm -rf ${run}/link/src`);
+  assert.ok(decide({agent_type: 'agentic-qa:step-executor', tool_name: 'Write', tool_input: {file_path: `${run}/link/app.js`}, cwd: project}, settings, {}));
+  done();
+});
+
+test('where a relative path lands after cd', () => {
+  const {run, out, project, ok, no, elsewhere, done} = layout();
+  // `cd <dir> &&` first, to a directory that exists, settles where the rest runs.
+  ok(`cd ${run} && mkdir -p evidence && cp ${out}/page-1.png evidence/s1.png && cat >> step-results.md <<'ENTRY'\n## S1\nENTRY`);
+  ok(`cd ${run} && printf '%s\\n' '{"a":1}' > evidence/s3.json\ncat >> step-results.md <<'ENTRY'\n## S3\nENTRY`);
+  ok(`cd ${out} && grep -n 'button "Search"' page-1.yml; rm page-1.yml`);
+  // A cd that might fail leaves the shell where it was, so the path must be good there too.
+  elsewhere(`cd ${run}; echo x > evidence/a.txt`);
+  elsewhere(`cd ${run}/not-made-yet && echo x > a.txt`);
+  elsewhere(`echo start; cd ${run} && echo x > evidence/a.txt`);
+  elsewhere(`cd ${run} && cd .. || echo x > a.txt`);
+  // Wherever a second cd leaves it, both places are inside the run directory here.
+  ok(`cd ${run} && cd evidence || echo x > a.txt`);
+  // The command from two fixture runs that failed in bash for the same reason.
+  elsewhere(`cd ${run} && cp ../../../home/.cache/agentic-qa/playwright-output/page-1.png evidence/s1.png && rm ../../../home/.cache/agentic-qa/playwright-output/page-1.png`);
+  ok(`cd ${run} && echo x > ${run}/evidence/a.txt`);
+  no('cd -');
+  no('cd "$RUN" && ls');
+  no(`cd ${path.dirname(run)}/walk* && ls`);
+  no(`echo "$(cd ${run})"`);
+  done();
+});
+
+test('F47: files are named literally, and curl is not handed one by an expansion', () => {
+  const {run, home, ok, no, done} = layout();
+  no(`cat ${home}/.ss?/id_rsa`);
+  no('cat "$F"');
+  no(`head -5 ${run}/evidence/*.json`);
+  no(`ls ${run}/{evidence,signals}`);
+  no(`cat ${home}/.ssh/id_rsa`);
+  no('cat ~/.aws/credentials');
+  ok(`cat ${run}/intake.md | head -5`);
+  ok(`grep -A 12 '^## S[0-9] ' ${run}/step-results.md`);
+  ok(`grep -n -E 'button "Cancel order"|status' ${run}/evidence/page.yml`);
+  ok(`grep "$PATTERN" ${run}/step-results.md`);
+  ok(`grep -e 'a[bc]' -e 'd*' ${run}/step-results.md`);
+  no(`grep -f "$F" ${run}/step-results.md`);
+  no(`grep status "$F"`);
+  ok(`jq -r '.[0].id' ${run}/evidence/s1.json`);
+  ok(`jq --arg n 1 '.[$n|tonumber]' ${run}/evidence/s1.json`);
+  no(`jq -r '.id' ${run}/evidence/*.json`);
+  ok('test -f "$F" && echo "$F has a * in it"');
+  const host = 'https://staging.example.com/x';
+  for (const hidden of ['-H @/home/u/.ssh/id_rsa', '-b /home/u/.netrc', '--data-urlencode k@/home/u/.ssh/id_rsa', "-F 'a=@/home/u/.ssh/id_rsa;type=text/plain'",
+    "-F 'a=</home/u/.ssh/id_rsa'", '-d{@/home/u/.ssh/id_rsa,x}', '-d @/home/u/.aws/credentials', '--json @/home/u/.ssh/id_rsa', '-F "a=$V"', '-d "$BODY"', '-H "$HEADER"',
+    '-b "$COOKIES"', '--data-urlencode "$PAIR"', '--data-binary "@$F"', '--cacert /home/u/.ssh/ca.pem']) no(`curl -q ${hidden} ${host}`);
+  for (const plain of ['-d "t=$TOKEN"', '--data-raw "$BODY"', '--form-string "a=$V"', '-H "Authorization: Bearer $T"', `-d '{"a":1,"b":[2,3]}'`, `-d @${run}/evidence/body.json`,
+    '-b "sid=$SID"', '-w "\\nHTTP %{http_code}\\n"', '--data-urlencode "q=$Q"', `-F 'a=@${run}/evidence/upload.png;type=image/png'`]) ok(`curl -q -sS ${plain} ${host}`);
+  done();
+});
+
+test('F48: sed cannot write a second file, and writers take only listed options', () => {
+  const {run, project, ok, no, done} = layout();
+  no('sed -in p hooks.jso');
+  no(`sed -in 's/a/b/' ${run}/evidence/x.txt`);
+  no(`sed -i.bak 's/a/b/' ${run}/evidence/x.txt`);
+  ok(`sed -ni 's/a/b/p' ${run}/evidence/x.txt`);
+  ok(`sed -n '1,5p' ${project}/README.md`);
+  for (const command of [`cp -r ${run}/evidence ${run}/copy`, `cp -t ${project} ${run}/intake.md`, `cp --target-directory=${project} ${run}/intake.md`, `mkdir -m 777 ${run}/x`,
+    `rm --no-preserve-root -rf ${run}/x`, `tee --output-error=exit ${run}/x`, `touch -r ${project}/a ${run}/x`, `base64 -o ${project}/x ${run}/intake.md`, `cp ${run}/intake.md`]) no(command);
+  for (const command of [`rm -rf ${run}/evidence/tmp`, `cp -fp ${run}/intake.md ${run}/evidence/intake.md`, `tee -a ${run}/evidence/x.txt`, `mkdir -pv ${run}/a/b`,
+    `base64 -d ${run}/evidence/x.b64`, `base64 -w0 ${run}/evidence/x.png`, `rm -- ${run}/evidence/-odd-name`]) ok(command);
+  done();
+});
+
+test('paths as Git Bash and Windows spell them', () => {
+  const marked = new Set(['c:\\users\\u\\appdata\\local\\temp\\run\\intake.md', 'c:\\users\\u\\appdata\\local\\temp\\run\\step-plan.md']);
+  const place = () => makePlace({cwd: 'C:\\proj', home: 'C:\\Users\\u', env: {}, lib: path.win32, exists: file => marked.has(file.toLowerCase()), real: file => file, directory: () => true});
+  const writable = text => { const p = place(); return p.resolve(text).every(p.writable); };
+  for (const inside of ['C:/Users/u/AppData/Local/Temp/run/evidence/s1.png', 'C:\\Users\\u\\AppData\\Local\\Temp\\run\\step-results.md', '/c/Users/u/AppData/Local/Temp/run/step-results.md',
+    'c:/users/U/APPDATA/local/temp/RUN/evidence/x.txt', '~/AppData/Local/Temp/run/signals/a.txt', 'C:/Users/u/.cache/agentic-qa/playwright-output/page-1.png',
+    '/c/Users/u/.cache/agentic-qa/playwright-output/page-1.png', '~/.cache/agentic-qa/playwright-output/page-1.png', '..\\Users\\u\\AppData\\Local\\Temp\\run\\x.txt']) {
+    assert.ok(writable(inside), inside);
+  }
+  for (const outside of ['C:/Users/u/Documents/x.txt', '/c/Users/u/x.txt', 'C:/proj/src/app.js', 'x.txt', '/tmp/run/x.txt', 'D:/Users/u/AppData/Local/Temp/run/x.txt',
+    'C:/Users/u/AppData/Local/Temp/run/../other/x.txt', 'C:/Users/u/.cache/agentic-qa/x.txt']) {
+    assert.ok(!writable(outside), outside);
+  }
+  const at = command => checkExecutorBash(command, settings, {}, place());
+  assert.equal(at('cp "C:\\Users\\u\\.cache\\agentic-qa\\playwright-output\\page-1.png" "C:\\Users\\u\\AppData\\Local\\Temp\\run\\evidence\\s1.png"'), null);
+  assert.equal(at("cd /c/Users/u/AppData/Local/Temp/run && cat >> step-results.md <<'ENTRY'\n## S1\nENTRY"), null);
+  assert.ok(at('echo x >> "C:\\Users\\u\\Documents\\notes.txt"'));
+  // A Playwright output directory set from a relocated plugin data directory is honoured too.
+  const moved = makePlace({cwd: 'C:\\proj', home: 'C:\\Users\\u', env: {CLAUDE_PLUGIN_DATA: 'D:\\cc\\plugins\\data\\agentic-qa'}, lib: path.win32, exists: () => false, real: file => file});
+  assert.ok(moved.resolve('D:/.cache/agentic-qa/playwright-output/a.png').every(moved.writable));
+});
+
+test('the hook process holds the executor to its place', () => {
+  const {run, home, project, done} = layout();
+  const env = {CLAUDE_PROJECT_DIR: project, HOME: home, USERPROFILE: home};
+  const run1 = command => runHook(JSON.stringify({agent_type: 'agentic-qa:step-executor', tool_name: 'Bash', tool_input: {command}, cwd: project}), env).stdout;
+  assert.equal(run1(`echo x >> ${run}/step-results.md`), '');
+  assert.equal(run1(`cd ${run} && echo x >> step-results.md`), '');
+  const out = JSON.parse(run1(`echo x >> ${project}/notes.txt`)).hookSpecificOutput;
+  assert.equal(out.permissionDecision, 'deny');
+  assert.match(out.permissionDecisionReason, /outside the run's working directory.*once more writing only inside/);
+  assert.equal(JSON.parse(run1('echo x >> notes.txt')).hookSpecificOutput.permissionDecision, 'deny');
+  done();
 });

@@ -38,7 +38,7 @@ const CURL_LONG_WITH_VALUE = new Set([
   '--header', '--data', '--data-raw', '--data-binary', '--data-urlencode', '--json', '--request',
   '--output', '--max-time', '--connect-timeout', '--write-out', '--user-agent', '--referer',
   '--cookie', '--cookie-jar', '--form', '--upload-file', '--user', '--dump-header', '--retry',
-  '--retry-delay', '--cacert',
+  '--retry-delay', '--cacert', '--form-string',
 ]);
 const CURL_WRITES_FILE = new Set(['-o', '--output', '-D', '--dump-header', '-c', '--cookie-jar']);
 const CURL_READS_FILE = new Set(['-T', '--upload-file']);
@@ -47,9 +47,6 @@ const CURL_WRITE_OUT = new Set(['-w', '--write-out']);
 
 // Programs that read their arguments as data rather than as paths.
 const DATA_ARGUMENTS = new Set(['echo', 'printf', 'tr', 'sleep', 'date', 'true', 'false', 'test', '[']);
-// Programs whose first positional argument is a pattern or filter, not a path.
-const PATTERN_FIRST = new Set(['jq', 'grep']);
-const WRITES_TO_ARGUMENTS = new Set(['cp', 'mv', 'tee', 'touch', 'mkdir', 'uniq']);
 
 // What decides this guard's behaviour, or what runs later, must not be writable
 // by the agents it guards.
@@ -385,24 +382,57 @@ function checkRedirect({target}) {
 
 const commandName = text => text.replace(/\\/g, '/').split('/').pop().toLowerCase().replace(/\.exe$/, '');
 
-function checkCurlValue(flag, word) {
+// A value that begins with an expansion could begin with `@` once expanded, and
+// curl then reads the file it names.
+const startsDynamic = word => word.dynamic && word.text.startsWith('$');
+
+// The file a curl option's value makes curl read, if it does. `null` when it reads
+// none, and a refusal when the value hides whether it does.
+function curlReads(flag, word) {
+  const {text} = word;
+  const hidden = () => ({refuse: spellOut(`curl ${flag} "${text}" could name a file once it is expanded`, 'Send it once more with the value starting with literal text, or with --data-raw or --form-string, which never read a file')});
+  if (flag === '-H' || flag === '--header') return startsDynamic(word) ? hidden() : text.startsWith('@') ? {file: text.slice(1)} : null;
+  if (flag === '-b' || flag === '--cookie') return startsDynamic(word) ? hidden() : text.includes('=') ? null : {file: text};
+  if (flag === '--data-urlencode') {
+    const at = text.indexOf('@');
+    const equals = text.indexOf('=');
+    if (word.dynamic && (equals < 0 || text.indexOf('$') < equals)) return hidden();
+    return at >= 0 && (equals < 0 || at < equals) ? {file: text.slice(at + 1)} : null;
+  }
+  if (flag === '-F' || flag === '--form') {
+    // `name=@file` uploads a file and `name=<file` sends its text, so an expanded
+    // value can turn into either. --form-string sends the value as it is.
+    if (word.dynamic) return hidden();
+    const m = /^[^=]*=[@<]([^;,]*)/.exec(text);
+    return m ? {file: m[1]} : null;
+  }
+  if (CURL_DATA.has(flag)) return startsDynamic(word) ? hidden() : text.startsWith('@') ? {file: text.slice(1)} : null;
+  if (CURL_READS_FILE.has(flag) || flag === '--cacert') return {file: text};
+  return null;
+}
+
+function checkCurlValue(flag, word, uses) {
   if (!word) return `curl ${flag} needs a value`;
-  if (CURL_WRITES_FILE.has(flag) || CURL_READS_FILE.has(flag)) {
+  if (word.brace) return spellOut(`curl ${flag} "${word.text}" has an unquoted brace, which the shell expands into several arguments`, 'Send it once more with that value in quotes');
+  if (CURL_WRITES_FILE.has(flag)) {
     if (unsafeDestination(word) || word.text.includes('#')) return spellOut(`curl ${flag} must name a literal path`);
-    return protectedPath(word.text);
+    uses.push({text: word.text, writes: true});
+    return null;
   }
   if (CURL_WRITE_OUT.has(flag)) {
     if (word.dynamic || /%output|^@/.test(word.text)) return `curl ${flag} can write a file, so its format must be literal and can't use %output or @`;
     return null;
   }
-  if (CURL_DATA.has(flag)) {
-    const file = /(?:^|=)[@<](.*)$/.exec(word.text);
-    return file ? protectedPath(file[1]) : null;
+  const reads = curlReads(flag, word);
+  if (reads?.refuse) return reads.refuse;
+  if (reads) {
+    if (word.dynamic || /[*?[\]{}#]/.test(reads.file)) return spellOut(`curl ${flag} must name a literal path`);
+    uses.push({text: reads.file, writes: false});
   }
   return null;
 }
 
-function checkCurl(args, allowedHosts) {
+function checkCurl(args, allowedHosts, uses) {
   // curl reads ~/.curlrc unless told not to, and that file can set a proxy.
   const first = args[0]?.text;
   if (first !== '-q' && first !== '--disable') return 'curl must start with -q, so no config file can redirect it';
@@ -421,17 +451,18 @@ function checkCurl(args, allowedHosts) {
     if (text.startsWith('--')) {
       if (CURL_LONG_FLAGS.has(text)) continue;
       if (!CURL_LONG_WITH_VALUE.has(text)) return notListed(text);
-      const r = checkCurlValue(text, args[++i]);
+      const r = checkCurlValue(text, args[++i], uses);
       if (r) return r;
       continue;
     }
     if (text.startsWith('-') && text.length > 1) {
+      if (args[i].brace) return spellOut(`curl "${text}" has an unquoted brace, which the shell expands into several arguments`, 'Send it once more with that value in quotes');
       for (let k = 1; k < text.length; k++) {
         if (CURL_SHORT_FLAGS.has(text[k])) continue;
         if (!CURL_SHORT_WITH_VALUE.has(text[k])) return notListed(`-${text[k]}`);
         const attached = text.slice(k + 1);
         const value = attached ? {text: attached, dynamic} : args[++i];
-        const r = checkCurlValue(`-${text[k]}`, value);
+        const r = checkCurlValue(`-${text[k]}`, value, uses);
         if (r) return r;
         break;
       }
@@ -504,7 +535,7 @@ export function sedScriptAllowed(script) {
   }
 }
 
-function checkSed(args) {
+function checkSed(args, uses) {
   const scripts = [];
   const positional = [];
   let inPlace = false;
@@ -518,8 +549,10 @@ function checkSed(args) {
       scripts.push(args[++i].text);
       continue;
     }
-    if (/^-[nErsuzi]+$/.test(word.text)) {
-      if (word.text.includes('i')) inPlace = true;
+    // GNU sed reads what follows `i` in a cluster as a backup suffix: `-in` edits
+    // in place and writes the original to a second file, named by adding `n`.
+    if (/^-[nErsuz]*i?$/.test(word.text) && word.text.length > 1) {
+      if (word.text.endsWith('i')) inPlace = true;
       continue;
     }
     if (word.text.startsWith('-') && word.text !== '-') return `sed ${word.text} is not on this guard's list of options`;
@@ -534,18 +567,22 @@ function checkSed(args) {
     if (!sedScriptAllowed(script)) return `sed script "${script}" isn't made of s, p, d, q and n commands, which is all this guard can vouch for`;
   }
   for (const file of positional) {
-    if (inPlace && unsafeDestination(file)) return spellOut(`sed -i on "${file.text}" must name a literal file`);
-    const reason = protectedPath(file.text);
-    if (reason) return reason;
+    if (unsafeDestination(file) || file.brace) return spellOut(`sed on "${file.text}" must name a literal file`);
+    uses.push({text: file.text, writes: inPlace});
   }
   return null;
 }
 
-function checkSort(args) {
+function checkSort(args, uses) {
   for (let i = 0; i < args.length; i++) {
     const {text, dynamic} = args[i];
     if (dynamic) return `sort argument "${text}" must be literal: a variable could be an option`;
-    if (/^-[bdfghiMnRrsuVz]+$/.test(text) || text === '-' || !text.startsWith('-')) continue;
+    if (/^-[bdfghiMnRrsuVz]+$/.test(text) || text === '-') continue;
+    if (!text.startsWith('-')) {
+      if (unsafeDestination(args[i])) return spellOut(`sort on "${text}" must name a literal file`);
+      uses.push({text, writes: false});
+      continue;
+    }
     if (/^-[kt]/.test(text)) {
       if (text.length === 2) i++;
       continue;
@@ -553,6 +590,7 @@ function checkSort(args) {
     if (/^-o/.test(text)) {
       const value = text.length > 2 ? {text: text.slice(2), dynamic: false} : args[++i];
       if (!value || unsafeDestination(value)) return spellOut('sort -o must name a literal path');
+      uses.push({text: value.text, writes: true});
       continue;
     }
     return `sort ${text} is not on this guard's list of options`;
@@ -572,15 +610,145 @@ function checkAssignment(word, env) {
   return protectedPath(word.text.slice(name.length + 1));
 }
 
-// Words that could be paths, for the protected-file check. Data and patterns are
-// skipped, because `jq .profile` and `sed -n 1~2p` aren't touching anything.
-function pathArguments(name, args) {
-  if (DATA_ARGUMENTS.has(name) || name === 'curl' || name === 'sed') return [];
-  if (PATTERN_FIRST.has(name)) {
-    const first = args.findIndex(a => !a.text.startsWith('-'));
-    return args.filter((_, i) => i !== first);
+// The options each program that changes files may take. Anything else is refused,
+// because an option is how `cp -t <dir>` or `mkdir -m` reaches past its arguments.
+const WRITER_OPTIONS = {
+  rm: ['-r', '-R', '-f', '-v'], mv: ['-f', '-n', '-v'], cp: ['-f', '-p', '-n', '-v'],
+  mkdir: ['-p', '-v'], touch: ['-a', '-c', '-m'], tee: ['-a'], uniq: ['-c', '-d', '-u', '-i'],
+  base64: ['-d', '-i', '--decode', '--ignore-garbage'],
+};
+const writerOption = (name, text) => WRITER_OPTIONS[name].includes(text)
+  || (/^-[A-Za-z]+$/.test(text) && [...text.slice(1)].every(letter => WRITER_OPTIONS[name].includes(`-${letter}`)))
+  || (name === 'base64' && /^(-w\d+|--wrap=\d+)$/.test(text));
+
+// Options of grep and jq that take the words after them: how many, and whether the
+// last of those is a file.
+const VALUE_OPTIONS = {
+  grep: {'-A': [1, false], '-B': [1, false], '-C': [1, false], '-m': [1, false], '-e': [1, false], '--regexp': [1, false], '-f': [1, true], '--file': [1, true]},
+  jq: {'--arg': [2, false], '--argjson': [2, false], '--indent': [1, false], '-f': [1, true], '--from-file': [1, true], '--slurpfile': [2, true], '--rawfile': [2, true], '-L': [1, true]},
+};
+const GIVES_THE_PATTERN = new Set(['-e', '--regexp', '-f', '--file', '--from-file']);
+
+// The files a command's arguments read and write. Every one is named literally:
+// a variable or a glob in a path is how `rm …/target-gu*` and `cat ~/.ss?/id_rsa`
+// reached files this guard protects by name.
+function fileUses(name, args, uses) {
+  if (DATA_ARGUMENTS.has(name)) return null;
+  const files = [];
+  const valued = VALUE_OPTIONS[name];
+  let pattern = !valued;
+  let options = true;
+  for (let i = 0; i < args.length; i++) {
+    const word = args[i];
+    const {text} = word;
+    if (options && text === '--') { options = false; continue; }
+    if (options && text.startsWith('-') && text !== '-') {
+      if (word.dynamic) return spellOut(`${name} "${text}" must be a literal option`);
+      if (WRITER_OPTIONS[name] && !writerOption(name, text)) {
+        return spellOut(`${name} ${text} is not among the options this guard lists for ${name}`, `Send it once more with only these options: ${WRITER_OPTIONS[name].join(' ')}`);
+      }
+      if (valued && text in valued) {
+        const [count, isFile] = valued[text];
+        if (GIVES_THE_PATTERN.has(text)) pattern = true;
+        if (isFile && args[i + count]) files.push(args[i + count]);
+        i += count;
+      }
+      continue;
+    }
+    // grep's pattern and jq's filter are data, and may come from a variable.
+    if (!pattern) { pattern = true; continue; }
+    files.push(word);
   }
-  return args;
+  const variable = files.find(word => word.dynamic || word.glob || word.brace);
+  if (variable) return spellOut(`${name} "${variable.text}" must name a literal path`);
+  const texts = files.map(word => word.text);
+  if (name === 'cp' && texts.length < 2) return 'cp needs a source and a destination';
+  const written = name === 'rm' || name === 'mv' || name === 'mkdir' || name === 'touch' || name === 'tee' ? texts
+    : name === 'cp' ? texts.slice(-1)
+    : name === 'uniq' ? texts.slice(1)
+    : [];
+  texts.forEach((text, i) => uses.push({text, writes: written.includes(text) && (name !== 'cp' || i === texts.length - 1)}));
+  return null;
+}
+
+const OUT_OF_PLACE = 'Send it once more writing only inside the run\'s working directory, by a path written out in full';
+
+// Follows links in the part of a path that exists, so one planted earlier cannot
+// hide where a path really leads.
+function realExisting(abs, lib = path) {
+  const tail = [];
+  for (let head = abs; ;) {
+    try {
+      return lib.join(fs.realpathSync(head), ...tail);
+    } catch {
+      const parent = lib.dirname(head);
+      if (parent === head) return abs;
+      tail.unshift(lib.basename(head));
+      head = parent;
+    }
+  }
+}
+
+function isDirectory(abs) {
+  try {
+    return fs.statSync(abs).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+// Where the executor is, and where it may write. It writes to two places: the
+// run's working directory, known by the two files Intake and the planner leave in
+// it, and Playwright's output directory. That is a list of what is allowed. The
+// list of protected names it replaces for writes kept missing files: a shell
+// alias file, a workflow, this plugin's own agents.
+export function makePlace({cwd, home = os.homedir(), env = process.env, lib = path, exists = fs.existsSync, real = realExisting, directory = isDirectory}) {
+  const outputs = [lib.join(home, '.cache', 'agentic-qa', 'playwright-output')];
+  if (env.CLAUDE_PLUGIN_DATA) outputs.push(lib.resolve(env.CLAUDE_PLUGIN_DATA, '..', '..', '..', '..', '.cache', 'agentic-qa', 'playwright-output'));
+  const inside = (root, abs) => {
+    const relative = lib.relative(root, abs);
+    return relative === '' || (!relative.startsWith('..') && !lib.isAbsolute(relative));
+  };
+  const native = text => {
+    const t = text === '~' || /^~[/\\]/.test(text) ? home + text.slice(1) : text;
+    // Git Bash spells a drive /c/…, which Node on Windows reads as \c\… on the current drive.
+    return lib === path.win32 ? t.replace(/^[/\\]([a-zA-Z])(?=[/\\]|$)/, '$1:') : t;
+  };
+  let cwds = [cwd];
+  return {
+    resolve: text => cwds.map(base => real(lib.resolve(base, native(text)), lib)),
+    // After `cd <dir> &&` at the start of a command the directory is certain, if it
+    // exists now. After any other cd the earlier directory stays possible, because
+    // a cd that fails leaves the shell where it was.
+    cd(text, certain) {
+      const targets = cwds.map(base => lib.resolve(base, native(text)));
+      cwds = certain && targets.every(directory) ? targets : [...new Set([...cwds, ...targets])];
+    },
+    writable(abs) {
+      if (outputs.some(output => inside(output, abs))) return true;
+      for (let dir = abs, depth = 0; depth < 64; depth++) {
+        if (exists(lib.join(dir, 'intake.md')) && exists(lib.join(dir, 'step-plan.md'))) return true;
+        const parent = lib.dirname(dir);
+        if (parent === dir) return false;
+        dir = parent;
+      }
+      return false;
+    },
+  };
+}
+
+function checkUse({text, writes}, what, place) {
+  const direct = protectedPath(text);
+  if (direct) return direct;
+  if (!place) return null;
+  for (const abs of place.resolve(text)) {
+    const reason = protectedPath(abs);
+    if (reason) return reason;
+    if (writes && !DEVICES.has(text) && !place.writable(abs)) {
+      return spellOut(`${what} would write "${text}", which is outside the run's working directory`, OUT_OF_PLACE);
+    }
+  }
+  return null;
 }
 
 function unreadable(err) {
@@ -588,7 +756,9 @@ function unreadable(err) {
   return err instanceof Respell ? spellOut(reason, err.hint) : reason;
 }
 
-export function checkExecutorBash(command, settings, env = process.env) {
+// `place` says where the command runs, and turns on the rules about where it may
+// write. The hook always passes one. Without it only the text is judged.
+export function checkExecutorBash(command, settings, env = process.env, place = null) {
   let commands;
   try {
     commands = parseShell(command);
@@ -596,7 +766,9 @@ export function checkExecutorBash(command, settings, env = process.env) {
     return unreadable(err);
   }
   const extra = new Set(settings.allowed_commands);
+  const first = commands.find(raw => !raw.sub);
   for (const raw of commands) {
+    const uses = [];
     let words;
     try {
       const split = splitRedirects(raw);
@@ -604,6 +776,7 @@ export function checkExecutorBash(command, settings, env = process.env) {
       for (const redirect of split.redirects) {
         const reason = checkRedirect(redirect);
         if (reason) return reason;
+        uses.push({text: redirect.target.text, writes: redirect.writes});
       }
     } catch (err) {
       return unreadable(err);
@@ -614,39 +787,51 @@ export function checkExecutorBash(command, settings, env = process.env) {
       if (reason) return reason;
       n++;
     }
-    if (n >= words.length) continue;
-    // `A=1 cmd` reaches a program as its environment, and no list of names can
-    // say which variables a given program acts on.
-    if (n > 0) return `setting ${words[0].text.split('=')[0]} in front of a command is not allowed`;
-    const head = words[n];
-    if (head.dynamic) return `"${head.text}" hides which program runs`;
-    // A path means a file the run may have written itself, whatever its name.
-    if (/[/\\]/.test(head.text)) return `"${head.text}" runs a program by path`;
-    const name = commandName(head.text);
-    const args = words.slice(n + 1);
-    const split = args.find(a => a.split);
-    if (split) return spellOut(`"${split.text}" must be in double quotes: unquoted, the shell can split it into extra arguments`);
-    for (const word of pathArguments(name, args)) {
-      const reason = protectedPath(word.text);
+    let name = 'a redirect';
+    if (n < words.length) {
+      // `A=1 cmd` reaches a program as its environment, and no list of names can
+      // say which variables a given program acts on.
+      if (n > 0) return `setting ${words[0].text.split('=')[0]} in front of a command is not allowed`;
+      const head = words[n];
+      if (head.dynamic) return `"${head.text}" hides which program runs`;
+      // A path means a file the run may have written itself, whatever its name.
+      if (/[/\\]/.test(head.text)) return `"${head.text}" runs a program by path`;
+      name = commandName(head.text);
+      const args = words.slice(n + 1);
+      const split = args.find(a => a.split);
+      if (split) return spellOut(`"${split.text}" must be in double quotes: unquoted, the shell can split it into extra arguments`);
+      if (extra.has(name) && !NETWORK_TOOLS.has(name)) {
+        // A person listed this program, and it can do anything. Its arguments are
+        // still not allowed to name what this guard protects.
+        for (const word of args) {
+          const reason = protectedPath(word.text);
+          if (reason) return reason;
+        }
+      } else {
+        if (!EXECUTOR_COMMANDS.has(name)) {
+          return `${name} is not in allowed_commands, so a person hasn't said this run may start it`;
+        }
+        if (name === 'printf' && args[0] && (args[0].dynamic || args[0].text.startsWith('-'))) {
+          return 'printf\'s first argument must be a literal format: -v sets a variable';
+        }
+        let reason = null;
+        if (name === 'cd') {
+          const [to] = args;
+          if (raw.sub) return 'cd inside a substitution is not allowed';
+          if (args.length !== 1 || to.dynamic || to.glob || to.brace || to.text === '-') return spellOut('cd must name one literal directory');
+          reason = protectedPath(to.text);
+          if (!reason && place) place.cd(to.text, raw === first && raw.next === '&&');
+        } else if (name === 'curl') reason = checkCurl(args, settings.allowed_hosts, uses);
+        else if (name === 'sed') reason = checkSed(args, uses);
+        else if (name === 'sort') reason = checkSort(args, uses);
+        else reason = fileUses(name, args, uses);
+        if (reason) return reason;
+      }
+    }
+    for (const use of uses) {
+      const reason = checkUse(use, name, place);
       if (reason) return reason;
     }
-    if (extra.has(name) && !NETWORK_TOOLS.has(name)) continue;
-    if (!EXECUTOR_COMMANDS.has(name)) {
-      return `${name} is not in allowed_commands, so a person hasn't said this run may start it`;
-    }
-    if (name === 'cd' && args.some(a => a.dynamic)) return spellOut('cd must name a literal directory');
-    if (WRITES_TO_ARGUMENTS.has(name)) {
-      const unsafe = args.find(unsafeDestination);
-      if (unsafe) return spellOut(`${name} on "${unsafe.text}" must name literal paths`);
-    }
-    if (name === 'printf' && args[0] && (args[0].dynamic || args[0].text.startsWith('-'))) {
-      return 'printf\'s first argument must be a literal format: -v sets a variable';
-    }
-    let reason = null;
-    if (name === 'curl') reason = checkCurl(args, settings.allowed_hosts);
-    if (name === 'sed') reason = checkSed(args);
-    if (name === 'sort') reason = checkSort(args);
-    if (reason) return reason;
   }
   return null;
 }
@@ -678,31 +863,26 @@ function checkFileTool(file) {
   const direct = protectedPath(file);
   if (direct) return direct;
   // A link planted earlier would otherwise hide the real destination.
-  let resolved = path.resolve(file);
-  for (;;) {
-    try {
-      resolved = fs.realpathSync(resolved);
-      break;
-    } catch {
-      const parent = path.dirname(resolved);
-      if (parent === resolved) break;
-      resolved = parent;
-    }
-  }
-  return protectedPath(resolved);
+  return protectedPath(realExisting(path.resolve(file)));
 }
 
-export function decide(input, settings) {
+export function decide(input, settings, env = process.env) {
   const {agent_type: agent, tool_name: tool, tool_input: args = {}} = input;
   if (!agent?.startsWith(PLUGIN_AGENT)) return null;
+  // The hook always knows where it is. Tests that judge text alone leave cwd out.
+  const place = agent === EXECUTOR && input.cwd ? makePlace({cwd: input.cwd, env}) : null;
   if (tool === 'Write' || tool === 'Edit' || tool === 'NotebookEdit') {
-    return checkFileTool(args.file_path ?? args.notebook_path ?? '');
+    const file = args.file_path ?? args.notebook_path ?? '';
+    const reason = checkFileTool(file);
+    if (reason || !place) return reason;
+    return place.resolve(file).every(place.writable) ? null
+      : spellOut(`${tool} would write "${file}", which is outside the run's working directory`, OUT_OF_PLACE);
   }
   if (NETWORK_RESTRICTED.has(agent)) {
     return tool === 'Bash' ? checkRestrictedBash(args.command ?? '') : null;
   }
   if (agent !== EXECUTOR) return null;
-  if (tool === 'Bash') return checkExecutorBash(args.command ?? '', settings);
+  if (tool === 'Bash') return checkExecutorBash(args.command ?? '', settings, env, place);
   if (args.url === 'about:blank') return null;
   return checkUrl(args.url ?? '', settings.allowed_hosts);
 }
@@ -725,6 +905,7 @@ function main() {
     if (!input.agent_type?.startsWith(PLUGIN_AGENT)) return;
     let reason;
     try {
+      input.cwd ||= process.cwd();
       const settings = loadSettings(process.env.CLAUDE_PROJECT_DIR || input.cwd);
       reason = decide(input, settings);
     } catch (err) {
