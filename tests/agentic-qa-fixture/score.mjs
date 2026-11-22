@@ -45,7 +45,10 @@ if (!dir) {
   // Nothing the ticket never asked for is counted as a pass.
   const added = steps.filter(s => s.ids.length && s.ids.every(id => id.startsWith('A')));
   add('INFO', 'steps for behaviors the ticket did not state', null, show(added));
-  add('CHECK', 'the deployed build was checked, not assumed', /Deployed build:\*{0,2}\s*(?!unverified)/i.test(intake) && !/Deployed build:\*{0,2}\s*unverified/i.test(intake), (/Deployed build:[^\n]*/i.exec(intake) ?? ['no Deployed build line'])[0].slice(0, 110));
+  // The app logs every request, so whether the build was asked for is a fact, however intake.md words it.
+  const asked = /GET \/api\/version/.test(read(path.join(out, 'requests.log')));
+  const line = (/Deployed build:?\*{0,2}:?[^\n]*/i.exec(report) ?? /Deployed build[^\n]*/i.exec(intake) ?? ['no Deployed build line'])[0];
+  add('CHECK', 'the deployed build was checked, not assumed', asked && !/unverified/i.test(line), `${asked ? 'the app was asked its version' : 'the app was never asked its version'}; ${line.slice(0, 90)}`);
   add('INFO', 'summary', null, (/^\*\*Summary:\*\*.*$/m.exec(report) ?? ['none'])[0]);
 }
 finish({fixture: 'orders', out, dir, rows});
