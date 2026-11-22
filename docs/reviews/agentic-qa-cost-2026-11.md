@@ -709,6 +709,29 @@ and the report, built from `step-results.md`, says five. The report is right.
 Not verified: the interactive gate asking the question behind an observation, and an
 observation whose action turned out to change something.
 
+### An escalation, answered
+
+Every whole run before this either finished without an escalation or stopped at one
+nobody answered. The fixture now has a second caller, `caller-prompt-escalation.txt`:
+its brief grants nothing in advance, so the run stops at its first irreversible step,
+and the caller answers a contained one once, as an agent, and waits for the report.
+
+Its first run, $1.63, went through on the first attempt:
+
+- The planner, told the grant was `no`, put the cancel step after the four steps that
+  did not depend on it, so those ran before the pause.
+- The executor recorded the step `pending — awaiting decision` and escalated. `qa-runner`
+  told the reporter `paused` and returned the escalation.
+- The caller sent `proceed — decided_by: agent`. `qa-runner` resumed the reporter and
+  the executor, which recorded `decided by caller — decided_by: agent`, sent the cancel,
+  and ran the rest.
+- The report finished, with HTML. It says the step was decided by the caller, an agent
+  and not a person. Seven of seven behaviors from the acceptance criteria were run and
+  judged correctly, both planted defects were reported, and two steps were observed.
+
+Still not run: an answer from a person, a declined step, a stopped run, and an `escapes`
+step, which an agent's answer must not clear.
+
 ---
 
 ## What still needs a live walkthrough
