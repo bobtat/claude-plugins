@@ -458,6 +458,31 @@ the coverage critic noted the diff had no search code, a question was raised abo
 and with no User Gate to answer, the step stayed blocked. A hand-written plan tests it
 in one step and it passes.
 
+That was fixed in 0.10.0 ("test what the ticket states, even with a question open or
+code unread"). A question now blocks the case it asks about, not the behavior it is
+listed against, and every question reaches the report. Trying the rule on the same spec
+showed a second way caution became no test: a step classed as escaping because nobody
+could read its handler, which never runs unattended. The diff is now saved at Intake for
+the planner and both critics, and an isolation claim stands unless code that was read
+disagrees with it.
+
+A second whole run, on that text:
+
+| | First run | Second run |
+|---|---|---|
+| Steps planned | 17 | 11 |
+| Steps run | 10 | 9 |
+| Steps blocked on a question | 7 | 2 |
+| Behaviors from the acceptance criteria run | 6 of 7 | 7 of 7 |
+| Planted defects reported | both | both |
+| Open questions in the report | 6 of 8, as blocked steps | 8 of 8 |
+| Cost | $2.14 | $1.78 |
+| `qa-runner` | 31 calls, 1,781,000 input tokens | 32 calls, 1,757,000 |
+
+The two blocked steps in the second run are both rows the coverage critic added from
+reading the code, with no result stated anywhere. That is what a question should block.
+`qa-runner`'s cost did not move, and is the next thing to look at.
+
 ---
 
 ## What still needs a live walkthrough
