@@ -21,6 +21,7 @@ Absolute paths to a draft `step-plan.md` and `behavior-spec.md`. Read both in fu
 4. **Reversibility and containment**, on every irreversible step: is it actually irreversible, and is its effect `contained` or `escapes`. Both need a real citation — the API contract, the code path, a doc, or `intake.md`'s isolation claim — and you can override the isolation claim if the code disagrees with it. A hardcoded production mail relay is `escapes` even if isolation said sandboxed. Code you could not read is not disagreement: `Isolation: sandboxed` stands on its own then, and a step is not `escapes` for being unverified.
 5. **Blocking, in both directions** — a behavior blocked although its `Then` is stated in the ticket's or a doc's own words and can be judged as written is a defect: unattended, nobody answers the question and the criterion is never tested. So is a guessed action on a behavior with no stated result. Every unanswered question from `behavior-spec.md` is in the plan's `Open questions`.
 6. **Targets and reach** — each step's `Target` is in `intake.md`'s `Allowed hosts` and is what its action actually reaches; no action reads local files, sends data to another host, or does anything its behavior doesn't explain.
+7. **Order** — a step that will stop for an individual decision, an `escapes` step or an irreversible one traced to an `Added` row, sits after every step that doesn't depend on it. The executor runs nothing past the first such step until someone answers, and unattended nobody may.
 
 ## Returning findings
 
