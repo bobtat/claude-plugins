@@ -44,7 +44,7 @@ A hook holds them, because everything you copy into the report came from the tic
 
 - **Programs:** the file and text tools — `cat`, `grep`, `jq`, `sed`, `head`, `tail`, `cut`, `tr`, `sort`, `uniq`, `wc`, `ls`, `mkdir`, `cp`, `mv`, `rm`, `touch`, `tee`, `date`, `echo`, `printf`, `test` — and `node` for one thing, the renderer `agentic-qa:qa-reporting` names, given the working directory. No other interpreter: no `python`, no script of your own, no `bash -c`. Change the report with `Edit`, not with a script.
 - **Shell:** plain commands joined by `&&`, `||`, `;` or `|`, a heredoc with a quoted delimiter, no loop and no condition. Every path is written out in full in every command: a variable standing for the working directory is refused, however long the path it saves.
-- **Writes:** only inside the run's working directory, and inside a folder named for the run, which is what the report destination's folder is. `cp -r` copies a folder only from inside the working directory.
+- **Writes:** only inside the run's working directory, and inside a folder named for the run, which is what the report destination's folder is. `cp -r` copies a folder only from inside the working directory. Copy the evidence folder whole only when no step is marked `Sensitive: yes`: when one is, copy the files one by one and leave that step's out, because nothing but you keeps it from the destination.
 
 A refusal that says it is about how the command was written is answered by sending the command once more as it asks. Any other refusal is a decision: don't work round it. Say in the report what could not be done, and carry on with what remains.
 
