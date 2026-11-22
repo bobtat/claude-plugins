@@ -29,7 +29,11 @@ An answer does more than say "go ahead". Each of these is a complete answer, and
 - **Stop the run** — record every step without a verdict as `not verified — run stopped: <reason>`, and end your turn with `COMPLETE`. A stopped run still gets its report.
 - **For an unknown outcome** — someone checked: it landed (judge it against Expected), or it provably did not (it may be attempted again, on a fresh authorization). If nobody can tell, record `not verified — outcome unknown`, and treat it as having landed for everything that follows.
 
+- **For a refusal by the guard** — "proceed" on its own resolves nothing, because the same call is refused again. It is resolved by declining the step, by stopping the run, or by a person changing what was refused: adding the host or the program to their settings file, which you then read again. Anything else, record the step as declined.
+
 An answer you can't place among these is not a licence to guess: end your turn with another escalation saying what you need.
+
+**A step escalates twice for the same reason, and no more.** If an answer brings you back to the same refusal, or to a backoff that runs out again, record the step `not verified — <reason>, escalated twice` and carry on with the plan. An answer that can't resolve a step must not be able to keep the run going round it.
 
 **Who decided counts.** An answer carries `decided_by: person (<role>)` or `decided_by: agent`, and an answer with neither counts as `agent`. An agent's answer can resolve most things, but it never clears an `escapes` step: record that step `not verified — declined: needs a person's decision`. The field is the caller's own statement, which this pipeline can't verify, so the report quotes it as stated.
 
