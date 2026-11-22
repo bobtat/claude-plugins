@@ -25,6 +25,10 @@ Every step with a real-world side effect gets tagged `reversible` or `irreversib
 
 Every step names its `Target` — a host, a named CLI context, or `local` — from `intake.md`'s `Allowed hosts`. One that isn't listed gets `Status: blocked — target <host> not on the allowlist`, and a `cli` step whose program isn't in `Allowed commands` gets `blocked — <program> not in allowed_commands`; don't drop it or aim it elsewhere. An action does only what its behavior needs against that target.
 
+## Order
+
+The executor stops at the first step that needs an individual decision and runs nothing after it until someone answers, which unattended may be never. An `escapes` step always needs one, and so does an irreversible step traced to an `Added` row when the grant comes from a brief. Put those steps, and the steps that depend on them, after every step that depends on none of them, so that an unanswered escalation costs only the steps that were waiting on it.
+
 ## Blocked steps
 
 A question blocks the case it asks about, not the behavior it is listed against. A behavior whose `Then` is given in the ticket's or a doc's own words is planned as written and `ready`, with the question in its `Open question` field. Block a behavior only when its `Then` can't be judged without the answer: nothing states the expected result, or the stated words allow two readings that would give different verdicts. Then it gets `Status: blocked` and no guessed action, and the status cascades to any step whose `Depends on` traces back to it. An unresolved `Conflict` blocks the same way. List every unanswered question in `Open questions` with what you did about it. `agentic-qa:step-planning` has the full rule.
