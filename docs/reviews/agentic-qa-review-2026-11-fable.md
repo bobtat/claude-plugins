@@ -739,3 +739,35 @@ A shell loop or condition is now refused as a matter of form for `qa-runner` and
 executor, with the commands to be resent plainly. It had been refused as a program the
 agent may not start, which calls for an escalation, and in one run `qa-runner` resent
 the commands without one.
+
+## Addendum — 0.15.0, the reporter (F52 closed)
+
+F52 is closed. No agent of this plugin now has a `Bash` that is barred by name.
+
+`qa-reporter` is held to a list: the executor's file and text tools without `curl`, in
+the same small part of shell, and `node` for one thing, this plugin's renderer by its
+real path, given a run's working directory. Its `Bash` and its file tools write only in
+the run's working directory and in a folder named for a run ("hold the reporter to a
+list, to its renderer, and to folders named for a run").
+
+The question the last addendum left open was where it may write, since a report
+destination comes from a brief the guard cannot trust. It does not need to be trusted.
+A destination's folder is named for the run, so the rule is the name: wherever a brief
+points, the reporter can only make and fill a `walkthrough-…` folder there, and never a
+protected path. `cp -r` copies a folder only from inside a run directory, which carries
+the evidence folder and nothing else.
+
+Checked by a test of the commands a run needs and of every interpreter, network program,
+stray write and whole-folder copy tried against it, and by one Phase 4 to 5 fixture run
+with live updates on and a report destination: all seven verdicts right, the report,
+the HTML and the evidence folder at the destination, and the destination's page
+identical to the working directory's. The guard refused the reporter twice in that run,
+both as a matter of form, a loop and a variable in a path, and it resent each plainly.
+
+What that run does not show: a destination inside the project, which the test covers
+and no run has used, and a step marked sensitive, whose evidence must not be copied and
+which `cp -r` of the whole folder would carry. Nothing in the guard stops that copy; the
+reporter's instructions do.
+
+Still open after this: F47, F51, F59, `qa-runner`'s `WebFetch` and `Read`, and the
+drafters' file tools, which are refused only the protected names.
