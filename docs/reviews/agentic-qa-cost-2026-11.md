@@ -672,6 +672,43 @@ tells an agent to escalate, and carrying on regardless. A loop or a condition is
 refused as a matter of form, with the instruction to send the commands plainly
 ("refuse a shell loop or condition as a matter of form").
 
+### Observations — 0.14.0
+
+"Not done, and worth doing", two sections up, is done ("give a step with no stated
+result a place as an observation, never a pass"). The need was sharper than that note
+said. The whole run of 0.13.0 that paused had five steps the planner wrote as `ready`
+with an expected result of "record the response", and the executor passed them: its
+summary read nine passed where three judged nothing. In other runs the same kind of row
+was blocked. So the count of passes depended on the planner's wording that day.
+
+A step with no stated result is now an observation when its action is clear and changes
+nothing: planned `observe`, run, recorded with evidence, given the verdict `observed`,
+counted apart from the passes, and reported against its question. An irreversible one
+stays blocked.
+
+One whole unattended run on that text, $1.49, finished:
+
+- The planner marked two steps `observe` and left one blocked because its action is
+  irreversible. No `ready` step only recorded.
+- The executor gave both the verdict `observed`.
+- The report's summary read "5 passed, 3 failed, 1 blocked, 0 skipped, 0 not verified,
+  2 observed". `Status` was what it would have been without them. `Open questions` says
+  what each one saw: a 404 with "No such order" for an unknown id, and the Cancel button
+  present on a cancelled order.
+- All seven behaviors from the acceptance criteria were run and judged correctly, and
+  both planted defects were reported.
+- It is also the first whole run to reach a finished report since the renderer shipped:
+  the reporter ran the shipped script, which embedded eight screenshots and two text
+  files, and the page opened in a browser with every image loaded.
+- The guard refused nothing, for the first time in a whole run.
+
+One thing it showed and nothing here fixes: the executor's closing count said six passes
+and the report, built from `step-results.md`, says five. The report is right.
+`qa-runner` noticed and said so.
+
+Not verified: the interactive gate asking the question behind an observation, and an
+observation whose action turned out to change something.
+
 ---
 
 ## What still needs a live walkthrough
