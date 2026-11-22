@@ -802,3 +802,23 @@ report mention the note as text.
 A substitution the guard cannot read is now refused as a matter of form, with the two
 commands to write instead. Before, it called for an escalation, and one run lost every
 API step to it.
+
+## Addendum — 0.17.0, a CLI whose target nothing states
+
+Ten scored runs of the team fixture, five before and five after a change to the
+planning rules, showed one thing that bears on this review. The fixture's CLI is on
+`allowed_commands`, and where it points was stated in nothing a run could read. Four
+plans told the executor to confirm the target before running it. One executor could not
+and blocked the step. Two ran the CLI's help and version, learned nothing and ran it
+anyway, and one ran it directly.
+
+The guard checks a listed program's name and nothing about where it reaches, which the
+README says. What is new is that the instruction standing in for that check was not
+kept when it could not be satisfied: a plan's "confirm first" was treated as a step to
+go through, not a condition. Nothing was reached that should not have been, since the
+CLI does point at the allowed host. On a CLI with an ambient context that points
+elsewhere, the same behavior would send a command to it.
+
+This is open. The fixture's CLI now names its server, so a run that looks finds an
+answer. The plugin's text is unchanged: a rule that the planner settles a CLI's target
+or blocks the step with a question has not been written or run.
