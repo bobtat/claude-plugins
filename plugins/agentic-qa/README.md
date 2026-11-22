@@ -75,6 +75,7 @@ A refusal ends the executor's turn in an escalation, and it doesn't try another 
 
 **Know what the hook doesn't do.** It isn't a sandbox:
 
+- It makes the executor's `curl` print a response only through a filter that masks fields named like credentials, and never print headers, because what a command prints is kept in the transcript. That covers JSON from `curl`. It does not cover what a page shows in the browser, or what a program on `allowed_commands` prints.
 - It can't see where a click or a server redirect lands in the browser. That rule is still an instruction to the agent. Point Playwright at a host that can't reach production if that matters to you.
 - A program you list in `allowed_commands` can do anything, including reach the network, and the hook only checks that its name is on the list. A CLI's ambient context (`kubectl`, `aws`) is confirmed by instruction only.
 - It reads shell text, and a reader of shell text can disagree with bash. Three rounds of review each found ways past it. The third answer was to accept only the small part of shell described above and refuse the rest, so what is left to get wrong is smaller, not gone. Treat the next bypass as expected.
@@ -100,6 +101,7 @@ Measured on a fixture, not on your tickets: seven steps, five of them in a brows
 - About half of that is the testing. With per-step updates the executor processed about half the input tokens, the reporter about a third and the orchestrator the rest, because every agent pays for its own instructions before it does anything.
 - The reporter's update after each step is six to seven tenths of what it reads. That is why an unattended run with nobody to watch the report doesn't make them.
 - A run that stops at its first step costs about two thirds of one that finishes. The orchestrator and both agents have already loaded everything by then.
+- On a second fixture, a team-settings app with a login, a CLI and a step that must not run unattended, five whole runs cost $2.06 to $2.35 each for 12 to 15 steps planned.
 - A whole unattended run, from a brief to a report, cost $1.47 to $1.55 in the three runs of 0.12.0, for 6 to 8 steps run, and $2.14, $1.78 and $1.62 in the versions before. The executor is the largest part, at about four tenths of the input tokens, and `qa-runner` is about a quarter. Every turn an agent takes carries its whole context, so most of what was saved came from taking fewer turns and from not reading a whole list to pick one row.
 
 `agentic-qa:qa-reporter` runs on Sonnet: its work is filling a template from `step-results.md` and running the script the plugin ships to render the HTML. That script escapes everything the ticket and the system under test supplied, embeds only files from the run's own evidence folder, and has its own tests. Every other agent uses your session's model, because each of them makes a call a weaker model could get wrong without anything noticing: what the ticket asks for, whether a step reaches something real, whether a page passed.
