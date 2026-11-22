@@ -12,12 +12,15 @@ function result(out) {
 
 export const cost = out => Number(result(out).total_cost_usd ?? NaN);
 
-// A run the API stopped, such as at a usage limit, did not test the plugin. It is said
-// to have not run and is left out of every count, never scored as a failure.
+// A run the API stopped, such as at a usage limit, did not test the plugin. Nor did one
+// whose session ended and stopped its agents while they were still working. Either is
+// said to have not run and is left out of every count, never scored as a failure.
 export function stopped(out) {
   const r = result(out);
   if (!('result' in r)) return 'no result was written';
-  return r.is_error ? String(r.result ?? 'the session ended in an error').slice(0, 120) : null;
+  if (r.is_error) return String(r.result ?? 'the session ended in an error').slice(0, 120);
+  const cut = /Background tasks still running .*?stopping them/.exec(read(path.join(out, 'stderr.txt')));
+  return cut ? `the session ended first: ${cut[0].slice(0, 100)}` : null;
 }
 
 // Every transcript of the run's session: the caller's and each agent's.
