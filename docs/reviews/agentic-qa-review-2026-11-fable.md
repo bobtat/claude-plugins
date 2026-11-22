@@ -700,3 +700,24 @@ Still open for `qa-runner`: `WebFetch` fetches any URL, and `Read` reads any fil
   occurred in the run above.
 - `qa-runner` on an escalation: every run of it so far has finished without one.
 - An interactive run, and any escalation answered by a person.
+
+## Addendum — 0.12.0, the critics (F52)
+
+F52 is closed for `behavior-coverage-critic` and `step-plan-critic`, and open for
+`qa-reporter`.
+
+The critics held `Bash`, barred from network programs by name. In three whole fixture
+runs the only thing either used it for was writing its result file. They now hold
+`Write` and no `Bash`. The guard holds a critic's `Write` and `Edit` to a run directory,
+known by its name as for `qa-runner`, because the coverage critic runs before the plan
+exists. A test covers both ("have a critic hand over its findings as a file, and take
+its Bash away"). The coverage critic no longer runs `gh`, which narrows F57 to
+`qa-runner`.
+
+In three whole runs since, each critic wrote its findings with `Write` and was refused
+nothing.
+
+Still open: the reporter runs an interpreter for the script that renders the HTML. It
+needs a renderer the plugin ships before its `Bash` can be held to a list. The drafters'
+file tools are refused only the protected names, and both now hold `Edit` as well as
+`Write`.
