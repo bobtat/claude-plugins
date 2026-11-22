@@ -1,6 +1,6 @@
 ---
 name: step-execution
-description: The procedure agentic-qa:step-executor follows when running an approved step plan against a live system — browser, API, and CLI. Governs the five verdicts (pass/fail/blocked/skipped/not verified), which evidence is required by surface, how a page is read, the choice between the claude-in-chrome and playwright browser drivers, the backoff retry policy for environment failures, the irreversible-step check, and the rule against adapting an action to force a pass. Loaded by that agent. An orchestrator runs this phase from /agentic-qa:walkthrough or agentic-qa:qa-runner and does not load it.
+description: The procedure agentic-qa:step-executor follows when running an approved step plan against a live system — browser, API, and CLI. Governs the six verdicts (pass/fail/observed/blocked/skipped/not verified), which evidence is required by surface, how a page is read, the choice between the claude-in-chrome and playwright browser drivers, the backoff retry policy for environment failures, the irreversible-step check, and the rule against adapting an action to force a pass. Loaded by that agent. An orchestrator runs this phase from /agentic-qa:walkthrough or agentic-qa:qa-runner and does not load it.
 ---
 
 ## Overview
@@ -105,12 +105,13 @@ Evidence is copied to the report destination and embedded in the HTML before any
 
 `Observed` never quotes a secret either — describe it (`a 40-character token was returned`) instead.
 
-### Five verdicts
+### Six verdicts
 
 | Verdict | When | What happens |
 |---|---|---|
 | `pass` | Observed matches Expected | Recorded, walkthrough continues |
 | `fail` | Step ran; observed doesn't match Expected | Recorded with evidence, walkthrough continues — this is QA finding what it exists to find, not an interruption to it |
+| `observed` | The plan marks the step `observe`: nothing states what the result should be, and the action changes nothing | Run it and record what the system does in `Observed`, with evidence, as for any step. Give no judgment: never `pass`, never `fail`, however right or wrong it looks. If the action turns out to have changed something, say so in `Deviation` |
 | `blocked` | Already marked so in `step-plan.md` — an Unspecified question or Conflict was never resolved | Interactively the User Gate settles a question first, so what still reaches here has no answer to give: no browser driver, or a target off the allowlist. Skip it and any step cascading from it, record the question or cause, and keep running the rest of the plan |
 | `skipped` | A step this one depends on failed or was declined, so its output never existed | Cascades automatically; the `Reason` names the *specific* upstream failure, not just a step number — `skipped — depends on S2, which failed: SQS message contract mismatch (expected orderId, got order_id)` |
 | `not verified` | No judgment was possible: the step was declined, the run was stopped, or an irreversible step's outcome could not be determined | Recorded with its `Reason`, never rounded up to a pass or down to a fail. It always makes the report `Incomplete` |
@@ -170,7 +171,7 @@ Either way, `step-results.md`'s `Authorization` field records how it was cleared
 Two drivers can run a browser step. Which one this run uses was settled at Intake and is recorded in `intake.md`'s `Browser driver` field — read it, don't re-derive it. Intake checked what this session can actually drive, or was told by the brief's `browser_driver`, and a run whose evidence came from one driver for some steps and the other for the rest can't be compared against itself.
 
 - **`playwright`** — the default, shipped configured with this plugin. Its browser is isolated from the user's own.
-- **`claude-in-chrome`** — only when a person chose it. It drives their own Chrome, so what's logged in there is what the run acts as. Nothing else about this phase changes: the same five verdicts, the same evidence rules, the same escalations.
+- **`claude-in-chrome`** — only when a person chose it. It drives their own Chrome, so what's logged in there is what the run acts as. Nothing else about this phase changes: the same six verdicts, the same evidence rules, the same escalations.
 - **`none`** — every browser step arrived already marked `blocked — no browser driver` by `agentic-qa:step-planning`. Skip them and their cascade exactly as you would any other blocked step. Nothing escalates for it — the User Gate showed the count interactively, and the report carries it in `Status` and `Blocked`.
 
 Driving Playwright, act on element references from the page's accessibility tree — not on screenshot coordinates. This matters for more than ergonomics: a reference that no longer resolves is an unambiguous failure attributable to the page, where a coordinate click that lands on the wrong element produces a screenshot that looks like a product bug. Screenshots are still captured for every browser step, but as evidence, not as the thing actions are aimed at.
@@ -204,7 +205,7 @@ Agent-invoked, load the brief's `browser_session` (a pre-established storage sta
 # Step Results: <title>
 
 ## S1 — <short name>
-- **Verdict:** pass | fail | blocked | skipped | not verified | pending
+- **Verdict:** pass | fail | observed | blocked | skipped | not verified | pending
 - **Action sent:** <the exact action — on a `pending` entry for an irreversible step, written before it is sent>
 - **Evidence:** evidence/s1-response.json
 - **Observed:** <what happened, citing the evidence>
