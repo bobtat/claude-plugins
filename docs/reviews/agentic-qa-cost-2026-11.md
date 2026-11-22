@@ -428,8 +428,35 @@ measured here touches it.
 
 ### Phases 0 to 3
 
-Still unmeasured. A fixture for them needs a repository with a real merged pull
-request for the critics to read.
+Measured once, in 0.9.0, by a whole unattended run in the fixture: a calling agent,
+`qa-runner`, both drafters, both critics, the executor and the reporter, with a stand-in
+`gh` supplying the ticket, the merged pull request and its diff. It cost $2.14 on
+`claude-sonnet-5-5`. The pipeline planned 17 steps and ran 10; seven were blocked on
+questions nobody was there to answer. Both planted defects were reported.
+
+| Agent | Calls | Input tokens processed | Output tokens |
+|---|---|---|---|
+| `qa-runner` | 31 | 1,781,000 | 14,400 |
+| `step-executor` | 19 | 1,300,000 | 8,800 |
+| `behavior-extractor` | 10 | 320,000 | 13,200 |
+| `qa-reporter` | 9 | 319,000 | 8,300 |
+| `behavior-coverage-critic` | 9 | 247,000 | 4,900 |
+| `step-planner` | 7 | 235,000 | 17,900 |
+| `step-plan-critic` | 5 | 167,000 | 5,200 |
+| The calling agent | 3 | 144,000 | 1,100 |
+
+Two things stand out. `qa-runner` is the largest single cost, about four tenths of the
+input: its context reached 83,000 tokens and it made 31 calls, seven of them waits on a
+signal file, and every call reads all of that again. And everything other than the
+executor and the reporter, which is the drafters, the critics and `qa-runner`, is about
+two thirds of the run. The first review's attention to execution and reporting was on
+the smaller part.
+
+One observation about the testing, not its cost. The sixth acceptance criterion, a
+search that reports one result, was stated plainly in the ticket and was not tested:
+the coverage critic noted the diff had no search code, a question was raised about it,
+and with no User Gate to answer, the step stayed blocked. A hand-written plan tests it
+in one step and it passes.
 
 ---
 
