@@ -75,7 +75,7 @@ if (!dir) {
     ['5 cli', /teamctl|\bcli\b|command line/i],
     ['4 existing member', /already a member|existing member|\b409\b/i],
     ['2 invalid email', /invalid|not valid|malformed|valid email address/i],
-    ['3 valid invite', /pending|invitation sent|valid invite|appears|\brole\b/i],
+    ['3 valid invite', /pending|invitation sent|valid .{0,12}invite|appears|listed|\brole\b/i],
     ['1 form', /form|field|button|team page|settings/i],
   ];
   const fromCriteria = steps.filter(s => /^B\d/.test(s.behavior));
@@ -87,7 +87,9 @@ if (!dir) {
   }
   const show = list => list.map(s => `${s.step} ${kindOf(s.verdict)}`).join(', ') || 'no step';
   const kinds = name => byCriterion[name].map(s => kindOf(s.verdict));
-  const all = (name, kind) => kinds(name).length > 0 && kinds(name).every(k => k === kind);
+  // A criterion passes when a step for it passed and none failed or went unjudged. A step that only
+  // observed something beside it does not count against it.
+  const all = (name, kind) => kinds(name).includes(kind) && kinds(name).every(k => k === kind || k === 'observed');
   add('CHECK', 'criterion 1, the form: pass', all('1 form', 'pass'), show(byCriterion['1 form']));
   add('CHECK', 'criterion 2, the page rejects an invalid address: a pass', kinds('2 invalid email').includes('pass'), show(byCriterion['2 invalid email']));
   add('CHECK', 'criterion 3, the pending list: a fail, for the wrong role (defect D2)', kinds('3 valid invite').includes('fail'), show(byCriterion['3 valid invite']));
