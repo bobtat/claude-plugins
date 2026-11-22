@@ -77,7 +77,7 @@ allowed_commands:
 
 Saved values are defaults, not a pass: an allowlisted host still gets the reachability and redirect checks on every run. The file holds per-machine settings, so if the repo's `.gitignore` doesn't already cover it, add `.claude/*.local.md` before saving, or save to the home-directory file instead — a committed file is ignored.
 
-**Read the ticket, which gate 1 needs, and the docs with whatever this session has** — `gh`, `WebFetch`, or an MCP tool for the tracker or wiki. The agents that use them can't: save each doc's text to `docs/<n>.md` in the working directory, and record any you can't read as unreachable. A ticket you can't read is a failed gate, not something to work around. Name the PR's repository explicitly in `Diff`: a bare `gh pr diff <n>` resolves against the current checkout, which silently gives a different PR if yours is from another repository. If it is from another repository, say so, because code citations from this checkout won't describe it.
+**Read the ticket, which gate 1 needs, and the docs with whatever this session has** — `gh`, `WebFetch`, or an MCP tool for the tracker or wiki. The agents that use them can't: save each doc's text to `docs/<n>.md` in the working directory, and record any you can't read as unreachable. A ticket you can't read is a failed gate, not something to work around. Save the PR's diff to `pr.diff` in the working directory, the same way: the planner has no `Bash` to fetch it, and every agent that judges a step's reach then reads the same code. Name the PR's repository explicitly when you fetch it: a bare `gh pr diff <n>` resolves against the current checkout, which silently gives a different PR if yours is from another repository. If it is from another repository, say so in `Diff`, because code citations from this checkout won't describe it.
 
 Write `intake.md`, following this template exactly:
 
@@ -85,7 +85,7 @@ Write `intake.md`, following this template exactly:
 # Intake: <title>
 
 **Source:** <ticket + merged PR reference>
-**Diff:** gh pr diff <n> --repo <owner/repo>
+**Diff:** pr.diff — saved from `gh pr diff <n> --repo <owner/repo>`
 **Docs:** <each link given, and the snapshot of it: url → docs/1.md>, or "none provided" — <url> (unreachable)
 
 **Environment:** staging | local
@@ -127,6 +127,7 @@ Spawn `agentic-qa:step-planner` with the resolved `behavior-spec.md` and `intake
 4. The irreversible steps, `contained` vs. `escapes`, with their citations. Offer the blanket pre-authorization for `contained` steps as a single choice; `escapes` never gets covered by it.
 5. Every `cli` step, and every step whose `Target` isn't the base URL's host, with its actual action, whether reversible or not. These reach further than the system the ticket describes, so a person sees the command before it runs.
 6. Any drafter/critic disagreement still open in either `Critique Exchange`. A person decides what it means; nothing else shows it to them before the run.
+7. The plan's `Open questions` that block nothing, each with what the plan does about it. An answer is welcome and not required: these steps run as written either way. An answer that widens a behavior becomes a new step, written and checked as in item 3.
 
 **Settle item 3 before presenting items 4 and 5.** A blocked step has no action and no classification yet, so an answer can't simply be folded in, and a grant offered first would cover steps nobody has classified. Resume `agentic-qa:step-planner` with the answers to write those steps, and `agentic-qa:step-plan-critic` once to check them; this is outside the round cap, since these steps are new. Then present the rest, including them.
 

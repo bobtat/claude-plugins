@@ -25,7 +25,7 @@ Send the reporter `final` once `step-executor` returns `COMPLETE`, then wait on 
 
 1. Write `Status` and `Summary`.
 2. Write the `Findings` section — anything worth flagging that isn't a strict pass/fail: a confusing-but-correct error message, an ambiguity resolved mid-run, a UX rough edge. Every step whose `Attempts` field shows a failed attempt before its verdict goes here as intermittent, with the attempt history — a pass on the second try is not the same evidence as a pass on the first.
-3. Write the `Blocked` and `Not walked through` sections — distinct from each other. `Blocked` needs an actual answer; `Not walked through` (behaviors deliberately excluded) needs nothing further. Don't conflate them.
+3. Write the `Blocked`, `Open questions` and `Not walked through` sections — distinct from each other. `Blocked` needs an actual answer before its steps can run. `Open questions` copies every question from `step-plan.md`'s section of that name with what the run did about it, so a reader of a pass can see it was a pass for the criterion as written and what wider reading went untested. `Not walked through` (behaviors deliberately excluded) needs nothing further. Don't conflate them.
 4. Run the **three-part self-check** before calling the report done:
    - Every step from `step-plan.md` is present in the report.
    - The `Summary` counts match the actual entries.
@@ -33,7 +33,7 @@ Send the reporter `final` once `step-executor` returns `COMPLETE`, then wait on 
 5. Render `walkthrough-report.html` from the finished `walkthrough-report.md`.
 6. Write the HTML report's absolute path to `signals/report-done.txt`, as its last act on the run, then return `done: <absolute path to walkthrough-report.html>`. The file is the signal that the report is finished — Phase 5 waits on it, because a returned result does not reliably reach the orchestrator (see `agentic-qa:agentic-qa`'s Agent messaging).
 
-A run with any `blocked`, `skipped` or `not verified` step states that in the `Status` line itself, not just as a nonzero count buried in `Summary` — `⚠️ Incomplete — 2 blocked, 1 skipped, 1 not verified`, not a report that reads as done when it isn't. A run with any `fail` leads with that: `❌ Failed — 1 failed; incomplete — 2 blocked`. `✅ Passed` means every planned step passed, and nothing less; someone reading only this line should not be misled.
+A run with any `blocked`, `skipped` or `not verified` step states that in the `Status` line itself, not just as a nonzero count buried in `Summary` — `⚠️ Incomplete — 2 blocked, 1 skipped, 1 not verified`, not a report that reads as done when it isn't. A run with any `fail` leads with that: `❌ Failed — 1 failed; incomplete — 2 blocked`. `✅ Passed` means every planned step passed, and nothing less; someone reading only this line should not be misled. A run with open questions says so after the verdict, whatever the verdict: `✅ Passed — every step passed; 2 open questions`.
 
 **If the self-check fails,** fix what the files allow. Anything still wrong goes in the report under `Findings` and in `Status` — `⚠️ Incomplete — self-check failed: S3's evidence is missing` — and finalization continues. **If the HTML can't be rendered,** say so in `Status`, write `walkthrough-report.md`'s path to `signals/report-done.txt` instead, and return `done: <that path> (HTML not rendered: <reason>)`. The orchestrator always gets an ending.
 
@@ -91,6 +91,12 @@ A lightweight inline-SVG step-status summary is worth adding when a run has enou
 | Step | Behavior | Question |
 |---|---|---|
 | S4 | B6 | Is a cancellation at exactly 24:00:00 refunded? |
+
+## Open questions
+| # | Question | What this run did |
+|---|---|---|
+| Q1 | Must the search also find a cancelled order? | S7 passed as written; the wider reading was not tested |
+| Q3 | What should a search with no results say? | not tested |
 
 ## Not walked through
 - <behaviors deliberately excluded from this run, and why>

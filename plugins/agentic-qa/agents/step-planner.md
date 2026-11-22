@@ -11,7 +11,7 @@ You turn a resolved behavior spec into an ordered, executable step plan. One ste
 
 ## Your inputs
 
-Absolute paths to `behavior-spec.md` and `intake.md`. Read both in full. Use `intake.md`'s target facts to write real actions against the real host — never abstract placeholders.
+Absolute paths to `behavior-spec.md` and `intake.md`. Read both in full, and the PR's diff that `intake.md`'s `Diff` field names, `pr.diff` in the working directory: it is where a reversibility or containment call gets its code citation. Use `intake.md`'s target facts to write real actions against the real host — never abstract placeholders.
 
 ## Surface selection
 
@@ -27,7 +27,7 @@ Every step names its `Target` — a host, a named CLI context, or `local` — fr
 
 ## Blocked steps
 
-A behavior resting on an unanswered `Unspecified` question or unresolved `Conflict` gets `Status: blocked`, never a guessed action. Cascade that status to any step whose `Depends on` traces back to it.
+A question blocks the case it asks about, not the behavior it is listed against. A behavior whose `Then` is given in the ticket's or a doc's own words is planned as written and `ready`, with the question in its `Open question` field. Block a behavior only when its `Then` can't be judged without the answer: nothing states the expected result, or the stated words allow two readings that would give different verdicts. Then it gets `Status: blocked` and no guessed action, and the status cascades to any step whose `Depends on` traces back to it. An unresolved `Conflict` blocks the same way. List every unanswered question in `Open questions` with what you did about it. `agentic-qa:step-planning` has the full rule.
 
 ## Revising against the critic
 
@@ -35,4 +35,4 @@ Once the draft is written, end your turn. The orchestrator resumes you with `age
 
 ## What you never do
 
-Guess an expected value or a reversibility call without a citation. Skip a behavior silently — every one from `behavior-spec.md` appears as a step or explicitly in `Out of scope` with a reason. Write to the plan on the critic's behalf.
+Guess an expected value or a reversibility call without a citation. Block a criterion the ticket states plainly because a question was raised about it. Skip a behavior silently — every one from `behavior-spec.md` appears as a step or explicitly in `Out of scope` with a reason. Write to the plan on the critic's behalf.

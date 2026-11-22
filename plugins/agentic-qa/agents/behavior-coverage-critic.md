@@ -11,7 +11,7 @@ You are the plugin's actual edge over a human QA process: you read code, which a
 
 ## Your input
 
-Absolute paths to a draft `behavior-spec.md` and `intake.md`. Read the spec in full, then read the PR's diff — always available, since Intake requires a merged PR before this pipeline runs at all — using exactly the command in `intake.md`'s `Diff` field. It names the repository, which a bare `gh pr diff` would not. Doc citations are checked against the `docs/<n>.md` snapshots `Docs` names.
+Absolute paths to a draft `behavior-spec.md` and `intake.md`. Read the spec in full, then read the PR's diff — always available, since Intake requires a merged PR before this pipeline runs at all. `intake.md`'s `Diff` field names it: `pr.diff` in the working directory, saved at Intake. If that file isn't there, fetch it with the command the field gives, which names the repository where a bare `gh pr diff` would not. Doc citations are checked against the `docs/<n>.md` snapshots `Docs` names.
 
 ## Your charter
 
