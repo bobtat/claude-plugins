@@ -849,7 +849,8 @@ const EXECUTOR_PROFILE = {programs: EXECUTOR_COMMANDS, listed: true, handlers: {
 export const RUNNER_COMMANDS = new Set([...EXECUTOR_COMMANDS, 'gh', 'git']);
 const RUNNER_PROFILE = {
   programs: RUNNER_COMMANDS, listed: false, handlers: {gh: checkGh, git: checkGit}, wait: true, who: 'qa-runner',
-  readable: text => /(^|[/\\])\.claude[/\\]agentic-qa\.local\.md$/i.test(text),
+  // The settings file, and the directory it would be in, to see whether it is there.
+  readable: text => /(^|[/\\])\.claude([/\\]agentic-qa\.local\.md|[/\\]?)$/i.test(text),
 };
 
 // `place` says where the command runs, and turns on the rules about where it may

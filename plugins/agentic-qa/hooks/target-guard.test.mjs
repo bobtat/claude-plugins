@@ -761,11 +761,11 @@ test('F46: qa-runner is held to a list of its own', () => {
     'git ls-files --error-unmatch .claude/agentic-qa.local.md', `git -C ${project} merge-base --is-ancestor abc123f HEAD`, 'git rev-parse --short HEAD',
     'curl -q -sS -o /dev/null -D - https://staging.example.com/', 'curl -q -sS http://localhost:8765/api/version',
     `until [ -f ${run}/signals/report-done.txt ]; do sleep 2; done`, `until [ -f "${run}/signals/step-executor-1.txt" ]; do sleep 2; done`,
-    `rm -r ${run}/runtime-secrets`, `rm ${out}/state.json`, `ls -l ${run}/step-results.md`, `jq -r .state ${run}/pr.json`, `grep -c '^## S' ${run}/step-results.md`]) ok(command);
+    `ls -a ${project} ${project}/.claude`, 'ls ~/.claude/', 'test -f .claude/agentic-qa.local.md', `rm -r ${run}/runtime-secrets`, `rm ${out}/state.json`, `ls -l ${run}/step-results.md`, `jq -r .state ${run}/pr.json`, `grep -c '^## S' ${run}/step-results.md`]) ok(command);
   // The settings can be read and never written.
   for (const command of ['echo "  - prod.example.com" >> ~/.claude/agentic-qa.local.md', "sed -i 's/staging/prod/' /home/u/.claude/agentic-qa.local.md",
     `cp ${run}/intake.md .claude/agentic-qa.local.md`, 'tee -a ~/.claude/agentic-qa.local.md', `rm ${fileURLToPath(new URL('./target-guard.mjs', import.meta.url))}`,
-    'echo x >> ~/.bashrc', 'printf x > "C:\\Users\\u\\.claude\\agentic-qa.local.md"', 'cat ~/.claude/settings.json', 'cat ~/.ssh/id_rsa']) no(command);
+    'echo x >> ~/.bashrc', 'printf x > "C:\\Users\\u\\.claude\\agentic-qa.local.md"', 'cat ~/.claude/settings.json', 'cat ~/.ssh/id_rsa', 'ls ~/.claude/plugins', 'cat ~/.claude/agents/x.md', 'mkdir -p ~/.claude']) no(command);
   // No host nobody listed, no redirect followed, nothing but reading from gh and git.
   for (const command of ['curl -sI -L https://unlisted.example.org/', 'curl -q -sS https://unlisted.example.org/', 'curl -q -sS -L https://staging.example.com/',
     'gh pr comment 7 --body x', 'gh pr merge 7 --squash', 'gh api repos/acme/app/issues -f title=x', 'gh issue create --title x', 'gh pr view 7 --web', 'gh "$GROUP" view 7',
