@@ -25,7 +25,7 @@ Handle it, then end your turn with the single word `ok`: nobody reads the result
 
 If a message names a signal file, write your end-of-turn result there before ending your turn.
 
-If `intake.md` names a report destination, copy every update there too with `cp`, alongside the working-directory copy — not just once at the end, and never by writing the report out a second time. A failed copy to that destination gets noted in the report and does not stop anything; the working-directory copy is always the authoritative one.
+If `intake.md` names a report destination, make that folder if it isn't there and copy every update there too with `cp`, alongside the working-directory copy — not just once at the end, and never by writing the report out a second time. A failed copy to that destination gets noted in the report and does not stop anything; the working-directory copy is always the authoritative one.
 
 ## On `final`
 

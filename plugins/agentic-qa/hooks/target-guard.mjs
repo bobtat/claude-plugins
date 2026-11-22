@@ -458,7 +458,8 @@ function checkCurlValue(flag, word, uses) {
   if (word.brace) return spellOut(`curl ${flag} "${word.text}" has an unquoted brace, which the shell expands into several arguments`, 'Send it once more with that value in quotes');
   if (CURL_WRITES_FILE.has(flag)) {
     if (unsafeDestination(word) || word.text.includes('#')) return spellOut(`curl ${flag} must name a literal path`);
-    uses.push({text: word.text, writes: true});
+    // `-` is curl's name for standard output, not a file.
+    if (word.text !== '-') uses.push({text: word.text, writes: true});
     return null;
   }
   if (CURL_WRITE_OUT.has(flag)) {
@@ -713,6 +714,7 @@ function fileUses(name, args, uses) {
   return null;
 }
 
+const RUN_NAME = /^walkthrough-[A-Za-z0-9][A-Za-z0-9-]*$/;
 const OUT_OF_PLACE = 'Send it once more writing only inside the run\'s working directory, by a path written out in full';
 
 // Follows links in the part of a path that exists, so one planted earlier cannot
@@ -744,7 +746,7 @@ function isDirectory(abs) {
 // it, and Playwright's output directory. That is a list of what is allowed. The
 // list of protected names it replaces for writes kept missing files: a shell
 // alias file, a workflow, this plugin's own agents.
-export function makePlace({cwd, home = os.homedir(), env = process.env, lib = path, exists = fs.existsSync, real = realExisting, directory = isDirectory}) {
+export function makePlace({cwd, home = os.homedir(), env = process.env, lib = path, exists = fs.existsSync, real = realExisting, directory = isDirectory, named = false, project = null}) {
   const outputs = [lib.join(home, '.cache', 'agentic-qa', 'playwright-output')];
   if (env.CLAUDE_PLUGIN_DATA) outputs.push(lib.resolve(env.CLAUDE_PLUGIN_DATA, '..', '..', '..', '..', '.cache', 'agentic-qa', 'playwright-output'));
   const inside = (root, abs) => {
@@ -768,6 +770,10 @@ export function makePlace({cwd, home = os.homedir(), env = process.env, lib = pa
     },
     writable(abs) {
       if (outputs.some(output => inside(output, abs))) return true;
+      // qa-runner makes the run directory, so the two files that mark one are not
+      // there yet. For it a run directory is known by its name, anywhere but inside
+      // the project, where a new directory could be picked up by a test runner.
+      if (named && abs.split(/[/\\]/).some(part => RUN_NAME.test(part)) && !(project && inside(real(lib.resolve(project), lib), abs))) return true;
       for (let dir = abs, depth = 0; depth < 64; depth++) {
         if (exists(lib.join(dir, 'intake.md')) && exists(lib.join(dir, 'step-plan.md'))) return true;
         const parent = lib.dirname(dir);
@@ -779,12 +785,13 @@ export function makePlace({cwd, home = os.homedir(), env = process.env, lib = pa
   };
 }
 
-function checkUse({text, writes}, what, place) {
-  const direct = protectedPath(text);
+function checkUse({text, writes}, what, place, readable) {
+  const open = !writes && readable(text);
+  const direct = open ? null : protectedPath(text);
   if (direct) return direct;
   if (!place) return null;
   for (const abs of place.resolve(text)) {
-    const reason = protectedPath(abs);
+    const reason = open ? null : protectedPath(abs);
     if (reason) return reason;
     if (writes && !DEVICES.has(text) && !place.writable(abs)) {
       return spellOut(`${what} would write "${text}", which is outside the run's working directory`, OUT_OF_PLACE);
@@ -798,16 +805,72 @@ function unreadable(err) {
   return err instanceof Respell ? spellOut(reason, err.hint) : reason;
 }
 
+// What gh may be asked: to read issues and pull requests. It runs with whatever
+// token the machine has, and a default one can comment, merge and delete.
+const GH_READS = {issue: ['view', 'list'], pr: ['view', 'list', 'diff', 'checks'], search: ['prs', 'issues'], repo: ['view'], auth: ['status']};
+
+function checkGh(args) {
+  const [group, verb, ...rest] = args;
+  if (!group || !verb || group.dynamic || verb.dynamic || !(GH_READS[group.text] ?? []).includes(verb.text)) {
+    return `gh ${group?.text ?? ''} ${verb?.text ?? ''} is not one of the gh commands this agent may run: it reads issues and pull requests, and changes nothing`;
+  }
+  if (rest.some(word => word.text === '--web' || word.text === '-w')) return 'gh --web opens a browser on this machine';
+  return null;
+}
+
+// git is asked three questions, in exactly these forms. Most git commands take an
+// option that writes a file or starts a program.
+const GIT_FORMS = 'git ls-files --error-unmatch <file>, git merge-base --is-ancestor <commit> <commit>, git rev-parse <ref>';
+
+function checkGit(args, uses) {
+  if (args.some(word => word.dynamic || word.glob || word.brace)) return spellOut('git must be given literal arguments');
+  let words = args.map(word => word.text);
+  if (words[0] === '-C') {
+    if (!words[1]) return 'git -C needs a directory';
+    uses.push({text: words[1], writes: false});
+    words = words.slice(2);
+  }
+  const rev = /^[A-Za-z0-9][A-Za-z0-9._/~^@-]*$/;
+  const ok = (words[0] === 'ls-files' && words.length === 3 && words[1] === '--error-unmatch' && !words[2].startsWith('-'))
+    || (words[0] === 'merge-base' && words.length === 4 && words[1] === '--is-ancestor' && rev.test(words[2]) && rev.test(words[3]))
+    || (words[0] === 'rev-parse' && (words.length === 2 || (words.length === 3 && ['--short', '--verify'].includes(words[1]))) && rev.test(words.at(-1)));
+  return ok ? null : spellOut(`git ${words.join(' ')} is not one of the forms this agent may run`, `Send it once more as one of: ${GIT_FORMS}`);
+}
+
+// Waiting on a signal file is the one loop any agent here needs, so it is accepted
+// in exactly this form and no other loop is.
+const WAIT_LOOP = /^until \[ -f (?:"[^"$`\\\n]+"|'[^'\n]+'|[^\s"'$`\;&|<>()]+) \]; do sleep \d{1,3}; done$/;
+
+// The executor runs a fixed list, plus what a person listed for the system under
+// test. qa-runner runs the same list, plus gh and git for reading and the wait. It
+// reads the settings files, which it has to copy into intake.md, and so may name
+// them where it only reads.
+const EXECUTOR_PROFILE = {programs: EXECUTOR_COMMANDS, listed: true, handlers: {}, readable: () => false, wait: false, who: 'the executor'};
+export const RUNNER_COMMANDS = new Set([...EXECUTOR_COMMANDS, 'gh', 'git']);
+const RUNNER_PROFILE = {
+  programs: RUNNER_COMMANDS, listed: false, handlers: {gh: checkGh, git: checkGit}, wait: true, who: 'qa-runner',
+  readable: text => /(^|[/\\])\.claude[/\\]agentic-qa\.local\.md$/i.test(text),
+};
+
 // `place` says where the command runs, and turns on the rules about where it may
 // write. The hook always passes one. Without it only the text is judged.
-export function checkExecutorBash(command, settings, env = process.env, place = null) {
+export const checkExecutorBash = (command, settings, env = process.env, place = null) => checkHeldBash(command, settings, env, place, EXECUTOR_PROFILE);
+export const checkRunnerBash = (command, settings, env = process.env, place = null) => checkHeldBash(command, settings, env, place, RUNNER_PROFILE);
+
+function checkHeldBash(command, settings, env, place, profile) {
+  if (profile.wait) {
+    if (WAIT_LOOP.test(command.trim())) return null;
+    if (/^\s*(until|while)\b/.test(command)) {
+      return spellOut('a loop is accepted only as the wait on a signal file', 'Send it once more written exactly as: until [ -f <path> ]; do sleep 2; done');
+    }
+  }
   let commands;
   try {
     commands = parseShell(command);
   } catch (err) {
     return unreadable(err);
   }
-  const extra = new Set(settings.allowed_commands);
+  const extra = new Set(profile.listed ? settings.allowed_commands : []);
   const first = commands.find(raw => !raw.sub);
   for (const raw of commands) {
     const uses = [];
@@ -850,8 +913,9 @@ export function checkExecutorBash(command, settings, env = process.env, place = 
           if (reason) return reason;
         }
       } else {
-        if (!EXECUTOR_COMMANDS.has(name)) {
-          return `${name} is not in allowed_commands, so a person hasn't said this run may start it`;
+        if (!profile.programs.has(name)) {
+          return profile.listed ? `${name} is not in allowed_commands, so a person hasn't said this run may start it`
+            : `${name} is not a program ${profile.who} may start`;
         }
         if (name === 'printf' && args[0] && (args[0].dynamic || args[0].text.startsWith('-'))) {
           return 'printf\'s first argument must be a literal format: -v sets a variable';
@@ -866,12 +930,13 @@ export function checkExecutorBash(command, settings, env = process.env, place = 
         } else if (name === 'curl') reason = checkCurl(args, settings.allowed_hosts, uses);
         else if (name === 'sed') reason = checkSed(args, uses);
         else if (name === 'sort') reason = checkSort(args, uses);
+        else if (profile.handlers[name]) reason = profile.handlers[name](args, uses);
         else reason = fileUses(name, args, uses);
         if (reason) return reason;
       }
     }
     for (const use of uses) {
-      const reason = checkUse(use, name, place);
+      const reason = checkUse(use, name, place, profile.readable);
       if (reason) return reason;
     }
   }
@@ -900,46 +965,6 @@ export function checkRestrictedBash(command) {
   return null;
 }
 
-// qa-runner runs gh, git and curl against hosts nobody has listed yet, so it cannot
-// be held to the executor's lists. This stops the plain cases only: a redirect or
-// a file-changing program aimed at something this guard protects. It reads the
-// settings files, so naming one is not refused. An interpreter it starts can still
-// write anything; see the README.
-const FILE_CHANGERS = new Set(['cp', 'mv', 'rm', 'tee', 'touch', 'mkdir', 'sed', 'dd', 'install', 'ln', 'truncate', 'chmod', 'chown']);
-
-export function checkRunnerBash(command) {
-  let commands;
-  try {
-    commands = parseShell(command);
-  } catch {
-    const words = command.split(/[\s;|&()`<>"']+/);
-    const names = words.filter(word => protectedPath(word));
-    const writes = />/.test(command) || words.some(word => FILE_CHANGERS.has(commandName(word)));
-    return names.length && writes ? `${protectedPath(names[0])}, and this command could not be read well enough to tell whether it writes there` : null;
-  }
-  for (const raw of commands) {
-    let split;
-    try {
-      split = splitRedirects(raw);
-    } catch {
-      continue;
-    }
-    for (const {target, writes} of split.redirects) {
-      if (/(^|[/\\])dev[/\\]+(tcp|udp)([/\\]|$)/i.test(target.text)) return `"${target.text}" opens a network connection`;
-      const reason = writes ? protectedPath(target.text) : null;
-      if (reason) return reason;
-    }
-    const [head, ...args] = split.words.filter(word => !isAssignment(word));
-    if (head && FILE_CHANGERS.has(commandName(head.text))) {
-      for (const word of args) {
-        const reason = protectedPath(word.text);
-        if (reason) return reason;
-      }
-    }
-  }
-  return null;
-}
-
 function checkFileTool(file) {
   if (!file) return 'a file tool call must name its path';
   const direct = protectedPath(file);
@@ -952,7 +977,8 @@ export function decide(input, settings, env = process.env) {
   const {agent_type: agent, tool_name: tool, tool_input: args = {}} = input;
   if (!agent?.startsWith(PLUGIN_AGENT)) return null;
   // The hook always knows where it is. Tests that judge text alone leave cwd out.
-  const place = agent === EXECUTOR && input.cwd ? makePlace({cwd: input.cwd, env}) : null;
+  const place = (agent === EXECUTOR || agent === RUNNER) && input.cwd
+    ? makePlace({cwd: input.cwd, env, named: agent === RUNNER, project: env.CLAUDE_PROJECT_DIR || input.cwd}) : null;
   if (tool === 'Write' || tool === 'Edit' || tool === 'NotebookEdit') {
     const file = args.file_path ?? args.notebook_path ?? '';
     const reason = checkFileTool(file);
@@ -968,7 +994,7 @@ export function decide(input, settings, env = process.env) {
   if (NETWORK_RESTRICTED.has(agent)) {
     return tool === 'Bash' ? checkRestrictedBash(args.command ?? '') : null;
   }
-  if (agent === RUNNER) return tool === 'Bash' ? checkRunnerBash(args.command ?? '') : null;
+  if (agent === RUNNER) return tool === 'Bash' ? checkRunnerBash(args.command ?? '', settings, env, place) : null;
   if (agent !== EXECUTOR) return null;
   if (tool === 'Bash') return checkExecutorBash(args.command ?? '', settings, env, place);
   if (args.url === 'about:blank') return null;
