@@ -15,7 +15,7 @@ WORK="${FIXTURE_WORK:-${TMPDIR:-/tmp}/agentic-qa-fixture}"
 RUN="$WORK/runs/$LABEL"
 [ -e "$RUN" ] && { echo "$RUN exists: a run directory is never reused" >&2; exit 1; }
 mkdir -p "$WORK/cwd"
-"$HERE/make-plugin.sh" "$PLUGIN" "$WORK/plugin-$LABEL"
+"$HERE/make-plugin.sh" "$PLUGIN" "$WORK/.claude/plugins/agentic-qa-$LABEL"
 "$HERE/${MAKE:-make-run.sh}" "$RUN"
 ROWS="${ROWS:-100}" PORT=8765 REQ_LOG="$RUN/requests.log" node "$HERE/app.mjs" & APP=$!
 trap 'kill $APP 2>/dev/null' EXIT
@@ -28,7 +28,7 @@ fs.writeFileSync(out, fs.readFileSync(prompt, "utf8").replace("__SPAWN__", fs.re
 cd "$WORK/cwd"
 set +e
 claude -p "$(cat "$RUN/prompt.txt")" --model "${MODEL:-claude-sonnet-5-5}" \
-  --plugin-dir "$WORK/plugin-$LABEL" --plugin-dir "$REPO/plugins/testing" \
+  --plugin-dir "$WORK/.claude/plugins/agentic-qa-$LABEL" --plugin-dir "$REPO/plugins/testing" \
   --allowedTools Agent SendMessage Skill Read Write Edit Glob Grep Bash mcp__plugin_agentic-qa_playwright \
   --output-format json > "$RUN/result.json" 2> "$RUN/stderr.txt"
 echo "exit $?" >> "$RUN/stderr.txt"

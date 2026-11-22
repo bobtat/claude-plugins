@@ -14,7 +14,7 @@ WORK="${FIXTURE_WORK:-${TMPDIR:-/tmp}/agentic-qa-fixture}"
 OUT="$WORK/unattended/$LABEL"
 [ -e "$OUT" ] && { echo "$OUT exists: a run is never reused" >&2; exit 1; }
 mkdir -p "$OUT/cwd"
-"$HERE/make-plugin.sh" "$PLUGIN" "$WORK/plugin-$LABEL"
+"$HERE/make-plugin.sh" "$PLUGIN" "$WORK/.claude/plugins/agentic-qa-$LABEL"
 ROWS="${ROWS:-100}" PORT=8765 REQ_LOG="$OUT/requests.log" node "$HERE/app.mjs" & APP=$!
 trap 'kill $APP 2>/dev/null' EXIT
 sleep 1
@@ -22,7 +22,7 @@ cd "$OUT/cwd"
 set +e
 PATH="$HERE/unattended/bin:$PATH" GH_STUB_LOG="$OUT/gh.log" \
 claude -p "$(cat "$HERE/unattended/${CALLER:-caller-prompt.txt}")" --model "${MODEL:-claude-sonnet-5-5}" \
-  --plugin-dir "$WORK/plugin-$LABEL" --plugin-dir "$REPO/plugins/testing" \
+  --plugin-dir "$WORK/.claude/plugins/agentic-qa-$LABEL" --plugin-dir "$REPO/plugins/testing" \
   --allowedTools Agent SendMessage Skill Read Write Edit Glob Grep Bash WebFetch mcp__plugin_agentic-qa_playwright \
   --output-format json > "$OUT/result.json" 2> "$OUT/stderr.txt"
 echo "exit $?" >> "$OUT/stderr.txt"
