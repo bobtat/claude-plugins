@@ -29,7 +29,12 @@ It is for measuring a change, not a gate before every commit.
   that spawns the two agents, and `spawn-live-off.txt` is what `qa-runner` does instead
   when a brief names no report destination. **Keep all three in step with the plugin**,
   or the fixture measures an orchestrator it no longer ships.
-- `make-plugin.sh` copies the plugin and changes only Playwright's launch flags.
+- `make-plugin.sh` copies the plugin and changes only Playwright's launch flags. The run
+  scripts put that copy under a `.claude/plugins` directory, because that is where a
+  plugin is installed and the guard protects everything under `.claude`: with the copy
+  anywhere else, a run cannot show that an agent may still reach the plugin's own files.
+  0.13.0 shipped with the reporter refused its own renderer in a real install for that
+  reason.
 
 A correct run gives these verdicts, and anything else is a regression in the testing
 rather than in its cost:
