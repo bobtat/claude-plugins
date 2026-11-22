@@ -93,42 +93,83 @@ const FORM_REFUSALS = new Map();
 const spellOut = (reason, hint = SPELL_OUT) => { FORM_REFUSALS.set(reason, hint); return reason; };
 export const isFormRefusal = reason => FORM_REFUSALS.has(reason);
 
+// Reads the two lists from a settings file's frontmatter. It is not a YAML parser:
+// it reads a block list, at any indent, and a flow list on the key's own line. What
+// it cannot read is reported in `problems` rather than dropped, because a list that
+// reads as empty here and as full to the agent that plans the run fails one step at
+// a time with nothing to say why.
 export function parseSettings(text) {
-  const out = {allowed_hosts: [], allowed_commands: []};
-  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
-  if (!match) return out;
+  const out = {allowed_hosts: [], allowed_commands: [], problems: []};
+  const body = text.replace(/^﻿/, '');
+  const match = /^(?:[ \t]*\r?\n)*---[ \t]*\r?\n([\s\S]*?)\r?\n---/.exec(body);
+  if (!match) {
+    if (/^\s*(allowed_hosts|allowed_commands)\s*:/m.test(body)) out.problems.push('its lists are not inside a --- frontmatter block');
+    return out;
+  }
+  const entry = (key, raw) => {
+    let value = raw.replace(/\s+#.*$/, '').trim().replace(/^(["'])(.*)\1$/, '$2').toLowerCase();
+    if (!value) return;
+    if (key === 'allowed_hosts') {
+      const url = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]*)/.exec(value);
+      if (url) {
+        // A URL was meant as its host. The port goes too: an entry never matches one.
+        out.problems.push(`"${value}" is a URL, and was read as its host`);
+        value = url[1].replace(/^[^@]*@/, '').replace(/:\d+$/, '');
+      } else if (/^[a-z0-9.*-]+:\d+$/.test(value)) {
+        out.problems.push(`"${value}" has a port, which no entry can match: list the host alone`);
+      } else if (/^[a-z0-9.*-]+\/$/.test(value)) {
+        value = value.slice(0, -1);
+      }
+    }
+    out[key].push(value);
+  };
   let key = null;
   for (const raw of match[1].split(/\r?\n/)) {
-    const top = /^([A-Za-z_]+):/.exec(raw);
-    if (top) { key = top[1]; continue; }
-    const item = /^\s+-\s+(.+?)\s*$/.exec(raw);
-    if (item && Object.hasOwn(out, key ?? '')) {
-      out[key].push(item[1].replace(/\s+#.*$/, '').replace(/^["']|["']$/g, '').toLowerCase());
+    const top = /^([A-Za-z_]+):(.*)$/.exec(raw);
+    if (top) {
+      key = top[1];
+      const rest = top[2].replace(/\s+#.*$/, '').trim();
+      if (!rest || !Object.hasOwn(out, key) || key === 'problems') continue;
+      const flow = /^\[(.*)\]$/.exec(rest);
+      if (flow) flow[1].split(',').forEach(item => entry(key, item));
+      else out.problems.push(`${key} has a value this guard cannot read ("${rest}"): write it as a list`);
+      continue;
     }
+    const item = /^\s*-\s+(.+?)\s*$/.exec(raw);
+    if (item && Object.hasOwn(out, key ?? '') && key !== 'problems') entry(key, item[1]);
   }
   return out;
 }
 
+// Only exit 1 means untracked: it is what git answers for a file it does not know.
+// Any other outcome leaves the question open, and an open question is answered
+// "tracked": a corrupt HEAD, a checkout owned by someone else, git missing from
+// PATH, or a git too slow to answer. Reading every failure as "untracked" let any
+// of those turn a committed allowlist into one the guard honoured.
 function isTracked(root, file) {
   try {
-    execFileSync('git', ['-C', root, 'ls-files', '--error-unmatch', file], {stdio: 'ignore'});
+    execFileSync('git', ['-C', root, 'ls-files', '--error-unmatch', file], {stdio: 'ignore', timeout: 5000});
     return true;
-  } catch {
-    return false;
+  } catch (err) {
+    return err.status !== 1;
   }
 }
 
 export function loadSettings(projectDir, home = os.homedir()) {
-  const merged = {allowed_hosts: [], allowed_commands: []};
+  const merged = {allowed_hosts: [], allowed_commands: [], problems: []};
   const files = [path.join(home, '.claude', 'agentic-qa.local.md')];
   const repoFile = path.join('.claude', 'agentic-qa.local.md');
   // A tracked copy is ignored: anyone who can merge could otherwise edit the gate.
-  if (projectDir && !isTracked(projectDir, repoFile)) files.push(path.join(projectDir, repoFile));
+  if (projectDir && fs.existsSync(path.join(projectDir, repoFile))) {
+    if (isTracked(projectDir, repoFile)) merged.problems.push(`${repoFile} in the project is ignored: git tracks it, or could not say that it doesn't`);
+    else files.push(path.join(projectDir, repoFile));
+  }
   for (const file of files) {
     if (!fs.existsSync(file)) continue;
     const parsed = parseSettings(fs.readFileSync(file, 'utf8'));
     merged.allowed_hosts.push(...parsed.allowed_hosts);
     merged.allowed_commands.push(...parsed.allowed_commands);
+    merged.problems.push(...parsed.problems.map(problem => `${file}: ${problem}`));
   }
   return merged;
 }
@@ -908,6 +949,9 @@ function main() {
       input.cwd ||= process.cwd();
       const settings = loadSettings(process.env.CLAUDE_PROJECT_DIR || input.cwd);
       reason = decide(input, settings);
+      if (reason && settings.problems.length && /is not in allowed_(hosts|commands)/.test(reason)) {
+        reason += `. The settings may be why: ${settings.problems.join('; ')}`;
+      }
     } catch (err) {
       // A crash here would otherwise count as "allow", since a failing hook doesn't block.
       reason = `the target guard failed (${err.message}), so nothing it would check can run`;
