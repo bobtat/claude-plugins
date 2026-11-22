@@ -70,7 +70,7 @@ if (!dir) {
   const kindOf = v => /✅|\bpass/i.test(v) ? 'pass' : /❌|\bfail/i.test(v) ? 'fail' : /observed|👁/i.test(v) ? 'observed' : /not verified|❔|declin/i.test(v) ? 'not verified' : /blocked|⏳/i.test(v) ? 'blocked' : /skipped|⏭/i.test(v) ? 'skipped' : /paus|pending|⏸/i.test(v) ? 'paused' : 'other';
   // Which criterion a row is about, by what it says. The first that matches wins, most specific first.
   const CRITERIA = [
-    ['6 resend', /resen[dt]|re-send|email again|invitation email/i],
+    ['6 resend', /\bresen[dt]|re-send|email again|invitation email/i],
     ['7 revoke', /revok/i],
     ['5 cli', /teamctl|\bcli\b|command line/i],
     ['4 existing member', /already a member|existing member|\b409\b/i],
