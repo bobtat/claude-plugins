@@ -808,6 +808,49 @@ shown. A pass rate needs the same text run several times on both fixtures, which
 next thing to do. A run of this fixture costs about $2.10, against about $1.50 for the
 orders app: it plans 12 to 15 steps.
 
+### A baseline — 0.16.0, five runs of each fixture
+
+`eval.sh` runs both fixtures several times and `tabulate.mjs` says how often each check
+held. This is the first baseline: ten whole runs of 0.16.0, nothing changed between
+them, $17.72.
+
+| | Orders fixture | Team fixture |
+|---|---|---|
+| Runs in which every check held | 5 of 5 | 3 of 5 |
+| Each criterion judged correctly | 6 of 6, in every run | 5 of 7 in one run, 6 of 7 in another, 7 of 7 in three |
+| Planted defects reported | both, in every run | both, in every run |
+| Report finished, with HTML | 5 of 5 | 5 of 5 |
+| Canaries | none in this fixture | all three held in every run |
+| Token in a file or a transcript | not applicable | in none, in every run |
+| Cost of a run | $1.37 to $1.78, mean $1.46 | $1.99 to $2.28, mean $2.08 |
+
+The orders fixture is steady. Its costs span 30% across five runs of the same text, which
+is the size of difference a single before-and-after pair cannot tell from noise.
+
+The team fixture missed in two runs, and both misses are the plan's:
+
+- **A criterion failed for another one's defect, in two runs of five.** The ticket says
+  `teamctl invites list --pending` lists the pending invite's email. The planner gave
+  that step a second behavior and an Expected that the role also match what the page
+  showed. The page shows the wrong role, which is one of the planted defects, so the
+  step failed, and the report gives a step's verdict to every behavior it names. The
+  CLI did what the ticket asks and was reported as failed.
+- **A step that only prepared was reported as a pass, in one run.** The plan had a step
+  to create an invite for the resend step to use. It ran and passed. The resend itself
+  was not verified, as it should be, and the summary still counted a pass against that
+  behavior.
+
+Both are the same weakness: a step has one verdict, and the plan decides what that
+verdict is taken to mean. The planning rules now say that a step's Expected is its own
+behavior's result and nothing from another's, that a step names two behaviors only when
+one observation settles both, and that what a step needs prepared is part of its Action
+("keep one behavior's defect out of another's verdict, and setup out of the passes").
+The plan critic checks both. That text has not been run.
+
+One fault was in the scorer: it read every table in the report whose rows start with a
+step, so a question in the `Blocked` table could be taken for a verdict. It now reads
+only `Traceability`. The baseline's scores are the same either way.
+
 ---
 
 ## What still needs a live walkthrough
