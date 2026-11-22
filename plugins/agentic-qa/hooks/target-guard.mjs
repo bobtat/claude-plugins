@@ -242,7 +242,9 @@ export function parseShell(src) {
     const braced = /^\$\{[A-Za-z_][A-Za-z0-9_]*\}/.exec(rest);
     if (braced) return {text: braced[0], expands: true};
     if (rest[1] === '{') throw new Error('${…} with anything but a plain name: an operator or subscript there can run a command');
-    const plain = /^\$(?:[A-Za-z_][A-Za-z0-9_]*|[0-9?#@*!$-])/.exec(rest);
+    // $? $# $$ and $! are numbers, so unquoted they cannot split into extra words.
+    if (/^\$[?#$!]/.test(rest)) return {text: rest.slice(0, 2), expands: true, whole: true};
+    const plain = /^\$(?:[A-Za-z_][A-Za-z0-9_]*|[0-9@*-])/.exec(rest);
     return plain ? {text: plain[0], expands: true} : {text: '$', expands: false};
   };
   let i = 0;
@@ -324,7 +326,7 @@ export function parseShell(src) {
     if (c === '$') {
       const read = parameter(i, false);
       const word = start();
-      if (read.expands) { word.dynamic = true; word.split = true; }
+      if (read.expands) { word.dynamic = true; if (!read.whole) word.split = true; }
       word.text += read.text;
       i += read.text.length;
       continue;
@@ -758,15 +760,25 @@ export function makePlace({cwd, home = os.homedir(), env = process.env, lib = pa
     // Git Bash spells a drive /c/…, which Node on Windows reads as \c\… on the current drive.
     return lib === path.win32 ? t.replace(/^[/\\]([a-zA-Z])(?=[/\\]|$)/, '$1:') : t;
   };
-  let cwds = [cwd];
+  // `base` is every directory the shell might be in when a chain of && starts, and
+  // `current` where it is at this point in the chain. Inside a chain a cd is
+  // certain: what follows it runs only if it worked. Once the chain ends, a cd that
+  // might have failed leaves both the old directory and the new one possible. A cd
+  // that opens the whole command, to a directory that exists now, cannot have failed.
+  let base = [cwd];
+  let current = base;
+  let moved = false;
   return {
-    resolve: text => cwds.map(base => real(lib.resolve(base, native(text)), lib)),
-    // After `cd <dir> &&` at the start of a command the directory is certain, if it
-    // exists now. After any other cd the earlier directory stays possible, because
-    // a cd that fails leaves the shell where it was.
-    cd(text, certain) {
-      const targets = cwds.map(base => lib.resolve(base, native(text)));
-      cwds = certain && targets.every(directory) ? targets : [...new Set([...cwds, ...targets])];
+    resolve: text => current.map(dir => real(lib.resolve(dir, native(text)), lib)),
+    cd(text, first) {
+      current = current.map(dir => lib.resolve(dir, native(text)));
+      if (first && current.every(directory)) base = current;
+      else moved = true;
+    },
+    endChain() {
+      if (moved) base = [...new Set([...base, ...current])];
+      current = base;
+      moved = false;
     },
     writable(abs) {
       if (outputs.some(output => inside(output, abs))) return true;
@@ -839,7 +851,7 @@ function checkGit(args, uses) {
 
 // Waiting on a signal file is the one loop any agent here needs, so it is accepted
 // in exactly this form and no other loop is.
-const WAIT_LOOP = /^until \[ -f (?:"[^"$`\\\n]+"|'[^'\n]+'|[^\s"'$`\;&|<>()]+) \]; do sleep \d{1,3}; done$/;
+const WAIT_LOOP = /^until \[ -f (?:"[^"$`\\\n]+"|'[^'\n]+'|[^\s"'$`\;&|<>()]+) \]; do sleep \d{1,3}; done(?:[ \t]*(?:;|&&|\n)\s*(?=\S)|$)/;
 
 // The executor runs a fixed list, plus what a person listed for the system under
 // test. qa-runner runs the same list, plus gh and git for reading and the wait. It
@@ -860,7 +872,12 @@ export const checkRunnerBash = (command, settings, env = process.env, place = nu
 
 function checkHeldBash(command, settings, env, place, profile) {
   if (profile.wait) {
-    if (WAIT_LOOP.test(command.trim())) return null;
+    // What follows the wait, such as reading the file it waited for, is an ordinary command.
+    const wait = WAIT_LOOP.exec(command.trim());
+    if (wait) {
+      const rest = command.trim().slice(wait[0].length);
+      return rest ? checkHeldBash(rest, settings, env, place, {...profile, wait: false}) : null;
+    }
     if (/^\s*(until|while)\b/.test(command)) {
       return spellOut('a loop is accepted only as the wait on a signal file', 'Send it once more written exactly as: until [ -f <path> ]; do sleep 2; done');
     }
@@ -927,7 +944,7 @@ function checkHeldBash(command, settings, env, place, profile) {
           if (raw.sub) return 'cd inside a substitution is not allowed';
           if (args.length !== 1 || to.dynamic || to.glob || to.brace || to.text === '-') return spellOut('cd must name one literal directory');
           reason = protectedPath(to.text);
-          if (!reason && place) place.cd(to.text, raw === first && raw.next === '&&');
+          if (!reason && place) place.cd(to.text, raw === first);
         } else if (name === 'curl') reason = checkCurl(args, settings.allowed_hosts, uses);
         else if (name === 'sed') reason = checkSed(args, uses);
         else if (name === 'sort') reason = checkSort(args, uses);
@@ -940,6 +957,7 @@ function checkHeldBash(command, settings, env, place, profile) {
       const reason = checkUse(use, name, place, profile.readable);
       if (reason) return reason;
     }
+    if (place && !raw.sub && raw.next !== '&&') place.endChain();
   }
   return null;
 }
@@ -990,7 +1008,9 @@ export function decide(input, settings, env = process.env) {
   // A plugin agent spawns only this plugin's agents: any other type is outside this guard.
   if (tool === 'Agent') {
     const type = String(args.subagent_type ?? '');
-    return type.startsWith(PLUGIN_AGENT) ? null : `spawning "${type || 'an unnamed agent type'}" is not allowed: this plugin's agents spawn only ${PLUGIN_AGENT}* agents`;
+    return type.startsWith(PLUGIN_AGENT) ? null
+      : spellOut(`spawning "${type || 'an agent with no subagent_type'}" is not allowed: this plugin's agents spawn only ${PLUGIN_AGENT}* agents, and one with no type is a general-purpose agent this guard does not hold`,
+        `Send it once more with subagent_type set to the ${PLUGIN_AGENT}* agent you mean`);
   }
   if (NETWORK_RESTRICTED.has(agent)) {
     return tool === 'Bash' ? checkRestrictedBash(args.command ?? '') : null;

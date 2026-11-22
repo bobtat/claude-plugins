@@ -600,9 +600,16 @@ test('where a relative path lands after cd', () => {
   ok(`cd ${run} && printf '%s\\n' '{"a":1}' > evidence/s3.json\ncat >> step-results.md <<'ENTRY'\n## S3\nENTRY`);
   ok(`cd ${out} && grep -n 'button "Search"' page-1.yml; rm page-1.yml`);
   // A cd that might fail leaves the shell where it was, so the path must be good there too.
-  elsewhere(`cd ${run}; echo x > evidence/a.txt`);
-  elsewhere(`cd ${run}/not-made-yet && echo x > a.txt`);
-  elsewhere(`echo start; cd ${run} && echo x > evidence/a.txt`);
+  // A cd that opens the command, to a directory that exists, cannot have failed.
+  ok(`cd ${run}; echo x > evidence/a.txt`);
+  // Inside a chain of && what follows a cd runs only if it worked, wherever the chain sits.
+  ok(`mkdir -p ${run}/evidence && cd ${run} && printf '%s\\n' '# Step Results' > step-results.md`);
+  ok(`echo start; cd ${run} && echo x > evidence/a.txt`);
+  ok(`cd ${run}/not-made-yet && echo x > a.txt`);
+  // Once that chain ends, a cd that might have failed leaves the earlier directory possible.
+  elsewhere(`mkdir -p ${run}/evidence && cd ${run} && ls\necho x > evidence/a.txt`);
+  elsewhere(`echo start; cd ${run} && ls; echo x > evidence/a.txt`);
+  elsewhere(`cd ${run}/not-made-yet; echo x > a.txt`);
   elsewhere(`cd ${run} && cd .. || echo x > a.txt`);
   // Wherever a second cd leaves it, both places are inside the run directory here.
   ok(`cd ${run} && cd evidence || echo x > a.txt`);
@@ -774,7 +781,12 @@ test('F46: qa-runner is held to a list of its own', () => {
   // No interpreter, no other loop, and nothing a person listed for the system under test.
   for (const command of ['python3 -c "print(1)"', 'node render.mjs', 'bash -c "echo x"', 'mytool --version', "timeout 280 bash -c 'until [ -f a ]; do sleep 2; done'",
     'while true; do sleep 1; done', 'until [ -f a ]; do curl -q https://evil.example.org; done', 'until [ -f a ]; do sleep 2; done; echo x >> ~/.bashrc',
-    'until [ -f "$F" ]; do sleep 2; done', 'for f in a b; do echo "$f"; done']) no(command);
+    'until [ -f "$F" ]; do sleep 2; done', 'for f in a b; do echo "$f"; done', `until [ -f ${run}/signals/a.txt ]; do sleep 2; done; python3 x.py`,
+    `until [ -f ${run}/signals/a.txt ]; do sleep 2; done; until [ -f b ]; do sleep 2; done`]) no(command);
+  // What follows the wait is an ordinary command, and so is a status printed with $?.
+  ok(`until [ -f ${run}/signals/extractor-1.txt ]; do sleep 2; done; cat ${run}/signals/extractor-1.txt`);
+  ok('git ls-files --error-unmatch .claude/agentic-qa.local.md; echo rc=$?');
+  no('cat $FILE');
   // It writes in a run directory, which it knows by name before the files that mark one exist.
   no(`mkdir -p ${home}/.claude/walkthrough-ABC-1`);
   for (const command of [`mkdir -p ${project}/walkthrough-ABC-1/docs`, `echo x > ${root}/notes.txt`, `mkdir ${root}/other`,
@@ -801,6 +813,7 @@ test('a plugin agent spawns only this plugin\'s agents', () => {
   const spawn = (agent, type) => decide({agent_type: agent, tool_name: 'Agent', tool_input: {subagent_type: type, prompt: 'x'}}, settings);
   assert.ok(spawn('agentic-qa:qa-runner', 'general-purpose'));
   assert.ok(spawn('agentic-qa:qa-runner', undefined));
+  assert.match(nextStep(spawn('agentic-qa:qa-runner', undefined)), /once more with subagent_type set/);
   assert.ok(spawn('agentic-qa:step-executor', 'general-purpose'));
   assert.equal(spawn('agentic-qa:qa-runner', 'agentic-qa:step-executor'), null);
   assert.equal(spawn('agentic-qa:qa-runner', 'agentic-qa:qa-reporter'), null);
