@@ -117,6 +117,9 @@ It costs several times what `run.sh` does.
 - **A warm cache flatters the second run.** A run that follows another with the same
   agent text reads a cached prompt where the first one paid to write it.
 - **`run.sh` doesn't run Phases 0 to 3.** Only `run-unattended.sh` does, and it has
-  run four times: three to the end and one to an escalation nobody answered.
+  run seven times: six to the end and one to an escalation nobody answered.
+- **The search form does nothing on Enter.** It has a Search button, and the criterion
+  passes through it. That is not one of the two planted defects. A run that fails the
+  search criterion after pressing Enter alone has used the wrong control.
 - **Only Sonnet has been measured.** Which tools an executor reaches for is the model's
   choice, and another model will choose differently.
