@@ -46,13 +46,17 @@ Not hand-templated like the `.md` — generated once, at finalization, from the 
 - Every browser step's screenshot embeds as a base64 image, inline with that step — not linked by path. The point is a single, self-contained file: open it anywhere, everything shows, no dependence on a Markdown renderer or a co-located `evidence/` folder.
 - An api/cli step's evidence (its response body or command output) renders as a formatted text block — no screenshot exists for these, per `agentic-qa:step-execution`.
 
-**Everything from the system under test or the ticket is hostile text.** A walkthrough of a stored-XSS ticket carries its payload in the evidence by design, and this file gets opened on other people's machines. HTML-escape `&`, `<`, `>`, `"` and `'` in every piece of it: evidence, `Observed`, ticket text, reasons, step names, in text blocks and table cells alike. Emit no script, and put `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'">` in the head. Escape `|` and newlines in anything going into a Markdown table cell, or a hostile value rewrites the `Traceability` row.
+**Render it with the script this skill ships, never by hand and never with a script of your own:**
 
-**Build it with a script, never by hand.** Write a short throwaway script in the working directory, in whatever Bash can run, that reads the files and writes the HTML, and never print the base64 or a whole evidence file into your own context: a few screenshots would exhaust it. The escaping belongs in that script, where it applies to everything.
+```
+node "<this skill's base directory>/scripts/render-report.mjs" "<working directory>"
+```
+
+The base directory is given to you when this skill loads. The script reads `walkthrough-report.md` and `step-results.md`, writes `walkthrough-report.html` beside them, and prints one line saying what it embedded. It embeds what each step's `Evidence:` line names, so every step section keeps that line, with paths as `evidence/<file>`. It leaves out the evidence of any step marked `Sensitive: yes` on its own, and embeds nothing from outside the run's `evidence/` folder. Never print base64 or a whole evidence file into your own context: a few screenshots would exhaust it. If the line it prints says something was not embedded, check that step's `Evidence:` path against the folder and run it again.
+
+**Everything from the system under test or the ticket is hostile text.** A walkthrough of a stored-XSS ticket carries its payload in the evidence by design, and the HTML gets opened on other people's machines. The script escapes all of it and forbids scripts in the page, which is why the HTML comes from it and from nothing else. The Markdown is yours: escape `|` and newlines in anything going into a table cell, or a hostile value rewrites the `Traceability` row.
 
 The raw `evidence/*` files still exist and still travel with the working directory and the report-destination copy — the HTML being self-contained doesn't replace them, it serves a different purpose: reading, not auditing.
-
-A lightweight inline-SVG step-status summary is worth adding when a run has enough steps to benefit from a visual overview at a glance — a judgment call, not a rule required on every report; a two-step run where the `Traceability` table already says everything doesn't need one.
 
 ## `walkthrough-report.md` format
 
