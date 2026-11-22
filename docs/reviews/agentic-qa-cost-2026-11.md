@@ -684,8 +684,8 @@ $0.56: the reporter ran the renderer from that path, the guard refused nothing, 
 held five screenshots and two text files, and all seven verdicts were right.
 
 A fixture that does not look like an install cannot show what the guard does to one.
-That is the second fault this review found only by changing where the fixture puts
-things; the first was Playwright's output directory.
+It is also the second fault here that comes from `.claude` being protected as a whole;
+the first was Playwright's output directory, which used to be inside it.
 
 ### Observations — 0.14.0
 
