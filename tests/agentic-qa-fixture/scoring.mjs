@@ -19,8 +19,11 @@ export function stopped(out) {
   const r = result(out);
   if (!('result' in r)) return 'no result was written';
   if (r.is_error) return String(r.result ?? 'the session ended in an error').slice(0, 120);
-  const cut = /Background tasks still running .*?stopping them/.exec(read(path.join(out, 'stderr.txt')));
-  return cut ? `the session ended first: ${cut[0].slice(0, 100)}` : null;
+  const stderr = read(path.join(out, 'stderr.txt'));
+  const cut = /Background tasks still running .*?stopping them/.exec(stderr);
+  if (cut) return `the session ended first: ${cut[0].slice(0, 100)}`;
+  // The run script writes the session's exit status last. Without it, the script was stopped.
+  return /^exit \d+$/m.test(stderr) ? null : 'the run script was stopped before its session ended';
 }
 
 // Every transcript of the run's session: the caller's and each agent's.
