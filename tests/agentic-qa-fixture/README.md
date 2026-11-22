@@ -72,7 +72,9 @@ command's Phase 4 text back in it first.
 The session is given a list of allowed tools and no permission bypass, which is how an
 unattended run should be set up. `run.sh` prints the verdicts and a table of calls and
 tokens per agent. `turns.mjs <run dir> <agent>` splits one agent's usage by the message
-that woke it, and `trace.mjs <run dir> <agent>` lists its tool calls and their results.
+that woke it, `trace.mjs <run dir> <agent>` lists its tool calls and their results, and
+`calls.mjs <run dir> <agent>` prints one line per API call: the context it read, what it
+added, and each tool call with the size of what came back.
 
 ## The whole pipeline, unattended
 
@@ -115,6 +117,6 @@ It costs several times what `run.sh` does.
 - **A warm cache flatters the second run.** A run that follows another with the same
   agent text reads a cached prompt where the first one paid to write it.
 - **`run.sh` doesn't run Phases 0 to 3.** Only `run-unattended.sh` does, and it has
-  run twice to the end.
+  run four times: three to the end and one to an escalation nobody answered.
 - **Only Sonnet has been measured.** Which tools an executor reaches for is the model's
   choice, and another model will choose differently.
