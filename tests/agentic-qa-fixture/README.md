@@ -106,6 +106,13 @@ It needs agents to be able to spawn agents. Where `CLAUDE_CODE_MAX_SUBAGENT_SPAW
 is 1, `qa-runner` is given no `Agent` tool and escalates at once: run the script with
 that variable set to 2.
 
+`CALLER=caller-prompt-escalation.txt` runs it with a second caller. Its brief grants
+nothing in advance, so the run stops at its first irreversible step and returns an
+escalation; the caller answers a contained one once, as an agent, and waits for the
+report. A correct run records the step as decided by the caller, finishes the report
+with HTML, and reports the same two defects. It is the only thing here that resumes
+`qa-runner` with an answer.
+
 It costs several times what `run.sh` does.
 
 ## What it can't tell you
@@ -117,7 +124,8 @@ It costs several times what `run.sh` does.
 - **A warm cache flatters the second run.** A run that follows another with the same
   agent text reads a cached prompt where the first one paid to write it.
 - **`run.sh` doesn't run Phases 0 to 3.** Only `run-unattended.sh` does, and it has
-  run nine times: seven to the end and two to an escalation nobody answered.
+  run ten times: seven to the end, two to an escalation nobody answered, and one through
+  an escalation its caller answered.
 - **The search form does nothing on Enter.** It has a Search button, and the criterion
   passes through it. That is not one of the two planted defects. A run that fails the
   search criterion after pressing Enter alone has used the wrong control.
