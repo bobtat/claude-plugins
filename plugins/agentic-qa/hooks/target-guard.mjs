@@ -15,6 +15,9 @@ const NETWORK_RESTRICTED = new Set([
   'agentic-qa:behavior-coverage-critic',
   'agentic-qa:step-plan-critic',
 ]);
+// The critics hold no Bash. Each writes one thing, its findings, into the run's
+// working directory, so that is the only place its file tools may write.
+const CRITICS = new Set(['agentic-qa:behavior-coverage-critic', 'agentic-qa:step-plan-critic']);
 const ALWAYS_ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 
 // Throughout, these are lists of what may run, not of what may not: programs,
@@ -996,8 +999,11 @@ export function decide(input, settings, env = process.env) {
   const {agent_type: agent, tool_name: tool, tool_input: args = {}} = input;
   if (!agent?.startsWith(PLUGIN_AGENT)) return null;
   // The hook always knows where it is. Tests that judge text alone leave cwd out.
-  const place = (agent === EXECUTOR || agent === RUNNER) && input.cwd
-    ? makePlace({cwd: input.cwd, env, named: agent === RUNNER, project: env.CLAUDE_PROJECT_DIR || input.cwd}) : null;
+  // A critic may be spawned before the plan exists, so like qa-runner it knows a run
+  // directory by its name.
+  const named = agent === RUNNER || CRITICS.has(agent);
+  const place = (agent === EXECUTOR || named) && input.cwd
+    ? makePlace({cwd: input.cwd, env, named, project: env.CLAUDE_PROJECT_DIR || input.cwd}) : null;
   if (tool === 'Write' || tool === 'Edit' || tool === 'NotebookEdit') {
     const file = args.file_path ?? args.notebook_path ?? '';
     const reason = checkFileTool(file);

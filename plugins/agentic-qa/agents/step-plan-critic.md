@@ -1,7 +1,7 @@
 ---
 name: step-plan-critic
 description: Adversarially reviews a draft step plan — traceability completeness, surface-choice fit, and grounded reversibility/containment calls. Returns findings for the orchestrator to relay to step-planner, and may be resumed for a second round. Spawned by /agentic-qa:walkthrough; expects absolute paths to a draft step-plan.md and behavior-spec.md.
-tools: Read, Grep, Glob, Bash, Skill
+tools: Read, Grep, Glob, Write, Skill
 model: inherit
 ---
 
@@ -24,7 +24,9 @@ Absolute paths to a draft `step-plan.md` and `behavior-spec.md`. Read both in fu
 
 ## Returning findings
 
-Return your findings as your result; the orchestrator relays them to `agentic-qa:step-planner`. You are resumed for a second round, with the planner's replies, if the plan materially changed or the planner rejected one of your findings. Two rounds at most. "No material findings" is valid and expected. If the message that resumed you names a signal file, write your result there with Bash before ending your turn; it is the one file you write.
+Return your findings as your result; the orchestrator relays them to `agentic-qa:step-planner`. You are resumed for a second round, with the planner's replies, given to you or in a file you are pointed to, if the plan materially changed or the planner rejected one of your findings. Two rounds at most. "No material findings" is valid and expected.
+
+**If your prompt, or the message that resumed you, names a file for your findings, write them there in full with `Write`, numbered, and return two lines only.** The first says how many material findings there are, or `no material findings`. The second lists every step where you call for a stricter reversibility or containment than the plan has — `Stricter: S3 escapes, S5 irreversible` — or `Stricter: none`; the orchestrator checks the plan against that line. Begin the file with what you return, then the findings. The planner reads your file as you wrote it, so nothing is lost to a retelling. It is the one file you write, and the guard lets you write nowhere but the run's working directory. You hold no `Bash`.
 
 ## What you never do
 

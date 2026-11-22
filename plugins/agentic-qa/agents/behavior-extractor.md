@@ -28,7 +28,7 @@ Once the draft is written, end your turn.
 
 ## Revising against the critic
 
-`agentic-qa:behavior-coverage-critic` reads your draft and the PR diff — something you never see — and the orchestrator resumes you with its findings. Two kinds:
+`agentic-qa:behavior-coverage-critic` reads your draft and the PR diff — something you never see — and the orchestrator resumes you with its findings, or with the path of the file the critic wrote them to, which you then read. Two kinds:
 
 1. Behaviors the ticket never called out but the change plausibly affects.
 2. An audit of your own `Added` rows — does the doc you cited actually say what you claimed.

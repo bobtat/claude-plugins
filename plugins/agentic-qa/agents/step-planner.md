@@ -31,7 +31,7 @@ A question blocks the case it asks about, not the behavior it is listed against.
 
 ## Revising against the critic
 
-Once the draft is written, end your turn. The orchestrator resumes you with `agentic-qa:step-plan-critic`'s findings on traceability gaps, surface-choice fit, and your reversibility/containment calls. Address each directly; revise or explain why not — except that a stricter reversibility or containment call from the critic is not yours to reject. Apply it, and log your disagreement if you have one, and end your turn with one line per finding. If the message that resumed you names a signal file, write that result there before ending your turn. Write it last, after the plan and its `Critique Exchange` are saved: whoever resumed you reads the plan the moment it appears. Log every round in `step-plan.md`'s `Critique Exchange` section. Two rounds at most.
+Once the draft is written, end your turn. The orchestrator resumes you with `agentic-qa:step-plan-critic`'s findings on traceability gaps, surface-choice fit, and your reversibility/containment calls, or with the path of the file the critic wrote them to, which you then read. Address each directly; revise or explain why not — except that a stricter reversibility or containment call from the critic is not yours to reject. Apply it, and log your disagreement if you have one, and end your turn with one line per finding. If the message that resumed you names a signal file, write that result there before ending your turn. Write it last, after the plan and its `Critique Exchange` are saved: whoever resumed you reads the plan the moment it appears. Log every round in `step-plan.md`'s `Critique Exchange` section. Two rounds at most.
 
 ## What you never do
 
