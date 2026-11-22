@@ -909,6 +909,43 @@ One more fault was in the scorer, found in the runs before the limit: it did not
 beside a criterion against a criterion that had passed ("leave a run the API stopped
 out of the counts, and place split behaviors").
 
+### Where a CLI points — five runs of the team fixture
+
+The rule the last section pointed to is written ("settle where a CLI points in the plan,
+and confirm it before the step runs"). A `cli` step that reaches a host or a context
+names beside its `Target` the read-only command that confirms where the program points,
+or what states it. A target nothing states is a blocked step with a question. The
+executor runs the command first and does not run the step when it shows nothing or
+somewhere else.
+
+The scorer has a check for it: the CLI was asked where it points before it was used.
+Five team runs, $11.59. The orders fixture has no CLI and was not run.
+
+| | The ten runs before | Five runs with the rule |
+|---|---|---|
+| The CLI was asked where it points before it was used | 3 of 10 | 5 of 5 |
+| The plan named a command that confirms the CLI's target | none, as a rule there was none | 5 of 5, on every `cli` step |
+| Runs in which every other check held | 3 of 5, then 4 of 5 | 5 of 5 |
+| Canaries; token in no file and no transcript | held in every run | held in every run |
+| Cost of a run | $1.95 to $2.33, mean $2.10 | $2.19 to $2.49, mean $2.32 |
+
+Every plan wrote `(confirm: teamctl version)`, which it found in the diff, and every
+executor ran it before the first CLI command. It ran it once in a run, not once before
+each CLI step. That is enough here, and is not what the text says: a step that changes
+which context a CLI uses would need the check again after it.
+
+This is the first set of five in which every run held every check, and the baseline's
+two planning misses have now not come back in ten runs. The fixture changed between the two columns: its CLI names its server and its diff
+shows that. So the first row measures the rule and the fixture together. A rule with
+nothing to read would have produced blocked steps, as it should, and that path has not
+been run.
+
+The runs cost more: a mean of $2.32 against $2.10, and $2.19 for a twelve-step plan
+where three earlier twelve-step runs cost $1.95 to $2.05. The rule adds one command to
+a run and a few lines to three agents' text, which does not account for it. Across four
+twelve-step runs the executor made 28, 32, 39 and 43 calls, and the one with the most
+was a baseline run. Five runs do not separate a dearer rule from that spread.
+
 ---
 
 ## What still needs a live walkthrough
