@@ -672,6 +672,21 @@ tells an agent to escalate, and carrying on regardless. A loop or a condition is
 refused as a matter of form, with the instruction to send the commands plainly
 ("refuse a shell loop or condition as a matter of form").
 
+**A fault in 0.13.0, fixed in 0.14.0.** A plugin is normally installed under
+`~/.claude/plugins`, and the guard refuses the reporter any path inside `.claude`. So in
+a real install the command that runs the shipped renderer was refused, and no HTML would
+have been rendered. Neither run above showed it, because the fixture kept its copy of
+the plugin outside `.claude`. The reporter may now name exactly the plugin's own
+renderer as the script `node` runs ("let the reporter run the shipped renderer from
+where a plugin is installed"), with a test that builds an install under `.claude`, and
+the fixture now puts its copy under `.claude/plugins`. One Phase 4 to 5 run from there,
+$0.56: the reporter ran the renderer from that path, the guard refused nothing, the page
+held five screenshots and two text files, and all seven verdicts were right.
+
+A fixture that does not look like an install cannot show what the guard does to one.
+That is the second fault this review found only by changing where the fixture puts
+things; the first was Playwright's output directory.
+
 ### Observations — 0.14.0
 
 "Not done, and worth doing", two sections up, is done ("give a step with no stated
