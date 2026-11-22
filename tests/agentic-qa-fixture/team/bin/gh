@@ -1,0 +1,48 @@
+#!/usr/bin/env node
+// A stand-in for gh, for the team fixture: one issue, its merged pull request, and that pull request's diff.
+// It answers the read commands qa-runner and the coverage critic may run, and fails on anything else.
+const fs = require('node:fs');
+const path = require('node:path');
+const {spawnSync} = require('node:child_process');
+
+const here = path.join(__dirname, '..');
+const args = process.argv.slice(2);
+const log = process.env.GH_STUB_LOG;
+if (log) fs.appendFileSync(log, `gh ${args.join(' ')}\n`);
+
+const MERGE = '9b7e3d1c5a2f4e6081c3d5e7f9a1b3c5d7e9f1a2';
+const issue = {
+  number: 58, title: 'Invite a teammate by email from Settings', state: 'CLOSED',
+  url: 'https://github.com/fixture/accounts/issues/58', author: {login: 'it-lead'}, labels: [{name: 'feature'}],
+  body: fs.readFileSync(path.join(here, 'ticket.md'), 'utf8'), comments: [],
+};
+const pr = {
+  number: 12, title: 'Invite a teammate by email (#58)', state: 'MERGED', isDraft: false,
+  url: 'https://github.com/fixture/accounts/pull/12', baseRefName: 'main', headRefName: 'feature/58-team-invites',
+  mergedAt: '2026-11-20T15:04:05Z', mergeCommit: {oid: MERGE}, author: {login: 'dev-one'},
+  body: 'Closes #58.\n\nAdds an invite form and a Pending invites table to Settings, Team, the invites API with resend and revoke, and teamctl invites list.',
+  closingIssuesReferences: [{number: 58, url: issue.url}], files: [{path: 'server/invites.js'}, {path: 'views/team.js'}, {path: 'cli/teamctl.js'}],
+  comments: [], reviews: [],
+};
+
+const [group, verb] = args;
+const flag = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
+const wantsJson = args.includes('--json');
+const emit = value => {
+  const filter = flag('--jq') ?? flag('-q');
+  const text = JSON.stringify(value, null, 2);
+  if (!filter) return process.stdout.write(`${text}\n`);
+  const out = spawnSync('jq', ['-r', filter], {input: text, encoding: 'utf8'});
+  process.stdout.write(out.stdout);
+  process.exitCode = out.status ?? 1;
+};
+const plain = value => process.stdout.write(`title:\t${value.title}\nstate:\t${value.state}\nnumber:\t${value.number}\nurl:\t${value.url}\n--\n${value.body}\n`);
+
+if (group === 'issue' && verb === 'view') wantsJson ? emit(issue) : plain(issue);
+else if (group === 'pr' && verb === 'view') wantsJson ? emit(pr) : plain(pr);
+else if (group === 'pr' && verb === 'diff') process.stdout.write(fs.readFileSync(path.join(here, 'pr-12.diff'), 'utf8'));
+else if ((group === 'pr' && verb === 'list') || (group === 'search' && verb === 'prs')) wantsJson ? emit([pr]) : process.stdout.write(`12\t${pr.title}\t${pr.headRefName}\tMERGED\n`);
+else if ((group === 'issue' && verb === 'list') || (group === 'search' && verb === 'issues')) wantsJson ? emit([issue]) : process.stdout.write(`58\t${issue.title}\tCLOSED\n`);
+else if (group === 'repo' && verb === 'view') wantsJson ? emit({nameWithOwner: 'fixture/accounts', defaultBranchRef: {name: 'main'}}) : process.stdout.write('fixture/accounts\n');
+else if (group === 'auth' && verb === 'status') process.stdout.write('github.com\n  Logged in to github.com as fixture (stub)\n');
+else { process.stderr.write(`gh stub: "${args.join(' ')}" is not something the fixture answers\n`); process.exit(1); }
