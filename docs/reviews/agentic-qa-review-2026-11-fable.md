@@ -599,7 +599,7 @@ documented bash behaviour.
 | F43 — the executor can remove the guard | **Closed for what the guard can see** | The executor writes, moves and deletes only inside the run's working directory and Playwright's output directory, by literal path, with links followed. A hook that can't start is still non-blocking in Claude Code, so a read-only plugin install remains the real answer. |
 | F44 — bash runs what the parser never saw | **Closed for every case found** | The parser accepts a small grammar and refuses the rest: no backticks, subshells, arithmetic, `${…}` operators or subscripts, `$'…'`, or unquoted heredocs. A heredoc ends where bash ends it. It is still a reading of shell text, and the next disagreement is to be expected. |
 | F45 — a backslash in double quotes hides a path | **Closed, not run on Windows** | Inside double quotes a backslash is dropped only before the four characters bash drops it before. |
-| F46 — `qa-runner` is not held | **Partly** | `qa-runner`'s redirects and file-changing programs are refused a protected file, and a plugin agent may spawn only this plugin's agents. It still runs `gh`, `git`, `curl` and any interpreter. A direct invoker is not held at all, by design. |
+| F46 — `qa-runner` is not held | **Closed for `qa-runner` in 0.9.0** | See the addendum below. A direct invoker is not held at all, by design. |
 | F47 — protected files can be read and sent | **Partly** | Files are named literally, so a glob no longer avoids the name check, and curl is refused a value that could expand to `@file`. Still open: the hook is not called for `Read`; reads are refused by name, not confined to a place; an environment variable can go to an allowed host. |
 | F48 — files that change later sessions are writable | **Closed for the executor** | By the same rule as F43: a place to write, not a list of names. `sed -in` is refused. |
 | F49 — a git error honours a committed allowlist | **Closed** | Only git's exit 1 means untracked. |
@@ -660,12 +660,43 @@ and GitHub, the plugin and the allowlist read-only, and a read-only `gh` token.
 - **F59, a cap on steps.** A number in the plugin would be arbitrary; one in the
   person's settings file is the likely answer.
 
+### Addendum — 0.9.0, `qa-runner`
+
+`qa-runner` is now held to a list, as the executor is. That needed Intake reordered
+first: it used to reach the target before checking the allowlist, following redirects
+to see where they led, which is why it needed `curl` to hosts nobody had listed. The
+allowlist is now checked before anything is sent, in every mode, and each redirect's
+host is checked before it is requested.
+
+What `qa-runner`'s Bash may run: the executor's programs, `curl` under the executor's
+rules, `gh` to read issues and pull requests, `git` in three exact forms, and the wait
+on a signal file in one exact form. No interpreter, and no `gh` command that posts,
+edits or merges, which also narrows F57 for this agent. It writes only in a run
+directory, known by its name because `qa-runner` is what creates it.
+
+Changes: "hold qa-runner's Bash to a list, and check the allowlist before reaching the
+target"; "have qa-runner check it can spawn agents before it does anything"; "let
+qa-runner look in .claude for the settings file".
+
+It was checked with the first whole unattended run this plugin has had in a fixture: a
+calling agent, `qa-runner`, both drafters, both critics, the executor and the reporter,
+against the fixture app, with a stand-in `gh`. The run finished with no escalation and
+reported both planted defects. The guard refused `qa-runner` twice, both early. One was
+a variable in a path, which it resent spelled out, so a refusal of form has now been
+seen to work in a run. The other was a listing of the project's `.claude` directory,
+which is now allowed. No other agent was refused anything.
+
+That run needed the session's spawn depth raised from one to two. At one, a spawned
+agent is given no `Agent` tool, and `qa-runner` can start nothing. It now checks that
+first.
+
+Still open for `qa-runner`: `WebFetch` fetches any URL, and `Read` reads any file.
+
 ### What still needs a live walkthrough
 
 - Everything on Windows. The path rules are tested with Node's Windows path functions
   and a stubbed filesystem, and no command has been judged on a Windows machine.
 - A refusal of form in a real run, to see the executor resend once and continue. None
   occurred in the run above.
-- `qa-runner` itself, now that it is refused some commands and may spawn only this
-  plugin's agents.
+- `qa-runner` on an escalation: every run of it so far has finished without one.
 - An interactive run, and any escalation answered by a person.
