@@ -89,7 +89,7 @@ index 2b6c1d8..e03f7aa 100644
 --- a/cli/teamctl.js
 +++ b/cli/teamctl.js
 @@ -21,6 +21,14 @@ const commands = {
-   version: () => console.log('teamctl ' + pkg.version),
+   version: () => console.log('teamctl ' + pkg.version + '\nserver: ' + api.base),
 +  'invites list': async () => {
 +    const invites = await api.get('/api/invites');
 +    if (!invites.length) return console.log('No pending invites.');
