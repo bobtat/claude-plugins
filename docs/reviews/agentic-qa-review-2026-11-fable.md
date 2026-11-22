@@ -822,3 +822,26 @@ elsewhere, the same behavior would send a command to it.
 This is open. The fixture's CLI now names its server, so a run that looks finds an
 answer. The plugin's text is unchanged: a rule that the planner settles a CLI's target
 or blocks the step with a question has not been written or run.
+
+## Addendum — 0.18.0, the rule for a CLI's target
+
+The rule is written. A `cli` step that reaches a host or a context names beside its
+`Target` the read-only command that confirms where the program points, or what states
+it. A target nothing states is a blocked step with a question for a person. The
+executor runs the command first, does not run the step when it shows nothing or
+somewhere else, and escalates with what it printed; an agent's answer to that
+escalation clears nothing ("settle where a CLI points in the plan, and confirm it
+before the step runs").
+
+In five runs of the team fixture every plan named the command and every executor ran it
+before the CLI's first use. Before the rule that happened in three runs of ten.
+
+What this does not change, and what was not run:
+
+- It is an instruction. The guard still checks a listed program's name and nothing
+  about where it reaches.
+- The confirming command is the planner's choice. The guard permits it because the
+  program is on `allowed_commands`, and does not know it is read-only.
+- No run has had a CLI whose target nothing states, a confirming command that showed
+  somewhere else, or the escalation that follows.
+- The executors confirmed once in a run, not once before each CLI step.
