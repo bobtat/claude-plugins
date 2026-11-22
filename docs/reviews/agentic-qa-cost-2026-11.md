@@ -644,6 +644,34 @@ Not done, and worth doing: a step for an `Added` row that is blocked for want of
 stated result could still be run as an observation where it changes nothing, so that
 whoever answers the question sees what the system does today.
 
+### The report renderer — 0.13.0
+
+The reporter wrote a throwaway script on every run to build the HTML. The plugin now
+ships one, `skills/qa-reporting/scripts/render-report.mjs`, with eight tests ("ship a
+script that renders the HTML report"). This was done for what the file must get right,
+not for cost: the escaping of text the system under test supplied was rewritten by a
+model each run and never tested.
+
+Checked two ways. Run by hand on the last whole run's report it embedded five
+screenshots and two text files, and the page opened in a browser with every image
+loaded and no console error. Then one Phase 4 to 5 fixture run with live updates off:
+the reporter ran the shipped script and wrote none of its own, the page was the same
+shape, all seven verdicts were right, and the run cost $0.55 against $0.57 for the same
+configuration in 0.7.0. The reporter made nine calls where it had made seven, because
+it ran the script once alongside a write that failed and again after. The skill now
+says to render in a turn after the last write. That sentence has not been run.
+
+A whole unattended run on the same text paused before any report was rendered, so it
+shows nothing about the renderer. It does show the ordering rule of 0.12.0: the one
+step that needed a decision was planned last, and the twelve others ran before the
+pause, where the earlier paused run left a step behind the escalation. It cost $1.73,
+for thirteen steps planned.
+
+It also showed `qa-runner` refused a `for` loop as a program it may not start, which
+tells an agent to escalate, and carrying on regardless. A loop or a condition is now
+refused as a matter of form, with the instruction to send the commands plainly
+("refuse a shell loop or condition as a matter of form").
+
 ---
 
 ## What still needs a live walkthrough

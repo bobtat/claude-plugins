@@ -721,3 +721,21 @@ Still open: the reporter runs an interpreter for the script that renders the HTM
 needs a renderer the plugin ships before its `Bash` can be held to a list. The drafters'
 file tools are refused only the protected names, and both now hold `Edit` as well as
 `Write`.
+
+## Addendum — 0.13.0, the renderer
+
+The plugin now ships the script that renders the HTML report, with tests for hostile
+text in the report and in evidence, for evidence paths that leave the run's folder by
+`..` or by a link, and for steps marked sensitive ("ship a script that renders the HTML
+report"). The reporter no longer writes a script of its own.
+
+That was the precondition this review named for closing F52 for `qa-reporter`. F52 is
+still open for it: its `Bash` is barred from network programs by name, and nothing
+holds it to a list yet. The list it needs is short: the renderer, `cp` and `mkdir` for
+the report destination, and the signal file. What is not settled is where it may write,
+because a report destination comes from the brief, which the guard cannot trust.
+
+A shell loop or condition is now refused as a matter of form for `qa-runner` and the
+executor, with the commands to be resent plainly. It had been refused as a program the
+agent may not start, which calls for an escalation, and in one run `qa-runner` resent
+the commands without one.
