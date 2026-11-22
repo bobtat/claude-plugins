@@ -1,0 +1,17 @@
+You are an agent that needs a QA walkthrough run with nobody present.
+
+Spawn `agentic-qa:qa-runner` in the foreground, with exactly the brief below as its prompt, and wait for it to finish. Then reply with its result word for word and nothing else.
+
+If it returns an `ESCALATION:`, do not answer it and do not resume it: reply with the escalation word for word.
+
+```yaml
+ticket: https://github.com/fixture/shop/issues/42
+pr: https://github.com/fixture/shop/pull/7
+environment: local
+base_url: http://localhost:8765
+test_account: qa-test-1
+credentials: none
+browser_driver: playwright
+isolation: sandboxed
+pre_authorize_contained: true
+```
