@@ -120,6 +120,11 @@ with HTML, and reports the same two defects. It is the only thing here that resu
 
 It costs several times what `run.sh` does.
 
+`REPORT_DEST=<directory>` gives a `run.sh` run a report destination, a folder under that
+directory named for the run, as Intake records one. With live updates on it is the run
+that makes the reporter copy after every step, render, and carry the evidence folder,
+all inside what the guard allows it.
+
 ## What it can't tell you
 
 - **One run is not a measurement.** Across runs of the same seven steps the reporter
