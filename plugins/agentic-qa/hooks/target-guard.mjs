@@ -91,8 +91,9 @@ const unsafeDestination = word => word.dynamic || /[*?[\]{}]/.test(word.text);
 // with its paths spelled out is checked in full like any other, so asking for it
 // gives nothing away, where an escalation over one ends an unattended run with no
 // step verified. What a command reaches is never in this set.
-const FORM_REFUSALS = new Set();
-const spellOut = reason => { FORM_REFUSALS.add(reason); return reason; };
+const SPELL_OUT = 'Send it once more with every path spelled out in full: no variable, no glob, no unquoted expansion';
+const FORM_REFUSALS = new Map();
+const spellOut = (reason, hint = SPELL_OUT) => { FORM_REFUSALS.set(reason, hint); return reason; };
 export const isFormRefusal = reason => FORM_REFUSALS.has(reason);
 
 export function parseSettings(text) {
@@ -157,86 +158,147 @@ export function checkUrl(value, allowedHosts) {
   return hostAllowed(host, allowedHosts) ? null : `host ${host} is not in allowed_hosts`;
 }
 
-// Splits a command line into simple commands, each a list of words. Understands
-// quoting, operators, comments, heredocs and substitutions, which are returned
-// as commands of their own. `dynamic` marks a word that an expansion could change
-// at run time. `split` marks one whose expansion is unquoted, which the shell can
-// turn into several words, so nothing checked here describes what actually runs.
+// A problem with how a command is written that has a mechanical fix. Refused like
+// any other, but the executor is asked for the command once more.
+class Respell extends Error {
+  constructor(message, hint) { super(message); this.hint = hint; }
+}
+
+const HEREDOC = /^<<(-?)[ \t]*(?:'([A-Za-z_][A-Za-z0-9_]*)'|"([A-Za-z_][A-Za-z0-9_]*)")(?=[\s;|&<>]|$)/;
+
+// Splits a command line into simple commands, each a list of words, and throws on
+// anything outside a small grammar. The grammar is small on purpose: this guard
+// decides on its own reading of the text, and wherever that reading and bash's can
+// differ, bash runs a command nobody checked. So it accepts only what it reads the
+// way bash does: words, single and double quotes, $NAME, ${NAME}, $(command),
+// redirects, heredocs with a quoted delimiter, and commands joined by && || ; | &.
+// It refuses backticks, subshells, arithmetic, ${…} with any operator, $'…', and
+// heredocs whose body bash would expand.
+//
+// On a word, `dynamic` marks an expansion that can change it at run time, `split`
+// one that is unquoted and so can become several words, and `glob` and `brace`
+// an unquoted pattern character the shell would expand. On a command, `next` is
+// the operator that follows it and `sub` marks one inside a substitution.
 export function parseShell(src) {
   const commands = [];
   const stack = [{words: [], word: null}];
   let heredocs = [];
   const top = () => stack[stack.length - 1];
-  const start = () => { top().word ??= {text: '', dynamic: false, split: false}; return top().word; };
+  const start = () => { top().word ??= {text: '', dynamic: false, split: false, glob: false, brace: false}; return top().word; };
   const endWord = () => { const f = top(); if (f.word) { f.words.push(f.word); f.word = null; } };
-  const endCommand = () => { endWord(); const f = top(); if (f.words.length) commands.push(f.words); f.words = []; };
-  let i = 0;
-  const openSub = close => {
-    const word = start();
-    word.dynamic = true;
-    word.split = true;
-    stack.push({words: [], word: null, close});
+  const endCommand = next => {
+    endWord();
+    const f = top();
+    if (f.words.length) { f.words.next = next; f.words.sub = stack.length > 1; commands.push(f.words); }
+    f.words = [];
   };
-  const closeSub = () => { endCommand(); stack.pop(); };
+  const noHeredocPending = what => {
+    if (heredocs.length) throw new Error(`${what} on a line that starts a heredoc`);
+  };
+  // Reads the expansion at src[i], which is a `$` not followed by a single `(`.
+  const parameter = (i, quoted) => {
+    const rest = src.slice(i, i + 80);
+    if (rest.startsWith('$((') || rest[1] === '[') throw new Error('arithmetic, which evaluates its text as code');
+    if (!quoted && (rest[1] === "'" || rest[1] === '"')) throw new Error('$\'…\' or $"…" quoting, which decodes its text');
+    const braced = /^\$\{[A-Za-z_][A-Za-z0-9_]*\}/.exec(rest);
+    if (braced) return {text: braced[0], expands: true};
+    if (rest[1] === '{') throw new Error('${…} with anything but a plain name: an operator or subscript there can run a command');
+    const plain = /^\$(?:[A-Za-z_][A-Za-z0-9_]*|[0-9?#@*!$-])/.exec(rest);
+    return plain ? {text: plain[0], expands: true} : {text: '$', expands: false};
+  };
+  let i = 0;
   while (i < src.length) {
     const c = src[i];
     const f = top();
-    if (f.close === ')' && c === ')') { closeSub(); i++; continue; }
-    if (f.close === '`' && c === '`') { closeSub(); i++; continue; }
+    if (f.close === ')' && c === ')') { endCommand(')'); stack.pop(); i++; continue; }
     if (c === '\\') {
       const next = src[i + 1];
-      if (next === '\n') { i += 2; continue; }
-      start().text += next ?? '';
+      if (next === undefined) throw new Error('a backslash at the end');
+      if (next === '\n') { noHeredocPending('a continued line'); i += 2; continue; }
+      start().text += next;
       i += 2;
       continue;
     }
     if (c === "'") {
       const end = src.indexOf("'", i + 1);
       if (end < 0) throw new Error('unterminated quote');
-      start().text += src.slice(i + 1, end);
+      const body = src.slice(i + 1, end);
+      if (body.includes('\n')) noHeredocPending('a quoted newline');
+      start().text += body;
       i = end + 1;
       continue;
     }
     if (c === '"') {
-      start();
+      const word = start();
       i++;
       while (i < src.length && src[i] !== '"') {
-        if (src[i] === '\\') { top().word.text += src[i + 1] ?? ''; i += 2; continue; }
-        if (src[i] === '`') throw new Error('backtick inside double quotes');
-        if (src[i] === '$' && src[i + 1] === '(') {
-          const end = matchParen(src, i + 1);
-          const inner = parseShell(src.slice(i + 2, end));
-          commands.push(...inner);
-          top().word.dynamic = true;
-          top().word.text += '$';
+        const d = src[i];
+        if (d === '\\') {
+          // Inside double quotes bash drops a backslash only before these; before
+          // anything else it stays, and on Windows it is then a path separator.
+          const next = src[i + 1];
+          if (next === undefined) throw new Error('unterminated quote');
+          if (next === '\n') noHeredocPending('a continued line');
+          else word.text += '$`"\\'.includes(next) ? next : `\\${next}`;
+          i += 2;
+          continue;
+        }
+        if (d === '`') throw new Error('a backtick: use $(…)');
+        if (d === '\n') noHeredocPending('a quoted newline');
+        if (d === '$' && src[i + 1] === '(' && src[i + 2] !== '(') {
+          // Finding where a substitution ends means reading quotes and parentheses
+          // exactly as bash does. Inside double quotes this takes only the plain case.
+          const end = src.indexOf(')', i + 2);
+          const inner = end < 0 ? null : src.slice(i + 2, end);
+          if (inner === null || /[('"\\$`\n<>]/.test(inner)) {
+            throw new Error('a substitution inside double quotes that is more than a plain command such as $(cat file)');
+          }
+          for (const command of parseShell(inner)) { command.sub = true; commands.push(command); }
+          word.dynamic = true;
+          word.text += '$';
           i = end + 1;
           continue;
         }
-        if (src[i] === '$') top().word.dynamic = true;
-        top().word.text += src[i++];
+        if (d === '$') {
+          const read = parameter(i, true);
+          if (read.expands) word.dynamic = true;
+          word.text += read.text;
+          i += read.text.length;
+          continue;
+        }
+        word.text += d;
+        i++;
       }
       if (i >= src.length) throw new Error('unterminated quote');
       i++;
       continue;
     }
-    if (c === '$' && src[i + 1] === '(') { openSub(')'); i += 2; continue; }
-    if (c === '`') { openSub('`'); i++; continue; }
-    if (c === '$') {
+    if (c === '`') throw new Error('a backtick: use $(…)');
+    if (c === '$' && src[i + 1] === '(' && src[i + 2] !== '(') {
       const word = start();
       word.dynamic = true;
       word.split = true;
-      word.text += c;
-      i++;
+      stack.push({words: [], word: null, close: ')'});
+      i += 2;
+      continue;
+    }
+    if (c === '$') {
+      const read = parameter(i, false);
+      const word = start();
+      if (read.expands) { word.dynamic = true; word.split = true; }
+      word.text += read.text;
+      i += read.text.length;
       continue;
     }
     if (c === '#' && !f.word) { while (i < src.length && src[i] !== '\n') i++; continue; }
     if (c === '<' && src[i + 1] === '<' && src[i + 2] !== '<') {
       endWord();
-      const m = /^<<-?\s*(?:'([^']+)'|"([^"]+)"|\\?([\w.-]+))/.exec(src.slice(i));
-      if (!m) throw new Error('unreadable heredoc');
-      // Only a quoted delimiter's body is inert; an unquoted one still expands
-      // $(...), so its body can run commands.
-      heredocs.push({tag: m[1] ?? m[2] ?? m[3], literal: Boolean(m[1] ?? m[2])});
+      const m = HEREDOC.exec(src.slice(i));
+      if (!m) {
+        throw new Respell('a heredoc needs a plain quoted delimiter', 'Send it once more with the heredoc\'s delimiter quoted, as in <<\'ENTRY\', so that bash expands nothing in its body');
+      }
+      if (stack.length > 1) throw new Error('a heredoc inside a substitution');
+      heredocs.push({tag: m[2] ?? m[3], stripTabs: m[1] === '-'});
       i += m[0].length;
       continue;
     }
@@ -248,60 +310,77 @@ export function parseShell(src) {
       i += redirect[0].length;
       continue;
     }
-    if (c === '\n' || c === ';' || c === '|' || c === '&' || c === '(' || c === ')') {
-      endCommand();
-      if (c === '\n' && heredocs.length) i = skipHeredocs(src, i + 1, heredocs) - 1;
-      if (c === '\n') heredocs = [];
-      i++;
+    if (c === '\n' || c === ';' || c === '|' || c === '&') {
+      const two = src.slice(i, i + 2);
+      const operator = two === '&&' || two === '||' ? two : c;
+      endCommand(operator);
+      i += operator.length;
+      if (c === '\n' && heredocs.length) {
+        i = skipHeredocs(src, i, heredocs);
+        heredocs = [];
+      }
       continue;
     }
+    // A subshell, a group, a function, a process substitution, (( )): none is needed.
+    if (c === '(' || c === ')') throw new Error('parentheses outside $(…)');
     if (c === ' ' || c === '\t') { endWord(); i++; continue; }
-    start().text += c;
+    const word = start();
+    if (c === '*' || c === '?' || c === '[') word.glob = true;
+    if (c === '{' || c === '}') word.brace = true;
+    word.text += c;
     i++;
   }
   if (stack.length > 1) throw new Error('unterminated substitution');
-  endCommand();
+  if (heredocs.length) throw new Error('a heredoc with no body');
+  endCommand('');
   return commands;
 }
 
-function matchParen(src, open) {
-  let depth = 0;
-  for (let i = open; i < src.length; i++) {
-    if (src[i] === '(') depth++;
-    if (src[i] === ')' && --depth === 0) return i;
-  }
-  throw new Error('unterminated substitution');
-}
-
+// A heredoc's body ends where bash ends it: at a line that is exactly the
+// delimiter, with leading tabs removed only for <<-. Nothing else is trimmed.
 function skipHeredocs(src, start, heredocs) {
   let i = start;
-  for (const {tag, literal} of heredocs) {
-    const body = [];
+  for (const {tag, stripTabs} of heredocs) {
     for (;;) {
       if (i >= src.length) throw new Error('unterminated heredoc');
       let end = src.indexOf('\n', i);
       if (end < 0) end = src.length;
-      const line = src.slice(i, end).replace(/\r$/, '');
+      const line = src.slice(i, end);
       i = end + 1;
-      if (line.replace(/^\t+/, '') === tag) break;
-      body.push(line);
+      if ((stripTabs ? line.replace(/^\t+/, '') : line) === tag) break;
     }
-    if (!literal && /\$\(|`/.test(body.join('\n'))) throw new Error('substitution inside an unquoted heredoc');
   }
   return i;
 }
 
 const isAssignment = word => /^[A-Za-z_][A-Za-z0-9_]*=/.test(word.text);
 
+// A redirect to /dev/tcp/<host>/<port> or /dev/udp/… is a network connection in
+// bash, with no curl for the host checks to see. Of /dev, only these are needed.
+const DEVICES = new Set(['/dev/null', '/dev/stdout', '/dev/stderr', '/dev/stdin']);
+
 function splitRedirects(raw) {
   const words = [];
-  const writes = [];
+  const redirects = [];
   for (let i = 0; i < raw.length; i++) {
     if (!raw[i].redirect) { words.push(raw[i]); continue; }
+    const operator = raw[i].text;
     const target = raw[++i];
-    if (target && /^(&>>?|>>?\|?|>&|<>)$/.test(raw[i - 1].text)) writes.push(target);
+    if (!target) throw new Error('a redirect with no target');
+    // A here-string's operand is data, and `2>&1` names a descriptor.
+    if (operator === '<<<') continue;
+    if ((operator === '>&' || operator === '<&') && /^(\d+|-)$/.test(target.text) && !target.dynamic) continue;
+    redirects.push({target, writes: operator !== '<' && operator !== '<&'});
   }
-  return {words, writes};
+  return {words, redirects};
+}
+
+function checkRedirect({target}) {
+  if (unsafeDestination(target)) return spellOut(`a redirect to "${target.text}" must name a literal path`);
+  if (/^[/\\]+dev([/\\]|$)/i.test(target.text.replace(/[/\\]+/g, '/')) && !DEVICES.has(target.text)) {
+    return `a redirect to "${target.text}" is not allowed: of /dev, only null, stdout, stderr and stdin`;
+  }
+  return protectedPath(target.text);
 }
 
 const commandName = text => text.replace(/\\/g, '/').split('/').pop().toLowerCase().replace(/\.exe$/, '');
@@ -504,20 +583,30 @@ function pathArguments(name, args) {
   return args;
 }
 
+function unreadable(err) {
+  const reason = `the command could not be read safely (${err.message}); write it more simply`;
+  return err instanceof Respell ? spellOut(reason, err.hint) : reason;
+}
+
 export function checkExecutorBash(command, settings, env = process.env) {
   let commands;
   try {
     commands = parseShell(command);
   } catch (err) {
-    return `the command could not be read safely (${err.message}); write it more simply`;
+    return unreadable(err);
   }
   const extra = new Set(settings.allowed_commands);
   for (const raw of commands) {
-    const {words, writes} = splitRedirects(raw);
-    for (const target of writes) {
-      if (unsafeDestination(target)) return spellOut(`a redirect to "${target.text}" must name a literal path`);
-      const reason = protectedPath(target.text);
-      if (reason) return reason;
+    let words;
+    try {
+      const split = splitRedirects(raw);
+      words = split.words;
+      for (const redirect of split.redirects) {
+        const reason = checkRedirect(redirect);
+        if (reason) return reason;
+      }
+    } catch (err) {
+      return unreadable(err);
     }
     let n = 0;
     while (n < words.length && isAssignment(words[n])) {
@@ -567,14 +656,16 @@ export function checkRestrictedBash(command) {
   try {
     commands = parseShell(command);
   } catch {
-    commands = command.split(/[\s;|&()`]+/).map(text => [{text, dynamic: false}]);
+    commands = command.split(/[\s;|&()`<>]+/).map(text => [{text, dynamic: false}]);
   }
   for (const raw of commands) {
     for (const word of raw) {
-      const reason = word.redirect ? null : protectedPath(word.text);
+      if (word.redirect) continue;
+      const reason = protectedPath(word.text);
       if (reason) return reason;
+      if (/(^|[/\\])dev[/\\]+(tcp|udp)([/\\]|$)/i.test(word.text)) return `"${word.text}" opens a network connection`;
     }
-    const {words} = splitRedirects(raw);
+    const words = raw.filter(word => !word.redirect);
     if (words[0] && NETWORK_TOOLS.has(commandName(words[0].text))) {
       return `${commandName(words[0].text)} is not available to this agent`;
     }
@@ -618,7 +709,7 @@ export function decide(input, settings) {
 
 export function nextStep(reason) {
   return isFormRefusal(reason)
-    ? 'This is about how the command is written, not what it reaches. Send it once more with every path spelled out in full: no variable, no glob, no unquoted expansion. If that is refused too, end your turn with an ESCALATION saying what was refused'
+    ? `This is about how the command is written, not what it reaches. ${FORM_REFUSALS.get(reason)}. If that is refused too, end your turn with an ESCALATION saying what was refused`
     : 'Do not rephrase this to get past it: end your turn with an ESCALATION saying what was refused';
 }
 
