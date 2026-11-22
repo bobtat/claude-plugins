@@ -822,3 +822,22 @@ test('a plugin agent spawns only this plugin\'s agents', () => {
   const matcher = JSON.parse(fs.readFileSync(fileURLToPath(new URL('./hooks.json', import.meta.url)), 'utf8')).hooks.PreToolUse[0].matcher;
   assert.ok(matcher.split('|').includes('Agent'), 'the hook has to be called for Agent');
 });
+
+test('F52: a critic writes its findings in the run directory and nowhere else', () => {
+  const {root, run, home, project, done} = layout();
+  const fresh = path.join(root, 'walkthrough-ABC-2-20261122T010203Z');
+  for (const critic of ['agentic-qa:behavior-coverage-critic', 'agentic-qa:step-plan-critic']) {
+    const tool = (name, file) => decide({agent_type: critic, tool_name: name, tool_input: {file_path: file}, cwd: project}, settings, {HOME: home, CLAUDE_PROJECT_DIR: project});
+    assert.equal(tool('Write', `${run}/signals/critic-1.txt`), null);
+    // The coverage critic runs before step-plan.md exists, so the directory's name has to be enough.
+    assert.equal(tool('Write', `${fresh}/signals/critic-1.txt`), null);
+    for (const file of [`${project}/src/app.js`, `${project}/walkthrough-ABC-1/x.txt`, `${root}/notes.txt`, `${fresh}/../notes.txt`, `${home}/.bashrc`, `${home}/.claude/agentic-qa.local.md`]) {
+      assert.ok(tool('Write', file), `${critic} should not write ${file}`);
+      assert.ok(tool('Edit', file), `${critic} should not edit ${file}`);
+    }
+    assert.match(tool('Write', `${project}/src/app.js`), /outside the run's working directory/);
+  }
+  // The drafters are not held to it: only the protected names are refused them.
+  assert.equal(decide({agent_type: 'agentic-qa:step-planner', tool_name: 'Write', tool_input: {file_path: `${root}/notes.txt`}, cwd: project}, settings, {HOME: home, CLAUDE_PROJECT_DIR: project}), null);
+  done();
+});
