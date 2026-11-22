@@ -15,7 +15,7 @@ Absolute paths to a draft `step-plan.md` and `behavior-spec.md`. Read both in fu
 
 ## Your charter
 
-1. Steps that don't actually verify their claimed behavior, grounded against `behavior-spec.md`.
+1. Steps that don't actually verify their claimed behavior, grounded against `behavior-spec.md`: among them a step whose Expected carries another behavior's result, so that it would fail its own behavior for a defect elsewhere, and a step that only prepares and judges nothing.
 2. **Traceability completeness** — every behavior from `behavior-spec.md`, stated or an included `Added` row, appears somewhere: a step, or explicitly in `Out of scope` with a reason. A silent omission is a defect.
 3. **Surface-choice fit** — a browser step for something purely backend, or an API-only step for something only observable in the rendered UI.
 4. **Reversibility and containment**, on every irreversible step: is it actually irreversible, and is its effect `contained` or `escapes`. Both need a real citation — the API contract, the code path, a doc, or `intake.md`'s isolation claim — and you can override the isolation claim if the code disagrees with it. A hardcoded production mail relay is `escapes` even if isolation said sandboxed. Code you could not read is not disagreement: `Isolation: sandboxed` stands on its own then, and a step is not `escapes` for being unverified.
