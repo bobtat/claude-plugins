@@ -690,3 +690,58 @@ test('the hook process holds the executor to its place', () => {
   assert.equal(JSON.parse(run1('echo x >> notes.txt')).hookSpecificOutput.permissionDecision, 'deny');
   done();
 });
+
+test('F49, F60: only git saying "untracked" makes a project settings file count', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-git-'));
+  const home = path.join(dir, 'home');
+  const repo = path.join(dir, 'repo');
+  fs.mkdirSync(path.join(home, '.claude'), {recursive: true});
+  fs.mkdirSync(path.join(repo, '.claude'), {recursive: true});
+  const git = (...a) => spawnSync('git', ['-C', repo, ...a], {stdio: 'ignore'});
+  fs.writeFileSync(path.join(repo, '.claude', 'agentic-qa.local.md'), '---\nallowed_hosts:\n  - repo.example.com\n---\n');
+  // Not a git checkout at all: git cannot say the file is untracked, so it does not count.
+  assert.deepEqual(loadSettings(repo, home).allowed_hosts, []);
+  assert.match(loadSettings(repo, home).problems.join(' '), /is ignored/);
+  git('init', '-q');
+  assert.deepEqual(loadSettings(repo, home).allowed_hosts, ['repo.example.com']);
+  assert.deepEqual(loadSettings(repo, home).problems, []);
+  git('add', '-f', '.claude/agentic-qa.local.md');
+  assert.deepEqual(loadSettings(repo, home).allowed_hosts, []);
+  // A committed allowlist stays ignored when git breaks, which is what used to un-ignore it.
+  fs.writeFileSync(path.join(repo, '.git', 'HEAD'), 'garbage\n');
+  assert.deepEqual(loadSettings(repo, home).allowed_hosts, []);
+  const savedPath = process.env.PATH;
+  process.env.PATH = dir;
+  try {
+    assert.deepEqual(loadSettings(repo, home).allowed_hosts, []);
+  } finally {
+    process.env.PATH = savedPath;
+  }
+  fs.rmSync(dir, {recursive: true, force: true});
+});
+
+test('F50: valid YAML is read, and what cannot be read is reported', () => {
+  const hosts = text => parseSettings(text).allowed_hosts;
+  assert.deepEqual(hosts('---\nallowed_hosts:\n- a.example.com\n- b.example.com\n---\n'), ['a.example.com', 'b.example.com']);
+  assert.deepEqual(hosts('---\nallowed_hosts: [a.example.com, "*.b.example.com"]\n---\n'), ['a.example.com', '*.b.example.com']);
+  assert.deepEqual(hosts('﻿---\nallowed_hosts:\n  - a.example.com\n---\n'), ['a.example.com']);
+  assert.deepEqual(hosts('\n\n---\nallowed_hosts:\n  - a.example.com\n---\n'), ['a.example.com']);
+  assert.deepEqual(hosts('---\nallowed_hosts:\n  - a.example.com/\n---\n'), ['a.example.com']);
+  const url = parseSettings('---\nallowed_hosts:\n  - https://Staging.example.com:8443/app\n---\n');
+  assert.deepEqual(url.allowed_hosts, ['staging.example.com']);
+  assert.match(url.problems.join(' '), /is a URL/);
+  const port = parseSettings('---\nallowed_hosts:\n  - staging.example.com:8443\n---\n');
+  assert.match(port.problems.join(' '), /has a port/);
+  assert.match(parseSettings('---\nallowed_hosts: staging.example.com\n---\n').problems.join(' '), /cannot read/);
+  assert.match(parseSettings('allowed_hosts:\n  - a.example.com\n').problems.join(' '), /frontmatter/);
+  assert.deepEqual(parseSettings('---\nbase_url: https://x\nallowed_commands: [mytool]\n---\n').allowed_commands, ['mytool']);
+  // A key in the file cannot write into the report of problems.
+  assert.deepEqual(parseSettings('---\nproblems:\n  - none\n---\n').problems, []);
+  // The refusal says the settings may be why.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-settings-'));
+  fs.mkdirSync(path.join(dir, '.claude'));
+  fs.writeFileSync(path.join(dir, '.claude', 'agentic-qa.local.md'), '---\nallowed_hosts: staging.example.com\n---\n');
+  const denied = runHook(JSON.stringify({agent_type: 'agentic-qa:step-executor', tool_name: 'Bash', tool_input: {command: 'curl -q https://staging.example.com/x'}, cwd: dir}), {CLAUDE_PROJECT_DIR: dir, HOME: dir, USERPROFILE: dir});
+  assert.match(JSON.parse(denied.stdout).hookSpecificOutput.permissionDecisionReason, /not in allowed_hosts.*The settings may be why.*cannot read/);
+  fs.rmSync(dir, {recursive: true, force: true});
+});
