@@ -824,6 +824,19 @@ test('a plugin agent spawns only this plugin\'s agents', () => {
   assert.ok(matcher.split('|').includes('Agent'), 'the hook has to be called for Agent');
 });
 
+test('a substitution too involved to read is refused as form, with the two-command way to write it', () => {
+  const {run, done} = layout();
+  const inline = `curl -q -sS -H "Cookie: $(jq -r '.cookies[0].value' ${run}/session.json)" http://localhost:8765/api`;
+  const reason = checkExecutorBash(inline, settings);
+  assert.ok(reason, inline);
+  assert.ok(isFormRefusal(reason), reason);
+  assert.match(nextStep(reason), /first write the value to a file/);
+  // The two commands it asks for are read and allowed.
+  assert.equal(checkExecutorBash(`jq -r '.cookies[0].value' ${run}/session.json > ${run}/runtime-secrets/session-cookie`, settings), null);
+  assert.equal(checkExecutorBash(`curl -q -sS -H "Cookie: session=$(cat ${run}/runtime-secrets/session-cookie)" http://localhost:8765/api`, settings), null);
+  done();
+});
+
 test('a loop or a condition is refused as a matter of form, so the commands can be resent plainly', () => {
   for (const [check, who] of [[checkExecutorBash, 'executor'], [checkRunnerBash, 'runner']]) {
     for (const command of ['for p in version health; do curl -q -sS -f http://localhost:8765/$p; done', 'if test -f /tmp/x; then echo yes; fi',

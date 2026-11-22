@@ -296,7 +296,8 @@ export function parseShell(src) {
           const end = src.indexOf(')', i + 2);
           const inner = end < 0 ? null : src.slice(i + 2, end);
           if (inner === null || /[('"\\$`\n<>]/.test(inner)) {
-            throw new Error('a substitution inside double quotes that is more than a plain command such as $(cat file)');
+            throw new Respell('a substitution inside double quotes that is more than a plain command such as $(cat file)',
+              'Send it as two commands: first write the value to a file in the run\'s working directory, with nothing printed, then use $(cat <that file>) where the value goes');
           }
           for (const command of parseShell(inner)) { command.sub = true; commands.push(command); }
           word.dynamic = true;
