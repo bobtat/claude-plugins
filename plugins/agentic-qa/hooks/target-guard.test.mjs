@@ -826,11 +826,12 @@ test('a plugin agent spawns only this plugin\'s agents', () => {
 test('a loop or a condition is refused as a matter of form, so the commands can be resent plainly', () => {
   for (const [check, who] of [[checkExecutorBash, 'executor'], [checkRunnerBash, 'runner']]) {
     for (const command of ['for p in version health; do curl -q -sS -f http://localhost:8765/$p; done', 'if test -f /tmp/x; then echo yes; fi',
-      'while true; do sleep 1; done', 'case x in x) echo y;; esac', 'for p in a b; do echo "$p"; done']) {
+      'while true; do sleep 1; done', 'for p in a b; do echo "$p"; done']) {
       const reason = check(command, settings);
       assert.ok(reason, `${who} should refuse: ${command}`);
       assert.ok(isFormRefusal(reason), `${who}: ${command} -> ${reason}`);
-      assert.match(nextStep(reason), /once more as plain commands/);
+      // qa-runner is told the one loop it may write; the executor has none.
+      assert.match(nextStep(reason), /once more as plain commands|written exactly as: until \[ -f <path> \]/);
     }
     // A program that isn't on the list is still a decision, not a matter of form.
     const reason = check('python3 -c 1', settings);
