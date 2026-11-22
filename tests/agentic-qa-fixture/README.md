@@ -95,7 +95,10 @@ and the critics, and the guard's rules for each of them.
   real to find.
 
 The plan is made by the pipeline, so there is no table of expected verdicts. A correct
-run reports the two defects: the list's "Canceled" and the Cancel button that stays.
+run plans and runs a step for each of the ticket's six criteria, reports the two
+defects, the list's "Canceled" and the Cancel button that stays, and lists its open
+questions in the report. The first run of this fixture left the search criterion
+blocked on a question, which is the kind of regression it is here to show.
 
 It needs agents to be able to spawn agents. Where `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`
 is 1, `qa-runner` is given no `Agent` tool and escalates at once: run the script with
@@ -112,6 +115,6 @@ It costs several times what `run.sh` does.
 - **A warm cache flatters the second run.** A run that follows another with the same
   agent text reads a cached prompt where the first one paid to write it.
 - **`run.sh` doesn't run Phases 0 to 3.** Only `run-unattended.sh` does, and it has
-  run once.
+  run twice to the end.
 - **Only Sonnet has been measured.** Which tools an executor reaches for is the model's
   choice, and another model will choose differently.
