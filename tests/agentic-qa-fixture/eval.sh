@@ -19,16 +19,21 @@ WORK="${FIXTURE_WORK:-${TMPDIR:-/tmp}/agentic-qa-fixture}"
 mkdir -p "$WORK"
 
 lane() {
-  # $1 is the script, $2 the letter that marks its runs. A run that fails is still scored.
+  # $1 is the script, $2 the letter that marks its runs, $3 the folder they go in. A run that fails is still scored.
   i=1
   while [ "$i" -le "$N" ]; do
     "$1" "$LABEL-$2$i" > "$WORK/eval-$LABEL-$2$i.log" 2>&1 || true
     echo "finished $LABEL-$2$i"
+    # A run the API stopped, at a usage limit for one, tested nothing, and the next would be stopped too.
+    if grep -q '"is_error":true' "$WORK/$3/$LABEL-$2$i/result.json" 2>/dev/null; then
+      echo "stopping the $3 runs: $LABEL-$2$i ended in an API error"
+      break
+    fi
     i=$((i + 1))
   done
 }
-lane "$HERE/run-unattended.sh" o &
-lane "$HERE/team/run.sh" t &
+lane "$HERE/run-unattended.sh" o unattended &
+lane "$HERE/team/run.sh" t team &
 wait
 
 orders=""; team=""; i=1

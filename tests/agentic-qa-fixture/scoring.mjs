@@ -12,6 +12,14 @@ function result(out) {
 
 export const cost = out => Number(result(out).total_cost_usd ?? NaN);
 
+// A run the API stopped, such as at a usage limit, did not test the plugin. It is said
+// to have not run and is left out of every count, never scored as a failure.
+export function stopped(out) {
+  const r = result(out);
+  if (!('result' in r)) return 'no result was written';
+  return r.is_error ? String(r.result ?? 'the session ended in an error').slice(0, 120) : null;
+}
+
 // Every transcript of the run's session: the caller's and each agent's.
 export function sessionFiles(out) {
   try {
@@ -47,7 +55,8 @@ export function traceRows(report) {
   const table = (/^## Traceability[\s\S]*?(?=^## )/m.exec(report) ?? [report])[0];
   return [...table.matchAll(/^\|\s*(S\d+)\s*\|\s*([^|]*)\|\s*([^|]*)\|\s*$/gm)].map(m => {
     const behavior = m[2].trim();
-    const ids = (/^[^—–-]*/.exec(behavior)?.[0] ?? '').match(/\b[AB]\d+\b/g) ?? [];
+    // A run may split a behavior: B5a and B5b are both B5.
+    const ids = ((/^[^—–-]*/.exec(behavior)?.[0] ?? '').match(/\b[AB]\d+[a-z]?\b/g) ?? []).map(id => id.replace(/[a-z]$/, ''));
     return {step: m[1], behavior, ids, verdict: m[3].trim(), kind: kindOf(m[3])};
   });
 }
@@ -91,8 +100,9 @@ export function placeRows(rows, map, criteria) {
 
 export const show = list => list.map(row => `${row.step} ${row.kind}`).join(', ') || 'no step';
 // A criterion has a verdict when a step for it got that verdict and none failed or went
-// unjudged. A step that only observed something beside it does not count against it.
-export const holds = (list, kind) => list.some(row => row.kind === kind) && list.every(row => row.kind === kind || row.kind === 'observed');
+// unjudged. A step that observed a case beside it, or is blocked on a question about
+// one, does not count against it: the criterion as written was still judged.
+export const holds = (list, kind) => list.some(row => row.kind === kind) && list.every(row => row.kind === kind || row.kind === 'observed' || row.kind === 'blocked');
 
 // Prints the checks, or with --json returns them for the tabulator. A check with ok
 // null is information for a person and is not scored.

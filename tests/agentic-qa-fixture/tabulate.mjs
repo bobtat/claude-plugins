@@ -2,6 +2,7 @@
 // usage: tabulate.mjs <orders|team> <run output dir>...
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {stopped, cost} from './scoring.mjs';
 
 const [fixture, ...outs] = process.argv.slice(2);
 if (!['orders', 'team'].includes(fixture) || !outs.length) {
@@ -9,7 +10,10 @@ if (!['orders', 'team'].includes(fixture) || !outs.length) {
   process.exit(2);
 }
 const scorer = fileURLToPath(new URL(fixture === 'team' ? './team/score.mjs' : './score.mjs', import.meta.url));
-const runs = outs.map(out => {
+const cut = outs.map(out => [out, stopped(out)]).filter(([, why]) => why);
+for (const [out, why] of cut) console.log(`did not run, and is not counted: ${out.split('/').pop()} — ${why} ($${(cost(out) || 0).toFixed(2)} spent)`);
+if (cut.length) console.log('');
+const runs = outs.filter(out => !stopped(out)).map(out => {
   const res = spawnSync(process.execPath, [scorer, '--json', out], {encoding: 'utf8'});
   try {
     return JSON.parse(res.stdout);
