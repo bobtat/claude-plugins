@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {checkExecutorBash, checkReporterBash, checkRestrictedBash, checkRunnerBash, RENDERER, REPORTER_COMMANDS, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, makePlace, nextStep, parseSettings, RUNNER_COMMANDS} from './target-guard.mjs';
+import {checkExecutorBash, checkReporterBash, checkResponseMask, checkRestrictedBash, checkRunnerBash, RENDERER, REPORTER_COMMANDS, RESPONSE_MASK, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, makePlace, nextStep, parseSettings, RUNNER_COMMANDS} from './target-guard.mjs';
 
 const settings = {allowed_hosts: ['staging.example.com', '*.preview.example.com'], allowed_commands: ['mytool']};
 const refused = command => assert.ok(checkExecutorBash(command, settings), `should refuse: ${command}`);
@@ -822,6 +822,39 @@ test('a plugin agent spawns only this plugin\'s agents', () => {
   assert.equal(spawn('general-purpose', 'general-purpose'), null);
   const matcher = JSON.parse(fs.readFileSync(fileURLToPath(new URL('./hooks.json', import.meta.url)), 'utf8')).hooks.PreToolUse[0].matcher;
   assert.ok(matcher.split('|').includes('Agent'), 'the hook has to be called for Agent');
+});
+
+test('the executor\'s curl prints a response only through the mask, and never prints headers', () => {
+  const run = bash => decide({agent_type: 'agentic-qa:step-executor', tool_name: 'Bash', tool_input: {command: bash}}, settings);
+  const mask = `jq '${RESPONSE_MASK}'`;
+  const url = 'http://localhost:8765/api/orders/ORD-1';
+  // Through the mask, with or without evidence written from the masked side, or with the body discarded.
+  for (const command of [`curl -q -sS ${url} | ${mask}`, `curl -q -sS -w '%{stderr}HTTP %{http_code}\\n' -X POST -d '{"a":1}' ${url} | ${mask} | tee evidence/s1.json`,
+    `curl -q -sS ${url} | jq -c '${RESPONSE_MASK}'`, `curl -q -sS -o /dev/null -w '%{http_code}' ${url}`, `curl -q -sS ${url} | ${mask}; curl -q -sS -o /dev/null -w '%{http_code}' ${url}`,
+    `curl -q -sS ${url} | jq 'walk(if type == "object"   then with_entries(if (.key | test("token|secret|password|passwd|pwd|key|session|auth|jwt|otp|cookie|credential"; "i")) and (.value | type == "string") then .value = "<masked>" else . end) else . end)'`]) {
+    assert.equal(run(command), null, command);
+  }
+  // Printed raw, read by something that is not the mask, written raw, or with a filter that only looks like it.
+  for (const command of [`curl -q -sS ${url}`, `curl -q -sS ${url} | head -c 600`, `curl -q -sS ${url} | tee evidence/raw.txt | head -c 600`, `curl -q -sS ${url} | jq .`,
+    `curl -q -sS ${url} | jq -R '${RESPONSE_MASK}'`, `curl -q -sS ${url} | jq '${RESPONSE_MASK}' -r --arg x y`, `curl -q -sS ${url} | jq '${RESPONSE_MASK.replace('token|', '')}'`,
+    `curl -q -sS ${url} | jq '${RESPONSE_MASK} | .invite_token'`, `curl -q -sS -o evidence/s1.json ${url}`, `curl -q -sS ${url} > evidence/s1.json`, `curl -q -sS ${url} && echo done`,
+    `curl -q -sS ${url}; curl -q -sS ${url} | ${mask}`, `echo "$(curl -q -sS ${url})"`]) {
+    const reason = run(command);
+    assert.ok(reason, `should refuse: ${command}`);
+    assert.ok(isFormRefusal(reason), `${command} -> ${reason}`);
+  }
+  for (const command of [`curl -q -sS -i ${url} | ${mask}`, `curl -q -sS -I ${url}`, `curl -q -sS -v -o /dev/null ${url}`, `curl -q -sS -D - -o /dev/null ${url}`, `curl -q -sSi ${url} | ${mask}`, `curl -q --include ${url} | ${mask}`]) {
+    assert.match(run(command) ?? 'allowed', /may not print headers/, command);
+  }
+  // A host that isn't allowed is refused as that, not as a matter of form.
+  assert.ok(!isFormRefusal(run('curl -q -sS https://evil.example.org/x')));
+  assert.ok(!isFormRefusal(run(`curl -q -sS https://evil.example.org/x | ${mask}`)));
+  // qa-runner's Intake requests are its own: it reads headers for a redirect and a build for its commit.
+  assert.equal(decide({agent_type: 'agentic-qa:qa-runner', tool_name: 'Bash', tool_input: {command: 'curl -q -sS -o /dev/null -D - http://localhost:8765/'}}, settings), null);
+  assert.equal(checkResponseMask('echo no curl here'), null);
+  // The filter the skill tells the executor to write is the one the guard accepts.
+  const skill = fs.readFileSync(fileURLToPath(new URL('../skills/step-execution/SKILL.md', import.meta.url)), 'utf8');
+  assert.ok(skill.includes(`jq '${RESPONSE_MASK}'`), 'the skill and the guard name the same filter');
 });
 
 test('a substitution too involved to read is refused as form, with the two-command way to write it', () => {

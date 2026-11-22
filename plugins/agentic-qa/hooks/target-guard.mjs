@@ -822,6 +822,73 @@ function unreadable(err) {
   return err instanceof Respell ? spellOut(reason, err.hint) : reason;
 }
 
+// What a response is put through before the executor sees it. Whatever a command
+// prints is kept in the transcript, and a response can carry a credential nobody
+// asked for: the response that creates a record often returns its token. Telling the
+// executor to mask held in two fixture runs of three. So its curl may print a body
+// only through this filter, exactly, and may not print headers at all.
+export const RESPONSE_MASK = 'walk(if type == "object" then with_entries(if (.key | test("token|secret|password|passwd|pwd|key|session|auth|jwt|otp|cookie|credential"; "i")) and (.value | type == "string") then .value = "<masked>" else . end) else . end)';
+const MASKED_CURL = `curl -q -sS -w '%{stderr}HTTP %{http_code}\\n' <options> <url> | jq '${RESPONSE_MASK}'`;
+const JQ_PLAIN_OPTIONS = new Set(['-c', '-C', '-M', '-S', '-e']);
+const sameFilter = text => text.replace(/\s+/g, ' ').trim() === RESPONSE_MASK;
+
+// The options a curl command uses, read the way checkCurl reads them.
+function curlOptions(args) {
+  const used = new Map();
+  for (let i = 0; i < args.length; i++) {
+    const {text} = args[i];
+    if (text.startsWith('--')) {
+      const takes = CURL_LONG_WITH_VALUE.has(text) || text === '--url';
+      used.set(text, takes ? args[++i]?.text ?? '' : true);
+    } else if (text.startsWith('-') && text.length > 1) {
+      for (let k = 1; k < text.length; k++) {
+        if (!CURL_SHORT_WITH_VALUE.has(text[k])) { used.set(`-${text[k]}`, true); continue; }
+        used.set(`-${text[k]}`, text.slice(k + 1) || (args[++i]?.text ?? ''));
+        break;
+      }
+    }
+  }
+  return used;
+}
+
+// Applied to the executor after everything else has passed, so a host that isn't
+// allowed is still refused as that, and not as a matter of form.
+export function checkResponseMask(command) {
+  let commands;
+  try {
+    commands = parseShell(command);
+  } catch {
+    return null;
+  }
+  for (let i = 0; i < commands.length; i++) {
+    let words, redirects;
+    try {
+      ({words, redirects} = splitRedirects(commands[i]));
+    } catch {
+      continue;
+    }
+    if (!words.length || words[0].dynamic || commandName(words[0].text) !== 'curl') continue;
+    const used = curlOptions(words.slice(1));
+    if (['-i', '-I', '-v', '-D', '--include', '--head', '--verbose', '--dump-header'].some(flag => used.has(flag))) {
+      return spellOut('curl may not print headers here: they carry cookies and tokens, and what is printed is kept',
+        "Send it once more without -i, -I, -v or -D, and ask for what you need from the headers with -w: %{http_code}, %{redirect_url}, %{content_type}, %header{name}");
+    }
+    const file = used.get('-o') ?? used.get('--output');
+    if (file === '/dev/null') continue;
+    if (file !== undefined || redirects.some(redirect => redirect.writes && redirect.target.text !== '/dev/null')) {
+      return spellOut('curl would write an unmasked response to a file', `Send it once more as: ${MASKED_CURL} | tee <file>`);
+    }
+    const next = commands[i].next === '|' && !commands[i].sub ? commands[i + 1] : null;
+    const jq = next && !next[0].dynamic && commandName(next[0].text) === 'jq' ? next.slice(1).filter(word => !word.redirect) : null;
+    const filters = jq ? jq.filter(word => !JQ_PLAIN_OPTIONS.has(word.text)) : [];
+    if (!jq || filters.length !== 1 || filters[0].dynamic || !sameFilter(filters[0].text)) {
+      return spellOut('curl\'s response must go straight through the mask before anything is printed: it can carry a token nobody asked for',
+        `Send it once more as: ${MASKED_CURL} — with that filter exactly, or with -o /dev/null if only the status matters`);
+    }
+  }
+  return null;
+}
+
 // What gh may be asked: to read issues and pull requests. It runs with whatever
 // token the machine has, and a default one can comment, merge and delete.
 const GH_READS = {issue: ['view', 'list'], pr: ['view', 'list', 'diff', 'checks'], search: ['prs', 'issues'], repo: ['view'], auth: ['status']};
@@ -1088,7 +1155,7 @@ export function decide(input, settings, env = process.env) {
   if (agent === RUNNER) return tool === 'Bash' ? checkRunnerBash(args.command ?? '', settings, env, place) : null;
   if (agent === REPORTER) return tool === 'Bash' ? checkReporterBash(args.command ?? '', settings, env, place) : null;
   if (agent !== EXECUTOR) return null;
-  if (tool === 'Bash') return checkExecutorBash(args.command ?? '', settings, env, place);
+  if (tool === 'Bash') return checkExecutorBash(args.command ?? '', settings, env, place) ?? checkResponseMask(args.command ?? '');
   if (args.url === 'about:blank') return null;
   return checkUrl(args.url ?? '', settings.allowed_hosts);
 }
