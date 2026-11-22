@@ -573,6 +573,77 @@ executor read the list to find one. The run before did the same search with
 the first fix did not cover: a step whose subject has to be found first. It is the next
 thing to look at.
 
+### The executor's list, the critics' findings and the drafters' tools — 0.12.0
+
+Three whole runs, each on the text as it stood, against the last run of 0.11.0:
+
+| | 0.11.0 | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|---|
+| Cost | $1.62 | $1.55 | $1.54 | $1.47 |
+| `step-executor` calls, input tokens | 25, 1,734,000 | 22, 1,147,000 | 23, 1,138,000 | 20, 986,000 |
+| `step-executor` context at its last call | 81,100 | 62,700 | 57,100 | 56,200 |
+| `qa-runner` calls, input tokens | 15, 684,000 | 15, 696,000 | 17, 805,000 | 15, 693,000 |
+| Whole run, input tokens processed | 3,321,000 | 2,728,000 | 3,030,000 | 2,757,000 |
+| Steps planned, steps run | 9, 8 | 12, 6 | 8, 8 | 8, 7 |
+| Behaviors from the acceptance criteria run | 7 of 7 | 7 of 7 | 7 of 7 | 7 of 7 |
+| Of those, judged correctly | 7 | 6 | 7 | 7 |
+| Planted defects reported | both | both | both | both |
+| Open questions in the report | 10 of 10 | 10 of 10 | 8 of 8 | 10 of 10 |
+| Guard refusals in the run | 1 | 1 | 0 | 1 |
+
+**One row, not the list** ("have the executor ask for one row when a step needs any one
+of many"). `browser_find` has no limit on matches, so searching a hundred-row list for
+"Paid" returns most of it, and a whole-page snapshot returns all of it. A
+`browser_snapshot` whose `target` is a locator ending in `.first()` returns one row. It
+was tried against the pinned server before it was written down: 457 characters. In all
+three runs the executor used it, for 499 to 511 characters where the run before had read
+49,000, and its input fell by about a third to four tenths.
+
+**A critic's findings as a file** ("have a critic hand over its findings as a file, and
+take its Bash away"). In the last three runs of 0.11.0 the critics used Bash for one
+thing, writing a result file. They now hold `Write`, held by the guard to a run
+directory, and no `Bash`, which closes F52 of the second November review for them.
+`qa-runner` names the file at spawn and relays its path. This did not make `qa-runner`
+cheaper: its input is where it was. What it changes is that the drafter reads the
+findings as the critic wrote them, and that a critic has no shell.
+
+**Steps that will stop for a decision go last** ("plan the steps that will stop for a
+decision after the ones that won't"). None of the three runs planned such a step, so
+this was not exercised.
+
+What the runs showed, and what was changed after each:
+
+- **Run 1 failed a criterion the product meets.** The plan said to enter an order id and
+  submit. The fixture's search form has a Search button and does nothing on Enter. The
+  executor pressed Enter, saw no result and recorded a fail, with the deviation stated.
+  The run before had pressed Enter, then the button, and passed. A control the page
+  names for the plan's action is now the first attempt ("judge a step by the control
+  the page names"). Runs 2 and 3 clicked the button and passed the step. Enter doing
+  nothing is not one of the fixture's two planted defects, and the fixture's README now
+  says so.
+- **Run 2 announced a revision that was not there.** The extractor held `Write` and no
+  `Edit`. Resumed with the critic's findings it sent four `Edit` calls and the signal
+  file in one turn; the edits failed for want of the tool and the signal was written.
+  The critic's second round read the unrevised spec and reported every finding as
+  unaddressed. `qa-runner` noticed and reran the round, which is the 17 calls in the
+  table. Both drafters now hold `Edit`, and the signal file goes in a turn of its own
+  ("give the drafters Edit, and keep a revision's signal out of the turn that makes
+  it"). In run 3 both drafters revised with `Edit` and wrote the signal afterwards.
+- **Run 2 also began with an `intake.md` that did not hold the ticket's text**, only a
+  note that its criteria were present. The extractor stopped and `qa-runner` added
+  them. Its steps now say the text goes in whole. Run 3's did.
+- **Run 3 relayed a finding to the planner**, so the wait that ends with the `grep` of
+  the plan, and the planner's signal written last, have now been seen once.
+- **Run 1 left six `Added` rows blocked** and ran only the steps for the acceptance
+  criteria. Each was a behavior the critic drew from the diff with no result stated
+  anywhere, which is what the rule blocks. The other two runs planned one or two such
+  rows with a result the diff states and ran them. That difference is the drafters'
+  wording from run to run, not a change here.
+
+Not done, and worth doing: a step for an `Added` row that is blocked for want of a
+stated result could still be run as an observation where it changes nothing, so that
+whoever answers the question sees what the system does today.
+
 ---
 
 ## What still needs a live walkthrough
@@ -580,9 +651,7 @@ thing to look at.
 - `qa-runner` itself deciding live updates from a brief, and an agent-invoked run with a
   `report_destination`, where updates stay on.
 - Playwright's output directory on Windows.
-- A planner's revision on 0.11.0's text: the signal file written last, and `qa-runner`'s
-  wait ending with the `grep` of the plan. Neither whole run on that text relayed a
-  finding to the planner.
+- A plan with a step that will stop for a decision, to see the planner put it last.
 - A refusal of form, to see the executor resend the command once and continue. It is
   covered by the guard's tests and has not occurred in a run since.
 - An escalation answered by a person, with an orchestrator that hasn't loaded
