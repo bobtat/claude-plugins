@@ -154,6 +154,8 @@ The trap this closes: re-snapshot, fail to find the planned element, take the ne
 
 The first reasonable attempt at the plan's literal action is what gets judged. Retrying that identical action for a transient-looking failure, per above, is fine. Trying a *different* approach because the first one didn't work — a different selector, different test data — is never absorbed silently into a clean pass: record it in `step-results.md`'s `Deviation` field, honestly, and let the verdict still reflect whether the originally planned check actually succeeded. A step that didn't work as planned may mean the feature is wrong, not the plan.
 
+**Use the control the page names for the plan's action.** A plan often says what to do without naming the control: "submit the search", "save the form". If the page has a control by that name, a `button "Search"`, that control is the plan's action and the first attempt. Pressing Enter in a field is the plan's action only when the plan says so, or when the page offers no such control. If you pressed Enter first and nothing happened, the named control is still the plan's literal action and not a different approach: use it, judge what it does, and say in `Deviation` that Enter did nothing, which is an observation about the product and not the step's verdict.
+
 ### Irreversible steps
 
 A `ready` step with no reversibility tag has not been classified. Treat it as irreversible and uncovered by any grant: escalate it. Before running any step tagged irreversible, check its containment:
