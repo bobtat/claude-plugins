@@ -101,7 +101,7 @@ Measured on a fixture, not on your tickets: seven steps, five of them in a brows
 - A run that stops at its first step costs about two thirds of one that finishes. The orchestrator and both agents have already loaded everything by then.
 - A whole unattended run, from a brief to a report, cost $1.47 to $1.55 in the three runs of 0.12.0, for 6 to 8 steps run, and $2.14, $1.78 and $1.62 in the versions before. The executor is the largest part, at about four tenths of the input tokens, and `qa-runner` is about a quarter. Every turn an agent takes carries its whole context, so most of what was saved came from taking fewer turns and from not reading a whole list to pick one row.
 
-`agentic-qa:qa-reporter` runs on Sonnet: its work is filling a template from `step-results.md` and rendering the HTML with a script. Every other agent uses your session's model, because each of them makes a call a weaker model could get wrong without anything noticing: what the ticket asks for, whether a step reaches something real, whether a page passed.
+`agentic-qa:qa-reporter` runs on Sonnet: its work is filling a template from `step-results.md` and running the script the plugin ships to render the HTML. That script escapes everything the ticket and the system under test supplied, embeds only files from the run's own evidence folder, and has its own tests. Every other agent uses your session's model, because each of them makes a call a weaker model could get wrong without anything noticing: what the ticket asks for, whether a step reaches something real, whether a page passed.
 
 ## Settings
 
