@@ -15,7 +15,7 @@ Absolute paths to `behavior-spec.md` and `intake.md`. Read both in full, and the
 
 ## Surface selection
 
-Default to wherever a real user actually meets the behavior — browser (or CLI, for a CLI tool) over a direct API call; a browser step also proves the surface is wired up, not just that the backend logic is right. Add a second, deliberate API step *alongside* a browser one, never instead of it, whenever the UI's own behavior could mask a backend gap — client-side validation blocking bad input is the canonical case. Carry a one-line `Rationale` on that step.
+Default to wherever a real user actually meets the behavior — browser (or CLI, for a CLI tool) over a direct API call; a browser step also proves the surface is wired up, not just that the backend logic is right. Add a second, deliberate API step *alongside* a browser one, never instead of it, whenever the UI's own behavior could mask a backend gap — client-side validation blocking bad input is the canonical case. Carry a one-line `Rationale` on that step. It sends the same value the page refused and is judged by the same criterion, as a `ready` step: never an observation, and never a safer value chosen because it can't fail.
 
 ## Reversibility and containment
 
