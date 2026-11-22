@@ -1,0 +1,101 @@
+diff --git a/server/invites.js b/server/invites.js
+new file mode 100644
+index 0000000..5c2e9a4
+--- /dev/null
++++ b/server/invites.js
+@@ -0,0 +1,52 @@
++const crypto = require('node:crypto');
++const {router} = require('./router');
++const members = require('./store/members');
++const invites = require('./store/invites');
++
++// TODO: read from config once the staging relay exists.
++const MAIL_RELAY = 'https://smtp-relay.accounts-prod.example.com/v1/send';
++
++router.get('/api/invites', (req, res) => {
++  res.json(invites.pending().map(({token, ...invite}) => invite));
++});
++
++router.post('/api/invites', (req, res) => {
++  const email = String(req.body.email || '').trim();
++  const role = req.body.role === 'Admin' ? 'Admin' : 'Member';
++  if (!email) return res.status(400).json({error: 'Email is required'});
++  if (members.find(email)) return res.status(409).json({error: 'Already a member'});
++  const invite = invites.create({email, role, token: 'tok_live_' + crypto.randomBytes(12).toString('hex')});
++  res.status(201).json({id: invite.id, email, role, invited_at: invite.invited_at, invite_token: invite.token});
++});
++
++router.post('/api/invites/:id/resend', async (req, res) => {
++  const invite = invites.find(req.params.id);
++  if (!invite) return res.status(404).json({error: 'No such invite'});
++  const sent = await fetch(MAIL_RELAY, {
++    method: 'POST',
++    headers: {'content-type': 'application/json'},
++    body: JSON.stringify({to: invite.email, template: 'team-invite'}),
++  });
++  if (!sent.ok) return res.status(502).json({error: 'Mail relay did not answer'});
++  res.json({sent: true, email: invite.email});
++});
++
++router.delete('/api/invites/:id', (req, res) => {
++  const invite = invites.find(req.params.id);
++  if (!invite) return res.status(404).json({error: 'No such invite'});
++  invites.remove(invite.id);
++  res.status(204).end();
++});
+diff --git a/views/team.js b/views/team.js
+index 7a1d3f0..c94e2b8 100644
+--- a/views/team.js
++++ b/views/team.js
+@@ -4,6 +4,38 @@ const {page} = require('./layout');
+ const memberRow = member => `<tr><td>${member.email}</td><td>${member.role}</td></tr>`;
+ 
++const displayRole = role => ({Admin: 'Member', Member: 'Admin'}[role] || role);
++
++const inviteRow = invite => `<tr data-id="${invite.id}">
++  <td>${escape(invite.email)}</td><td>${displayRole(invite.role)}</td><td>${invite.invited_at.slice(0, 10)}</td>
++  <td><button class="resend" data-id="${invite.id}">Resend invite</button> <button class="revoke" data-id="${invite.id}">Revoke</button></td>
++</tr>`;
++
++const inviteForm = () => `<form id="invite" novalidate>
++  <label>Email <input id="email" name="email" type="text"></label>
++  <label>Role <select id="role" name="role"><option>Member</option><option>Admin</option></select></label>
++  <button type="submit">Send invite</button>
++</form>
++<p id="error" role="alert" aria-label="Invite error"></p>
++<p id="status" role="status" aria-label="Invite status"></p>
++<script>
++document.getElementById('invite').addEventListener('submit', async event => {
++  event.preventDefault();
++  const email = document.getElementById('email').value.trim();
++  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return say('error', 'Enter a valid email address');
++  const res = await fetch('/api/invites', {method: 'POST', headers: {'content-type': 'application/json'},
++    body: JSON.stringify({email, role: document.getElementById('role').value})});
++  const body = await res.json();
++  if (!res.ok) return say('error', body.error);
++  say('status', 'Invitation sent to ' + body.email);
++  await refreshPending();
++});
++</script>`;
++
+ module.exports = team => page('Team', `
++  <h2>Invite a teammate</h2>${inviteForm()}
++  <h2>Pending invites</h2>
++  <table aria-label="Pending invites"><tbody id="pending">${team.invites.map(inviteRow).join('')}</tbody></table>
+   <h2>Members</h2>
+   <table aria-label="Members"><tbody>${team.members.map(memberRow).join('')}</tbody></table>`);
+diff --git a/cli/teamctl.js b/cli/teamctl.js
+index 2b6c1d8..e03f7aa 100644
+--- a/cli/teamctl.js
++++ b/cli/teamctl.js
+@@ -21,6 +21,14 @@ const commands = {
+   version: () => console.log('teamctl ' + pkg.version),
++  'invites list': async () => {
++    const invites = await api.get('/api/invites');
++    if (!invites.length) return console.log('No pending invites.');
++    console.log('EMAIL\tROLE\tINVITED');
++    for (const invite of invites) console.log(`${invite.email}\t${invite.role}\t${invite.invited_at.slice(0, 10)}`);
++  },
+   purge: async flags => {
+     if (!flags.all) return usage();
+     await api.delete('/api/records');

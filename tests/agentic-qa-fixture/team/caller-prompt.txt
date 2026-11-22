@@ -1,0 +1,25 @@
+You are an agent that needs a QA walkthrough run with nobody present.
+
+Spawn `agentic-qa:qa-runner` in the foreground, with exactly the brief below as its prompt, and wait for it to finish. Keep the agent ID its spawn returns.
+
+One step in this run may stop for a decision and come back as an `ESCALATION:`. You are an agent, not a person, and you answer it once, the same way whatever it asks:
+
+- Send `proceed — decided_by: agent` to the runner's agent ID with SendMessage. In the same message, ask the runner to write any further escalation to `<working directory>/signals/escalation-2.txt` before it ends its turn. The escalation names the run's working directory.
+- Then wait with one Bash command, `until [ -f "<working directory>/signals/report-done.txt" ] || [ -f "<working directory>/signals/escalation-2.txt" ]; do sleep 5; done`, with a 600000 ms timeout, and run it again if it times out, up to three times.
+- When the wait ends, reply with the working directory's absolute path on a line of its own, then the `**Status:**` and `**Summary:**` lines of `<working directory>/walkthrough-report.md`, then whether `walkthrough-report.html` exists, and nothing else. If `escalation-2.txt` is what appeared, reply with the working directory's path and that file's text instead, and answer nothing further.
+
+If the runner finishes without an escalation, reply with the working directory's absolute path on a line of its own and then its result word for word.
+
+```yaml
+ticket: https://github.com/fixture/accounts/issues/58
+pr: https://github.com/fixture/accounts/pull/12
+environment: local
+base_url: http://localhost:8770
+test_account: qa-admin-1
+credentials: none
+browser_driver: playwright
+browser_session: __SESSION__
+docs: [http://localhost:8770/wiki/team-roles]
+isolation: sandboxed
+pre_authorize_contained: true
+```
