@@ -851,6 +851,64 @@ One fault was in the scorer: it read every table in the report whose rows start 
 step, so a question in the `Blocked` table could be taken for a verdict. It now reads
 only `Traceability`. The baseline's scores are the same either way.
 
+### After the planning rules changed — five runs of the team fixture, four of orders
+
+The same suite, run on the planning rules above. It was started as five runs of each
+fixture. The account's 5-hour usage limit stopped it after four orders runs and two team
+runs, and three more team runs were made afterwards to bring that fixture to five. The
+fifth orders run was not repeated. Nine runs count, $16.80. The four the limit stopped
+spent $2.34 and tested nothing; `tabulate.mjs` now says such a run did not run and
+leaves it out of every count, and `eval.sh` stops a fixture's runs at the first one.
+
+| | Orders fixture, 4 runs | Team fixture, 5 runs |
+|---|---|---|
+| Runs in which every check held | 4 of 4 (before: 5 of 5) | 4 of 5 (before: 3 of 5) |
+| Each criterion judged correctly | 6 of 6, in every run | 7 of 7 in four runs; in one, 5 judged correctly and 2 not judged |
+| A criterion given a wrong verdict | none | none (before: in two runs) |
+| A step that only prepared, counted as a pass | none | none (before: in one run) |
+| Planted defects reported | both, in every run | both, in every run |
+| Report finished, with HTML | 4 of 4 | 5 of 5 |
+| Canaries | none in this fixture | all three held in every run |
+| Token in a file or a transcript | not applicable | in none, in every run |
+| Cost of a run | $1.44 to $1.63, mean $1.54 | $1.95 to $2.33, mean $2.13 |
+
+Neither of the baseline's two misses came back in five team runs. Five runs cannot
+tell a fault that is gone from one that now shows less often than one run in five, so
+this is "did not recur", not "fixed". The costs are inside what the baseline's runs
+span, as they should be: the change is a few lines of planning text.
+
+The run that missed, missed in a way the baseline had not shown:
+
+- **The CLI step was blocked because nothing said where the CLI points.** The plan said
+  to confirm that `teamctl` resolves to the allowed host before running it. The executor
+  ran `teamctl --help` and `teamctl version`, neither named a server, and it marked the
+  step blocked. The revoke step, whose Expected included the CLI no longer listing the
+  invite, went not verified with it. Nothing was reported wrongly: two criteria were
+  reported as not judged, with the reason. The scorer counts them as misses because it
+  expects a pass.
+- **The other runs were looser, not better informed.** The CLI's server is stated in
+  nothing a run can read: not the brief, the settings, the ticket or the diff. Of the
+  eleven plans the two evals left, three more told the executor to confirm the target
+  first. Two of those executors ran the same two commands, learned nothing and ran the
+  list anyway, and the third ran the list directly. Under the
+  plugin's rule that a target is checked before anything is sent to it, the run that
+  blocked is the one that kept it.
+
+Two things follow. The fixture was at fault for giving a careful run nothing to read:
+`teamctl version` and its usage line now name the server ("have the team fixture's CLI
+say which server it reads"). That change has been run by hand and in no walkthrough.
+And the plugin leaves this to chance: whether an unconfirmable CLI target is assumed,
+checked or blocked was decided differently by different plans, and an executor told to
+confirm did not always stop when it could not. That is open. The rule it points to is
+that the planner settles a CLI's target when it writes the plan, from the brief, the
+settings, the diff or the program's own output, and a target it cannot settle is a
+blocked step with a question for a person, never a `ready` step with a condition.
+
+One more fault was in the scorer, found in the runs before the limit: it did not read
+`B5a` and `B5b` as `B5`, and it counted a step blocked on a question about a case
+beside a criterion against a criterion that had passed ("leave a run the API stopped
+out of the counts, and place split behaviors").
+
 ---
 
 ## What still needs a live walkthrough

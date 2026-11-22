@@ -164,8 +164,8 @@ it, which is the weak part: a row it cannot place is printed, not guessed at.
 relay canary, and the scorer cannot tell a slip from a step that ran when it should not
 have: read the transcript before calling it either.
 
-It has run five times. The last scored 16 of 16, on text the first four had shaped,
-so that is not yet a pass rate.
+Five runs of 0.16.0 held every check in three. Five runs after the planning rules
+changed held every check in four. The cost review has both tables.
 
 It needs `127.0.0.2` to be a loopback address the machine can listen on, which Linux
 allows and macOS does not without `ifconfig lo0 alias 127.0.0.2`.
@@ -195,9 +195,10 @@ Five runs of each cost about $18 when this was written.
   noise until it repeats.
 - **A warm cache flatters the second run.** A run that follows another with the same
   agent text reads a cached prompt where the first one paid to write it.
-- **`run.sh` doesn't run Phases 0 to 3.** Only `run-unattended.sh` does, and it has
-  run ten times: seven to the end, two to an escalation nobody answered, and one through
-  an escalation its caller answered.
+- **`run.sh` doesn't run Phases 0 to 3.** Only `run-unattended.sh` does. It ran ten
+  times singly: seven to the end, two to an escalation nobody answered, and one through
+  an escalation its caller answered. It has since run nine times in two evals, each to
+  the end.
 - **The search form does nothing on Enter.** It has a Search button, and the criterion
   passes through it. That is not one of the two planted defects. A run that fails the
   search criterion after pressing Enter alone has used the wrong control.
