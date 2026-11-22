@@ -9,6 +9,7 @@ import {pathToFileURL} from 'node:url';
 
 const PLUGIN_AGENT = 'agentic-qa:';
 const EXECUTOR = 'agentic-qa:step-executor';
+const RUNNER = 'agentic-qa:qa-runner';
 const NETWORK_RESTRICTED = new Set([
   'agentic-qa:qa-reporter',
   'agentic-qa:behavior-coverage-critic',
@@ -899,6 +900,46 @@ export function checkRestrictedBash(command) {
   return null;
 }
 
+// qa-runner runs gh, git and curl against hosts nobody has listed yet, so it cannot
+// be held to the executor's lists. This stops the plain cases only: a redirect or
+// a file-changing program aimed at something this guard protects. It reads the
+// settings files, so naming one is not refused. An interpreter it starts can still
+// write anything; see the README.
+const FILE_CHANGERS = new Set(['cp', 'mv', 'rm', 'tee', 'touch', 'mkdir', 'sed', 'dd', 'install', 'ln', 'truncate', 'chmod', 'chown']);
+
+export function checkRunnerBash(command) {
+  let commands;
+  try {
+    commands = parseShell(command);
+  } catch {
+    const words = command.split(/[\s;|&()`<>"']+/);
+    const names = words.filter(word => protectedPath(word));
+    const writes = />/.test(command) || words.some(word => FILE_CHANGERS.has(commandName(word)));
+    return names.length && writes ? `${protectedPath(names[0])}, and this command could not be read well enough to tell whether it writes there` : null;
+  }
+  for (const raw of commands) {
+    let split;
+    try {
+      split = splitRedirects(raw);
+    } catch {
+      continue;
+    }
+    for (const {target, writes} of split.redirects) {
+      if (/(^|[/\\])dev[/\\]+(tcp|udp)([/\\]|$)/i.test(target.text)) return `"${target.text}" opens a network connection`;
+      const reason = writes ? protectedPath(target.text) : null;
+      if (reason) return reason;
+    }
+    const [head, ...args] = split.words.filter(word => !isAssignment(word));
+    if (head && FILE_CHANGERS.has(commandName(head.text))) {
+      for (const word of args) {
+        const reason = protectedPath(word.text);
+        if (reason) return reason;
+      }
+    }
+  }
+  return null;
+}
+
 function checkFileTool(file) {
   if (!file) return 'a file tool call must name its path';
   const direct = protectedPath(file);
@@ -919,9 +960,15 @@ export function decide(input, settings, env = process.env) {
     return place.resolve(file).every(place.writable) ? null
       : spellOut(`${tool} would write "${file}", which is outside the run's working directory`, OUT_OF_PLACE);
   }
+  // A plugin agent spawns only this plugin's agents: any other type is outside this guard.
+  if (tool === 'Agent') {
+    const type = String(args.subagent_type ?? '');
+    return type.startsWith(PLUGIN_AGENT) ? null : `spawning "${type || 'an unnamed agent type'}" is not allowed: this plugin's agents spawn only ${PLUGIN_AGENT}* agents`;
+  }
   if (NETWORK_RESTRICTED.has(agent)) {
     return tool === 'Bash' ? checkRestrictedBash(args.command ?? '') : null;
   }
+  if (agent === RUNNER) return tool === 'Bash' ? checkRunnerBash(args.command ?? '') : null;
   if (agent !== EXECUTOR) return null;
   if (tool === 'Bash') return checkExecutorBash(args.command ?? '', settings, env, place);
   if (args.url === 'about:blank') return null;
