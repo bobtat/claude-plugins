@@ -483,15 +483,106 @@ The two blocked steps in the second run are both rows the coverage critic added 
 reading the code, with no result stated anywhere. That is what a question should block.
 `qa-runner`'s cost did not move, and is the next thing to look at.
 
+### `qa-runner`'s turns — 0.11.0
+
+`calls.mjs`, added to the fixture for this, prints one line per call an agent makes. Run
+on the second whole run it showed where `qa-runner`'s 32 calls went. About 14 of them
+repeated or split work:
+
+- A resume took three calls: the `SendMessage`, the wait on the signal file, and a read
+  of that file. There were four resumes.
+- Intake ran its commands a few at a time, printed the diff and then saved it, and
+  resent a command the guard refused for using `$?`.
+- An `Agent` call with no `subagent_type` was refused and resent.
+- After the planner's revision it read the whole plan, found the round not yet logged,
+  slept 20 seconds and searched the plan twice more: five calls to apply the
+  stricter-classification rule. The planner had written its signal file before it
+  finished saving the plan.
+
+Every call reads the whole context again, so a call that does nothing new still costs
+40,000 to 70,000 input tokens. The changes ("have qa-runner take fewer turns", "have a
+drafter write its signal file after its other files"):
+
+- The resume and its wait go in one turn, and the wait ends with a `cat` of the signal
+  file. The guard already accepted that form.
+- Intake's steps name which commands go together, and the diff is saved, not printed.
+- The stricter-classification check is one `grep` that prints every step's reversibility
+  and containment and the grant line. `qa-runner` reads the plan only to correct one.
+- `qa-runner` no longer loads `behavior-coverage` and `step-planning`. The three rules
+  in them that are its own to apply, the relay, the round cap and the stricter
+  classification, are in its steps.
+- The planner and the extractor write the signal file last.
+
+Two whole runs on that text, against the second run above:
+
+| | Before | After, first run | After, second run |
+|---|---|---|---|
+| How it ended | finished | paused on an escalation | finished |
+| `qa-runner` calls | 32 | 14 | 15 |
+| `qa-runner` input tokens processed | 1,757,000 | 658,000 | 684,000 |
+| `qa-runner` output tokens | 11,900 | 9,500 | 8,000 |
+| `qa-runner` context at its last call | 73,500 | 58,600 | 56,800 |
+| `qa-runner` share of the run's input | 45% | 22% | 21% |
+| Guard refusals in the run | 4, 3 of them `qa-runner`'s | 0 | 1 |
+| Steps planned, steps run | 11, 9 | 10, 7 | 9, 8 |
+| Behaviors from the acceptance criteria run | 7 of 7 | 7 of 7 | 7 of 7 |
+| Planted defects reported | both | both | both |
+| Open questions in the report | 8 of 8 | 7 of 7 | 10 of 10 |
+| Deployed build | verified | unverified | verified |
+| `step-executor` | 22 calls, 1,254,000 | 21 calls, 1,427,000 | 25 calls, 1,734,000 |
+| Whole run, input tokens processed | 3,923,000 | 2,932,000 | 3,321,000 |
+| Cost | $1.78 | $1.54 | $1.62 |
+
+`qa-runner` now makes fewer than half the calls and processes about four tenths of the
+input it did. The run's cost fell by less, 9% between the two finished runs, because the
+executor cost more in both new runs, for a reason this work did not touch and which is
+below.
+
+What the two runs showed besides the numbers:
+
+- **The first paused, as designed.** The coverage critic added a behavior from the diff,
+  the planner gave it an irreversible step, and a grant from the brief never covers a
+  step traced to an `Added` row, so the executor escalated and nobody answered. The
+  reporter rebuilt the report on `paused` with live updates off, and the paused report
+  was current: seven steps' verdicts, the step waiting, and no HTML. That path had not
+  been seen in a run before. Its cost is not comparable with a finished run's.
+- **The first recorded the build as unverified.** `qa-runner` asked `/health`, got a 404
+  and stopped looking; the app reports its build at `/api/version`. This was not new:
+  an earlier run, one that stopped after Intake for want of an `Agent` tool, did the same
+  after two guesses. Told to put the build check in one
+  turn, it made one guess. It now asks the places the ticket, the PR and the docs name
+  and four common paths in that turn ("have qa-runner look in more than one place for
+  the build"), and the second run verified the build. The fixture's path is one of the
+  four, so that run shows the instruction is followed, not that the list is long enough.
+- **Neither plan needed a relay.** The plan critic returned no material findings both
+  times, so the wait that ends with the `grep` after a planner's revision was not
+  exercised; the `grep` ran on its own. The planner writing its signal file last was not
+  exercised either.
+- **The second resent one command**, after putting the working directory in a shell
+  variable. The text now says to write it out, and the last wait now lists the HTML
+  report, which that run reported without checking. Neither of those two edits has been
+  run.
+
+**The executor is now the largest part of an unattended run**, at about half the input.
+In the second new run one call accounts for most of the difference from the run before:
+a `browser_snapshot` of the whole orders list, 49,000 characters, about 21,000 tokens,
+which every one of its 22 later calls read again. The plan said "open a Paid order's
+page" without naming one, because the planner cannot see the system's data, so the
+executor read the list to find one. The run before did the same search with
+`browser_find` for "Paid" and got 19,000 characters back. This is C3 again, by a route
+the first fix did not cover: a step whose subject has to be found first. It is the next
+thing to look at.
+
 ---
 
 ## What still needs a live walkthrough
 
 - `qa-runner` itself deciding live updates from a brief, and an agent-invoked run with a
   `report_destination`, where updates stay on.
-- A pause with live updates off: the reporter rebuilding on `paused`, so the paused
-  report is current.
 - Playwright's output directory on Windows.
+- A planner's revision on 0.11.0's text: the signal file written last, and `qa-runner`'s
+  wait ending with the `grep` of the plan. Neither whole run on that text relayed a
+  finding to the planner.
 - A refusal of form, to see the executor resend the command once and continue. It is
   covered by the guard's tests and has not occurred in a run since.
 - An escalation answered by a person, with an orchestrator that hasn't loaded
