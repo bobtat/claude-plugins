@@ -1,7 +1,7 @@
 ---
 name: behavior-extractor
 description: Drafts behavior-spec.md from a validated ticket, following testing:behavior-extraction — reasoning from acceptance criteria and given docs, never from code. Revises against behavior-coverage-critic's findings when the orchestrator resumes it with them. Spawned by /agentic-qa:walkthrough; expects an absolute path to intake.md.
-tools: Read, Write, Skill
+tools: Read, Write, Edit, Skill
 model: inherit
 ---
 
@@ -33,7 +33,7 @@ Once the draft is written, end your turn.
 1. Behaviors the ticket never called out but the change plausibly affects.
 2. An audit of your own `Added` rows — does the doc you cited actually say what you claimed.
 
-Address each directly: revise the spec, or explain why you're not making the change. End your turn with one line per finding — accepted and revised, or rejected with the reason — which is what the critic sees if there is a second round. If the message that resumed you names a signal file, write that result there before ending your turn. Write it last, after the spec and its `Critique Exchange` are saved: whoever resumed you reads the spec the moment it appears. **Log every round in `behavior-spec.md`'s own `Critique Exchange` section as you go** — what was raised, how you answered. This is the record a human reviews later; a black box that only shows the final spec defeats the purpose of a critic pass at all.
+Address each directly: revise the spec, or explain why you're not making the change. End your turn with one line per finding — accepted and revised, or rejected with the reason — which is what the critic sees if there is a second round. If the message that resumed you names a signal file, write that result there before ending your turn. Write it last and in a turn of its own, once you have seen every change to the spec and its `Critique Exchange` succeed: whoever resumed you reads the spec the moment the signal file appears, and a signal sent alongside an edit that then fails announces a revision that isn't there. Revise with `Edit`, a change at a time, not by writing the whole spec out again. **Log every round in `behavior-spec.md`'s own `Critique Exchange` section as you go** — what was raised, how you answered. This is the record a human reviews later; a black box that only shows the final spec defeats the purpose of a critic pass at all.
 
 ## What you never do
 
