@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {checkExecutorBash, checkRestrictedBash, checkRunnerBash, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, makePlace, nextStep, parseSettings, RUNNER_COMMANDS} from './target-guard.mjs';
+import {checkExecutorBash, checkRestrictedBash, checkRunnerBash, RENDERER, checkUrl, decide, EXECUTOR_COMMANDS, isFormRefusal, loadSettings, makePlace, nextStep, parseSettings, RUNNER_COMMANDS} from './target-guard.mjs';
 
 const settings = {allowed_hosts: ['staging.example.com', '*.preview.example.com'], allowed_commands: ['mytool']};
 const refused = command => assert.ok(checkExecutorBash(command, settings), `should refuse: ${command}`);
@@ -837,6 +837,27 @@ test('a loop or a condition is refused as a matter of form, so the commands can 
     const reason = check('python3 -c 1', settings);
     assert.ok(reason && !isFormRefusal(reason), `${who}: python3 -> ${reason}`);
   }
+});
+
+test('the reporter may run the shipped renderer where a plugin is installed, under .claude, and nothing else there', () => {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'guard-install-')));
+  const scripts = path.join(root, '.claude', 'plugins', 'cache', 'm', 'agentic-qa', '0.13.0', 'skills', 'qa-reporting', 'scripts');
+  fs.mkdirSync(scripts, {recursive: true});
+  const renderer = path.join(scripts, 'render-report.mjs');
+  const other = path.join(scripts, 'other.mjs');
+  for (const file of [renderer, other]) fs.writeFileSync(file, '');
+  const run = path.join(root, 'walkthrough-ABC-1');
+  assert.equal(checkRestrictedBash(`node "${renderer}" "${run}"`, renderer), null);
+  assert.equal(checkRestrictedBash(`cd "${run}" && node "${renderer}" "${run}" && echo done`, renderer), null);
+  // Exactly that file, exactly as what node runs: not a neighbour, not a copy, not an argument to something else.
+  for (const command of [`node "${other}" "${run}"`, `cat "${renderer}"`, `node "${run}/render-report.mjs" "${renderer}"`, `cp "${other}" "${renderer}"`,
+    `node "${renderer}" "${root}/.claude/settings.json"`, `node ${path.relative(process.cwd(), renderer)} "${run}"`, `echo x > "${renderer}"`]) {
+    assert.ok(checkRestrictedBash(command, renderer), `should refuse: ${command}`);
+  }
+  // The file this guard ships with is the one it allows by default.
+  assert.ok(fs.existsSync(RENDERER), RENDERER);
+  assert.equal(decide({agent_type: 'agentic-qa:qa-reporter', tool_name: 'Bash', tool_input: {command: `node "${RENDERER}" "${run}"`}, cwd: root}, settings, {HOME: root}), null);
+  fs.rmSync(root, {recursive: true, force: true});
 });
 
 test('F52: a critic writes its findings in the run directory and nowhere else', () => {

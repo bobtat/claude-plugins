@@ -5,7 +5,7 @@ import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {pathToFileURL} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const PLUGIN_AGENT = 'agentic-qa:';
 const EXECUTOR = 'agentic-qa:step-executor';
@@ -972,7 +972,22 @@ function checkHeldBash(command, settings, env, place, profile) {
   return null;
 }
 
-export function checkRestrictedBash(command) {
+// The script the reporter runs to render the HTML report. It is this plugin's own
+// file, beside this hook, and a plugin is normally installed under ~/.claude, which
+// is protected as a whole. So it is allowed by being exactly this file, and only as
+// what `node` is asked to run.
+export const RENDERER = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'qa-reporting', 'scripts', 'render-report.mjs');
+
+function isRenderer(text, renderer) {
+  if (!text || !path.isAbsolute(text)) return false;
+  try {
+    return fs.realpathSync(text) === fs.realpathSync(renderer);
+  } catch {
+    return false;
+  }
+}
+
+export function checkRestrictedBash(command, renderer = RENDERER) {
   let commands;
   try {
     commands = parseShell(command);
@@ -980,8 +995,11 @@ export function checkRestrictedBash(command) {
     commands = command.split(/[\s;|&()`<>]+/).map(text => [{text, dynamic: false}]);
   }
   for (const raw of commands) {
+    const plain = raw.filter(word => !word.redirect);
+    const runsRenderer = plain[0] && !plain[0].dynamic && commandName(plain[0].text) === 'node' && plain[1] && !plain[1].dynamic && isRenderer(plain[1].text, renderer);
     for (const word of raw) {
       if (word.redirect) continue;
+      if (runsRenderer && word === plain[1]) continue;
       const reason = protectedPath(word.text);
       if (reason) return reason;
       if (/(^|[/\\])dev[/\\]+(tcp|udp)([/\\]|$)/i.test(word.text)) return `"${word.text}" opens a network connection`;
