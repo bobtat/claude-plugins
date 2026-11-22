@@ -61,7 +61,7 @@ No screenshot is expected or useful for an api/cli step. See `agentic-qa:qa-repo
 
 ### Using credentials
 
-`intake.md`'s `Credentials` field is a reference. Resolve it inside the Bash command that needs it, so the tool call shows the name and never the value: `curl -H "Authorization: Bearer $QA_API_TOKEN" …`, or for a file, `curl -H "Authorization: Bearer $(cat <path>)" …`. Never echo it.
+`intake.md`'s `Credentials` field is a reference. Resolve it inside the Bash command that needs it, so the tool call shows the name and never the value: `curl -q -H "Authorization: Bearer $QA_API_TOKEN" …`, or for a file, `curl -q -H "Authorization: Bearer $(cat <path>)" …`. A credential file under `~/.config`, `~/.claude`, `~/.ssh` or `~/.aws` can't be read this way: the guard protects those directories whole, so the person keeps the file somewhere else. Never echo it.
 
 **Never type a password or token into a browser.** Anything a browser tool types is an argument of a tool call, and tool calls are saved to the transcript. A login form means a live login, or a storage state: escalate for it, as for SSO.
 
