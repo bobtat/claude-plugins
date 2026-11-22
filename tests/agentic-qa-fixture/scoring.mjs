@@ -41,9 +41,11 @@ export function findWorkingDirectory(out, given) {
 export const kindOf = verdict => /✅|\bpass/i.test(verdict) ? 'pass' : /❌|\bfail/i.test(verdict) ? 'fail' : /observed|👁/i.test(verdict) ? 'observed'
   : /not verified|❔|declin/i.test(verdict) ? 'not verified' : /blocked|⏳/i.test(verdict) ? 'blocked' : /skipped|⏭/i.test(verdict) ? 'skipped' : /paus|pending|⏸/i.test(verdict) ? 'paused' : 'other';
 
-// Traceability rows: | S1 | B1, B2 — text | verdict |
+// Traceability rows: | S1 | B1, B2 — text | verdict |. Only that table: the report has
+// others whose rows start with a step, and a question in one is not a verdict.
 export function traceRows(report) {
-  return [...report.matchAll(/^\|\s*(S\d+)\s*\|\s*([^|]*)\|\s*([^|]*)\|\s*$/gm)].map(m => {
+  const table = (/^## Traceability[\s\S]*?(?=^## )/m.exec(report) ?? [report])[0];
+  return [...table.matchAll(/^\|\s*(S\d+)\s*\|\s*([^|]*)\|\s*([^|]*)\|\s*$/gm)].map(m => {
     const behavior = m[2].trim();
     const ids = (/^[^—–-]*/.exec(behavior)?.[0] ?? '').match(/\b[AB]\d+\b/g) ?? [];
     return {step: m[1], behavior, ids, verdict: m[3].trim(), kind: kindOf(m[3])};
