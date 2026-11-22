@@ -16,7 +16,7 @@ Before a step whose `Depends on` names an earlier step's output, pull that step'
 The executor ends its turn in exactly one of two ways, and the orchestrator acts on which:
 
 - **`ESCALATION: <what's needed, for which step>`** — a trigger from `agentic-qa:agentic-qa`'s escalation mechanism fired. **Stop at the first step that needs a decision, one escalation at a time.** Never run later steps while it is open, even ones that look independent: plan order can carry state that `Depends on` doesn't name, and an answer can stop the run. Record the pending step's state in `step-results.md` first, as a `pending` entry. The executor is resumed with the answer and continues from that step; it cannot wait for the answer in place.
-- **`COMPLETE`**, with the verdict counts — every step has a verdict.
+- **`COMPLETE`**, with the verdict counts — every step has a verdict. Count steps, not entries: a step with a `pending` entry and then its result is one step, counted by the result.
 
 If the message that resumed you names a signal file, write this result there before ending your turn. Your orchestrator may be unable to receive it any other way.
 
