@@ -5,6 +5,7 @@
 #   MODEL          model for the session and every agent that inherits it (default: claude-sonnet-5-5)
 #   MAKE           make-run.sh (default) or make-run-listfirst.sh
 #   LIVE_REPORT    on (default), as /agentic-qa:walkthrough runs it, or off, as qa-runner does with no report destination
+#   REPORT_DEST    a directory to give the run as its report destination (default: none)
 #   ROWS           rows in the orders table, which sets how large the list page is (default: 100)
 #   FIXTURE_WORK   where run directories, the plugin copy and Playwright's output go
 #   PW_FLAGS, CHROMIUM   see make-plugin.sh
@@ -17,6 +18,8 @@ RUN="$WORK/runs/$LABEL"
 mkdir -p "$WORK/cwd"
 "$HERE/make-plugin.sh" "$PLUGIN" "$WORK/.claude/plugins/agentic-qa-$LABEL"
 "$HERE/${MAKE:-make-run.sh}" "$RUN"
+# A report destination is a folder named for the run, as Intake records it, under the directory given.
+[ -n "$REPORT_DEST" ] && sed -i "s|^\*\*Report destination:\*\*.*|**Report destination:** $REPORT_DEST/walkthrough-SHOP-42-$LABEL|" "$RUN/intake.md"
 ROWS="${ROWS:-100}" PORT=8765 REQ_LOG="$RUN/requests.log" node "$HERE/app.mjs" & APP=$!
 trap 'kill $APP 2>/dev/null' EXIT
 sleep 1
