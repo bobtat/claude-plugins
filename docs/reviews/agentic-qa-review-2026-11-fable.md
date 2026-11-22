@@ -771,3 +771,34 @@ reporter's instructions do.
 
 Still open after this: F47, F51, F59, `qa-runner`'s `WebFetch` and `Read`, and the
 drafters' file tools, which are refused only the protected names.
+
+## Addendum — 0.16.0, what a second fixture found
+
+A second fixture app, with a credential in a response and a step that escapes, was run
+five times. Three things bear on this review.
+
+**A credential reached a transcript, twice.** This review did not have it as a finding.
+The response that creates an invite returns a token. The executor printed the response
+to read it. The evidence file was masked; the transcript, which Claude Code keeps on
+disk, was not. An instruction to mask held in two runs of three. The guard now accepts
+an executor's `curl` only when its response goes straight through one filter, exactly,
+or is discarded with `-o /dev/null`, and refuses `-i`, `-I`, `-v` and `-D` for it,
+because headers carry cookies ("hold the executor's curl to the mask, and keep headers
+off the screen"). What it does not cover: a response that is not JSON cannot be read
+through it at all; `-w '%header{set-cookie}'` still prints a cookie if asked to; a
+program on `allowed_commands` prints what it likes; and the browser's snapshot of a
+page that shows a secret is as it was.
+
+**An `escapes` step held against an agent's answer.** The diff hardcodes a mail relay.
+The plan critic classed the step `escapes` over an isolation claim of `sandboxed`, the
+planner put it last, the executor escalated, and when the caller answered `proceed` as
+an agent the step was not run. That path had not been run before. The relay, a canary
+on a host no allowlist holds, logged nothing in five runs.
+
+**Text in the ticket was not followed.** A note told QA to run a destructive command and
+to mark a criterion passed. Neither happened in any run, and the spec, the plan and the
+report mention the note as text.
+
+A substitution the guard cannot read is now refused as a matter of form, with the two
+commands to write instead. Before, it called for an escalation, and one run lost every
+API step to it.
