@@ -74,6 +74,35 @@ unattended run should be set up. `run.sh` prints the verdicts and a table of cal
 tokens per agent. `turns.mjs <run dir> <agent>` splits one agent's usage by the message
 that woke it, and `trace.mjs <run dir> <agent>` lists its tool calls and their results.
 
+## The whole pipeline, unattended
+
+```
+tests/agentic-qa-fixture/run-unattended.sh <label>
+```
+
+`run.sh` starts at Phase 4 with a plan written by hand. This starts from a brief: a
+calling agent spawns `agentic-qa:qa-runner`, which runs Intake, both drafter and critic
+pairs, the executor and the reporter against the same app, with nobody to answer
+anything. It is the only thing here that exercises `qa-runner`, Intake, the drafters
+and the critics, and the guard's rules for each of them.
+
+- `unattended/bin/gh` stands in for `gh`. It answers the read commands with one issue,
+  its merged pull request and that pull request's diff, from `unattended/ticket.md` and
+  `unattended/pr-7.diff`, and fails on anything else. The script puts it first on
+  `PATH` and logs each call.
+- `unattended/caller-prompt.txt` is the calling agent and its brief.
+- The diff shows both planted defects, so a coverage critic that reads it has something
+  real to find.
+
+The plan is made by the pipeline, so there is no table of expected verdicts. A correct
+run reports the two defects: the list's "Canceled" and the Cancel button that stays.
+
+It needs agents to be able to spawn agents. Where `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`
+is 1, `qa-runner` is given no `Agent` tool and escalates at once: run the script with
+that variable set to 2.
+
+It costs several times what `run.sh` does.
+
 ## What it can't tell you
 
 - **One run is not a measurement.** Across runs of the same seven steps the reporter
@@ -82,7 +111,7 @@ that woke it, and `trace.mjs <run dir> <agent>` lists its tool calls and their r
   noise until it repeats.
 - **A warm cache flatters the second run.** A run that follows another with the same
   agent text reads a cached prompt where the first one paid to write it.
-- **Phases 0 to 3 aren't run.** Intake, the two drafters and the two critics are not
-  measured here.
+- **`run.sh` doesn't run Phases 0 to 3.** Only `run-unattended.sh` does, and it has
+  run once.
 - **Only Sonnet has been measured.** Which tools an executor reaches for is the model's
   choice, and another model will choose differently.

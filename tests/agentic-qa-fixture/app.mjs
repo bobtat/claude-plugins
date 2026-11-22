@@ -16,6 +16,8 @@ const detail = o => page(`Order ${o.id}`, `<dl><dt>Customer</dt><dd>${o.customer
 http.createServer((req, res) => {
   if (LOG) fs.appendFileSync(LOG, `${new Date().toISOString()} ${req.method} ${req.url}\n`);
   const json = (code, body) => { res.writeHead(code, {'content-type': 'application/json'}); res.end(JSON.stringify(body)); };
+  // The build the unattended fixture's Intake checks against the pull request's merge commit.
+  if (req.url === '/api/version') return json(200, {commit: '4f2a9c1e7b3d5a60c8e9f1a2b3c4d5e6f7a8b9c0', pr: 7});
   const api = /^\/api\/orders\/(ORD-\d+)(\/cancel)?$/.exec(req.url);
   if (api) {
     const o = find(api[1]);

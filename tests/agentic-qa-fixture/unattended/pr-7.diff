@@ -1,0 +1,73 @@
+diff --git a/server/orders.js b/server/orders.js
+index 3b1c2aa..9d4e7f1 100644
+--- a/server/orders.js
++++ b/server/orders.js
+@@ -18,6 +18,19 @@ router.get('/api/orders/:id', (req, res) => {
+   res.json(order);
+ });
+ 
++// Cancels an order. A refunded order has already been settled and can't be cancelled.
++router.post('/api/orders/:id/cancel', (req, res) => {
++  const order = orders.find(req.params.id);
++  if (!order) return res.status(404).json({error: 'No such order'});
++  if (order.status === 'Refunded') {
++    return res.status(409).json({error: 'Refunded orders cannot be cancelled'});
++  }
++  order.status = 'Cancelled';
++  orders.save(order);
++  res.json(order);
++});
++
+ router.get('/api/version', (req, res) => {
+   res.json({commit: process.env.BUILD_COMMIT, pr: Number(process.env.BUILD_PR)});
+ });
+diff --git a/views/list.js b/views/list.js
+index 77a0c15..c2e88b4 100644
+--- a/views/list.js
++++ b/views/list.js
+@@ -4,10 +4,13 @@ const {page} = require('./layout');
+ 
++// The list has a narrow status column, so long statuses are shortened here.
++const listStatus = status => (status === 'Cancelled' ? 'Canceled' : status);
++
+ function row(order) {
+   return `<tr data-id="${order.id}">
+     <td><a href="/orders/${order.id}">${order.id}</a></td>
+     <td>${order.customer}</td>
+     <td>${order.total} USD</td>
+-    <td>${order.status}</td>
++    <td>${listStatus(order.status)}</td>
+     <td><a href="/orders/${order.id}" aria-label="Open ${order.id}">Open</a></td>
+   </tr>`;
+ }
+diff --git a/views/order.js b/views/order.js
+index 51d9e02..e07b6a3 100644
+--- a/views/order.js
++++ b/views/order.js
+@@ -9,7 +9,23 @@ function orderPage(order) {
+       <dt>Total</dt><dd>${order.total} USD</dd>
+       <dt>Status</dt><dd><span id="st" role="status" aria-label="Order status">${order.status}</span></dd>
+     </dl>
++    ${cancelButton(order)}
++    <p id="m" role="alert"></p>
+     <p><a href="/">Back to orders</a></p>`);
+ }
+ 
++function cancelButton(order) {
++  if (order.status !== 'Paid' && order.status !== 'Cancelled') return '';
++  return `<button id="c">Cancel order</button>
++    <script>
++      document.getElementById('c').onclick = async () => {
++        const r = await fetch('/api/orders/${order.id}/cancel', {method: 'POST'});
++        const j = await r.json();
++        if (r.ok) {
++          document.getElementById('st').textContent = j.status;
++          document.getElementById('m').textContent = 'Order ${order.id} cancelled';
++        } else {
++          document.getElementById('m').textContent = j.error;
++        }
++      };
++    </script>`;
++}
++
+ module.exports = {orderPage};
