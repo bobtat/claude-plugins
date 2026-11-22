@@ -102,7 +102,7 @@ function cells(row) {
   return body.split(/(?<!\\)\|/).map(cell => cell.replace(/\\\|/g, '|').trim());
 }
 
-const verdictClass = text => /✅|\bpass(ed)?\b/i.test(text) ? 'pass' : /❌|\bfail(ed)?\b/i.test(text) ? 'fail' : /⏳|⏭|❔|⏸|⚠️|blocked|skipped|not verified|paused/i.test(text) ? 'open' : '';
+const verdictClass = text => /✅|\bpass(ed)?\b/i.test(text) ? 'pass' : /❌|\bfail(ed)?\b/i.test(text) ? 'fail' : /⏳|⏭|❔|⏸|⚠️|👁|blocked|skipped|not verified|paused|observed/i.test(text) ? 'open' : '';
 
 // Markdown to HTML for the constructs the report template uses: headings, paragraphs,
 // lists, tables, fenced code, rules. Anything else is shown as escaped text.

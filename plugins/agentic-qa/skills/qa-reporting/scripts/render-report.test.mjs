@@ -101,13 +101,15 @@ test('a step marked sensitive has its evidence withheld, whichever entry said so
 
 test('tables, lists and the header block keep their shape', () => {
   const {dir, done} = run();
-  const markdown = '# Report\n\n**Ticket:** T-1   **PR:** #7\n**Status:** ✅ Passed\n\n| Step | Behavior | Verdict |\n|---|---|---|\n| S1 | a \\| b | ✅ Pass |\n| S2 | c | ❌ Fail |\n| S3 | d | ⏳ blocked — Q1 |\n\n1. one\n2. two\n\n- x\n- y\n\n---\n';
+  const markdown = '# Report\n\n**Ticket:** T-1   **PR:** #7\n**Status:** ✅ Passed\n\n| Step | Behavior | Verdict |\n|---|---|---|\n| S1 | a \\| b | ✅ Pass |\n| S2 | c | ❌ Fail |\n| S3 | d | ⏳ blocked — Q1 |\n| S4 | e | 👁 observed — Q2 |\n\n1. one\n2. two\n\n- x\n- y\n\n---\n';
   const {html} = renderBody(markdown, dir);
   assert.match(html, /<p><strong>Ticket:<\/strong> T-1   <strong>PR:<\/strong> #7<br>\n<strong>Status:<\/strong> ✅ Passed<\/p>/);
   assert.match(html, /<thead><tr><th>Step<\/th><th>Behavior<\/th><th>Verdict<\/th><\/tr><\/thead>/);
   assert.match(html, /<td>a \| b<\/td><td class="pass">✅ Pass<\/td>/);
   assert.match(html, /<td class="fail">❌ Fail<\/td>/);
   assert.match(html, /<td class="open">⏳ blocked — Q1<\/td>/);
+  // An observation is never shown as a pass, whatever words it carries.
+  assert.match(html, /<td class="open">👁 observed — Q2<\/td>/);
   assert.match(html, /<ol>\n<li>one<\/li>\n<li>two<\/li>\n<\/ol>\n<ul>\n<li>x<\/li>\n<li>y<\/li>\n<\/ul>\n<hr>/);
   done();
 });
