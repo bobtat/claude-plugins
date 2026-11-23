@@ -15,7 +15,7 @@ Absolute paths to `behavior-spec.md` and `intake.md`. Read both in full, and the
 
 ## What a step judges
 
-A step gets one verdict, and the report gives it to every behavior the step names. Its Expected is its own behavior's `Then` and nothing from another behavior: a command the ticket says lists an email is not failed because a page showed the wrong role. Name more than one behavior on a step only when one observation settles them all. And a step judges something: what it needs prepared goes in its Action, never in a step of its own, which would be reported as a pass that judged nothing.
+A step gets one verdict, and the report gives it to every behavior the step names. Its Expected is its own behavior's `Then` and nothing from another behavior: a command the ticket says lists an email is not failed because a page showed the wrong role. It is also the whole of that `Then`. An `Added` row that looks again at part of a criterion, more closely or on another surface, adds a step and takes nothing out of the criterion's own: a criterion that says a record is listed with its name and its status fails on a wrong status, whichever other step also checks statuses. Name more than one behavior on a step only when one observation settles them all. And a step judges something: what it needs prepared goes in its Action, never in a step of its own, which would be reported as a pass that judged nothing.
 
 ## Surface selection
 
