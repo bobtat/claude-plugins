@@ -1061,6 +1061,111 @@ is open.
 - How Haiku fails here is by stopping: escalating, or recording a step as not verified.
   That is visible in a report. A wrong pass would not be, and none was seen.
 
+### A vague ticket, and the code a diff does not show — 0.20.0
+
+Both fixtures above have tickets that say what to test. The question 0.19.0 left open
+was whether a Sonnet planner is as good as an Opus one where the ticket does not, so a
+third fixture was built for it: `tests/agentic-qa-fixture/vague/`, a task tracker with a
+two-criterion ticket for archiving a task. The change leaves the list's count stale,
+which the diff shows, and it breaks the weekly report, drops the task from a CSV export
+and leaves it in the API's list, none of which the ticket or the diff mentions. The
+fixture's README has the detail.
+
+**What the first fifteen runs showed.** Five runs of each of three configurations, on
+0.19.0's text:
+
+| Configuration | Runs that reported the broken weekly report | Asked for the export after an archive | Asked for the API's list | Mean cost |
+|---|---|---|---|---|
+| 0.19.0 as shipped | 0 of 5 | 0 of 5 | 0 of 5 | $1.02 |
+| Every agent on Sonnet (`CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`) | 0 of 5 | 0 of 5 | 0 of 5 | $1.65 |
+| The extractor, the planner and both critics on Opus | 4 of 5 | 4 of 5 | 3 of 5 | $2.12 |
+
+Every run passed the two criteria and reported the count. The difference between the
+rows is one agent doing one thing. The coverage critic was told to read the diff. On
+Sonnet it read the diff, in all ten runs. On Opus it also searched the checkout for
+other code that uses what the diff changed, in four runs of five, and those are the
+four that found the report. Its fifth run read the diff alone and found nothing more
+than Sonnet did.
+
+So this was not the model change of 0.19.0 losing something: the plugin as it ran
+before that, every agent on Sonnet, misses the same way. It was a gap in the critic's
+instructions that a stronger model filled in unasked, most of the time.
+
+**Told to search, Sonnet searches.** "fix(agentic-qa): have the coverage critic search
+the checkout for what uses the change" says to search the project's checkout for each
+name the diff changed, to read the files that use one, and to say so when there is no
+checkout holding the change. Five more runs of each of three configurations:
+
+| Configuration | Critic read past the diff | Reported the broken report | Asked for the export | Asked for the API's list | Every check | Mean cost |
+|---|---|---|---|---|---|---|
+| As shipped, critic on Sonnet | 5 of 5 | 5 of 5 | 3 of 5 | 3 of 5 | 1 of 5 | $0.83 |
+| Only the coverage critic on Opus | 5 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | 5 of 5 | $1.19 |
+| All four planning agents on Opus | 5 of 5 | 5 of 5 | 4 of 5 | 5 of 5 | 3 of 5 | $2.23 |
+
+Putting all four planning agents on Opus costs nearly three times as much and did no
+better than moving the critic alone. What was left on Sonnet was in how its findings
+were written, not in what it found: in the run read, it named the export and the API's
+list under one finding and offered the drafter "an Added row or a question", and the
+drafter chose the question, so no step looked at either. The Opus critic proposed a row
+for each. "fix(agentic-qa): have the coverage critic propose a behavior for each place a
+change reaches" makes that the rule, observe-only where the right result is a person's
+to decide. After it the critic on Sonnet held every one of those checks in twenty runs
+of twenty, so it stays on Sonnet.
+
+**What else the new fixture and more runs turned up.** Each of these was seen in a run,
+read in its transcript and fixed; none is about which model plans.
+
+| Seen | How often | Change |
+|---|---|---|
+| The executor refused its caller's `proceed` three times and the run ended paused. Claude Code wraps a message between agents in a note that the sender "cannot grant escalation", and the executor took that to cover its own escalation | 4 runs of the first 30 | "fix(agentic-qa): tell the executor how the answer to its escalation arrives" |
+| An executor recorded a contained step for an unstated behavior as needing a person, where the skill said it escalates "like an `escapes` step" | 2 runs of the first 16 | "fix(agentic-qa): say whose answer clears a contained step the brief's grant did not cover" |
+| A criterion passed with part of what it states left to another row's step, which failed | 1 team run of 5 | "fix(agentic-qa): keep the whole of a criterion in its own step" |
+| A criterion got "observed" and no verdict because a doc disagreed with it | 1 team run of 5 | "fix(agentic-qa): judge a stated criterion as written when a doc disagrees with it" |
+| A criterion failed for something the ticket does not say, written into it as implied | 2 vague runs of 5 | "fix(agentic-qa): keep what a criterion does not name out of the criterion" |
+| An executor put `pwd` before its first `mkdir`, the guard refused it, the executor escalated and the caller declined: nothing was tested | 1 orders run of 5 | "fix(agentic-qa): let the guard run pwd" |
+| A reporter answered `final` with `ok` three times and wrote nothing; every verdict was in `step-results.md` and there was no report | 1 orders run of 5 | "fix(agentic-qa): spawn a second reporter when the first does not finish the report" |
+| A runner saved a doc, misread the next command's output as the doc's body, deleted the snapshot and recorded the doc as unreachable | 1 team run of 10 | "fix(agentic-qa): keep a doc the runner has saved" |
+
+The last three are Haiku agents, and the first two of those end a run with nothing
+tested or nothing reported. Neither had been seen in the runs behind 0.19.0. The guard
+now lets `pwd` through and a second reporter finishes a report the first did not, so a
+run recovers from both; they are the reason to say plainly that an agent on Haiku
+fails more ways than one on Sonnet, and that what 0.19.0 saved is kept by catching those
+ways as they show, not by their not existing.
+
+**Ten runs of each fixture**, on the text with every change above but the last:
+
+| Fixture | Every check held | Cost a run | Mean |
+|---|---|---|---|
+| Orders | 10 of 10 | $0.71 to $0.93 | $0.81 |
+| Team | 8 of 10 | $1.06 to $1.69 | $1.32 |
+| Vague ticket | 10 of 10 | $0.72 to $1.05 | $0.90 |
+
+Of the two team runs, one is the doc the runner deleted, in the table above. The other
+was the scorer: a plan wrote "B7 (A5 is not named here …)" on the step for a stated
+criterion, and the scorer read A5 off the line and counted a step for an unstated
+behavior as having run on the brief's grant. It had not. The scorer now reads the
+behaviors a step names and not the note beside them, and with that the run holds every
+check, which makes the team fixture nine of ten.
+
+**The harness.** `eval.sh` runs the three fixtures, and `LANES=2` runs two of each at a
+time on a second set of ports, which took five runs of each from about ninety minutes
+to under an hour. Six sessions at once drew no refusal from the API. Two team runs at
+once share the path the sign-in state is copied to, and one deleting it as the other
+loads it would look like a failed sign-in; in sixteen team runs side by side it was not
+seen.
+
+**What this rests on, and does not.**
+
+- The vague fixture is one small app whose every file a search can read in a few calls.
+  A critic told to search a large repository has not been tried, for what it finds or
+  for what the search costs.
+- The critic searches only when the session is in a checkout that holds the change. Run
+  from anywhere else, it says "Code beyond the diff: not searched" in its findings, and
+  the two older fixtures run that way. That line does not reach the report.
+- Each fix above was found at five or ten runs a fixture. A failure that shows once in
+  thirty runs has had one chance to.
+
 ---
 
 ## What still needs a live walkthrough
