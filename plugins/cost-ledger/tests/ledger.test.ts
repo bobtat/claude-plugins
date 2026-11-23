@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { addSpend, heatLevel, monthView, spendSince, summarize, weekStartKey } from '../hooks/ledger'
+import { addSpend, formatTokens, heatLevel, monthView, spendSince, summarize, weekStartKey } from '../hooks/ledger'
 
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h).getTime()
 
@@ -50,4 +50,14 @@ test('shading is four steps relative to the busiest day, none for no spend', asy
   expect(heatLevel(0.1, 10)).toBe(1)
   expect(heatLevel(5, 10)).toBe(2)
   expect(heatLevel(10, 10)).toBe(4)
+})
+
+test('token counts are short, and one that rounds to a thousand thousands is written in millions', async () => {
+  expect(formatTokens(999)).toBe('999')
+  expect(formatTokens(1_000)).toBe('1k')
+  expect(formatTokens(150_400)).toBe('150k')
+  expect(formatTokens(999_499)).toBe('999k')
+  expect(formatTokens(999_500)).toBe('1.0M')
+  expect(formatTokens(1_000_000)).toBe('1.0M')
+  expect(formatTokens(1_250_000)).toBe('1.3M')
 })

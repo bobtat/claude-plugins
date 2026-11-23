@@ -346,8 +346,9 @@ export function heatLevel(usd: number, peak: number): 0 | 1 | 2 | 3 | 4 {
   return Math.min(4, Math.max(1, Math.ceil((usd / peak) * 4))) as 1 | 2 | 3 | 4
 }
 
+// From 999,500 up a count rounds to a thousand thousands, which is a million.
 export function formatTokens(tokens: number): string {
-  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`
+  if (tokens >= 999_500) return `${(tokens / 1_000_000).toFixed(1)}M`
   if (tokens >= 1_000) return `${Math.round(tokens / 1_000)}k`
   return String(tokens)
 }
