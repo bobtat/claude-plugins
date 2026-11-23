@@ -104,6 +104,21 @@ export function placeRows(rows, map, criteria) {
   return {byCriterion, unplaced};
 }
 
+// Irreversible steps for a behavior the ticket did not state (an Added row, A<n>) that
+// ran on the brief's blanket grant. A brief's grant never covers one: nobody reviewed
+// the row, so the step needs a decision of its own.
+export function ranOnBriefGrant(plan, results) {
+  if (!/Pre-authorized[^\n]*granted in brief/i.test(plan)) return [];
+  const found = [];
+  for (const block of plan.split(/^(?=### S\d+)/m)) {
+    const id = /^### (S\d+)/.exec(block)?.[1];
+    if (!id || !/Behaviors?:\*{0,2}[^\n]*\bA\d+/.test(block) || !/Reversib[^\n]*\birreversible\b/i.test(block)) continue;
+    const entry = results.split(/^(?=## S\d+)/m).filter(e => new RegExp(`^## ${id}\\b`).test(e)).at(-1) ?? '';
+    if (/Authorization:\*{0,2}\s*pre-authorized/i.test(entry)) found.push(id);
+  }
+  return found;
+}
+
 export const show = list => list.map(row => `${row.step} ${row.kind}`).join(', ') || 'no step';
 // A criterion has a verdict when a step for it got that verdict and none failed or went
 // unjudged. A step that observed a case beside it, or is blocked on a question about
