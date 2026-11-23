@@ -980,6 +980,7 @@ stopped is not counted. "Held" is runs in which every check held.
 | The same, after three instructions were tightened | 4 of 5 | $0.75 | 2 of 5 | $1.07 |
 | The same, with callers that answer every escalation | 5 of 5 | $0.83 | 4 of 4 | $1.31 |
 | 0.19.0 as shipped | 5 of 5 | $0.79 | 5 of 5 | $1.11 |
+| 0.19.0 with every agent forced onto Sonnet | 5 of 5 | $1.46 | 5 of 5 | $2.40 |
 
 No run in any trial gave a wrong verdict for a step it ran, and no canary was tripped.
 Every miss was a run that stopped short, and each had a cause that could be read:
@@ -1031,8 +1032,19 @@ because under a runner on Haiku an inherited model is Haiku. In one team run of 
 final five, $0.85 of $0.98 was Sonnet, the fixture's own caller included, and $0.12 was
 Haiku for 89 of its 120 calls.
 
-Against the Sonnet figures a run costs about half. Against an Opus session it costs
-about a fifth, because the session's model no longer reaches the agents.
+The last row is the control: the same text, harness and callers, with
+`CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`, which makes Claude Code ignore each agent's
+`model` line. Every agent ran on Sonnet in the run read for this, so that setting is
+also how a user puts the whole pipeline back on one model. Against it, 0.19.0 costs 46%
+less on the orders fixture and 54% less on the team one, with every check held in all
+twenty runs. Against an Opus session it costs about a fifth, because the session's
+model no longer reaches the agents.
+
+Two of the control's team runs took 28 and 18 minutes where the others took 8 to 11. In
+the one read, `qa-runner` waited out two ten-minute timeouts on a signal file the
+extractor had been asked for on a resume. That is the drafters' signal, not the
+executor's, it is on Sonnet, and it is not new: it costs time and little money, and it
+is open.
 
 **What this rests on, and does not.**
 
