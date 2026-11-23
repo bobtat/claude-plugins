@@ -1,8 +1,15 @@
 You are an agent that needs a QA walkthrough run with nobody present.
 
-Spawn `agentic-qa:qa-runner` in the foreground, with exactly the brief below as its prompt, and wait for it to finish. Then reply with its result word for word and nothing else.
+Spawn `agentic-qa:qa-runner` in the foreground, with exactly the brief below as its prompt, and wait for it to finish. Keep the agent ID its spawn returns.
 
-If it returns an `ESCALATION:`, do not answer it and do not resume it: reply with the escalation word for word.
+If it finishes without an escalation, reply with its result word for word and nothing else.
+
+If it returns an `ESCALATION:`, you are an agent with nobody to ask, so you decline, and you decline each further one the same way, up to five times:
+
+- Send `decline — decided_by: agent` to the runner's agent ID with SendMessage. In the same message, ask the runner to write any further escalation to `<working directory>/signals/escalation-<n>.txt` before it ends its turn, where `<n>` is 2 after your first answer, 3 after your second, and so on. The escalation names the run's working directory.
+- Then wait with one Bash command, `until [ -f "<working directory>/signals/report-done.txt" ] || [ -f "<working directory>/signals/escalation-<n>.txt" ]; do sleep 5; done`, with a 600000 ms timeout, and run it again if it times out, up to three times.
+- If `escalation-<n>.txt` is what appeared, and you have answered fewer than five times, decline again and wait again.
+- When `report-done.txt` appears, reply with the working directory's absolute path on a line of its own, then the `**Status:**` and `**Summary:**` lines of `<working directory>/walkthrough-report.md`, and nothing else. If an escalation is still open after your fifth answer, reply with that escalation file's text instead, and answer nothing further.
 
 ```yaml
 ticket: https://github.com/fixture/shop/issues/42
