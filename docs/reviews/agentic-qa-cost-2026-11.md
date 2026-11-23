@@ -1148,12 +1148,20 @@ behavior as having run on the brief's grant. It had not. The scorer now reads th
 behaviors a step names and not the note beside them, and with that the run holds every
 check, which makes the team fixture nine of ten.
 
+**Six more team runs, on the text with the last change too.** Every check held in six of
+six, at $0.98 to $1.68 a run, mean $1.31, $7.84 in all. In each of the six the snapshot
+of the linked doc was still in `docs/` when the run ended, `intake.md` called no doc
+unreachable, and the role the doc names and the ticket does not was in the spec's
+conflicts. Six runs say the rule did no harm and the doc was kept; the deletion was seen
+once in ten, so six without it is what one would see about half the time had nothing
+changed, and it does not show the rule is why.
+
 **The harness.** `eval.sh` runs the three fixtures, and `LANES=2` runs two of each at a
 time on a second set of ports, which took five runs of each from about ninety minutes
 to under an hour. Six sessions at once drew no refusal from the API. Two team runs at
 once share the path the sign-in state is copied to, and one deleting it as the other
-loads it would look like a failed sign-in; in sixteen team runs side by side it was not
-seen.
+loads it would look like a failed sign-in; in the twenty-one team runs of batches run that way it
+was not seen.
 
 **What this rests on, and does not.**
 
