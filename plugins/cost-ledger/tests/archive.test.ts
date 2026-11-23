@@ -4,7 +4,7 @@ import type { On } from 'claude-code'
 
 import { addSpend, daysFrom, dayKey, markFolded, mergeEntries } from '../hooks/ledger'
 import type { SessionEntry } from '../hooks/ledger'
-import { DAY, measure, NOW, ROOT } from './support'
+import { DAY, HOME, measure, NOW, ROOT } from './support'
 
 const ARCHIVE = `archive:${ROOT}`
 const OLD_A = addSpend(undefined, NOW - 90 * DAY, 3, ROOT)
@@ -137,7 +137,7 @@ test('a session another process removed between the listing and the read is pass
 
 test('a folded session that has not been removed yet is counted once, with what it has spent since', async ($, on) => {
   mock.clock(on, { now: NOW })
-  mock.env(on, { USERPROFILE: 'C:\\Users\\someone' })
+  mock.env(on, { USERPROFILE: HOME })
   const folded = markFolded(mergeEntries(undefined, OLD_A), 'session:a', NOW - 2 * 60 * 60 * 1000)
   engine(on, { [ARCHIVE]: folded, 'session:a': addSpend(OLD_A, NOW - 60 * 60 * 1000, 2, ROOT) })
   const written: string[] = []

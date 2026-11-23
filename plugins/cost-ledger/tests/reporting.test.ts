@@ -2,6 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 
 import { addSpend, addUsage, budgetAlert, cacheMinutesLeft, exportCsv, projectName, summarize } from '../hooks/ledger'
 import { priceUsage, rateTable, ratesFor } from '../hooks/pricing'
+import { HOME, portable } from './support'
 
 const NOW = new Date(2026, 9, 6, 12).getTime()
 const OPUS = ratesFor(rateTable(''), 'claude-opus-5-5', 0)
@@ -94,7 +95,7 @@ test('a weekly budget toasts at 80% and again when reached', { options: { weekly
 test('/costs export writes the CSV under the home folder', async ($, on) => {
   mock.clock(on, { now: NOW })
   mock.store(on, { 'session:earlier': addSpend(undefined, NOW, 2, 'C:/work/web') })
-  mock.env(on, { USERPROFILE: 'C:\\Users\\someone' })
+  mock.env(on, { USERPROFILE: HOME })
   const written: { path: string; text: string }[] = []
   on('fs.write', (_$, e) => {
     written.push(e)
@@ -109,7 +110,7 @@ test('/costs export writes the CSV under the home folder', async ($, on) => {
   })
 
   expect(written).toHaveLength(1)
-  expect(written[0]?.path).toMatch(/^C:[\\/]Users[\\/]someone[\\/]claude-costs[\\/]claude-costs-2026-10-06\.csv$/)
+  expect(portable(written[0]?.path ?? '')).toBe(`${HOME}/claude-costs/claude-costs-2026-10-06.csv`)
   expect(written[0]?.text).toMatch(/^2026-10-06,C:\/work\/web,2\.0000,/m)
   expect(result).toMatchObject({ text: expect.stringContaining('Wrote 1 rows') })
 })
