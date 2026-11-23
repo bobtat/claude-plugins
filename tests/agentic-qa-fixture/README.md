@@ -194,7 +194,8 @@ Five runs of 0.16.0 held every check in three. Five runs after the planning rule
 changed held every check in four. Five more, with the rule on where a CLI points, held every
 check in five. Five of 0.19.0, with the executor, the reporter and `qa-runner` on Haiku,
 held every check in five. Ten of 0.20.0 held every check in nine; in the tenth the runner
-deleted the doc it had saved, and the spec had no conflict in it. The cost review has
+deleted the doc it had saved, and the spec had no conflict in it. Six more, after the
+runner was told to keep a doc it has saved, held every check in six. The cost review has
 the tables.
 
 It needs `127.0.0.2` to be a loopback address the machine can listen on, which Linux
