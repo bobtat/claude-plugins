@@ -22,9 +22,9 @@ A doc that actively disagrees with the acceptance criteria goes in `behavior-spe
 
 ## Step 2 — Spawn the critic and relay the rounds
 
-Spawn `agentic-qa:behavior-coverage-critic` with the absolute paths to the draft `behavior-spec.md` and `intake.md`. It reads the PR's diff — always available, since Intake requires a merged PR — and argues two things:
+Spawn `agentic-qa:behavior-coverage-critic` with the absolute paths to the draft `behavior-spec.md` and `intake.md`. It reads the PR's diff — always available, since Intake requires a merged PR — and, when the session is in a checkout of the PR's repository that holds the change, searches it for the code that uses what the diff changed. It argues two things:
 
-1. **Blast radius** — behaviors the ticket never called out but the change plausibly affects, each requiring a real code-location citation.
+1. **Blast radius** — behaviors the ticket never called out but the change plausibly affects, in the diff or in code the diff never touches, each requiring a real code-location citation.
 2. **Citation audit** — does each of the drafter's own `Added` rows actually say what it claims, not just whether a citation exists.
 
 A finding about the ticket's own clarity (an ambiguous criterion, no stated pass/fail) doesn't need a separate citation — the ticket text is already the artifact being critiqued.
