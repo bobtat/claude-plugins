@@ -193,7 +193,9 @@ have: read the transcript before calling it either.
 Five runs of 0.16.0 held every check in three. Five runs after the planning rules
 changed held every check in four. Five more, with the rule on where a CLI points, held every
 check in five. Five of 0.19.0, with the executor, the reporter and `qa-runner` on Haiku,
-held every check in five. The cost review has the tables.
+held every check in five. Ten of 0.20.0 held every check in nine; in the tenth the runner
+deleted the doc it had saved, and the spec had no conflict in it. The cost review has
+the tables.
 
 It needs `127.0.0.2` to be a loopback address the machine can listen on, which Linux
 allows and macOS does not without `ifconfig lo0 alias 127.0.0.2`.
@@ -237,6 +239,11 @@ does not touch.
 The run's caller answers every escalation with `proceed — decided_by: agent`, up to
 five, as the team fixture's does. Nothing here escapes, so every answer should be taken.
 
+On 0.19.0 no run of ten found anything outside the diff: the coverage critic read the
+diff, as it was told. With the planning agents on Opus four runs of five did, because
+that critic searched the checkout unasked. From 0.20.0 the critic is told to, and ten
+runs of ten held every check with it on Sonnet. The cost review has the tables.
+
 ## Several runs, scored
 
 ```
@@ -253,7 +260,15 @@ of the report against a criterion by the ticket's words that the behavior spec q
 as its anchor, so they do not depend on how a run numbered or named its behaviors. A
 row they cannot place is printed, never guessed at. None of the three uses a model.
 
-Five runs of each cost about $18 through 0.18.0 and $9.48 at 0.19.0, or $19.30 with every agent forced onto Sonnet.
+`LANES=2` runs two of each fixture at a time, on ports 100 above the first lane's, and
+takes about half as long: the team fixture's runs are the slow ones, at ten to fifteen
+minutes each, and one lane runs them end to end. Two team runs at once copy the sign-in
+state to the same path, so read a failed sign-in in a run that had company before
+counting it.
+
+Five runs of each of the first two cost about $18 through 0.18.0 and $9.48 at 0.19.0, or
+$19.30 with every agent forced onto Sonnet. Ten runs of each of the three cost $30.34 at
+0.20.0.
 
 ## What it can't tell you
 
@@ -267,10 +282,13 @@ Five runs of each cost about $18 through 0.18.0 and $9.48 at 0.19.0, or $19.30 w
   times singly: seven to the end, two to an escalation nobody answered, and one through
   an escalation its caller answered. It has since run in evals, where the tabulator says
   how each ended.
+- **The vague fixture's app is six files.** A critic that searches it reads all of it
+  in a few calls. What the same search finds, and costs, in a large repository has not
+  been tried.
 - **The search form does nothing on Enter.** It has a Search button, and the criterion
   passes through it. That is not one of the two planted defects. A run that fails the
   search criterion after pressing Enter alone has used the wrong control.
-- **Two fixtures are not your tickets.** The executor, the reporter and `qa-runner` have
-  run here on Haiku and on Sonnet, the drafters and critics on Sonnet, and one run of
-  each fixture had every agent on Opus. Which tools an executor reaches for is the
+- **Three fixtures are not your tickets.** The executor, the reporter and `qa-runner` have
+  run here on Haiku and on Sonnet, the drafters and critics on Sonnet and, on the vague
+  ticket, on Opus, and one run of each of the first two had every agent on Opus. Which tools an executor reaches for is the
   model's choice, and a page harder to read than these has not been tried on Haiku.
