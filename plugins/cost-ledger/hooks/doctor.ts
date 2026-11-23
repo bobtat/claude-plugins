@@ -11,10 +11,9 @@ import { pricedApart, quoteVerdict } from './prices'
 import { addBreakdown, ratesFor, totalUsd } from './pricing'
 import type { CacheTtl } from './pricing'
 import type { Settings } from './settings'
-import { ledgerEntries, LEARNED_PRICING_KEY, SESSION_PREFIX, SHARED_PREFIX_KEY, UNPRICED_MODELS_KEY, WRITE_QUOTES_KEY } from './store'
+import { ledgerEntries, LEARNED_PRICING_KEY, SESSION_PREFIX, SHARED_PREFIX_KEY, STORE_LIMIT_BYTES, UNPRICED_MODELS_KEY, WRITE_QUOTES_KEY } from './store'
 
 const PROBE_KEY = 'doctorProbe'
-const STORE_LIMIT_BYTES = 4 * 1024 * 1024
 
 const localStamp = (ms: number) => {
   const d = new Date(ms)

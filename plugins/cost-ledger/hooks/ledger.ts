@@ -147,6 +147,39 @@ export function shouldArchive(entry: SessionEntry, now: number): boolean {
   return now - entry.updatedAt > ARCHIVE_AFTER_MS
 }
 
+// A session may be folded ahead of its 60 days once nothing of it can still
+// be on the day of the fold: it has been idle a day, and its last record is on
+// an earlier local day. A fold counts a session's own entry only from the
+// fold's day on, so one folded with records on that day would have them
+// counted twice.
+export function isSettled(entry: SessionEntry, now: number): boolean {
+  return now - entry.updatedAt > DAY_MS && dayKey(entry.updatedAt) < dayKey(now)
+}
+
+// How many sessions keep an entry of their own, and how much JSON text those
+// entries may come to together. The store holds 4 MiB in all and refuses every
+// write past it, and each cost measurement reads every entry, at a cost that
+// rises with the square of their number (tests/cost-ledger-probe/README.md).
+export const MAX_SESSIONS = 100
+export const MAX_SESSION_BYTES = 1024 * 1024
+
+export type StoredSession = { key: string; entry: SessionEntry; bytes: number }
+
+// The sessions to fold into their project's archive before they are 60 days
+// idle: those past the most recently used MAX_SESSIONS, or past
+// MAX_SESSION_BYTES of entries counted from the most recent, that are settled.
+// The longest idle comes first.
+export function sessionsToFoldEarly(sessions: readonly StoredSession[], now: number): string[] {
+  const early: string[] = []
+  let bytes = 0
+  const newestFirst = [...sessions].sort((a, b) => b.entry.updatedAt - a.entry.updatedAt)
+  for (const [index, session] of newestFirst.entries()) {
+    bytes += session.bytes
+    if ((index >= MAX_SESSIONS || bytes > MAX_SESSION_BYTES) && isSettled(session.entry, now)) early.push(session.key)
+  }
+  return early.reverse()
+}
+
 function mergeDays<T>(a: Record<string, T> | undefined, b: Record<string, T> | undefined, add: (x: T, y: T) => T) {
   const merged = { ...a }
   for (const [day, value] of Object.entries(b ?? {})) {
