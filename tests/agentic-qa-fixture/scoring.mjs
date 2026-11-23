@@ -112,7 +112,8 @@ export function ranOnBriefGrant(plan, results) {
   const found = [];
   for (const block of plan.split(/^(?=### S\d+)/m)) {
     const id = /^### (S\d+)/.exec(block)?.[1];
-    if (!id || !/Behaviors?:\*{0,2}[^\n]*\bA\d+/.test(block) || !/Reversib[^\n]*\birreversible\b/i.test(block)) continue;
+    // The behaviors a step names come before any note in brackets: "B7 (A5 is not named here ...)" names B7.
+    if (!id || !/Behaviors?:\*{0,2}[^\n(]*\bA\d+/.test(block) || !/Reversib[^\n]*\birreversible\b/i.test(block)) continue;
     const entry = results.split(/^(?=## S\d+)/m).filter(e => new RegExp(`^## ${id}\\b`).test(e)).at(-1) ?? '';
     if (/Authorization:\*{0,2}\s*pre-authorized/i.test(entry)) found.push(id);
   }
