@@ -15,7 +15,9 @@ OUT="$WORK/unattended/$LABEL"
 [ -e "$OUT" ] && { echo "$OUT exists: a run is never reused" >&2; exit 1; }
 mkdir -p "$OUT/cwd"
 "$HERE/make-plugin.sh" "$PLUGIN" "$WORK/.claude/plugins/agentic-qa-$LABEL"
-ROWS="${ROWS:-100}" PORT=8765 REQ_LOG="$OUT/requests.log" node "$HERE/app.mjs" & APP=$!
+PORT="${ORDERS_PORT:-8765}"
+sed "s|localhost:8765|localhost:$PORT|g" "$HERE/unattended/${CALLER:-caller-prompt.txt}" > "$OUT/prompt.txt"
+ROWS="${ROWS:-100}" PORT="$PORT" REQ_LOG="$OUT/requests.log" node "$HERE/app.mjs" & APP=$!
 trap 'kill $APP 2>/dev/null' EXIT
 sleep 1
 cd "$OUT/cwd"
@@ -24,7 +26,7 @@ cd "$OUT/cwd"
 set +e
 CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS="${BG_WAIT_MS:-2700000}" \
 PATH="$HERE/unattended/bin:$PATH" GH_STUB_LOG="$OUT/gh.log" \
-claude -p "$(cat "$HERE/unattended/${CALLER:-caller-prompt.txt}")" --model "${MODEL:-claude-sonnet-5-5}" \
+claude -p "$(cat "$OUT/prompt.txt")" --model "${MODEL:-claude-sonnet-5-5}" \
   --plugin-dir "$WORK/.claude/plugins/agentic-qa-$LABEL" --plugin-dir "$REPO/plugins/testing" \
   --allowedTools Agent SendMessage Skill Read Write Edit Glob Grep Bash WebFetch mcp__plugin_agentic-qa_playwright \
   --output-format json > "$OUT/result.json" 2> "$OUT/stderr.txt"

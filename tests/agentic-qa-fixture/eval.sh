@@ -6,9 +6,11 @@
 # Every run is a whole unattended walkthrough and spends real tokens: about $0.80 for the
 # orders fixture and $1.10 for the team one at 0.19.0, so five of each is about $10. The
 # three fixtures use different ports and run side by side, one run of each at a time.
+# LANES=2 runs two of each at a time, on a second set of ports, and takes about half as long.
 #
 # usage: eval.sh <label> [runs of each fixture, default 5]
 #   MODEL, FIXTURE_WORK, PW_FLAGS, CHROMIUM   as for run.sh
+#   LANES   how many runs of each fixture go at once (default 1)
 # Agents must be able to spawn agents: set CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=2 where it is 1.
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -17,23 +19,31 @@ LABEL="$1"; N="${2:-5}"
 WORK="${FIXTURE_WORK:-${TMPDIR:-/tmp}/agentic-qa-fixture}"
 mkdir -p "$WORK"
 
+LANES="${LANES:-1}"
 lane() {
-  # $1 is the script, $2 the letter that marks its runs, $3 the folder they go in. A run that fails is still scored.
-  i=1
+  # $1 is the script, $2 the letter that marks its runs, $3 the folder they go in, $4 which lane this is.
+  # Lane k takes runs k, k+LANES, k+2*LANES and so on, on ports 100*(k-1) above the fixture's own.
+  # A run that fails is still scored.
+  off=$((($4 - 1) * 100)); i="$4"
   while [ "$i" -le "$N" ]; do
-    "$1" "$LABEL-$2$i" > "$WORK/eval-$LABEL-$2$i.log" 2>&1 || true
+    ORDERS_PORT=$((8765 + off)) TEAM_PORT=$((8770 + off)) TEAM_RELAY_PORT=$((8771 + off)) VAGUE_PORT=$((8780 + off)) \
+      "$1" "$LABEL-$2$i" > "$WORK/eval-$LABEL-$2$i.log" 2>&1 || true
     echo "finished $LABEL-$2$i"
     # A run the API stopped, at a usage limit for one, tested nothing, and the next would be stopped too.
     if grep -q '"is_error":true' "$WORK/$3/$LABEL-$2$i/result.json" 2>/dev/null; then
-      echo "stopping the $3 runs: $LABEL-$2$i ended in an API error"
+      echo "stopping lane $4 of the $3 runs: $LABEL-$2$i ended in an API error"
       break
     fi
-    i=$((i + 1))
+    i=$((i + LANES))
   done
 }
-lane "$HERE/run-unattended.sh" o unattended &
-lane "$HERE/team/run.sh" t team &
-lane "$HERE/vague/run.sh" v vague &
+k=1
+while [ "$k" -le "$LANES" ]; do
+  lane "$HERE/run-unattended.sh" o unattended "$k" &
+  lane "$HERE/team/run.sh" t team "$k" &
+  lane "$HERE/vague/run.sh" v vague "$k" &
+  k=$((k + 1))
+done
 wait
 
 orders=""; team=""; vague=""; i=1
