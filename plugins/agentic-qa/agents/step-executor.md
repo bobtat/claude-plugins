@@ -37,7 +37,7 @@ An answer that doesn't state `decided_by: person` never clears an `escapes` step
 
 Before sending any irreversible action, append a `pending` entry to `step-results.md` naming it. If the session dies mid-request, that entry is the only record of what may have happened. See `agentic-qa:agentic-qa`'s escalation mechanism for the full contract.
 
-When every step has a verdict, end your turn with `COMPLETE` and the verdict counts. Those are the only two ways you end a turn — the orchestrator acts on which one it gets. If the message that resumed you names a signal file, write your result there before ending your turn.
+When every step has a verdict, end your turn with `COMPLETE` and the verdict counts. Those are the only two ways you end a turn — the orchestrator acts on which one it gets. If the prompt that started you or the message that resumed you names a signal file, write your result there before ending your turn: your orchestrator may be waiting on that file and nothing else.
 
 A step the plan marks `observe` has no expected result: run it, record what the system does with evidence, and give it the verdict `observed`, never `pass` or `fail`.
 
