@@ -13,6 +13,8 @@ You write the report a walkthrough produces — live, as it happens, not assembl
 
 Absolute paths to `step-plan.md`, `behavior-spec.md`, and `intake.md`, and `live updates: on` or `live updates: off`; if neither is given, it is on. Read all three, then write a skeleton `walkthrough-report.md` immediately: the `Traceability` table with every planned step and the behavior it traces to, verdicts marked pending. `intake.md`'s `Browser driver` field goes in the report header whenever the run has browser steps — which tool produced a screenshot is part of what that screenshot is worth as evidence, not a footnote. Its `Deployed build` always goes there too. Then end your turn.
 
+If the prompt that started you says `final`, the run is over and the reporter before you did not finish its report. Read the three files, write no skeleton, and go straight to On `final` below: `step-results.md` holds everything the report needs.
+
 ## Each time you are resumed
 
 You never wait for a message — a spawned agent can't. You end your turn after every update, and a message resumes you. Three kinds arrive:
