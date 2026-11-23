@@ -427,13 +427,21 @@ test('the hook process says which kind of refusal it is', () => {
 });
 
 test('the skill lists exactly the programs the guard allows', () => {
-  // The executor reaches for pwd and find when the list is vague, and each refusal ends a run.
+  // The executor reaches for find when the list is vague, and each refusal ends a run.
   const skill = fs.readFileSync(fileURLToPath(new URL('../skills/step-execution/SKILL.md', import.meta.url)), 'utf8');
   const line = skill.split('\n').find(l => l.startsWith('- **Programs:** exactly these: '));
   assert.ok(line, 'the Programs line is missing');
   const listed = line.slice(line.indexOf('these: '), line.indexOf('. Not ')).match(/`([^`]+)`/g).map(x => x.slice(1, -1));
   assert.deepEqual([...listed].sort(), [...EXECUTOR_COMMANDS].filter(c => c !== '[').sort());
-  for (const absent of ['pwd', 'find', 'awk', 'xargs', 'env']) refused(`${absent} .`);
+  for (const absent of ['find', 'awk', 'xargs', 'env']) refused(`${absent} .`);
+});
+
+test('pwd runs, alone and in front of the first mkdir, and is checked like any other program', () => {
+  allowed('pwd');
+  allowed('pwd && mkdir -p evidence runtime-secrets');
+  refused('pwd > .claude/agentic-qa.local.md');
+  refused('pwd > ~/.curlrc');
+  refused('pwd && find .');
 });
 
 test('F42: a redirect cannot open a network connection', () => {
