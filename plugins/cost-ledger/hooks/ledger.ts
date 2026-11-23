@@ -147,13 +147,14 @@ export function shouldArchive(entry: SessionEntry, now: number): boolean {
   return now - entry.updatedAt > ARCHIVE_AFTER_MS
 }
 
-// A session may be folded ahead of its 60 days once nothing of it can still
-// be on the day of the fold: it has been idle a day, and its last record is on
-// an earlier local day. A fold counts a session's own entry only from the
-// fold's day on, so one folded with records on that day would have them
-// counted twice.
+// A session may be folded ahead of its 60 days once it has been idle a day
+// and nothing of it is on the day of the fold or after. A fold counts a
+// session's own entry only from the fold's day on, so one folded with a
+// record on that day would have it counted twice. The entry's own days are
+// asked, not when it was last written: they were named in the time zone of
+// the process that recorded them, which may not be this one's.
 export function isSettled(entry: SessionEntry, now: number): boolean {
-  return now - entry.updatedAt > DAY_MS && dayKey(entry.updatedAt) < dayKey(now)
+  return now - entry.updatedAt > DAY_MS && daysFrom(entry, dayKey(now)) === undefined
 }
 
 // How many sessions keep an entry of their own, and how much JSON text those

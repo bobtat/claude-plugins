@@ -58,6 +58,20 @@ export function keepTopTurns(turns: readonly TurnRecord[]): TurnRecord[] {
   )
 }
 
+// Those of `turns` that cost at least as much as the cheapest of their
+// month's `kept` ten: the rest can never be among a month's ten again.
+export function turnsWorthKeeping(turns: readonly TurnRecord[], kept: readonly TurnRecord[]): TurnRecord[] {
+  const byMonth = new Map<string, number[]>()
+  for (const turn of kept) {
+    const month = localDay(turn.at).slice(0, 7)
+    byMonth.set(month, [...(byMonth.get(month) ?? []), turnUsd(turn)])
+  }
+  return turns.filter(turn => {
+    const costs = byMonth.get(localDay(turn.at).slice(0, 7)) ?? []
+    return costs.length < TURNS_PER_MONTH || turnUsd(turn) >= Math.min(...costs)
+  })
+}
+
 export function turnsIn(turns: readonly TurnRecord[], fromDay: string, toDay: string): TurnRecord[] {
   return turns
     .filter(turn => {
