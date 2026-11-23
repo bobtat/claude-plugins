@@ -37,7 +37,8 @@ All warnings are informational: nothing is ever blocked.
  turn.step ──────── usage per request (tokens, model) ───────► priced per category
                                                                   │
                     $.store: one entry per session, ◄─────────────┘
-                    archived per project after 60 days, kept 400 days
+                    archived per project after 60 days, or sooner
+                    past a hundred sessions; kept 400 days
                                    │
                                    ▼
                 status line · band · /costs pane · CSV export
@@ -64,6 +65,16 @@ All warnings are informational: nothing is ever blocked.
   one day. Week over week compares Monday to today with Monday to the same weekday last week.
 - Only sessions that ran with the mod enabled are counted. There is no backfill from older
   transcripts.
+- **What is kept.** Each session has an entry of its own in the store: its spend by day, its
+  breakdown, its tool figures, its ten most expensive prompts of each month and the per-turn
+  figures behind `/costs doctor`'s **Turns** line. A session idle for 60 days is folded into
+  one archive entry for its project, which keeps all of that but the per-turn figures, and of
+  the prompts the project's ten most expensive of each month. The store holds 4 MiB and an entry weighs
+  about 8 kB, so 60 days of sessions can be more than it holds. So only the hundred most
+  recently used sessions, and no more than a mebibyte of them, keep an entry of their own:
+  the rest are folded as soon as they have been idle a day and have nothing on the current
+  day, up to a hundred at each start of Claude Code. Folding changes no total, no row of the
+  export and no prompt the pane lists. Days older than 400 are dropped.
 - **The cache lifetime** is read from Claude Code's own pricing: after each turn, the turn's
   requests are priced at list rates with five-minute and with one-hour cache writes, and
   whichever matches what the turn moved Claude Code's running total by is the lifetime it
@@ -150,7 +161,9 @@ repository root.
   price, the cache lifetime or fast mode is off, or a charge that token counts do not show
   (US-only inference, web searches) was made. Spend outside turns with nothing priced
   against it is requests the mod does not see. Only sessions recorded from their start by
-  0.8.0 or later are counted, so the line appears once there is $1 of such spend this month.
+  0.8.0 or later are counted, so the line appears once there is $1 of such spend this month,
+  and only those that still have an entry of their own: past a hundred sessions, the most
+  recently used.
 
 It cannot check the `/resume` accounting: for that, compare `/costs` before and after
 resuming a session whose spend you know.
@@ -186,9 +199,13 @@ totals do not depend on any of this.
 - Week and day boundaries use the local time of the process running Claude Code.
 - The store is one JSON file shared by every Claude Code process on the machine. Two sessions
   writing at the same moment have not been tested for lost updates, and two sessions can
-  both show the same budget toast. Folding old sessions into their project's archive is made
+  both show the same budget toast. Folding sessions into their project's archive is made
   safe to interrupt and to repeat: an archive records each session it has taken in, never
   takes one in twice, and a session is removed only once the archive is seen to hold it.
+- Archives are not bounded the way sessions are. An archive holds a project's figures for
+  each day it was worked on, for 400 days, so many projects worked on daily for a year can
+  still fill the store. `/costs doctor` warns once the store file is three quarters full. At
+  the limit itself nothing more is recorded and a toast says so.
 - After an in-process `/resume`, the mod takes Claude Code's running cost at that moment as
   the new baseline. If Claude Code restores the resumed session's earlier cost only after
   that point, the earlier cost would be counted again. This has been reasoned from the API
@@ -210,8 +227,9 @@ totals do not depend on any of this.
 - The mod keeps its figures in the plugin store as they change, which adds 5 to 20 ms to a
   tool call or model request, and rereads every stored session at each cost measurement:
   about 20 ms with 50 sessions stored, rising with the square of their number to about 0.2 s
-  at 200. Sessions older than 60 days are folded into one archive entry per project, which
-  keeps the count down. The measurements are in `tests/cost-ledger-probe/README.md`.
+  at 200. No more than the hundred most recently used sessions keep an entry, beside any
+  used in the last day, which keeps the count down. The measurements are in
+  `tests/cost-ledger-probe/README.md`.
 - The breakdown is priced as each request is recorded and is not priced again when the rates
   change or a later version corrects a rule. `CHANGELOG.md` lists, version by version, the
   known errors that figures recorded by earlier versions still carry.

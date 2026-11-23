@@ -215,12 +215,21 @@ sessions already stored:
 
 **No batching was added.** A model request takes seconds, and 5 to 10 ms on a tool call is
 below what a person would notice, so at the sizes a store reaches the mod's own work does
-not show. Sessions older than 60 days are folded into one archive entry per project, which
-bounds the count. The one figure that would come to matter is the read of every entry at
-each cost measurement: about 0.2 s per measurement at 200 sessions and about 1 s at 500,
-where the store is also at its 4 MiB limit. If stores that large turn up, the fix is
-to reread other sessions' entries less often than at every measurement, at the price of
-their spend showing in this session's totals a little late.
+not show. The one figure that would come to matter is the read of every entry at each cost
+measurement: about 0.2 s per measurement at 200 sessions and about 1 s at 500, where the
+store is also at its 4 MiB limit and refuses every write.
+
+Folding sessions only after 60 days idle did not bound the count: a little over eight
+sessions a day fills the store inside those 60 days. Since cost-ledger 0.9.3 the sessions
+past the hundred most recently used, or past a mebibyte of entries, are folded into their
+project's archive once they have been idle a day, up to a hundred at a start. That keeps
+a measurement between the 50 and the 200 session rows above.
+
+The fold's own cost has not been measured on the engine's real store. Counted from the
+code, folding a hundred sessions at a start adds about two hundred gets, a hundred removals
+and one set per project to the four reads of every entry a start already makes. On a
+500-session store the gets come to about 0.4 s at the 2 ms above. What a removal costs is
+not in the table.
 
 ## Development
 
