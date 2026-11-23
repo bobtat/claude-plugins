@@ -9,14 +9,16 @@ import {
   exportCsv,
   forgetFolds,
   isFoldForgettable,
+  isSettled,
   markFolded,
   mergeEntries,
   pruneDays,
+  sessionsToFoldEarly,
   shouldArchive,
   UNKNOWN_PROJECT,
   weekStartKey,
 } from './ledger'
-import type { SessionEntry } from './ledger'
+import type { SessionEntry, StoredSession } from './ledger'
 
 export const SESSION_PREFIX = 'session:'
 export const ARCHIVE_PREFIX = 'archive:'
@@ -86,13 +88,30 @@ export async function saveEntry($: EngineInterface, key: string, entry: SessionE
   }
 }
 
+export const STORE_LIMIT_BYTES = 4 * 1024 * 1024
+// A store this full, counting once more the sessions an archive is about to
+// take in, may have no room for that archive beside them.
+const TIGHT_ABOVE_BYTES = STORE_LIMIT_BYTES * 0.9
+// A first start with a store full of small sessions would otherwise spend
+// minutes folding them: the rest wait for the starts that follow.
+const EARLY_FOLDS_PER_START = 100
+const HELD_AT_ONCE = 4
+
 // Sessions untouched for 60 days are folded into one archive entry per
-// project, and days past retention are dropped, which keeps the store far
-// below its 4 MiB limit however many sessions run.
+// project, and days past retention are dropped. Sixty days of sessions can
+// still be more than the store holds, about 8 kB each against its 4 MiB, and
+// a store at its limit refuses every write, so the ledger would stop
+// recording. So the sessions past the hundred most recently used, or past a
+// mebibyte of entries, are folded as soon as they are a day idle.
 export async function compactStore($: EngineInterface, now: number) {
-  for (const [key, entry] of await loadEntries($)) {
-    if (key.startsWith(SESSION_PREFIX) && shouldArchive(entry, now)) await foldSession($, key, now)
-  }
+  const scanned = (await loadEntries($)).map(([key, entry]) => ({ key, entry, bytes: JSON.stringify(entry).length }))
+  const storeBytes = scanned.reduce((sum, stored) => sum + stored.key.length + stored.bytes, 0)
+  const sessions = scanned.filter(({ key }) => key.startsWith(SESSION_PREFIX))
+  await foldSessions($, sessions.filter(({ entry }) => shouldArchive(entry, now)), now, shouldArchive, storeBytes)
+
+  const early = new Set(sessionsToFoldEarly(sessions.filter(({ entry }) => !shouldArchive(entry, now)), now).slice(0, EARLY_FOLDS_PER_START))
+  await foldSessions($, sessions.filter(({ key }) => early.has(key)), now, isSettled, storeBytes)
+
   await finishFolds($, now)
   for (const [key, entry] of await loadEntries($)) {
     const pruned = pruneDays(entry, now)
@@ -104,18 +123,71 @@ export async function compactStore($: EngineInterface, now: number) {
 const dayCount = (e: SessionEntry) =>
   [e.days, e.cache, e.subagentCache, e.tools].reduce((sum, days) => sum + Object.keys(days ?? {}).length, 0) + (e.turns?.length ?? 0)
 
-// A fold is two writes, the archive and then the session's removal, and
-// another Claude Code process may be making the same fold from an older view
-// of the store. So the archive names each session it has taken in, and a
-// session it already names is never added to it again. The session is read
-// afresh: the scan's copy may be one another process has since dealt with.
-async function foldSession($: EngineInterface, key: string, now: number) {
-  const entry = (await $.store.get(key)) as SessionEntry | undefined
-  if (entry === undefined || !shouldArchive(entry, now)) return
-  const archiveKey = ARCHIVE_PREFIX + (entry.project ?? UNKNOWN_PROJECT)
+const archiveKeyOf = (entry: SessionEntry) => ARCHIVE_PREFIX + (entry.project ?? UNKNOWN_PROJECT)
+
+type MayFold = (entry: SessionEntry, now: number) => boolean
+
+async function foldSessions($: EngineInterface, sessions: readonly StoredSession[], now: number, mayFold: MayFold, storeBytes: number) {
+  const byArchive = new Map<string, StoredSession[]>()
+  for (const session of sessions) byArchive.set(archiveKeyOf(session.entry), [...(byArchive.get(archiveKeyOf(session.entry)) ?? []), session])
+  for (const [archiveKey, taken] of byArchive) {
+    // An archive is never larger than what it takes in, so with room for the
+    // sessions a second time over, a refused write is not for want of room.
+    const isTight = storeBytes + taken.reduce((sum, session) => sum + session.bytes, 0) > TIGHT_ABOVE_BYTES
+    await foldInto($, archiveKey, taken.map(session => session.key), now, mayFold, isTight)
+  }
+}
+
+async function setQuietly($: EngineInterface, key: string, entry: SessionEntry): Promise<boolean> {
+  try {
+    await $.store.set(key, entry)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// A fold is the archive's write and then each session's removal, and another
+// Claude Code process may be making the same fold from an older view of the
+// store. So the archive names each session it has taken in, and a session it
+// already names is never added to it again. Each session is read afresh: the
+// scan's copy may be one another process has since dealt with. The sessions
+// of one project go into its archive in one write.
+async function foldInto($: EngineInterface, archiveKey: string, keys: readonly string[], now: number, mayFold: MayFold, isTight: boolean) {
   const archive = (await $.store.get(archiveKey)) as SessionEntry | undefined
-  if (archive?.folded?.[key] !== undefined) return
-  await saveEntry($, archiveKey, markFolded(mergeEntries(archive, entry), key, now))
+  const due: [string, SessionEntry][] = []
+  let merged = archive
+  for (const key of keys) {
+    const entry = (await $.store.get(key)) as SessionEntry | undefined
+    if (entry === undefined || !mayFold(entry, now) || archiveKeyOf(entry) !== archiveKey) continue
+    if (merged?.folded?.[key] !== undefined) continue
+    merged = markFolded(mergeEntries(merged, entry), key, now)
+    due.push([key, entry])
+  }
+  if (merged === undefined || due.length === 0) return
+  if (!isTight) await saveEntry($, archiveKey, merged)
+  else if (!(await setQuietly($, archiveKey, merged))) await foldWithoutRoom($, archiveKey, archive, due, now)
+}
+
+// A store at its limit has no room for an archive beside the sessions it is
+// taking in, and records nothing new either until some is made. Here alone a
+// session is removed before the archive that holds it is written: one at a
+// time, a few where one does not free enough, and each is written back if the
+// archive is not then seen to hold it.
+async function foldWithoutRoom($: EngineInterface, archiveKey: string, archive: SessionEntry | undefined, due: readonly [string, SessionEntry][], now: number) {
+  let merged = archive
+  let held: [string, SessionEntry][] = []
+  for (const [key, entry] of due) {
+    await $.store.delete(key)
+    held.push([key, entry])
+    merged = markFolded(mergeEntries(merged, entry), key, now)
+    if (await setQuietly($, archiveKey, merged)) {
+      const stored = (await $.store.get(archiveKey)) as SessionEntry | undefined
+      if (held.some(([heldKey]) => stored?.folded?.[heldKey] === undefined)) break
+      held = []
+    } else if (held.length >= HELD_AT_ONCE) break
+  }
+  for (const [key, entry] of held) await saveEntry($, key, entry)
 }
 
 // Removes each session an archive is seen to hold. The archive is read back
