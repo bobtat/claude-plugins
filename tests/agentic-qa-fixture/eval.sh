@@ -4,8 +4,9 @@
 # change against, before and after.
 #
 # Every run is a whole unattended walkthrough and spends real tokens: about $0.80 for the
-# orders fixture and $1.10 for the team one at 0.19.0, so five of each is about $10. The
-# three fixtures use different ports and run side by side, one run of each at a time.
+# orders fixture, $1.30 for the team one and $0.90 for the vague one at 0.20.0, so five of
+# each is about $15. The three fixtures use different ports and run side by side, one run
+# of each at a time.
 # LANES=2 runs two of each at a time, on a second set of ports, and takes about half as long.
 #
 # usage: eval.sh <label> [runs of each fixture, default 5]
