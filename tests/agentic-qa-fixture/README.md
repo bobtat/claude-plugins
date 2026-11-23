@@ -71,7 +71,10 @@ AGENT_MODELS="step-executor=sonnet qa-reporter=sonnet" tests/agentic-qa-fixture/
 ```
 
 An agent whose model is `inherit` takes the model of the agent that spawned it, not the
-session's: under a `qa-runner` on Haiku, every agent left on `inherit` ran on Haiku.
+session's: under a `qa-runner` on Haiku, every agent left on `inherit` ran on Haiku. To
+put every agent on the session's model whatever its definition says, set
+`CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`: five runs of each fixture ran that way, every
+agent on Sonnet in the one checked.
 
 A headless session stops agents that are still running ten minutes after its last turn,
 which cut six of twelve runs on models slower than Sonnet. The run scripts raise that
@@ -210,7 +213,7 @@ of the report against a criterion by the ticket's words that the behavior spec q
 as its anchor, so they do not depend on how a run numbered or named its behaviors. A
 row they cannot place is printed, never guessed at. Neither uses a model.
 
-Five runs of each cost about $18 through 0.18.0 and $9.48 at 0.19.0.
+Five runs of each cost about $18 through 0.18.0 and $9.48 at 0.19.0, or $19.30 with every agent forced onto Sonnet.
 
 ## What it can't tell you
 
