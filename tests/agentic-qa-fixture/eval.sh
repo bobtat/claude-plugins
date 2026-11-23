@@ -1,11 +1,11 @@
 #!/bin/sh
-# Runs the plugin as it stands several times against both fixtures and says how often each
+# Runs the plugin as it stands several times against the three fixtures and says how often each
 # check held and what the runs cost. One run is an anecdote: this is what to compare a
 # change against, before and after.
 #
 # Every run is a whole unattended walkthrough and spends real tokens: about $0.80 for the
 # orders fixture and $1.10 for the team one at 0.19.0, so five of each is about $10. The
-# two fixtures use different ports and run side by side, one run of each at a time.
+# three fixtures use different ports and run side by side, one run of each at a time.
 #
 # usage: eval.sh <label> [runs of each fixture, default 5]
 #   MODEL, FIXTURE_WORK, PW_FLAGS, CHROMIUM   as for run.sh
@@ -33,12 +33,14 @@ lane() {
 }
 lane "$HERE/run-unattended.sh" o unattended &
 lane "$HERE/team/run.sh" t team &
+lane "$HERE/vague/run.sh" v vague &
 wait
 
-orders=""; team=""; i=1
+orders=""; team=""; vague=""; i=1
 while [ "$i" -le "$N" ]; do
   orders="$orders $WORK/unattended/$LABEL-o$i"
   team="$team $WORK/team/$LABEL-t$i"
+  vague="$vague $WORK/vague/$LABEL-v$i"
   i=$((i + 1))
 done
 echo
@@ -47,3 +49,6 @@ node "$HERE/tabulate.mjs" orders $orders
 echo
 # shellcheck disable=SC2086
 node "$HERE/tabulate.mjs" team $team
+echo
+# shellcheck disable=SC2086
+node "$HERE/tabulate.mjs" vague $vague
