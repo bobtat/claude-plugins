@@ -96,7 +96,7 @@ Everything this plugin ships is namespaced, with no bare-name fallback. The comm
 
 ## What a run costs
 
-Measured on a fixture, not on your tickets: seven steps, five of them in a browser, against a small local app, with the earlier phases prepared by hand, on `claude-sonnet-5-5` and Claude Code 2.1.330. `tests/agentic-qa-fixture` in this repository reruns it, and `docs/reviews/agentic-qa-cost-2026-11.md` has the runs.
+Measured on a fixture, not on your tickets: seven steps, five of them in a browser, against a small local app, with the earlier phases prepared by hand, on Claude Code 2.1.330. Every figure but the last bullet's is with every agent on `claude-sonnet-5-5`, as the plugin ran through 0.18.0. `tests/agentic-qa-fixture` in this repository reruns it, and `docs/reviews/agentic-qa-cost-2026-11.md` has the runs.
 
 - Execution and reporting cost $0.68 to $0.80 a run at list prices with the report updated after every step, in three runs, and $0.57 without, in one. Intake, the two drafters and the two critics are extra and weren't measured.
 - About half of that is the testing. With per-step updates the executor processed about half the input tokens, the reporter about a third and the orchestrator the rest, because every agent pays for its own instructions before it does anything.
@@ -104,8 +104,15 @@ Measured on a fixture, not on your tickets: seven steps, five of them in a brows
 - A run that stops at its first step costs about two thirds of one that finishes. The orchestrator and both agents have already loaded everything by then.
 - On a second fixture, a team-settings app with a login, a CLI and a step that must not run unattended, five whole runs cost $2.06 to $2.35 each for 12 to 15 steps planned.
 - A whole unattended run, from a brief to a report, cost $1.47 to $1.55 in the three runs of 0.12.0, for 6 to 8 steps run, and $2.14, $1.78 and $1.62 in the versions before. The executor is the largest part, at about four tenths of the input tokens, and `qa-runner` is about a quarter. Every turn an agent takes carries its whole context, so most of what was saved came from taking fewer turns and from not reading a whole list to pick one row.
+- From 0.19.0, with three agents on Haiku, a whole unattended run cost $0.67 to $0.94 on the first fixture and $0.90 to $1.28 on the second, in five runs of each. The same five with every agent on Sonnet cost $1.35 to $1.70 and $2.05 to $2.72. Execution and reporting alone, with the report updated after every step, cost $0.23 to $0.28 in four runs.
 
-`agentic-qa:qa-reporter` runs on Sonnet: its work is filling a template from `step-results.md` and running the script the plugin ships to render the HTML. That script escapes everything the ticket and the system under test supplied, embeds only files from the run's own evidence folder, and has its own tests. Every other agent uses your session's model, because each of them makes a call a weaker model could get wrong without anything noticing: what the ticket asks for, whether a step reaches something real, whether a page passed.
+`agentic-qa:qa-runner`, `agentic-qa:step-executor` and `agentic-qa:qa-reporter` run on Haiku. The extractor, the planner and the two critics run on Sonnet. None of them takes your session's model, so a run costs the same from an Opus session as from a Sonnet one: with every agent inheriting, one run of each fixture from an Opus session cost $4.34 and $6.12.
+
+The four on Sonnet decide what the ticket asks for and what gets tested, and every miss the fixtures have found in what a run tests was in that part. The three on Haiku carry out a plan that is already written. In ten runs that way and ten with every agent on Sonnet, every check held: each criterion's verdict, both fixtures' planted defects, and the steps that must not run. An agent on Haiku that is unsure stops. It escalates, or records the step as not verified, and the report says so; it asks about one step at a time where one on Sonnet asked about several at once, so a caller may answer more escalations. In forty-four finished runs with the executor on Haiku no criterion got a wrong verdict. Those are two small local apps with defects planted to be found, and a page harder to read than theirs has not been tried.
+
+To run every agent on your session's model instead, start the session with `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`. Claude Code then ignores each agent's `model` line; the 0.19.0 figures with every agent on Sonnet were measured that way.
+
+The reporter's work is filling a template from `step-results.md` and running the script the plugin ships to render the HTML. That script escapes everything the ticket and the system under test supplied, embeds only files from the run's own evidence folder, and has its own tests.
 
 ## Settings
 
