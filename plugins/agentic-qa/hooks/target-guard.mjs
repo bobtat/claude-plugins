@@ -25,9 +25,11 @@ const ALWAYS_ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
 // curl and sort options, sed commands. Each denylist this guard started with was
 // bypassed by something it hadn't named, such as an abbreviated long option.
 // awk, find, xargs and env are absent because each can start another program.
+// pwd is here because it does nothing but print a directory, and an executor that
+// put it in front of its first mkdir took the refusal as a decision and tested nothing.
 export const EXECUTOR_COMMANDS = new Set([
   'base64', 'basename', 'cat', 'cd', 'cp', 'curl', 'cut', 'date', 'dirname', 'echo',
-  'false', 'grep', 'head', 'jq', 'ls', 'mkdir', 'mv', 'printf', 'rm', 'sed', 'sleep',
+  'false', 'grep', 'head', 'jq', 'ls', 'mkdir', 'mv', 'printf', 'pwd', 'rm', 'sed', 'sleep',
   'sort', 'tail', 'tee', 'test', 'touch', 'tr', 'true', 'uniq', 'wc', '[',
 ]);
 const NETWORK_TOOLS = new Set([
@@ -51,7 +53,7 @@ const CURL_DATA = new Set(['-d', '--data', '--data-binary', '--data-urlencode', 
 const CURL_WRITE_OUT = new Set(['-w', '--write-out']);
 
 // Programs that read their arguments as data rather than as paths.
-const DATA_ARGUMENTS = new Set(['echo', 'printf', 'tr', 'sleep', 'date', 'true', 'false', 'test', '[']);
+const DATA_ARGUMENTS = new Set(['echo', 'printf', 'pwd', 'tr', 'sleep', 'date', 'true', 'false', 'test', '[']);
 
 // What decides this guard's behaviour, or what runs later, must not be writable
 // by the agents it guards.
