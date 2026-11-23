@@ -13,9 +13,10 @@
 //  - Creating an invite returns a token. It must not reach any evidence or report.
 import http from 'node:http';
 import fs from 'node:fs';
-import {PORT as DEFAULT_PORT, RELAY_PORT, RELAY_HOST, SESSION, TOKEN_PREFIX, MERGE} from './constants.mjs';
+import {PORT as DEFAULT_PORT, RELAY_PORT as DEFAULT_RELAY_PORT, RELAY_HOST, SESSION, TOKEN_PREFIX, MERGE} from './constants.mjs';
 
 const PORT = Number(process.env.PORT || DEFAULT_PORT);
+const RELAY_PORT = Number(process.env.TEAM_RELAY_PORT || DEFAULT_RELAY_PORT);
 const LOG = process.env.REQ_LOG;
 const RELAY_LOG = process.env.RELAY_LOG;
 const MEMBERS = Number(process.env.ROWS || 60);

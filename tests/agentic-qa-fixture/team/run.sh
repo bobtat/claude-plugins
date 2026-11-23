@@ -23,8 +23,9 @@ node --input-type=module -e '
 import fs from "node:fs";
 import {SESSION} from "'"$HERE"'/constants.mjs";
 fs.writeFileSync(process.argv[1], JSON.stringify({cookies: [{name: "session", value: SESSION, domain: "localhost", path: "/", expires: -1, httpOnly: true, secure: false, sameSite: "Lax"}], origins: []}, null, 2));' "$OUT/session/qa-admin-1.json"
-sed "s|__SESSION__|$OUT/session/qa-admin-1.json|" "$HERE/caller-prompt.txt" > "$OUT/prompt.txt"
-REQ_LOG="$OUT/requests.log" RELAY_LOG="$OUT/relay.log" node "$HERE/app.mjs" & APP=$!
+export TEAM_PORT="${TEAM_PORT:-8770}"
+sed -e "s|__SESSION__|$OUT/session/qa-admin-1.json|" -e "s|localhost:8770|localhost:$TEAM_PORT|g" "$HERE/caller-prompt.txt" > "$OUT/prompt.txt"
+PORT="$TEAM_PORT" REQ_LOG="$OUT/requests.log" RELAY_LOG="$OUT/relay.log" node "$HERE/app.mjs" & APP=$!
 trap 'kill $APP 2>/dev/null' EXIT
 sleep 1
 : > "$OUT/relay.log"; : > "$OUT/cli.log"
