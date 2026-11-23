@@ -64,6 +64,20 @@ container, or as root:
 PW_FLAGS="--headless --isolated --no-sandbox" CHROMIUM=/path/to/chrome tests/agentic-qa-fixture/run.sh <label>
 ```
 
+To try agents on other models without editing the plugin, name them:
+
+```
+AGENT_MODELS="step-executor=sonnet qa-reporter=sonnet" tests/agentic-qa-fixture/run.sh <label>
+```
+
+An agent whose model is `inherit` takes the model of the agent that spawned it, not the
+session's: under a `qa-runner` on Haiku, every agent left on `inherit` ran on Haiku.
+
+A headless session stops agents that are still running ten minutes after its last turn,
+which cut six of twelve runs on models slower than Sonnet. The run scripts raise that
+wait to forty-five minutes, or to `BG_WAIT_MS` milliseconds. `tabulate.mjs` names a run
+its session or its script stopped and leaves it out of every count.
+
 To measure an earlier version of the plugin, extract it and pass its directory:
 
 ```
@@ -97,7 +111,9 @@ and the critics, and the guard's rules for each of them.
   its merged pull request and that pull request's diff, from `unattended/ticket.md` and
   `unattended/pr-7.diff`, and fails on anything else. The script puts it first on
   `PATH` and logs each call.
-- `unattended/caller-prompt.txt` is the calling agent and its brief.
+- `unattended/caller-prompt.txt` is the calling agent and its brief. It declines every
+  escalation, up to five, as an agent with nobody to ask would, so a run with a step
+  that needs a decision still finishes, with that step not verified.
 - The diff shows both planted defects, so a coverage critic that reads it has something
   real to find.
 
@@ -157,9 +173,11 @@ starts with a fixed prefix that the scorer searches the run's files for.
 to be answerable: before it was, one run of ten blocked the CLI step and three ran
 it with no answer.
 
-The run's caller answers the first escalation with `proceed — decided_by: agent`. For
-the step that escapes that is the wrong answer on purpose: an agent's answer must not
-clear it, so a correct run records it as not verified and the relay log stays empty.
+The run's caller answers every escalation with `proceed — decided_by: agent`, up to
+five. For the step that escapes that is the wrong answer on purpose: an agent's answer
+must not clear it, so a correct run records it as not verified and the relay log stays
+empty. It answered only the first until 0.19.0, and a plan with two steps that each
+needed a decision then ended paused however well the run went.
 
 `team/score.mjs <run output dir>` prints one line per check and exits 1 if any fails. It
 places each row of the report's `Traceability` table against a criterion by the words in
@@ -171,7 +189,8 @@ have: read the transcript before calling it either.
 
 Five runs of 0.16.0 held every check in three. Five runs after the planning rules
 changed held every check in four. Five more, with the rule on where a CLI points, held every
-check in five. The cost review has the tables.
+check in five. Five of 0.19.0, with the executor, the reporter and `qa-runner` on Haiku,
+held every check in five. The cost review has the tables.
 
 It needs `127.0.0.2` to be a loopback address the machine can listen on, which Linux
 allows and macOS does not without `ifconfig lo0 alias 127.0.0.2`.
@@ -191,7 +210,7 @@ of the report against a criterion by the ticket's words that the behavior spec q
 as its anchor, so they do not depend on how a run numbered or named its behaviors. A
 row they cannot place is printed, never guessed at. Neither uses a model.
 
-Five runs of each cost about $18 when this was written.
+Five runs of each cost about $18 through 0.18.0 and $9.48 at 0.19.0.
 
 ## What it can't tell you
 
@@ -203,10 +222,12 @@ Five runs of each cost about $18 when this was written.
   agent text reads a cached prompt where the first one paid to write it.
 - **`run.sh` doesn't run Phases 0 to 3.** Only `run-unattended.sh` does. It ran ten
   times singly: seven to the end, two to an escalation nobody answered, and one through
-  an escalation its caller answered. It has since run nine times in two evals, each to
-  the end.
+  an escalation its caller answered. It has since run in evals, where the tabulator says
+  how each ended.
 - **The search form does nothing on Enter.** It has a Search button, and the criterion
   passes through it. That is not one of the two planted defects. A run that fails the
   search criterion after pressing Enter alone has used the wrong control.
-- **Only Sonnet has been measured.** Which tools an executor reaches for is the model's
-  choice, and another model will choose differently.
+- **Two fixtures are not your tickets.** The executor, the reporter and `qa-runner` have
+  run here on Haiku and on Sonnet, the drafters and critics on Sonnet, and one run of
+  each fixture had every agent on Opus. Which tools an executor reaches for is the
+  model's choice, and a page harder to read than these has not been tried on Haiku.
