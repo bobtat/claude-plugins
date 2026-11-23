@@ -3,10 +3,9 @@
 # check held and what the runs cost. One run is an anecdote: this is what to compare a
 # change against, before and after.
 #
-# Every run is a whole unattended walkthrough and spends real tokens: about $1.50 for the
-# orders fixture and $2.10 for the team one when this was written, so five of each is
-# about $18. The two fixtures use different ports and run side by side, one run of each
-# at a time.
+# Every run is a whole unattended walkthrough and spends real tokens: about $0.80 for the
+# orders fixture and $1.10 for the team one at 0.19.0, so five of each is about $10. The
+# two fixtures use different ports and run side by side, one run of each at a time.
 #
 # usage: eval.sh <label> [runs of each fixture, default 5]
 #   MODEL, FIXTURE_WORK, PW_FLAGS, CHROMIUM   as for run.sh
