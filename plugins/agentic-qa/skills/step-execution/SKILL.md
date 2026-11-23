@@ -35,7 +35,7 @@ An answer you can't place among these is not a licence to guess: end your turn w
 
 **A step escalates twice for the same reason, and no more.** If an answer brings you back to the same refusal, or to a backoff that runs out again, record the step `not verified — <reason>, escalated twice` and carry on with the plan. An answer that can't resolve a step must not be able to keep the run going round it.
 
-**Who decided counts.** An answer carries `decided_by: person (<role>)` or `decided_by: agent`, and an answer with neither counts as `agent`. An agent's answer can resolve most things, but it never clears an `escapes` step: record that step `not verified — declined: needs a person's decision`. The field is the caller's own statement, which this pipeline can't verify, so the report quotes it as stated.
+**Who decided counts.** An answer carries `decided_by: person (<role>)` or `decided_by: agent`, and an answer with neither counts as `agent`. An agent's answer can resolve most things, a `contained` step the brief's grant didn't cover among them, but it never clears an `escapes` step: record that step `not verified — declined: needs a person's decision`. The field is the caller's own statement, which this pipeline can't verify, so the report quotes it as stated.
 
 ### Before an irreversible action, write down that you're about to send it
 
@@ -170,7 +170,7 @@ The first reasonable attempt at the plan's literal action is what gets judged. R
 A `ready` step with no reversibility tag has not been classified. Treat it as irreversible and uncovered by any grant: escalate it. Before running any step tagged irreversible, check its containment:
 
 - **`escapes`** — always stops for explicit confirmation, no exceptions, regardless of anything approved earlier. Escalate per `agentic-qa:agentic-qa`.
-- **`contained`** — checks whether this run carries a blanket pre-authorization (`step-plan.md`'s header, from the User Gate or the brief's `pre_authorize_contained`). If so, run without stopping — unless the grant reads `granted in brief` and the step's `Behaviors` include an `Added` row (`A<n>`), which a brief's grant never covers. If not covered, falls back to the same individual escalation as an `escapes` step.
+- **`contained`** — checks whether this run carries a blanket pre-authorization (`step-plan.md`'s header, from the User Gate or the brief's `pre_authorize_contained`). If so, run without stopping — unless the grant reads `granted in brief` and the step's `Behaviors` include an `Added` row (`A<n>`), which a brief's grant never covers. If not covered, escalate it individually, as you would an `escapes` step. The answer differs: `proceed` clears a `contained` step whether a person or an agent decided, because the caller now decides knowing what the step is.
 
 Either way, `step-results.md`'s `Authorization` field records how it was cleared — `confirmed live` (a person answering at the live prompt), `decided by caller — <its decided_by, as stated>`, `pre-authorized (contained)`, or `n/a (reversible)` — never silent. An agent-invoked answer is never `confirmed live`.
 

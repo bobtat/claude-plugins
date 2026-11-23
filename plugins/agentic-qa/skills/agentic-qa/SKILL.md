@@ -113,7 +113,7 @@ An irreversible step is not one thing. Split it:
 
 The grant, when given, comes from one of two places and is recorded once, in `step-plan.md`'s header: interactively, a single choice at the User Gate covering the whole plan's `contained` steps; agent-invoked, the `pre_authorize_contained` field in the brief. Execute Steps checks that field rather than deciding for itself.
 
-**A grant from the brief never covers a step traced to an `Added` row.** Interactively, every `Added` row passes the User Gate, where a person can strike it before granting anything. Agent-invoked, nobody reviews them, so a behavior the ticket never asked for — possibly planted in the ticket text — would otherwise run irreversibly on a grant written before anyone knew it existed. Such a step escalates individually, like an `escapes` step. Steps traced only to the acceptance criteria keep the grant.
+**A grant from the brief never covers a step traced to an `Added` row.** Interactively, every `Added` row passes the User Gate, where a person can strike it before granting anything. Agent-invoked, nobody reviews them, so a behavior the ticket never asked for — possibly planted in the ticket text — would otherwise run irreversibly on a grant written before anyone knew it existed. Such a step escalates individually. What it needs is a decision made knowing what the step is, so its caller's answer clears it whoever decided, a person or an agent: only an `escapes` step needs a person. Steps traced only to the acceptance criteria keep the grant.
 
 ## Working directory and artifacts
 
