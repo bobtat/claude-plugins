@@ -198,6 +198,45 @@ held every check in five. The cost review has the tables.
 It needs `127.0.0.2` to be a loopback address the machine can listen on, which Linux
 allows and macOS does not without `ifconfig lo0 alias 127.0.0.2`.
 
+## A third app: a vague ticket
+
+```
+tests/agentic-qa-fixture/vague/run.sh <label>
+```
+
+The first two tickets say what to test. This one does not: it is two sentences and two
+criteria, "a task's page has an Archive button" and "after a task is archived it no
+longer appears in the task list", and the change that delivers them reaches four things
+the ticket never mentions.
+
+| What the change reaches | Where it shows | What happens after a task is archived |
+|---|---|---|
+| The list's count | In the diff | It still counts the archived task, beside a list that hides it |
+| The weekly report, `/reports` | `lib/reports.mjs`, not in the diff | It answers 500 |
+| The CSV export, `/export.csv` | `lib/export.mjs`, not in the diff | The task's row is gone |
+| The API's list, `/api/tasks` | A route the diff does not touch | The task is still listed |
+
+The first is a defect anyone reading the diff can see. The second is a defect nobody can
+see without reading a file the diff does not touch. The last two are questions for a
+person: nothing says whether finance's export or a script's list should hide an archived
+task, and a good run puts each to the reader with what the running app does.
+
+The session starts inside a checkout of the app, built by `vague/make-diff.sh` as two
+commits, so an agent that reads code can read all of it. `vague/pr-21.diff` is the diff
+the stand-in `gh` serves, and it mentions no report, export or API list: `server.mjs`
+keeps those routes away from the lines the change touches so that they are not in a
+hunk's context either. Change the app and run `make-diff.sh` again to regenerate it.
+
+`vague/score.mjs <run output dir>` scores a run. For each of the four it says whether
+the spec names it and, for the three outside the diff, whether the app was asked for it
+after a task was archived, which it reads from the app's request log. Whether the report
+calls the count wrong and the weekly report failing is matched by words, and each such
+check prints the line it matched. It also prints which agents opened a file the diff
+does not touch.
+
+The run's caller answers every escalation with `proceed — decided_by: agent`, up to
+five, as the team fixture's does. Nothing here escapes, so every answer should be taken.
+
 ## Several runs, scored
 
 ```
@@ -205,13 +244,14 @@ tests/agentic-qa-fixture/eval.sh <label> [runs of each fixture]
 ```
 
 One run is an anecdote. `eval.sh` runs the plugin as it stands several times against
-both fixtures, side by side, and `tabulate.mjs` says how often each check held and what
-the runs cost. Run it before a change and after it, and compare the two tables.
+the three fixtures, side by side, and `tabulate.mjs` says how often each check held and
+what the runs cost. Run it before a change and after it, and compare the tables.
 
-`score.mjs` scores one orders run and `team/score.mjs` one team run. Both place each row
+`score.mjs` scores one orders run, `team/score.mjs` one team run and `vague/score.mjs`
+one run of the vague ticket. The first two place each row
 of the report against a criterion by the ticket's words that the behavior spec quotes
 as its anchor, so they do not depend on how a run numbered or named its behaviors. A
-row they cannot place is printed, never guessed at. Neither uses a model.
+row they cannot place is printed, never guessed at. None of the three uses a model.
 
 Five runs of each cost about $18 through 0.18.0 and $9.48 at 0.19.0, or $19.30 with every agent forced onto Sonnet.
 
