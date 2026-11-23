@@ -2,11 +2,11 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-import { complete, DAY, engine, measure, NOW, ROOT, runStep, spentSession, usage } from './support'
+import { complete, DAY, engine, HOME, measure, NOW, portable, ROOT, runStep, spentSession, usage } from './support'
 
 function doctorEngine(on: On, hostTime: (now: number) => string, stored: Record<string, unknown> = {}) {
   const store = new Map<string, unknown>(Object.entries(stored))
-  const dir = 'C:/Users/someone/.claude/plugins/store'
+  const dir = `${HOME}/.claude/plugins/store`
   on('store.get', (_$, e) => ({ value: store.get(e.key) }))
   on('store.keys', () => ({ value: [...store.keys()] }))
   on('store.delete', (_$, e) => {
@@ -17,16 +17,15 @@ function doctorEngine(on: On, hostTime: (now: number) => string, stored: Record<
     store.set(e.key, e.value)
     return { value: undefined }
   })
-  mock.env(on, { USERPROFILE: 'C:/Users/someone', OS: 'Windows_NT' })
+  mock.env(on, { USERPROFILE: HOME, OS: 'Windows_NT' })
   on('process.run', () => ({
     value: { exitCode: 0, stdout: `${hostTime(NOW)}\r\n`, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
   }))
   on('fs.list', () => ({
     value: [{ name: 'cost-ledger_inline-abc.json', kind: 'file', size: 10, mtimeMs: NOW, isLink: false }],
   }))
-  // The engine hands the path on in the platform's own spelling.
   on('fs.read', (_$, e) => ({
-    value: e.path.replace(/\\/g, '/') === `${dir}/cost-ledger_inline-abc.json` ? JSON.stringify(Object.fromEntries(store)) : '',
+    value: portable(e.path) === `${dir}/cost-ledger_inline-abc.json` ? JSON.stringify(Object.fromEntries(store)) : '',
   }))
 }
 

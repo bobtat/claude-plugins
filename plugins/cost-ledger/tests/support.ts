@@ -7,6 +7,12 @@ import type { SessionEntry } from '../hooks/ledger'
 export const NOW = new Date(2026, 9, 6, 12).getTime()
 export const DAY = 24 * 60 * 60 * 1000
 export const ROOT = 'C:/work/billing-api'
+export const HOME = '/home/someone'
+
+// The engine hands a path on in the platform's own spelling, which on Windows
+// turns /home/someone into C:\home\someone: a test names a file by the one
+// spelling and reads the engine's through this.
+export const portable = (path: string) => path.replace(/\\/g, '/').replace(/^[A-Za-z]:/, '')
 
 export const usage = (cacheRead: number, cacheWrite: number, output = 0) => ({
   input_tokens: 0,
