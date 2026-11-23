@@ -15,7 +15,7 @@ Spawn `agentic-qa:behavior-extractor` with the absolute path to `intake.md`. Its
 
 The grounding model is two categories, not the four-tier confidence ladder `testing:behavior-extraction` uses elsewhere in this repo:
 
-- **From the acceptance criteria** — literal or a direct implication of it (`"implied by: <quote>"` if not verbatim). Not strikeable; it's what was actually asked for.
+- **From the acceptance criteria** — literal or a direct implication of it (`"implied by: <quote>"` if not verbatim). Not strikeable; it's what was actually asked for. A direct implication is what the criterion's words can't be true without. Something else on the page that the criterion doesn't name, a count, a total, a badge, is not implied by it however closely it follows: it is an `Added` row or a question, so that the criterion is not failed for what the ticket never said.
 - **`Added`** — grounded in something outside the acceptance criteria: a doc, a related ticket, or (from the critic) the PR diff. Strikeable later, at the User Gate — starts `included` by default, becomes `dropped` only if struck.
 
 A doc that actively disagrees with the acceptance criteria goes in `behavior-spec.md`'s `Conflicts` section rather than being silently picked one way — the drafter does not resolve it; it carries forward for the User Gate.
