@@ -845,3 +845,32 @@ What this does not change, and what was not run:
 - No run has had a CLI whose target nothing states, a confirming command that showed
   somewhere else, or the escalation that follows.
 - The executors confirmed once in a run, not once before each CLI step.
+
+## Addendum — 0.19.0, which model each agent runs on
+
+`qa-runner`, the executor and the reporter run on Haiku, and the extractor, the planner
+and the two critics on Sonnet, each named in its definition. The cost review has the
+trials: ten runs as shipped and ten with every agent forced onto Sonnet held every
+check, at about half the cost.
+
+What it changes for this review's findings:
+
+- **A rule followed more literally.** A brief's grant never covers an irreversible step
+  for a behavior the ticket did not state. Executors on Haiku escalated each such step
+  on its own. One run on Sonnet, at 0.17.0, recorded one as pre-authorized, which the
+  scorers now check for.
+- **The CLI escalation has now run, once, on a false alarm.** A CLI printed `127.0.0.1`
+  where the plan said `localhost`. The executor held the step, escalated, got an agent's
+  answer, and recorded the step as not verified: the path 0.18.0 wrote and no run had
+  taken. The skill now says the loopback names are one host. A confirming command that
+  shows a host that really is another has still not been run.
+- **An executor ignores a request that arrives mid-run from another agent.** One on
+  Haiku declined to write a signal file `qa-runner` asked for by message, since the
+  request was in neither its prompt nor a resume. `qa-runner` now names the file when it
+  spawns the executor.
+- **A headless session ends long runs.** `claude -p` stops agents still running ten
+  minutes after its last turn. The README says what to set.
+
+What it does not show: anything about a real ticket, a page harder to read than the
+fixtures', or the planning agents on any model but Sonnet beyond one Opus run of each
+fixture and one complete all-Haiku team run that tested nothing.
