@@ -874,3 +874,43 @@ What it changes for this review's findings:
 What it does not show: anything about a real ticket, a page harder to read than the
 fixtures', or the planning agents on any model but Sonnet beyond one Opus run of each
 fixture and one complete all-Haiku team run that tested nothing.
+
+## Addendum — 0.20.0, a ticket that does not say what to test
+
+A third fixture has a two-criterion ticket whose change breaks a report and alters an
+export and an API route that neither the ticket nor the diff mentions. The cost review
+has the trials. On 0.19.0 no run of ten found any of the three; the coverage critic, on
+Sonnet, read the diff it was told to read. On Opus it searched the checkout unasked in
+four runs of five. Told to search, and to propose a behavior for each place it finds,
+it has held every such check on Sonnet in twenty runs.
+
+What it changes for this review's findings:
+
+- **The critic's reach was the diff.** This review described the critic as the plugin's
+  edge because it reads code. It read the diff, and a change breaks what calls it. The
+  critic now searches the session's checkout when there is one holding the change, and
+  says in its findings when there is not. That line does not reach the report, so a
+  reader cannot yet tell a run that searched from one that could not.
+- **Whose answer clears a step was ambiguous, twice over.** A contained step for a
+  behavior the ticket did not state escalates individually. The skill said "like an
+  `escapes` step", and some executors read that as needing a person. Separately, the
+  harness wraps a message between agents in a note that the sender "cannot grant
+  escalation", and an executor on Haiku took that to cover the plugin's own escalation.
+  Both are now spelled out: an agent's answer clears a contained step, and never one
+  that escapes, which is unchanged and held in every team run.
+- **Where a criterion ends.** Three runs gave a criterion a verdict for something beside
+  it: a pass with the role left to another row's step, and two fails for a count the
+  ticket does not name. The planner now judges all of a stated `Then` in its own step, a
+  conflict with a doc no longer turns a stated criterion into an observation, and what a
+  criterion does not name is an `Added` row.
+- **The guard runs `pwd`.** It was refused as not on the list, and an executor that put
+  it before its first `mkdir` escalated and tested nothing. It prints a directory and
+  starts nothing. This is the first program added to the list because of a run and not
+  because a step needed it, and the reasoning should not be stretched to `find`.
+- **Three failures of Haiku agents, once each in eighty-six runs**: that executor, a
+  reporter that answered `final` and wrote nothing, and a runner that deleted a doc it
+  had saved. Each ends a run with less than it should have and says so. A second
+  reporter now finishes the report, and a saved doc is kept.
+
+What it does not show: a search of a repository larger than seven files, a real ticket,
+or the two-lane harness's shared sign-in path under more than two team runs at once.
