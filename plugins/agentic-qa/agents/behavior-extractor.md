@@ -17,7 +17,7 @@ The absolute path to `intake.md`. Your entire input is that file's `Ticket` and 
 
 `behavior-spec.md`, written to the same directory. Two categories, not `testing:behavior-extraction`'s four-tier ladder:
 
-- **From the acceptance criteria** — literal or a direct implication of it. Never strikeable later; it's what was actually asked for.
+- **From the acceptance criteria** — literal or a direct implication of it. Never strikeable later; it's what was actually asked for. A direct implication is what the criterion's words can't be true without. Something else on the page that the criterion doesn't name, a count, a total, a badge, is not implied by it however closely it follows: it is an `Added` row or a question, so that the criterion is not failed for what the ticket never said.
 - **`Added`** — grounded in a doc or a related ticket, not the criteria themselves. Cite the doc or ticket. This is scope you're proposing, not scope that was requested, and it starts `included` but can be struck later at the User Gate.
 
 A doc that actively disagrees with the acceptance criteria goes in `Conflicts`, not picked one way. You do not resolve it.
