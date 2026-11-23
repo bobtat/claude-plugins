@@ -8,6 +8,36 @@ request is recorded and is not priced again when a later version corrects a rate
 Where a version leaves earlier figures standing with a known error, its entry says so under
 **Figures recorded before this version**.
 
+## 0.9.3 (2026-11-23)
+
+### Fixed
+
+- The store no longer fills up with sessions younger than the 60 days after which one is
+  archived. A session's entry weighs about 8 kB, so some five hundred of them reach the
+  store's 4 MiB limit, and a store at its limit refuses every write: nothing more was
+  recorded, with one toast to say so. Sessions past the hundred most recently used, or past
+  a mebibyte of entries together, are now folded into their project's archive once they have
+  been idle a day and have nothing on the current day, up to a hundred at each start. The
+  totals, the breakdown, the listed prompts and the export are as they were.
+- A store that is already at its limit is given room without removing anything first. The
+  prompts of the sessions about to be folded that are not among their project's ten most
+  expensive of the month, which an archive does not keep either, are dropped before the fold,
+  and the sessions then go into the archive as many at a time as there is room for.
+- A token count from 999,500 to 999,999 reads `1.0M`, not `1000k`.
+
+### Changed
+
+- `/costs doctor`'s **Turns** line counts the sessions that still have an entry of their
+  own. An archive does not keep a session's turn-by-turn record, so past a hundred sessions
+  the line covers the most recently used of them.
+- Old sessions of one project go into its archive in one write at a start, not one write a
+  session.
+
+### Development
+
+- Three tests named a Windows home folder and failed on Linux. They now name one that every
+  platform takes as an absolute path.
+
 ## 0.9.2 (2026-11-12)
 
 ### Fixed
