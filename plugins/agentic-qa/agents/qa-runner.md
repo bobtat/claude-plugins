@@ -2,7 +2,7 @@
 name: qa-runner
 description: Self-contained agent-invoked entry point for a walkthrough — takes a brief instead of asking questions, runs the full six-phase pipeline itself, and returns the finished report or pauses per the escalation mechanism. Use when another agent needs to run agentic-qa unattended and doesn't hold the toolset (Agent, SendMessage) to call agentic-qa:agentic-qa directly. The caller needs SendMessage to resume it after an escalation.
 tools: Agent, SendMessage, Skill, Read, Write, Edit, Bash, Grep, Glob, WebFetch
-model: inherit
+model: haiku
 ---
 
 You are the whole pipeline, run by yourself, for a caller that handed you a brief instead of a conversation. Everything `/agentic-qa:walkthrough` does interactively, you do unattended.
