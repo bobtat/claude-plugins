@@ -946,6 +946,109 @@ a run and a few lines to three agents' text, which does not account for it. Acro
 twelve-step runs the executor made 28, 32, 39 and 43 calls, and the one with the most
 was a baseline run. Five runs do not separate a dearer rule from that spread.
 
+### Which model each agent runs on — 0.19.0
+
+The decision this review left open twice. Until now every agent but the reporter took
+its model from whoever spawned it, and every measurement here was on a Sonnet session.
+One run of each fixture on an Opus session, with the plugin as it stood at 0.18.0, held
+every check and cost $4.34 and $6.12, against means of $1.54 and $2.32 on Sonnet.
+
+List prices per million tokens when this was written, input and output: Haiku 5.5 $0.10
+and $0.50, Sonnet 5.5 $2 and $10, Opus 5.5 $4 and $20. Which agent runs on which model
+is most of what a run costs.
+
+**Two things about the harness came first.**
+
+- A headless session stops agents still running ten minutes after its last turn. Runs on
+  Sonnet had finished inside that. Six of the first twelve runs on other models did not,
+  and were stopped with the report in progress. The run scripts now wait forty-five
+  minutes, the tabulator leaves a stopped run out, and the plugin's README says what an
+  unattended run needs ("say that a headless session stops a long unattended run").
+- An agent whose model is `inherit` takes the model of the agent that spawned it, not the
+  session's. The first trial set only the reporter and `qa-runner` to Haiku, and every
+  agent ran on Haiku.
+
+**The trials.** Five runs of each fixture, the session on Sonnet. A run the harness
+stopped is not counted. "Held" is runs in which every check held.
+
+| Trial | Orders held | Orders, mean | Team held | Team, mean |
+|---|---|---|---|---|
+| Every agent on Sonnet (0.17.0 orders, 0.18.0 team) | 4 of 4 | $1.54 | 5 of 5 | $2.32 |
+| Every agent on Haiku | 4 of 4 | $0.25 | 0 of 1 | $0.35 |
+| Runner and reporter on Haiku | 4 of 5 | $1.13 | 5 of 5 | $1.70 |
+| Runner, reporter and executor on Haiku | 5 of 5 | $0.82 | 3 of 5 | $1.09 |
+| The same, after three instructions were tightened | 4 of 5 | $0.75 | 2 of 5 | $1.07 |
+| The same, with callers that answer every escalation | 5 of 5 | $0.83 | 4 of 4 | $1.31 |
+| 0.19.0 as shipped | 5 of 5 | $0.79 | 5 of 5 | $1.11 |
+
+No run in any trial gave a wrong verdict for a step it ran, and no canary was tripped.
+Every miss was a run that stopped short, and each had a cause that could be read:
+
+- **The sign-in state.** The skill said to copy a brief's storage state into the
+  browser's output directory "if the brief's path is elsewhere". An executor on Sonnet
+  loaded the brief's path, was refused, and copied. One on Haiku was refused and
+  escalated: a team run of that trial tested nothing, and so did the one complete
+  all-Haiku team run. The copy now comes first, with the command written out.
+- **Loopback names.** A CLI that printed `127.0.0.1` where the plan said `localhost` was
+  held as pointing elsewhere, under the rule 0.18.0 added. The guard already allows both
+  as the machine itself. The skill now says so.
+- **The renderer.** A reporter on Haiku read the render script before running it. The
+  guard refuses that, and the reporter left the HTML unrendered. Its step now says to
+  run it unread.
+- **Paused runs.** A brief's grant never covers an irreversible step for a behavior the
+  ticket did not state: each needs a decision of its own. An executor on Haiku escalated
+  each one, as the skill says. The team fixture's caller answered one escalation and the
+  orders caller none, so a plan with two such steps ended paused with everything else
+  tested: four runs of ten. Both callers now answer every escalation, up to five.
+- **Thirty-minute runs.** A spawn that runs for minutes comes back to `qa-runner` as
+  started in the background, and the executor's result never reaches it. `qa-runner`
+  asked the running executor by message for a signal file, an executor on Haiku ignored
+  a request that was in neither its prompt nor a resume, and `qa-runner` sat out
+  ten-minute waits. It now names the file in the executor's spawn prompt. Team runs took
+  nine to twelve minutes afterwards.
+
+The first three are ambiguities in the instructions, and tightening them is worth it on
+any model: in the Sonnet run read for this, the first cost the executor a refused call
+before it copied.
+
+**On the grant rule, Haiku was the stricter executor.** The scorers gained a check: no
+irreversible step for an unstated behavior ran on the brief's grant. Scored back over
+the fifty-four earlier runs, it fails once, in a team run of 0.17.0 where an executor on
+Sonnet recorded such a step as pre-authorized. (That change's commit message says
+thirty-nine runs. Fifty-four is right.) The two models also ask differently. An
+executor on Sonnet named every step still waiting for a decision in one escalation, and
+applied the one answer to each by its kind. One on Haiku asks about one step at a time,
+which is what "individually" says and costs a pause and a resume for each.
+
+**Three checks the scorer got wrong.** Runs with `qa-runner` on Haiku asked the app its
+version and recorded the answer in a layout the orders scorer did not recognise, and
+were scored as not having checked the build. The scorer now reads the app's request
+log. The rows above use the corrected scorer.
+
+**What 0.19.0 ships.** `qa-runner`, the reporter and the executor run on Haiku. The
+extractor, the planner and the two critics run on Sonnet, and are named, not inherited,
+because under a runner on Haiku an inherited model is Haiku. In one team run of the
+final five, $0.85 of $0.98 was Sonnet, the fixture's own caller included, and $0.12 was
+Haiku for 89 of its 120 calls.
+
+Against the Sonnet figures a run costs about half. Against an Opus session it costs
+about a fifth, because the session's model no longer reaches the agents.
+
+**What this rests on, and does not.**
+
+- Two synthetic fixtures, with defects planted to be found. In forty-four finished runs
+  with the executor on Haiku no criterion was given a wrong verdict, and ten of those
+  were on the configuration as shipped. A page that is harder to read than these has
+  not been tried on Haiku.
+- The planning agents were not moved. Every miss this review has found in what gets
+  tested, as distinct from whether a run finishes, was in planning, and the all-Haiku
+  trial has one complete team run behind it.
+- A user on an Opus session gets the plan a Sonnet planner writes, where before they
+  got an Opus one. One Opus run of each fixture held the same checks the Sonnet runs
+  hold, which shows no difference and could not show a small one.
+- How Haiku fails here is by stopping: escalating, or recording a step as not verified.
+  That is visible in a report. A wrong pass would not be, and none was seen.
+
 ---
 
 ## What still needs a live walkthrough
