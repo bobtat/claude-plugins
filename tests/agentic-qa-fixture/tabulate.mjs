@@ -1,15 +1,15 @@
 // Scores several runs of one fixture and says how often each check held, and what they cost.
-// usage: tabulate.mjs <orders|team> <run output dir>...
+// usage: tabulate.mjs <orders|team|vague> <run output dir>...
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {stopped, cost} from './scoring.mjs';
 
 const [fixture, ...outs] = process.argv.slice(2);
-if (!['orders', 'team'].includes(fixture) || !outs.length) {
-  console.error('usage: tabulate.mjs <orders|team> <run output dir>...');
+if (!['orders', 'team', 'vague'].includes(fixture) || !outs.length) {
+  console.error('usage: tabulate.mjs <orders|team|vague> <run output dir>...');
   process.exit(2);
 }
-const scorer = fileURLToPath(new URL(fixture === 'team' ? './team/score.mjs' : './score.mjs', import.meta.url));
+const scorer = fileURLToPath(new URL({team: './team/score.mjs', vague: './vague/score.mjs'}[fixture] ?? './score.mjs', import.meta.url));
 const cut = outs.map(out => [out, stopped(out)]).filter(([, why]) => why);
 for (const [out, why] of cut) console.log(`did not run, and is not counted: ${out.split('/').pop()} — ${why} ($${(cost(out) || 0).toFixed(2)} spent)`);
 if (cut.length) console.log('');
