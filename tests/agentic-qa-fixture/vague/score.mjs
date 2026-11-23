@@ -16,7 +16,7 @@ if (!out) { console.error('usage: score.mjs [--json] <run output dir> [working d
 
 const CRITERIA = [
   {name: '2 gone from the list', anchor: /no longer appears in the task list/i, words: /no longer|task list|disappear|gone|hidden/i},
-  {name: '1 archive button', anchor: /has an .?Archive.? button/i, words: /button/i},
+  {name: '1 archive button', anchor: /has an \W{0,3}Archive\W{0,3} button/i, words: /button/i},
 ];
 
 // What the change reaches and the ticket does not mention. `diff` says whether the pull
