@@ -282,7 +282,7 @@ $19.30 with every agent forced onto Sonnet. Ten runs of each of the three cost $
   times singly: seven to the end, two to an escalation nobody answered, and one through
   an escalation its caller answered. It has since run in evals, where the tabulator says
   how each ended.
-- **The vague fixture's app is six files.** A critic that searches it reads all of it
+- **The vague fixture's app is seven files.** A critic that searches it reads all of it
   in a few calls. What the same search finds, and costs, in a large repository has not
   been tried.
 - **The search form does nothing on Enter.** It has a Search button, and the criterion
