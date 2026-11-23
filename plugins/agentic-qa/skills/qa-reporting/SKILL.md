@@ -21,7 +21,7 @@ A step marked `Sensitive: yes` in `step-results.md` has evidence that shows a cr
 
 ## Finalization
 
-Send the reporter `final` once `step-executor` returns `COMPLETE`, then wait on `signals/report-done.txt`; repeating `final` after a timed-out wait is safe. It rebuilds from `step-results.md` one last time, then:
+Send the reporter `final` once `step-executor` returns `COMPLETE`, then wait on `signals/report-done.txt`; repeating `final` after a timed-out wait is safe, and if a second `final` brings no file, a new reporter spawned with the same paths and `final` in its prompt finishes the report from `step-results.md`. It rebuilds from `step-results.md` one last time, then:
 
 1. Write `Status` and `Summary`.
 2. Write the `Findings` section — anything worth flagging that isn't a strict pass/fail: a confusing-but-correct error message, an ambiguity resolved mid-run, a UX rough edge. Every step whose `Attempts` field shows a failed attempt before its verdict goes here as intermittent, with the attempt history — a pass on the second try is not the same evidence as a pass on the first.
