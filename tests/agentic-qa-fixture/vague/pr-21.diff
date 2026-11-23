@@ -1,0 +1,94 @@
+diff --git a/lib/pages.mjs b/lib/pages.mjs
+index 9d91a74..6b0bfde 100644
+--- a/lib/pages.mjs
++++ b/lib/pages.mjs
+@@ -16,15 +16,20 @@ export function listPage(query = '') {
+   return layout('Tasks', `
+ <form method="get" action="/tasks"><label>Search <input name="q" value="${escape(query)}"></label> <button>Search</button></form>
+ <p id="count">${tasks.length} tasks</p>
++<p id="hint">Archived tasks are hidden.</p>
+ <table><thead><tr><th>Id</th><th>Title</th><th>Status</th><th>Owner</th></tr></thead><tbody>
+ ${rows.map(task => `<tr><td><a href="/tasks/${task.id}">${task.id}</a></td><td>${escape(task.title)}</td><td>${task.status}</td><td>${task.owner}</td></tr>`).join('\n')}
+ </tbody></table>`);
+ }
+ 
+-export function taskPage(id) {
++export function taskPage(id, message = '') {
+   const task = findTask(id);
+   if (!task) return null;
+   return layout(`${task.id} ${task.title}`, `
++${message ? `<p role="status">${escape(message)}</p>` : ''}
+ <dl><dt>Status</dt><dd>${task.status}</dd><dt>Owner</dt><dd>${task.owner}</dd><dt>Updated</dt><dd>${task.updatedAt}</dd></dl>
++${task.archived
++    ? '<p id="archived">This task is archived.</p>'
++    : `<form method="post" action="/tasks/${task.id}/archive"><button>Archive</button></form>`}
+ <p><a href="/tasks">Back to tasks</a></p>`);
+ }
+diff --git a/lib/store.mjs b/lib/store.mjs
+index 29e411c..39e577c 100644
+--- a/lib/store.mjs
++++ b/lib/store.mjs
+@@ -1,11 +1,13 @@
+ // The task store. It is in memory: a restart is a fresh set.
++const now = () => new Date().toISOString();
++
+ export const tasks = [
+-  {id: 'T-101', title: 'Renew the TLS certificate', status: 'Done', owner: 'ana', updatedAt: '2026-11-16T09:12:00.000Z'},
+-  {id: 'T-102', title: 'Write the onboarding guide', status: 'Open', owner: 'ben', updatedAt: '2026-11-17T14:03:00.000Z'},
+-  {id: 'T-103', title: 'Move the nightly backup to 02:00', status: 'Done', owner: 'ana', updatedAt: '2026-11-18T08:40:00.000Z'},
+-  {id: 'T-104', title: 'Fix the invoice footer', status: 'Open', owner: 'chi', updatedAt: '2026-11-18T16:25:00.000Z'},
+-  {id: 'T-105', title: 'Review the access list', status: 'Open', owner: 'ben', updatedAt: '2026-11-19T10:00:00.000Z'},
+-  {id: 'T-106', title: 'Retire the old status page', status: 'Done', owner: 'chi', updatedAt: '2026-11-19T17:30:00.000Z'},
++  {id: 'T-101', title: 'Renew the TLS certificate', status: 'Done', owner: 'ana', updatedAt: '2026-11-16T09:12:00.000Z', archived: false},
++  {id: 'T-102', title: 'Write the onboarding guide', status: 'Open', owner: 'ben', updatedAt: '2026-11-17T14:03:00.000Z', archived: false},
++  {id: 'T-103', title: 'Move the nightly backup to 02:00', status: 'Done', owner: 'ana', updatedAt: '2026-11-18T08:40:00.000Z', archived: false},
++  {id: 'T-104', title: 'Fix the invoice footer', status: 'Open', owner: 'chi', updatedAt: '2026-11-18T16:25:00.000Z', archived: false},
++  {id: 'T-105', title: 'Review the access list', status: 'Open', owner: 'ben', updatedAt: '2026-11-19T10:00:00.000Z', archived: false},
++  {id: 'T-106', title: 'Retire the old status page', status: 'Done', owner: 'chi', updatedAt: '2026-11-19T17:30:00.000Z', archived: false},
+ ];
+ 
+ export const findTask = id => tasks.find(task => task.id === id);
+@@ -14,5 +16,14 @@ export const findTask = id => tasks.find(task => task.id === id);
+ export function listTasks({query = ''} = {}) {
+   const q = query.trim().toLowerCase();
+   return tasks
++    .filter(task => !task.archived)
+     .filter(task => !q || task.id.toLowerCase().includes(q) || task.title.toLowerCase().includes(q));
+ }
++
++export function archiveTask(id) {
++  const task = findTask(id);
++  if (!task) return null;
++  task.archived = true;
++  task.updatedAt = now();
++  return task;
++}
+diff --git a/server.mjs b/server.mjs
+index 6b0dd3c..56c1f71 100644
+--- a/server.mjs
++++ b/server.mjs
+@@ -27,15 +27,23 @@ function route(req, res) {
+   if (req.method === 'GET' && path === '/') return send(res, 302, 'text/plain', '', {location: '/tasks'});
+   if (req.method === 'GET' && path === '/tasks') return html(res, listPage(url.searchParams.get('q') ?? ''));
+   if (req.method === 'GET' && path === `/tasks/${id}`) {
+-    const page = taskPage(id);
++    const page = taskPage(id, url.searchParams.has('archived') ? `${id} archived` : '');
+     return page ? html(res, page) : html(res, 'No such task', 404);
+   }
++  if (req.method === 'POST' && path === `/tasks/${id}/archive`) {
++    if (!store.archiveTask(id)) return html(res, 'No such task', 404);
++    return send(res, 303, 'text/plain', '', {location: `/tasks/${id}?archived`});
++  }
+ 
+   // One task, for scripts.
+   if (req.method === 'GET' && path === `/api/tasks/${id}`) {
+     const task = store.findTask(id);
+     return task ? json(res, task) : json(res, {error: 'No such task'}, 404);
+   }
++  if (req.method === 'POST' && path === `/api/tasks/${id}/archive`) {
++    const task = store.archiveTask(id);
++    return task ? json(res, task) : json(res, {error: 'No such task'}, 404);
++  }
+   return html(res, 'Not found', 404);
+ }
+ 
