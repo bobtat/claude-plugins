@@ -55,9 +55,9 @@ All warnings are informational: nothing is ever blocked.
   rates its prompt length selects.
 - **The cost of a prompt** is the estimated cost of every request made between the prompt and
   its answer, its subagents' included, with the first 80 characters of the prompt. The month's
-  ten most expensive are kept: a prompt that costs less than all ten, as the last cost
-  measurement found them, is not stored at all. Prompt text stays in the local store; it is
-  not exported.
+  ten most expensive are kept: a prompt that costs less than all ten, as the session knows
+  them from the last cost measurement and its own prompts since, is not stored at all.
+  Prompt text stays in the local store; it is not exported.
 - **What filled the context** measures each tool result as the model reads it, at roughly four
   characters a token, then charges it a cache write on the first request that sends it and a
   cache read on every request after, until `/clear` or `/compact` drops it. A large file read
@@ -133,8 +133,10 @@ repository root.
 - **Store file**: whether a write reaches the store file on disk at once, whether this
   session's view of the store matches the file (if it does not, another session's writes may
   be getting lost), and how close the file is to the 4 MiB limit. Where the store refuses the
-  write, because it is at that limit or its file cannot be written, the line says so, each
-  store file is listed with its size, and the checks that only read still run.
+  write, because it is at that limit or its file cannot be written, the line says so and each
+  store file is listed with its size. With no write to find, the mod cannot tell its own file
+  from another install's, so the comparison with other sessions and the **Another install**
+  line are left out; everything from **Claude Code pricing** down is reported as usual.
 - **Another install**: a store file left by a differently installed copy of the mod. Each
   install source (marketplace, `--plugin-dir`, a session's mods folder) has its own store, so
   history recorded by one is not in another's totals.

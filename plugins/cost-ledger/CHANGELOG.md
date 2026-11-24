@@ -20,16 +20,18 @@ Where a version leaves earlier figures standing with a known error, its entry sa
   record stopped part-way. Those writes may now fail. A notice the store cannot remember
   having given is given once for as long as Claude Code runs, not with every request.
 - `/costs doctor` answers when the store takes no write, which was when it gave no answer at
-  all. Its **Store file** line says the write was refused, a **Store size** line gives each
-  store file's size against the limit, and the checks that only read go on.
+  all. Its **Store file** line says the write was refused and a **Store size** line gives
+  each store file's size against the limit, with a warning from three quarters up. Without a
+  write to find, it cannot tell its own store file from another install's, so the **Other
+  sessions** and **Another install** lines are left out. The lines after them are as ever.
 
 ### Changed
 
 - A prompt is stored only when it can still be one of its month's ten most expensive, the
   only prompts the pane lists. Each session used to keep its own ten of each month, most of
   which could never be shown. A session's entry is smaller for it, and so is what each cost
-  measurement reads. Entries stored before this version keep what they have until they are
-  folded into their project's archive.
+  measurement reads. An entry stored before this version keeps what it has until its session
+  is resumed and stores a prompt, or until it is folded into its project's archive.
 
 ## 0.9.3 (2026-11-23)
 
