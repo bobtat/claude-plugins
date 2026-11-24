@@ -11,7 +11,7 @@ import { pricedApart, quoteVerdict } from './prices'
 import { addBreakdown, ratesFor, totalUsd } from './pricing'
 import type { CacheTtl } from './pricing'
 import type { Settings } from './settings'
-import { ledgerEntries, LEARNED_PRICING_KEY, SESSION_PREFIX, SHARED_PREFIX_KEY, STORE_LIMIT_BYTES, UNPRICED_MODELS_KEY, WRITE_QUOTES_KEY } from './store'
+import { forget, ledgerEntries, LEARNED_PRICING_KEY, remember, SESSION_PREFIX, SHARED_PREFIX_KEY, STORE_LIMIT_BYTES, UNPRICED_MODELS_KEY, WRITE_QUOTES_KEY } from './store'
 
 const PROBE_KEY = 'doctorProbe'
 
@@ -87,40 +87,46 @@ export async function runDoctor($: EngineInterface, settings: Settings, session:
     say(isSame, 'Time zone', isSame ? `day boundaries follow local time (${mine})` : `the mod sees ${mine} but the host says ${host}, so days are split at the wrong hour`)
   }
 
+  const sizeText = (text: string) => `${Math.round(text.length / 1024)} KiB, ${Math.round((text.length / STORE_LIMIT_BYTES) * 100)}% of the 4 MiB limit`
   const probe = `${now}-${Math.random().toString(36).slice(2)}`
-  await $.store.set(PROBE_KEY, probe)
-  try {
-    const files = await readOwnStoreFiles($)
-    const own = files?.find(f => f.text.includes(probe))
-    const ownKeys = own && storeKeysOf(own.text)
-    if (own === undefined || ownKeys === undefined) {
-      say(false, 'Store file', 'a write could not be found on disk, so the checks that compare the file were skipped')
-    } else {
-      say(true, 'Store file', `writes reach disk at once (${own.path})`)
-      const inView = [...(await $.store.keys())].sort()
-      const isSameView = ownKeys.join('\n') === inView.join('\n')
-      say(
-        isSameView,
-        'Other sessions',
-        isSameView
-          ? 'this session sees exactly what is on disk, so writes from other sessions are not being overwritten'
-          : `this session sees ${inView.length} keys and the file has ${ownKeys.length}; another session's writes may be lost`,
-      )
-      const percent = Math.round((own.text.length / STORE_LIMIT_BYTES) * 100)
-      say(percent < 75, 'Store size', `${Math.round(own.text.length / 1024)} KiB, ${percent}% of the 4 MiB limit`)
+  // A store that takes no write is the one the doctor is most needed for, so
+  // it says so and goes on to what it can still read.
+  if (!(await remember($, PROBE_KEY, probe))) {
+    say(false, 'Store file', 'the store refused a write, so nothing new is being recorded: it is at its 4 MiB limit, or its file cannot be written')
+    for (const file of (await readOwnStoreFiles($)) ?? []) say(null, 'Store size', `${file.path}: ${sizeText(file.text)}`)
+  } else {
+    try {
+      const files = await readOwnStoreFiles($)
+      const own = files?.find(f => f.text.includes(probe))
+      const ownKeys = own && storeKeysOf(own.text)
+      if (own === undefined || ownKeys === undefined) {
+        say(false, 'Store file', 'a write could not be found on disk, so the checks that compare the file were skipped')
+      } else {
+        say(true, 'Store file', `writes reach disk at once (${own.path})`)
+        const inView = [...(await $.store.keys())].sort()
+        const isSameView = ownKeys.join('\n') === inView.join('\n')
+        say(
+          isSameView,
+          'Other sessions',
+          isSameView
+            ? 'this session sees exactly what is on disk, so writes from other sessions are not being overwritten'
+            : `this session sees ${inView.length} keys and the file has ${ownKeys.length}; another session's writes may be lost`,
+        )
+        say(Math.round((own.text.length / STORE_LIMIT_BYTES) * 100) < 75, 'Store size', sizeText(own.text))
+      }
+      for (const other of files?.filter(f => f !== own) ?? []) {
+        const sessions = storeKeysOf(other.text)?.filter(k => k.startsWith(SESSION_PREFIX)).length
+        say(
+          null,
+          'Another install',
+          sessions === undefined
+            ? `${other.path} could not be read`
+            : `${other.path} holds ${sessions} sessions recorded by a differently installed copy; they are not in these totals`,
+        )
+      }
+    } finally {
+      await forget($, PROBE_KEY)
     }
-    for (const other of files?.filter(f => f !== own) ?? []) {
-      const sessions = storeKeysOf(other.text)?.filter(k => k.startsWith(SESSION_PREFIX)).length
-      say(
-        null,
-        'Another install',
-        sessions === undefined
-          ? `${other.path} could not be read`
-          : `${other.path} holds ${sessions} sessions recorded by a differently installed copy; they are not in these totals`,
-      )
-    }
-  } finally {
-    await $.store.delete(PROBE_KEY)
   }
 
   const pricing = await $.store.get(LEARNED_PRICING_KEY)
