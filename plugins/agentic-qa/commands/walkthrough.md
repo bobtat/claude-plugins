@@ -58,7 +58,7 @@ Determine the **browser driver** before writing `intake.md`, and do not defer it
 
 Record the answer, including `none`. A driver chosen here can still fail when it first reaches for a browser binary; that is an environment failure for backoff to handle, not something this check can predict.
 
-Ask what's needed to reach the system: base URL, environment (local/staging), a test account and a **reference** to its credentials (`env:NAME`, or `file:/absolute/path` outside the repository — ask for where the value is, and if the person starts to paste it, tell them transcripts are saved to disk), whether it's sandboxed or shared (default shared/unknown if unanswered), optionally any docs/wiki links (skippable, and note if a given link is unreachable rather than treating that the same as none given), and optionally a report destination — a shared drive or folder path. Offer to save the environment answers and report destination to `.claude/agentic-qa.local.md` for next time, as YAML frontmatter alongside the allowlist:
+Ask what's needed to reach the system: base URL, environment (local/staging), a test account and a **reference** to its credentials (`env:NAME`, or `file:/absolute/path` outside the repository — ask for where the value is, and if the person starts to paste it, tell them transcripts are saved to disk), with `playwright` optionally a saved browser session (the path to a storage state file from an earlier login, such as one the executor offered to save, checked with `test -f` before you record it: Playwright's browser starts logged out in every run, so without one the first browser step stops for a live login), whether it's sandboxed or shared (default shared/unknown if unanswered), optionally any docs/wiki links (skippable, and note if a given link is unreachable rather than treating that the same as none given), and optionally a report destination — a shared drive or folder path. Offer to save the environment answers and report destination to `.claude/agentic-qa.local.md` for next time, as YAML frontmatter alongside the allowlist:
 
 ```markdown
 ---
@@ -98,6 +98,7 @@ Write `intake.md`, following this template exactly:
 **Credentials:** env:QA_API_TOKEN | file:/absolute/path | none (a reference only — never the value)
 **Isolation:** sandboxed — no real outbound side effects | shared/unknown (default)
 **Browser driver:** claude-in-chrome | playwright | none — browser steps will be planned but marked blocked
+**Browser session:** <path to a storage state file, as given> | none — the first browser step stops for a live login
 **Report destination:** <configured path>/<this run's directory name> | none (default — working directory only)
 **Earlier run:** none | <directory> — irreversible actions already sent: <list>
 

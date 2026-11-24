@@ -76,6 +76,8 @@ previous_run: <working directory of an interrupted earlier run of this ticket, i
 
 `live_report` decides whether the report is brought up to date after every step. That is for someone watching it, and it is most of what the reporter costs: in a fixture run the per-step updates were six to seven tenths of what the reporter read. Interactively a person is there, so it is always on. Agent-invoked it is on when the brief names a `report_destination`, where the copy can be watched, or asks for it, and off otherwise. Off, the report is filled in from `step-results.md` when the run pauses and when it ends, and the finished report is the same.
 
+**One walkthrough at a time in a session.** Every agent in a Claude Code session drives the one Playwright browser the plugin starts for that session, and its tools act on whichever page is current, so two walkthroughs in one session would act on each other's pages and logins. Walkthroughs in separate sessions share no browser: the plugin runs each session's isolated, keeping nothing on disk. A caller with several to run starts a session for each.
+
 A brief that fails a validity gate triggers the same escalation as everything else that needs a human — see below — rather than erroring out and forcing the caller to reconstruct a new brief from scratch.
 
 ## Escalation: pause, notify, resume
