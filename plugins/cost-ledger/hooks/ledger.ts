@@ -1,4 +1,4 @@
-import { keepTopTurns, mergeToolMaps } from './insights'
+import { keepTopTurns, mergeToolMaps, turnsWorthKeeping } from './insights'
 import { addBreakdown, CATEGORIES, emptyBreakdown } from './pricing'
 import type { Breakdown, ProjectDay, ToolUse, Totals, TurnRecord } from '../types'
 
@@ -132,8 +132,12 @@ export function addUsage(
   return { ...begun(entry), project, cache, subagentCache, updatedAt: now }
 }
 
-export function addTurn(entry: SessionEntry | undefined, now: number, turn: TurnRecord): SessionEntry {
-  return { ...begun(entry), turns: keepTopTurns([...(entry?.turns ?? []), turn]), updatedAt: now }
+// `known` is each month's ten most expensive prompts as far as this session
+// has seen. Only a month's ten are ever listed, so those of the session's own
+// prompts that they now outbid are dropped here, with nothing lost from view.
+export function addTurn(entry: SessionEntry | undefined, now: number, turn: TurnRecord, known: readonly TurnRecord[] = []): SessionEntry {
+  const own = keepTopTurns([...(entry?.turns ?? []), turn])
+  return { ...begun(entry), turns: turnsWorthKeeping(own, keepTopTurns([...known, turn])), updatedAt: now }
 }
 
 export function addTools(entry: SessionEntry | undefined, now: number, tools: Record<string, ToolUse>): SessionEntry {
