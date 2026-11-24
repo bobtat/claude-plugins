@@ -72,6 +72,7 @@ import {
   LEARNED_TTL_KEY,
   ledgerEntries,
   pruneBudgetKeys,
+  remember,
   saveEntry,
   SESSION_PREFIX,
   SHARED_PREFIX_KEY,
@@ -131,7 +132,7 @@ async function cacheTtl($: EngineInterface, settings: Settings): Promise<CacheTt
 
 async function noteTtl($: EngineInterface, learned: LearnedTtl) {
   await update($, learnedTtl, () => learned)
-  if ((await $.store.get(storedTtlKey())) !== learned.ttl) await $.store.set(storedTtlKey(), learned.ttl)
+  if ((await $.store.get(storedTtlKey())) !== learned.ttl) await remember($, storedTtlKey(), learned.ttl)
 }
 
 // What re-caching the context would cost now that it has gone cold, priced
@@ -179,11 +180,11 @@ async function checkBudgets($: EngineInterface, settings: Settings, t: Totals) {
   ]
   for (const period of periods) {
     const storeKey = `${BUDGET_PREFIX}${period.key}:${period.limit}`
-    const announced = Number((await $.store.get(storeKey)) ?? 0)
+    const announced = Math.max(Number((await $.store.get(storeKey)) ?? 0), budgetsSaid.get(storeKey) ?? 0)
     const reached = budgetAlert(period.spent, period.limit, announced)
     if (reached === null) continue
 
-    await $.store.set(storeKey, reached)
+    if (!(await remember($, storeKey, reached))) budgetsSaid.set(storeKey, reached)
     const verb = reached >= 1 ? 'reached' : `at ${Math.round(reached * 100)}%`
     $.ui.toast(`${period.name} budget ${verb}: ${formatUsd(period.spent)} of ${formatUsd(period.limit)}.`, {
       timeoutMs: 10_000,
@@ -355,7 +356,7 @@ async function recordToolResult($: EngineInterface, tool: string, agentId: strin
 async function noteSharedPrefix($: EngineInterface, tokens: number) {
   if (tokens <= 0) return
   await update($, sharedPrefix, () => tokens)
-  if ((await $.store.get(SHARED_PREFIX_KEY)) !== tokens) await $.store.set(SHARED_PREFIX_KEY, tokens)
+  if ((await $.store.get(SHARED_PREFIX_KEY)) !== tokens) await remember($, SHARED_PREFIX_KEY, tokens)
 }
 
 // Module scope: the keep-alive timer, the running turn and the turns being
@@ -365,6 +366,9 @@ let keepAliveTimer: { cancel: () => void } | null = null
 let runningTurn: string | null = null
 let warnedColdAt: number | null = null
 let isHeadless = false
+// The budget thresholds this load has announced, for a store that cannot keep
+// them: without it the toast would come with every measurement.
+const budgetsSaid = new Map<string, number>()
 type MeasuredTurn = { startUsd: number; requests: PricedRequest[]; writes: PricedWrite[]; isSpoiled: boolean }
 const turnCosts = new Map<string, MeasuredTurn>()
 
@@ -385,6 +389,7 @@ function resetModuleState() {
   warnedColdAt = null
   isHeadless = false
   turnCosts.clear()
+  budgetsSaid.clear()
   queue = Promise.resolve()
 }
 
@@ -673,7 +678,7 @@ export const register: Register = (on, options) => {
 
   on('classic.PreModelSwitch', async ($, e, next) => {
     await noteTtl($, { ttl: e.cache_ttl, from: 'claude-code' })
-    await $.store.set(LEARNED_PRICING_KEY, e.pricing)
+    await remember($, LEARNED_PRICING_KEY, e.pricing)
     // Only a quote at list prices says anything about the list: a managed
     // price is meant to differ, and the default tier is a guess at the model.
     if (e.pricing === 'catalog') {
@@ -696,7 +701,7 @@ export const register: Register = (on, options) => {
 
   on('classic.PostModelSwitch', async ($, e, next) => {
     await noteTtl($, { ttl: e.cache_ttl, from: 'claude-code' })
-    await $.store.set(LEARNED_PRICING_KEY, e.pricing)
+    await remember($, LEARNED_PRICING_KEY, e.pricing)
     return next(e)
   })
 

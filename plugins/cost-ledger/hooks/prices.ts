@@ -9,7 +9,7 @@ import type { QuoteVerdict, WriteQuote } from './pricecheck'
 import { ratesFor, sameRates } from './pricing'
 import { LIST_TABLE } from './settings'
 import type { Settings } from './settings'
-import { LEARNED_PRICING_KEY, UNPRICED_MODELS_KEY, WRITE_QUOTES_KEY } from './store'
+import { LEARNED_PRICING_KEY, remember, UNPRICED_MODELS_KEY, WRITE_QUOTES_KEY } from './store'
 
 // The breakdown can be held to the total only where both are at list prices:
 // the rates setting reprices the breakdown, and an organisation's managed
@@ -23,10 +23,16 @@ export async function pricedApart($: EngineInterface, settings: Settings): Promi
 // Said once per model, the first time any session meets it: a model released
 // after this table was written would otherwise drop out of the breakdown
 // with nothing to show for it but a line in the pane.
+// Module scope: what this load of the mod has already said, for a store that
+// cannot keep it. Without it the notice would come with every request.
+const namedHere = new Set<string>()
+const quotedApartHere = new Set<string>()
+
 export async function noteUnpricedModel($: EngineInterface, model: string) {
   const seen = ((await $.store.get(UNPRICED_MODELS_KEY)) as string[] | undefined) ?? []
-  if (seen.includes(model)) return
-  await $.store.set(UNPRICED_MODELS_KEY, [...seen, model].slice(-20))
+  if (seen.includes(model) || namedHere.has(model)) return
+  namedHere.add(model)
+  await remember($, UNPRICED_MODELS_KEY, [...seen, model].slice(-20))
   $.ui.toast(
     `cost-ledger has no price for ${model}, so its tokens are left out of the cost breakdown; the totals are not affected. ` +
       'Update the plugin, or name the model in the rates setting.',
@@ -53,9 +59,15 @@ export async function noteWriteQuote($: EngineInterface, settings: Settings, quo
   if (verdict === undefined) return
   const stored = await $.store.get(WRITE_QUOTES_KEY)
   const before = keptQuotes(stored, quote.at).find(kept => kept.model === quote.model)
-  await $.store.set(WRITE_QUOTES_KEY, withQuote(stored, quote))
-  if (verdict.isAgreed) return
+  const isKept = await remember($, WRITE_QUOTES_KEY, withQuote(stored, quote))
+  if (verdict.isAgreed) {
+    quotedApartHere.delete(quote.model)
+    return
+  }
   if (before !== undefined && quoteVerdict(settings, before)?.isAgreed === false) return
+  // Where the quote was kept, the kept quote is what says it has been said.
+  if (!isKept && quotedApartHere.has(quote.model)) return
+  if (!isKept) quotedApartHere.add(quote.model)
   $.ui.toast(
     `Claude Code prices cache writes on ${quote.model} at ${rateText(verdict.quotedPerMillion)} per million tokens and ` +
       `cost-ledger's price list has ${rateText(verdict.listedPerMillion)}, so the cost breakdown for that model is off; ` +

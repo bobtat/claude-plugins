@@ -74,6 +74,28 @@ export async function writeExport($: EngineInterface): Promise<string> {
   return `Wrote ${csv.trimEnd().split('\n').length - 1} rows to ${path}`
 }
 
+// What the mod keeps besides the ledger is a convenience: a figure it learned,
+// a notice it has already given. Losing one costs a repeated notice or a
+// figure learned again, never spend, so a store that refuses it must not stop
+// the hook that asked. False when it was not kept.
+export async function remember($: EngineInterface, key: string, value: unknown): Promise<boolean> {
+  try {
+    await $.store.set(key, value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function forget($: EngineInterface, key: string): Promise<boolean> {
+  try {
+    await $.store.delete(key)
+    return true
+  } catch {
+    return false
+  }
+}
+
 // Module scope on purpose: one notice per load of the mod is enough.
 let hasWarnedSaveFailure = false
 
