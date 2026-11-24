@@ -87,13 +87,16 @@ export async function runDoctor($: EngineInterface, settings: Settings, session:
     say(isSame, 'Time zone', isSame ? `day boundaries follow local time (${mine})` : `the mod sees ${mine} but the host says ${host}, so days are split at the wrong hour`)
   }
 
-  const sizeText = (text: string) => `${Math.round(text.length / 1024)} KiB, ${Math.round((text.length / STORE_LIMIT_BYTES) * 100)}% of the 4 MiB limit`
+  const percentFull = (text: string) => Math.round((text.length / STORE_LIMIT_BYTES) * 100)
+  const sizeText = (text: string) => `${Math.round(text.length / 1024)} KiB, ${percentFull(text)}% of the 4 MiB limit`
   const probe = `${now}-${Math.random().toString(36).slice(2)}`
   // A store that takes no write is the one the doctor is most needed for, so
-  // it says so and goes on to what it can still read.
+  // it says so and goes on to what it can still read. With no write to find,
+  // it cannot tell its own store file from another install's, and gives the
+  // size of each.
   if (!(await remember($, PROBE_KEY, probe))) {
     say(false, 'Store file', 'the store refused a write, so nothing new is being recorded: it is at its 4 MiB limit, or its file cannot be written')
-    for (const file of (await readOwnStoreFiles($)) ?? []) say(null, 'Store size', `${file.path}: ${sizeText(file.text)}`)
+    for (const file of (await readOwnStoreFiles($)) ?? []) say(percentFull(file.text) < 75 ? null : false, 'Store size', `${file.path}: ${sizeText(file.text)}`)
   } else {
     try {
       const files = await readOwnStoreFiles($)
@@ -112,7 +115,7 @@ export async function runDoctor($: EngineInterface, settings: Settings, session:
             ? 'this session sees exactly what is on disk, so writes from other sessions are not being overwritten'
             : `this session sees ${inView.length} keys and the file has ${ownKeys.length}; another session's writes may be lost`,
         )
-        say(Math.round((own.text.length / STORE_LIMIT_BYTES) * 100) < 75, 'Store size', sizeText(own.text))
+        say(percentFull(own.text) < 75, 'Store size', sizeText(own.text))
       }
       for (const other of files?.filter(f => f !== own) ?? []) {
         const sessions = storeKeysOf(other.text)?.filter(k => k.startsWith(SESSION_PREFIX)).length

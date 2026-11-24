@@ -264,8 +264,11 @@ export function applyUsage(t: Totals, now: number, usage: Breakdown, project: st
   }
 }
 
+// A cost measurement may have read the prompt out of the store already, and
+// one listed twice would count twice among its month's ten.
 export function applyTurn(t: Totals, turn: TurnRecord): Totals {
-  return { ...t, turns: keepTopTurns([...t.turns, turn]) }
+  const isListed = t.turns.some(known => known.at === turn.at && known.prompt === turn.prompt && known.project === turn.project)
+  return isListed ? t : { ...t, turns: keepTopTurns([...t.turns, turn]) }
 }
 
 export function applyTools(t: Totals, now: number, tools: Record<string, ToolUse>): Totals {

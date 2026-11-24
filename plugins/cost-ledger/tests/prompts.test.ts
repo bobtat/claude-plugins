@@ -1,7 +1,7 @@
 import { expect, mock, test } from 'claude-code/testing'
 
 import { addStepToTurn, finishTurn, keepTopTurns, startTurn } from '../hooks/insights'
-import { addSpend, addTurn } from '../hooks/ledger'
+import { addSpend, addTurn, applyTurn } from '../hooks/ledger'
 import type { SessionEntry } from '../hooks/ledger'
 import { priceUsage, rateTable, ratesFor } from '../hooks/pricing'
 import { complete, DAY, engine, measure, memoryStore, NOW, PANE, ROOT, runStep, usage } from './support'
@@ -106,4 +106,58 @@ test('a session drops its own prompts as the month\'s ten outbid them', async ()
   // Last month's prompts are held to last month's ten, of which there are none.
   const lastMonth = addTurn(sessionWith([1], NOW - 20 * DAY), NOW, prompt(30), known)
   expect(lastMonth.turns?.map(turn => turn.prompt).sort()).toEqual(['p1', 'p30'])
+})
+
+test('a prompt the store refused is not held against the prompts that follow it', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  const store = new Map<string, unknown>([['session:other', sessionWith([5, 6, 7, 8, 9, 10, 11, 12, 13])]])
+  let isRefusing = true
+  on('store.get', (_$, e) => ({ value: store.get(e.key) }))
+  on('store.keys', () => ({ value: [...store.keys()] }))
+  on('store.delete', () => ({ value: undefined }))
+  on('store.set', (_$, e) => {
+    if (isRefusing && e.key === 'session:s1') return { deny: 'the store would be over 4 MiB' }
+    store.set(e.key, e.value)
+    return { value: undefined }
+  })
+  engine(on, [usage(0, 3_000_000), usage(0, 800_000)])
+  await $.session.measure(measure(1))
+
+  // $15, which the store does not take: the month still has nine prompts.
+  await $.turn.start({ turnId: 't1', text: 'the prompt that was lost' })
+  await runStep($, 't1')
+  await $.turn.complete(complete('t1'))
+  isRefusing = false
+
+  // $4 is the tenth of nine stored prompts and must be kept.
+  await $.turn.start({ turnId: 't2', text: 'the tenth prompt' })
+  await runStep($, 't2')
+  await $.turn.complete(complete('t2'))
+
+  expect((store.get('session:s1') as SessionEntry | undefined)?.turns?.map(turn => turn.prompt)).toEqual(['the tenth prompt'])
+})
+
+test('a prompt that ends before any cost was measured is stored', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  const store = memoryStore(on, { 'session:other': sessionWith([3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) })
+  engine(on, [usage(0, 2_000)])
+
+  // Nothing has read the other sessions yet, so nothing is known to outbid it.
+  await $.turn.start({ turnId: 't1', text: 'the first thing asked' })
+  await runStep($, 't1')
+  await $.turn.complete(complete('t1'))
+
+  expect((store.get('session:s1') as SessionEntry).turns?.map(turn => turn.prompt)).toEqual(['the first thing asked'])
+})
+
+test('a prompt already among the known ten is not counted among them twice', async () => {
+  const nine = sessionWith([5, 6, 7, 8, 9, 10, 11, 12, 13]).turns ?? []
+  const totals = { session: 0, today: 0, week: 0, month: 0, weekStart: '', days: {}, cacheDays: {}, subagentDays: {}, projectDays: {}, turns: nine, toolDays: {}, rateLimits: [] }
+  const dear = prompt(15)
+
+  // A cost measurement can read a stored prompt before the session adds it.
+  const twice = applyTurn(applyTurn(totals, dear), dear)
+
+  expect(twice.turns).toHaveLength(10)
+  expect(twice.turns.filter(turn => turn.prompt === 'p15')).toHaveLength(1)
 })
