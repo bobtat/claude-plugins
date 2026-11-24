@@ -263,9 +263,10 @@ row they cannot place is printed, never guessed at. None of the three uses a mod
 
 `LANES=2` runs two of each fixture at a time, on ports 100 above the first lane's, and
 takes about half as long: the team fixture's runs are the slow ones, at ten to fifteen
-minutes each, and one lane runs them end to end. Two team runs at once copy the sign-in
-state to the same path, so read a failed sign-in in a run that had company before
-counting it.
+minutes each, and one lane runs them end to end. From 0.21.0 each run copies the
+sign-in state to a name of its own and deletes it once loaded. An earlier version copies
+it to one path for every run, so when measuring one, read a failed sign-in in a run that
+had company before counting it.
 
 Five runs of each of the first two cost about $18 through 0.18.0 and $9.48 at 0.19.0, or
 $19.30 with every agent forced onto Sonnet. Ten runs of each of the three cost $30.34 at
