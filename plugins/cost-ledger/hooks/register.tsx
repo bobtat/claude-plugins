@@ -62,7 +62,7 @@ import { checkPing, coldEstimate, impliedTtl, pingDelay, pingHit, repricedWrites
 import type { ColdEstimate, PricedRequest, PricedWrite } from './keepalive'
 import { runDoctor } from './doctor'
 import type { SessionReadings } from './doctor'
-import { noteUnpricedModel, noteWriteQuote, pricedApart } from './prices'
+import { forgetNotices, noteUnpricedModel, noteWriteQuote, pricedApart } from './prices'
 import { isTtlSet, LIST_TABLE, readSettings } from './settings'
 import type { Settings } from './settings'
 import {
@@ -330,13 +330,14 @@ async function finishActiveTurn($: EngineInterface, settings: Settings, turnId: 
   const record = finishTurn(turn, await $.session.root())
   // A prompt its month's ten already outbid can never be listed, so it is not
   // stored: most prompts are of that kind, and they were most of an entry.
-  // The ten are those of the last cost measurement, which read every session.
+  // The ten are those the last cost measurement read from every session, and
+  // this session's own since. One the store refused is not among them: it
+  // would outbid prompts that are then the month's ten without it.
   const known = (await read($, totals))?.turns ?? []
   if (turnsWorthKeeping([record], known).length > 0) {
     const key = SESSION_PREFIX + (await $.session.id())
     const entry = (await $.store.get(key)) as SessionEntry | undefined
-    await saveEntry($, key, addTurn(entry, now, record, known))
-    await update($, totals, t => (t === null ? t : applyTurn(t, record)))
+    if (await saveEntry($, key, addTurn(entry, now, record, known))) await update($, totals, t => (t === null ? t : applyTurn(t, record)))
   }
 
   const usd = turnUsd(record)
@@ -397,6 +398,7 @@ function resetModuleState() {
   isHeadless = false
   turnCosts.clear()
   budgetsSaid.clear()
+  forgetNotices()
   queue = Promise.resolve()
 }
 

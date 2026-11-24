@@ -24,9 +24,16 @@ export async function pricedApart($: EngineInterface, settings: Settings): Promi
 // after this table was written would otherwise drop out of the breakdown
 // with nothing to show for it but a line in the pane.
 // Module scope: what this load of the mod has already said, for a store that
-// cannot keep it. Without it the notice would come with every request.
+// cannot keep it. Without it the notice would come with every request. For a
+// quote, whether the last one the store did not keep agreed with the list.
 const namedHere = new Set<string>()
-const quotedApartHere = new Set<string>()
+const unkeptQuotes = new Map<string, boolean>()
+
+// A load starts with nothing said.
+export function forgetNotices() {
+  namedHere.clear()
+  unkeptQuotes.clear()
+}
 
 export async function noteUnpricedModel($: EngineInterface, model: string) {
   const seen = ((await $.store.get(UNPRICED_MODELS_KEY)) as string[] | undefined) ?? []
@@ -51,23 +58,19 @@ export function quoteVerdict(settings: Settings, quote: WriteQuote): QuoteVerdic
 
 // Only a quote that can be judged is kept, so one too small to say anything
 // does not displace what an earlier one showed. A difference is said when it
-// first appears for a model, not at every switch after: the kept quote for
-// the model already differing means it has been said.
+// first appears for a model, not at every switch after: the quote before it
+// for the model already differing means it has been said. That quote is the
+// kept one, or the last the store would not keep.
 export async function noteWriteQuote($: EngineInterface, settings: Settings, quote: WriteQuote | undefined) {
   if (quote === undefined) return
   const verdict = quoteVerdict(settings, quote)
   if (verdict === undefined) return
   const stored = await $.store.get(WRITE_QUOTES_KEY)
-  const before = keptQuotes(stored, quote.at).find(kept => kept.model === quote.model)
-  const isKept = await remember($, WRITE_QUOTES_KEY, withQuote(stored, quote))
-  if (verdict.isAgreed) {
-    quotedApartHere.delete(quote.model)
-    return
-  }
-  if (before !== undefined && quoteVerdict(settings, before)?.isAgreed === false) return
-  // Where the quote was kept, the kept quote is what says it has been said.
-  if (!isKept && quotedApartHere.has(quote.model)) return
-  if (!isKept) quotedApartHere.add(quote.model)
+  const kept = keptQuotes(stored, quote.at).find(before => before.model === quote.model)
+  const lastAgreed = unkeptQuotes.get(quote.model) ?? (kept === undefined ? undefined : quoteVerdict(settings, kept)?.isAgreed)
+  if (await remember($, WRITE_QUOTES_KEY, withQuote(stored, quote))) unkeptQuotes.delete(quote.model)
+  else unkeptQuotes.set(quote.model, verdict.isAgreed)
+  if (verdict.isAgreed || lastAgreed === false) return
   $.ui.toast(
     `Claude Code prices cache writes on ${quote.model} at ${rateText(verdict.quotedPerMillion)} per million tokens and ` +
       `cost-ledger's price list has ${rateText(verdict.listedPerMillion)}, so the cost breakdown for that model is off; ` +

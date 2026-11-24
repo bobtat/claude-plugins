@@ -55,12 +55,19 @@ test('/costs doctor still reports where the store takes no write', async ($, on)
   engine(on)
   mock.env(on, { USERPROFILE: HOME })
   on('process.run', () => ({ value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }))
-  on('fs.list', () => ({ value: [] }))
+  // Two store files, one nearly full: without a write that lands in its own,
+  // the mod cannot tell which is which and gives the size of each.
+  on('fs.list', () => ({
+    value: ['cost-ledger_inline-abc.json', 'cost-ledger_marketplace-def.json'].map(name => ({ name, kind: 'file' as const, size: 10, mtimeMs: NOW, isLink: false })),
+  }))
+  on('fs.read', (_$, e) => ({ value: e.path.includes('inline') ? 'x'.repeat(4 * 1024 * 1000) : 'x'.repeat(100 * 1024) }))
 
   const report = await costs($, 'doctor')
 
   expect(report).toMatch(/^cost-ledger self-check/)
   expect(report).toMatch(/⚠ Store file: the store refused a write/)
+  expect(report).toMatch(/⚠ Store size: .*cost-ledger_inline-abc\.json: 4000 KiB, 98% of the 4 MiB limit/)
+  expect(report).toMatch(/ℹ Store size: .*cost-ledger_marketplace-def\.json: 100 KiB, 2% of the 4 MiB limit/)
   expect(report).toMatch(/Models: every model seen has a rate/)
 })
 
@@ -123,4 +130,51 @@ test('a price Claude Code quotes differently is said once where the store cannot
   await $.classic.PreModelSwitch({ ...apart, estimated_cache_write_usd: 0.8 })
   await $.classic.PreModelSwitch(apart)
   expect(said()).toHaveLength(2)
+})
+
+test('a quote that agrees in between is known of where the store kept the last one that differed', async ($, on) => {
+  mock.clock(on, { now: NOW })
+  const store = new Map<string, unknown>()
+  let isRefusing = false
+  on('store.get', (_$, e) => ({ value: store.get(e.key) }))
+  on('store.keys', () => ({ value: [...store.keys()] }))
+  on('store.delete', () => ({ value: undefined }))
+  on('store.set', (_$, e) => {
+    if (isRefusing) return { deny: 'the store would be over 4 MiB' }
+    store.set(e.key, e.value)
+    return { value: undefined }
+  })
+  const toasts = engine(on)
+  on('classic.PreModelSwitch', () => ({}))
+  const apart = { ...SWITCH, prompt_cache_warm: false, estimated_cache_write_usd: 1.6 }
+  const said = () => toasts.filter(toast => toast.includes('prices cache writes on claude-opus-5-5'))
+
+  await $.classic.PreModelSwitch(apart)
+  expect(said()).toHaveLength(1)
+
+  // The store keeps the differing quote and then takes nothing more.
+  isRefusing = true
+  await $.classic.PreModelSwitch({ ...apart, estimated_cache_write_usd: 0.8 })
+  await $.classic.PreModelSwitch(apart)
+  expect(said()).toHaveLength(2)
+})
+
+test('a budget raised, or a new week, is announced where the store cannot remember the last', { options: { weeklyBudget: 10 } }, async ($, on) => {
+  const clock = mock.clock(on, { now: NOW })
+  const week = 7 * 24 * 60 * 60 * 1000
+  refusingStore(on, {
+    'session:earlier': { project: ROOT, days: { '2026-10-06': 8.5 }, updatedAt: NOW },
+    'session:later': { project: ROOT, days: { '2026-10-13': 9 }, updatedAt: NOW + week },
+  })
+  const toasts = engine(on)
+  const budget = () => toasts.filter(toast => toast.includes('budget'))
+
+  await $.session.measure(measure(1))
+  await $.session.measure(measure(1))
+  expect(budget()).toEqual(['Weekly budget at 80%: $8.50 of $10.00.'])
+
+  await clock.advance(week)
+  await $.session.measure(measure(1))
+  await $.session.measure(measure(1))
+  expect(budget()).toEqual(['Weekly budget at 80%: $8.50 of $10.00.', 'Weekly budget at 80%: $9.00 of $10.00.'])
 })
