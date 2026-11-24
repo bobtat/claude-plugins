@@ -55,7 +55,9 @@ All warnings are informational: nothing is ever blocked.
   rates its prompt length selects.
 - **The cost of a prompt** is the estimated cost of every request made between the prompt and
   its answer, its subagents' included, with the first 80 characters of the prompt. The month's
-  ten most expensive are kept. Prompt text stays in the local store; it is not exported.
+  ten most expensive are kept: a prompt that costs less than all ten, as the last cost
+  measurement found them, is not stored at all. Prompt text stays in the local store; it is
+  not exported.
 - **What filled the context** measures each tool result as the model reads it, at roughly four
   characters a token, then charges it a cache write on the first request that sends it and a
   cache read on every request after, until `/clear` or `/compact` drops it. A large file read
@@ -66,8 +68,8 @@ All warnings are informational: nothing is ever blocked.
 - Only sessions that ran with the mod enabled are counted. There is no backfill from older
   transcripts.
 - **What is kept.** Each session has an entry of its own in the store: its spend by day, its
-  breakdown, its tool figures, its ten most expensive prompts of each month and the per-turn
-  figures behind `/costs doctor`'s **Turns** line. A session idle for 60 days is folded into
+  breakdown, its tool figures, those of its prompts that are among a month's ten most
+  expensive and the per-turn figures behind `/costs doctor`'s **Turns** line. A session idle for 60 days is folded into
   one archive entry for its project, which keeps all of that but the per-turn figures, and of
   the prompts the project's ten most expensive of each month. The store holds 4 MiB and an entry weighs
   about 8 kB, so 60 days of sessions can be more than it holds. So only the hundred most
@@ -130,7 +132,9 @@ repository root.
   `date` elsewhere), since days, weeks and months are split by it.
 - **Store file**: whether a write reaches the store file on disk at once, whether this
   session's view of the store matches the file (if it does not, another session's writes may
-  be getting lost), and how close the file is to the 4 MiB limit.
+  be getting lost), and how close the file is to the 4 MiB limit. Where the store refuses the
+  write, because it is at that limit or its file cannot be written, the line says so, each
+  store file is listed with its size, and the checks that only read still run.
 - **Another install**: a store file left by a differently installed copy of the mod. Each
   install source (marketplace, `--plugin-dir`, a session's mods folder) has its own store, so
   history recorded by one is not in another's totals.
@@ -205,7 +209,8 @@ totals do not depend on any of this.
 - Archives are not bounded the way sessions are. An archive holds a project's figures for
   each day it was worked on, for 400 days, so many projects worked on daily for a year can
   still fill the store. `/costs doctor` warns once the store file is three quarters full. At
-  the limit itself nothing more is recorded and a toast says so.
+  the limit itself nothing more is recorded and a toast says so; the toasts, the status line
+  and `/costs doctor` go on working from what the store already holds.
 - After an in-process `/resume`, the mod takes Claude Code's running cost at that moment as
   the new baseline. If Claude Code restores the resumed session's earlier cost only after
   that point, the earlier cost would be counted again. This has been reasoned from the API
