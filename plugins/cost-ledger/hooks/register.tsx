@@ -18,6 +18,7 @@ import {
   toolLabel,
   topTools,
   turnsIn,
+  turnsWorthKeeping,
   turnUsd,
   weekOverWeek,
 } from './insights'
@@ -327,10 +328,16 @@ async function finishActiveTurn($: EngineInterface, settings: Settings, turnId: 
 
   const now = await $.clock.now()
   const record = finishTurn(turn, await $.session.root())
-  const key = SESSION_PREFIX + (await $.session.id())
-  const entry = (await $.store.get(key)) as SessionEntry | undefined
-  await saveEntry($, key, addTurn(entry, now, record))
-  await update($, totals, t => (t === null ? t : applyTurn(t, record)))
+  // A prompt its month's ten already outbid can never be listed, so it is not
+  // stored: most prompts are of that kind, and they were most of an entry.
+  // The ten are those of the last cost measurement, which read every session.
+  const known = (await read($, totals))?.turns ?? []
+  if (turnsWorthKeeping([record], known).length > 0) {
+    const key = SESSION_PREFIX + (await $.session.id())
+    const entry = (await $.store.get(key)) as SessionEntry | undefined
+    await saveEntry($, key, addTurn(entry, now, record, known))
+    await update($, totals, t => (t === null ? t : applyTurn(t, record)))
+  }
 
   const usd = turnUsd(record)
   if (settings.expensiveTurnUsd > 0 && usd >= settings.expensiveTurnUsd) {
