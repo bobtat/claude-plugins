@@ -8,6 +8,29 @@ request is recorded and is not priced again when a later version corrects a rate
 Where a version leaves earlier figures standing with a known error, its entry says so under
 **Figures recorded before this version**.
 
+## 0.9.4 (2026-11-24)
+
+### Fixed
+
+- A store that refuses a write no longer stops the mod from doing the rest of its work. At
+  its 4 MiB limit, or with its file locked, the store rejected what the mod keeps beside the
+  ledger (a budget threshold announced, the cache lifetime and pricing learned, a model named
+  as unpriced, a quoted price), and Claude Code then skipped the whole hook: the budget toast,
+  the model-switch warning and the unpriced-model notice were not shown, and a request's
+  record stopped part-way. Those writes may now fail. A notice the store cannot remember
+  having given is given once for as long as Claude Code runs, not with every request.
+- `/costs doctor` answers when the store takes no write, which was when it gave no answer at
+  all. Its **Store file** line says the write was refused, a **Store size** line gives each
+  store file's size against the limit, and the checks that only read go on.
+
+### Changed
+
+- A prompt is stored only when it can still be one of its month's ten most expensive, the
+  only prompts the pane lists. Each session used to keep its own ten of each month, most of
+  which could never be shown. A session's entry is smaller for it, and so is what each cost
+  measurement reads. Entries stored before this version keep what they have until they are
+  folded into their project's archive.
+
 ## 0.9.3 (2026-11-23)
 
 ### Fixed
