@@ -256,6 +256,7 @@ async function recordStep($: EngineInterface, settings: Settings, usage: Usage &
   // cacheTtl setting names is the user's to decide and stays.
   const shown = isMainThread && !isTtlSet(settings) ? namedLifetime(usage) : undefined
   if (shown !== undefined && (await read($, learnedTtl))?.ttl !== shown) await noteTtl($, { ttl: shown, from: 'usage' })
+  if (shown !== undefined) turnCosts.get(step.turnId)?.shown.push(shown)
 
   // A turn is measured by the conversation's own requests. A subagent's
   // request landing in it moves Claude Code's total by an amount those do not
@@ -396,7 +397,8 @@ let isHeadless = false
 // The budget thresholds this load has announced, for a store that cannot keep
 // them: without it the toast would come with every measurement.
 const budgetsSaid = new Map<string, number>()
-type MeasuredTurn = { startUsd: number; requests: PricedRequest[]; writes: PricedWrite[]; isSpoiled: boolean }
+// `shown` holds the lifetimes the turn's own requests named for all they wrote.
+type MeasuredTurn = { startUsd: number; requests: PricedRequest[]; writes: PricedWrite[]; shown: CacheTtl[]; isSpoiled: boolean }
 const turnCosts = new Map<string, MeasuredTurn>()
 
 // Steps of parallel subagents finish concurrently, and a keep-alive ping can
@@ -428,7 +430,7 @@ function cancelKeepAlive() {
 
 async function startTurnCost($: EngineInterface, turnId: string) {
   const usd = (await $.session.usage()).cost?.usd
-  if (usd !== undefined) turnCosts.set(turnId, { startUsd: usd, requests: [], writes: [], isSpoiled: false })
+  if (usd !== undefined) turnCosts.set(turnId, { startUsd: usd, requests: [], writes: [], shown: [], isSpoiled: false })
 }
 
 // Ends a turn. What it moved Claude Code's running total by is read for the
@@ -459,7 +461,10 @@ async function closeTurn($: EngineInterface, settings: Settings, turnId: string)
     const tracked = addTurnMoves(entry, await $.clock.now(), moved, estimatedUsd)
     if (tracked !== entry) await saveEntry($, key, tracked)
   }
-  if (ttl !== undefined) await noteTtl($, { ttl, from: 'pricing' })
+  // What a request of the turn named is the plainer word on the lifetime. The
+  // turn's total then says only what its unnamed writes were charged at, which
+  // has put their price right above and does not move the conversation's.
+  if (ttl !== undefined && measured?.shown.length === 0) await noteTtl($, { ttl, from: 'pricing' })
 }
 
 // The cache lifetime Claude Code charged, read from what one turn moved its

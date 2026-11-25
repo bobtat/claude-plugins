@@ -201,13 +201,14 @@ export function namedWrites(usage: Usage): WritesByLifetime | undefined {
 }
 
 // The lifetime a request shows its conversation to be on: the one all of its
-// writes were named for. A request that wrote for both, or left some of what
-// it wrote unnamed, or wrote nothing, shows none.
+// writes were named for, and so priced at. A request that wrote for both, or
+// left some of what it wrote unnamed, or wrote nothing, shows none.
 export function namedLifetime(usage: Usage): CacheTtl | undefined {
   const written = usage.cache_creation_input_tokens
-  if (namedWrites(usage) === undefined || written <= 0) return undefined
-  if (usage.ephemeral_1h_input_tokens === written) return '1h'
-  return usage.ephemeral_5m_input_tokens === written ? '5m' : undefined
+  const named = namedWrites(usage)
+  if (named === undefined || written <= 0) return undefined
+  if (named['1h'] === written) return '1h'
+  return named['1h'] === 0 && (usage.ephemeral_5m_input_tokens ?? 0) >= written ? '5m' : undefined
 }
 
 // What a request's cache writes cost: as named where the response named their
