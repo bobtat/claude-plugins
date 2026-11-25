@@ -40,6 +40,7 @@ counts on, and for a provider that does not report them.
   assumed while it ran: a turn a subagent made a request in, and one whose total fitted
   neither lifetime or both.
 - A subagent's cache writes stand at the five-minute rate whatever they were charged at.
+- A request that wrote to both caches stands priced all at the one rate. None has been seen.
 - The per-tool write figures stand at the rate of the lifetime believed when they were
   recorded, and were never priced again.
 
