@@ -8,6 +8,41 @@ request is recorded and is not priced again when a later version corrects a rate
 Where a version leaves earlier figures standing with a known error, its entry says so under
 **Figures recorded before this version**.
 
+## 0.10.0 (2026-11-25)
+
+### Changed
+
+- A request's cache writes are priced at the lifetime its response names for them. Claude
+  Code passes on, with each request's token counts, how much of what it wrote was for five
+  minutes and how much for an hour, and the mod now reads that. It used to price every write
+  at the lifetime it believed the conversation to be on, work the real one out from what a
+  whole turn moved Claude Code's total by, and price the turn again where it had believed
+  wrong.
+- A session knows its cache lifetime from its first request that names one lifetime for all
+  it wrote, and not only once a turn has ended. The countdown, the idle warning and the
+  keep-alive follow it from then. `/costs doctor`'s **Cache lifetime** line says when the
+  lifetime was learned this way.
+- A subagent's cache writes are priced as its responses name them. Where they name nothing,
+  they are priced at five minutes as before.
+- A tool result, under what filled the context, is charged its cache write at the rate its
+  request's writes came to.
+- The `cacheTtl` setting decides the countdown, the idle warning, the keep-alive and the
+  price of writes no response named. It no longer reprices a write a response did name.
+
+Where a response names no lifetime, nothing changes: its writes are priced at the lifetime
+believed, the lifetime is read from the turn's total, and they are priced again at the turn's
+end if that shows the other one. That is the case under a Claude Code that does not pass the
+counts on, and for a provider that does not report them.
+
+### Figures recorded before this version
+
+- The cache writes of a turn that taught nothing about the lifetime stand at the lifetime
+  assumed while it ran: a turn a subagent made a request in, and one whose total fitted
+  neither lifetime or both.
+- A subagent's cache writes stand at the five-minute rate whatever they were charged at.
+- The per-tool write figures stand at the rate of the lifetime believed when they were
+  recorded, and were never priced again.
+
 ## 0.9.4 (2026-11-24)
 
 ### Fixed
