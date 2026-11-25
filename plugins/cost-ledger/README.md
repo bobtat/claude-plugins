@@ -77,21 +77,27 @@ All warnings are informational: nothing is ever blocked.
   the rest are folded as soon as they have been idle a day and have nothing on the current
   day, up to a hundred at each start of Claude Code. Folding changes no total, no row of the
   export and no prompt the pane lists. Days older than 400 are dropped.
-- **The cache lifetime** is read from Claude Code's own pricing: after each turn, the turn's
-  requests are priced at list rates with five-minute and with one-hour cache writes, and
-  whichever matches what the turn moved Claude Code's running total by is the lifetime it
-  charged. A model switch's report also sets it. Under managed rates, which list prices
-  cannot match, only the report does. That lifetime is the conversation's. A subagent's
-  requests write to the five-minute cache whatever the conversation is on, so their writes
-  are priced at the five-minute rate. Each session keeps the lifetime its own requests
-  showed, since Claude Code picks it by the kind of session and can change it part-way (a
-  subscription that runs into overage drops to five minutes). Until a session has seen its
-  own, it starts from what earlier sessions of its kind last learned, interactive sessions
-  and headless ones (`claude -p`, the SDK) each having their own, or from five minutes. A
-  turn's writes are priced as its requests come in, at the lifetime believed then. When the
-  turn's own total then shows the other lifetime, they are priced again at that one as the
-  turn ends, so a session's first turn is not left at a wrong assumption. The per-tool
-  figures under what filled the context are not adjusted.
+- **Cache writes** cost more for the one-hour cache than for the five-minute one, and each
+  response says how much of what it wrote was for which. The mod prices a request's writes
+  as its response names them. What a naming response leaves unnamed is priced at five
+  minutes, as Claude Code's own total prices it.
+- **The cache lifetime** of the conversation, which the countdown, the idle warning and the
+  keep-alive run on, is the one a request of its own names for all it wrote. A model
+  switch's report also sets it. A subagent's requests write to the five-minute cache
+  whatever the conversation is on, so they are priced as they name and teach the
+  conversation nothing. Each session keeps the lifetime its own requests showed, since
+  Claude Code picks it by the kind of session and can change it part-way (a subscription
+  that runs into overage drops to five minutes). Until a session has seen its own, it starts
+  from what earlier sessions of its kind last learned, interactive sessions and headless
+  ones (`claude -p`, the SDK) each having their own, or from five minutes.
+- **Where a response names no lifetime**, as under a Claude Code that does not pass the
+  counts on or a provider that does not report them, the mod falls back on Claude Code's
+  pricing. The request's writes are priced at the lifetime believed then, a subagent's at
+  five minutes. After each turn, the turn's requests are priced at list rates with their
+  unnamed writes at five minutes and at one hour, and whichever matches what the turn moved
+  Claude Code's running total by is the lifetime it charged: the conversation's from then
+  on, with that turn's unnamed writes priced again at it. Under managed rates, which list
+  prices cannot match, nothing is read from a turn's total.
 - **The cost of a cold cache** is the context's tokens at the cache write rate, less the
   opening other sessions keep cached: the system prompt and tool definitions, measured as
   what a new conversation's first request reads from the cache. That opening stays cached
@@ -150,8 +156,10 @@ repository root.
   the cache-write rate, which follows the input rate, and so not the output or cache-read
   rates. A model your `rates` setting reprices is not judged, nor is a quote at your
   organisation's managed rates, and a quote is forgotten after thirty days.
-- **Cache lifetime** and where it was learned, the **shared opening**, the **keep-alive**,
-  **baseline**, **rates** and **models without a rate**.
+- **Cache lifetime** and where it was learned (named by the session's own requests, reported
+  at a model switch, read from the pricing of a turn, or carried over from earlier
+  sessions), the **shared opening**, the **keep-alive**, **baseline**, **rates** and
+  **models without a rate**.
 - **Breakdown**: whether the category breakdown accounts for this month's total. The two
   are reached separately, the total from Claude Code's running figure and the breakdown from
   each request's tokens at the mod's prices, so they agree only while the prices, the cache
@@ -183,7 +191,7 @@ Set in `/config` under `cost-ledger`.
 | `billing` | `api` | `subscription` labels figures as API-equivalent and adds the 5-hour and 7-day rate-limit percentages |
 | `statusLine`, `band` | on | Show the summary in the status line and in the band |
 | `rates` | empty | JSON of USD per million tokens by model family, overriding list prices for some or all fields, for example `{"opus-5-5": {"input": 4, "output": 20, "cacheRead": 0.2, "cacheWrite5m": 5, "cacheWrite1h": 8}}`. A family matches any model id that contains it and does not continue with another version number, so Bedrock ids such as `us.anthropic.claude-opus-5-5-v1:0` resolve. A family with no list price needs `input`, `output` and `cacheRead`. A `longPrompt` object inside a family overrides, field by field in the same way, the rates for requests whose prompt is longer than its `above` tokens: `{"haiku-5-5": {"longPrompt": {"input": 0.55}}}` changes Haiku 5.5's rate past 100,000 tokens, and `{"sonnet-4-5": {"longPrompt": {"above": 200000, "input": 6, "output": 22.5, "cacheRead": 0.6}}}` gives a model a long-prompt rate it does not list |
-| `cacheTtl` | `auto` | The conversation's prompt-cache lifetime, used for the countdown, the idle warning, the keep-alive and the pricing of its writes (a subagent's are always priced at five minutes). `auto` learns it per session from Claude Code's pricing of each turn or from a model switch; until then it uses what earlier sessions of the same kind learned, or 5 minutes |
+| `cacheTtl` | `auto` | The conversation's prompt-cache lifetime, used for the countdown, the idle warning, the keep-alive and the pricing of those of its writes that no response named a lifetime for (a write a response did name is priced as named, and a subagent's unnamed writes at five minutes). `auto` learns it per session from what its requests name, from a model switch or from Claude Code's pricing of a turn; until then it uses what earlier sessions of the same kind learned, or 5 minutes |
 | `keepAlive` | `off` | `on` keeps the prompt cache warm while the session is idle (see above) |
 | `keepAliveMaxIdleMinutes` | 180 | Stop pinging once the session has had no prompt for this long |
 | `keepAliveMinContextTokens` | 20000 | Send no pings while the context is smaller than this |
@@ -221,10 +229,15 @@ totals do not depend on any of this.
   session ends; a process that is killed outright loses it.
 - The keep-alive's timer lives in the running process: a computer that sleeps, a closed
   terminal or a reload of the mod drops it until the next turn arms it again.
-- A turn in which a subagent made a request teaches nothing about the cache lifetime, and
-  neither does one whose interval holds other spend the mod cannot see or that was priced at
-  managed rates: what it moved the running total by is not the conversation's requests alone.
-  Such a turn's cache writes stay priced at the lifetime assumed while it ran.
+- Where responses name no lifetime for their cache writes, the lifetime is read from what a
+  turn moved the running total by, and some turns say nothing: one in which a subagent made
+  a request, one whose interval holds other spend the mod cannot see, and one priced at
+  managed rates. What such a turn moved the total by is not the conversation's requests
+  alone, and its unnamed cache writes stay priced at the lifetime assumed while it ran.
+- A request that wrote to both caches, or named a lifetime for only part of what it wrote,
+  is priced as far as it names and does not change the lifetime the conversation is taken
+  to be on. No such request has been seen; in the session this was checked against, every
+  response named one lifetime for all it wrote.
 - Fast mode costs twice the standard rates, and a request does not say which speed it ran
   at, so the category breakdown prices a fast-mode request at the standard rates and shows
   about half of what it cost. The totals are not affected.
