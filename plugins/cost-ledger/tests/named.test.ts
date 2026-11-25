@@ -58,13 +58,28 @@ test('what a naming response leaves unnamed is priced at five minutes, as Claude
   expect(micro(priceUsage(named(20_000, 30_000, 50_000), OPUS, '1h').usd.cacheWrite)).toBe(100_000 + 240_000 + 250_000)
 })
 
-test('counts that are no counts are read as naming nothing', async () => {
+test('a count that is no number is read as naming nothing', async () => {
   const odd = { ...usage(0, 100_000), ephemeral_5m_input_tokens: Number.NaN, ephemeral_1h_input_tokens: 100_000 }
-  const over = { ...usage(0, 100_000), ephemeral_5m_input_tokens: 80_000, ephemeral_1h_input_tokens: 80_000 }
+  const half = { ...usage(0, 100_000), ephemeral_1h_input_tokens: 100_000 }
 
-  expect(micro(priceUsage(odd, OPUS, '5m').usd.cacheWrite)).toBe(500_000)
-  // More named than written: the hour's share first, the rest of the whole at five minutes.
+  // Priced at whichever lifetime is assumed, as a response with no counts is.
+  for (const unnamed of [odd, half]) {
+    expect(micro(priceUsage(unnamed, OPUS, '5m').usd.cacheWrite)).toBe(500_000)
+    expect(micro(priceUsage(unnamed, OPUS, '1h').usd.cacheWrite)).toBe(800_000)
+    expect(namedLifetime(unnamed)).toBeUndefined()
+  }
+})
+
+test('counts that come to more than was written are held to what was written, and tell no lifetime', async () => {
+  const over = { ...usage(0, 100_000), ephemeral_5m_input_tokens: 80_000, ephemeral_1h_input_tokens: 80_000 }
+  const overAtFive = { ...usage(0, 100_000), ephemeral_5m_input_tokens: 100_000, ephemeral_1h_input_tokens: 20_000 }
+
+  // The hour's share first, the rest of the whole at five minutes.
   expect(micro(priceUsage(over, OPUS, '5m').usd.cacheWrite)).toBe(640_000 + 100_000)
+  expect(micro(priceUsage(overAtFive, OPUS, '5m').usd.cacheWrite)).toBe(160_000 + 400_000)
+  // Part of it is priced at the hour, so it does not show five minutes.
+  expect(namedLifetime(over)).toBeUndefined()
+  expect(namedLifetime(overAtFive)).toBeUndefined()
 })
 
 test('a request tells the lifetime only when all it wrote was named for the one', async () => {
@@ -184,7 +199,7 @@ test('/costs doctor says the lifetime came from what the requests named', async 
 })
 
 test('when a turn shows its unnamed writes at the other lifetime, only those are priced again', async ($, on) => {
-  const { session, storedWrites } = sessionEngine(on, [named(100_000, 0), usage(0, 100_000)])
+  const { session, storedWrites, store } = sessionEngine(on, [named(100_000, 0), usage(0, 100_000)])
   await $.session.measure(measure(0))
 
   // The first request names five minutes: $0.50, and known. The second names
@@ -197,4 +212,57 @@ test('when a turn shows its unnamed writes at the other lifetime, only those are
   await $.turn.complete(complete('t1'))
 
   expect(storedWrites()).toBe(1_300_000)
+  // What the first request named stands: a turn's total does not overrule it.
+  expect(store.get('learnedCacheTtl')).toBe('5m')
+  expect(await costs($, 'keepalive on')).toMatch(/cache lifetime 5m\.\n.*Next ping in 5 min/s)
+})
+
+test('an unnamed write priced at a lifetime named earlier in its turn is put right, and the lifetime stays', async ($, on) => {
+  const { session, storedWrites, store } = sessionEngine(on, [named(0, 100_000), usage(0, 100_000)])
+  await $.session.measure(measure(0))
+
+  // The first request names the hour: $0.80. The second names nothing and is
+  // priced at the hour too, but the total shows it at five minutes: $0.50.
+  await $.turn.start({ turnId: 't1', text: 'read the billing module' })
+  await runStep($, 't1')
+  await runStep($, 't1')
+  session.usd += 0.8 + 0.5
+  await $.turn.complete(complete('t1'))
+
+  expect(storedWrites()).toBe(1_300_000)
+  expect(store.get('learnedCacheTtl')).toBe('1h')
+})
+
+test('the keep-alive pings at nine tenths of the lifetime a request named', async ($, on) => {
+  sessionEngine(on, [named(0, 100_000)])
+  await $.session.measure(measure(0))
+
+  await runStep($, 't1')
+
+  expect(await costs($, 'keepalive on')).toMatch(/cache lifetime 1h\.\nNext ping in 54 min/)
+})
+
+test('a headless session keeps the lifetime its requests named apart from an interactive one', async ($, on) => {
+  const { store } = sessionEngine(on, [named(0, 100_000)])
+  on('command.register', (_$, e) => ({ value: { command: e.name } }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  await $.session.start({ cwd: 'C:/work/billing-api', surface: null, isInteractive: false })
+
+  await runStep($, 't1')
+
+  expect(store.get('learnedCacheTtlHeadless')).toBe('1h')
+  expect(store.get('learnedCacheTtl')).toBeUndefined()
+})
+
+test('a tool result written by a request that wrote to both caches is charged the rate the two came to', async ($, on) => {
+  sessionEngine(on, [named(50_000, 50_000)])
+  on('tool.call', () => ({ result: 'file', text: 'x'.repeat(400_000) }))
+  await $.session.measure(measure(1))
+
+  await $.tool.call({ tool: 'Read', file_path: 'big.ts' })
+  await runStep($, 't1')
+
+  // Half at $5 a million and half at $8: $6.50 a million over its 100k tokens.
+  const ui = await $.ui.mount(PANE)
+  expect(await ui.find({ text: /^Read\s+1\s+100k\s+\$0\.65\s+\$0\.00$/ })).toBeDefined()
 })
