@@ -83,9 +83,9 @@ All warnings are informational: nothing is ever blocked.
   minutes, as Claude Code's own total prices it.
 - **The cache lifetime** of the conversation, which the countdown, the idle warning and the
   keep-alive run on, is the one a request of its own names for all it wrote. A model
-  switch's report also sets it. A subagent's requests write to the five-minute cache
-  whatever the conversation is on, so they are priced as they name and teach the
-  conversation nothing. Each session keeps the lifetime its own requests showed, since
+  switch's report also sets it. A subagent's requests have been seen to write to the
+  five-minute cache whatever the conversation is on, so they are priced as they name, at
+  five minutes where they name nothing, and teach the conversation nothing. Each session keeps the lifetime its own requests showed, since
   Claude Code picks it by the kind of session and can change it part-way (a subscription
   that runs into overage drops to five minutes). Until a session has seen its own, it starts
   from what earlier sessions of its kind last learned, interactive sessions and headless
@@ -95,9 +95,11 @@ All warnings are informational: nothing is ever blocked.
   pricing. The request's writes are priced at the lifetime believed then, a subagent's at
   five minutes. After each turn, the turn's requests are priced at list rates with their
   unnamed writes at five minutes and at one hour, and whichever matches what the turn moved
-  Claude Code's running total by is the lifetime it charged: the conversation's from then
-  on, with that turn's unnamed writes priced again at it. Under managed rates, which list
-  prices cannot match, nothing is read from a turn's total.
+  Claude Code's running total by is the lifetime it charged. That turn's unnamed writes are
+  priced again at it, and it is the conversation's from then on unless a request of the turn
+  named one, which stands. The per-tool figures under what filled the context are not priced
+  again. Under managed rates, which list prices cannot match, nothing is read from a turn's
+  total.
 - **The cost of a cold cache** is the context's tokens at the cache write rate, less the
   opening other sessions keep cached: the system prompt and tool definitions, measured as
   what a new conversation's first request reads from the cache. That opening stays cached
