@@ -2,15 +2,15 @@
 // calls so it can be tested directly. The numbers behind each rule are in
 // tests/cost-ledger-probe/README.md.
 
-import { writeRate } from './pricing'
+import { namedWrites, writeRate, writeUsd } from './pricing'
 import type { CacheTtl, Rates, Usage } from './pricing'
 
 export const TTL_MS: Record<CacheTtl, number> = { '5m': 5 * 60_000, '1h': 60 * 60_000 }
 
 // A subagent's requests write to the five-minute cache whatever lifetime the
 // conversation that spawned it is on. Each API response says which cache its
-// written tokens went to (usage.cache_creation), which is where this was
-// observed; a request as the mod sees it carries only the total.
+// written tokens went to, which is where this was observed. It is what a
+// subagent's writes are priced at where its request does not name them.
 export const SUBAGENT_TTL: CacheTtl = '5m'
 
 // Below this many tokens written, a turn's other charges swamp the write and
@@ -19,26 +19,32 @@ const MIN_WRITE_FOR_TTL = 1_000
 
 export type PricedRequest = { usage: Usage; rates: Rates }
 
-// Which cache lifetime Claude Code charged a turn at: its requests priced with
-// five-minute and with one-hour writes, set against what its running total
-// moved. Undefined when the turn wrote too little to tell, when neither adds
-// up (a background request landing in the same interval, managed rates), and
-// when both do: in a long turn the writes can be so small a part of the cost
-// that the two totals fall within each other's tolerance.
+// Which cache lifetime Claude Code charged a turn's unnamed writes at: its
+// requests priced with those writes at five minutes and at one hour, set
+// against what its running total moved. Writes a request names the lifetime
+// of are known and count the same either way. Undefined when the turn left
+// too little unnamed to tell, when neither adds up (a background request
+// landing in the same interval, managed rates), and when both do: in a long
+// turn the writes can be so small a part of the cost that the two totals fall
+// within each other's tolerance.
 export function impliedTtl(deltaUsd: number, requests: readonly PricedRequest[]): CacheTtl | undefined {
   let base = 0
   let write5m = 0
   let write1h = 0
-  let written = 0
+  let unnamed = 0
   for (const { usage, rates } of requests) {
     base +=
       (usage.input_tokens * rates.input + usage.cache_read_input_tokens * rates.cacheRead + usage.output_tokens * rates.output) /
       1e6
+    if (namedWrites(usage) !== undefined) {
+      base += writeUsd(usage, rates, '5m')
+      continue
+    }
     write5m += (usage.cache_creation_input_tokens * rates.cacheWrite5m) / 1e6
     write1h += (usage.cache_creation_input_tokens * rates.cacheWrite1h) / 1e6
-    written += usage.cache_creation_input_tokens
+    unnamed += usage.cache_creation_input_tokens
   }
-  if (written < MIN_WRITE_FOR_TTL) return undefined
+  if (unnamed < MIN_WRITE_FOR_TTL) return undefined
   const near = (priced: number) => Math.abs(deltaUsd - priced) <= Math.max(0.0005, priced * 0.02)
   const is1h = near(base + write1h)
   const is5m = near(base + write5m)
@@ -46,8 +52,9 @@ export function impliedTtl(deltaUsd: number, requests: readonly PricedRequest[])
   return is1h ? '1h' : '5m'
 }
 
-// A cache write as the breakdown recorded it: the tokens, the rates it was
-// priced at and the lifetime believed at the time.
+// A cache write the breakdown priced by belief: the tokens, the rates it was
+// priced at and the lifetime believed at the time. A write whose response
+// named its lifetime is not one of these: there is nothing to put right.
 export type PricedWrite = { tokens: number; rates: Rates; ttl: CacheTtl }
 
 // What pricing those writes at the lifetime they turned out to be charged at

@@ -50,14 +50,17 @@ import {
   CATEGORIES,
   emptyBreakdown,
   hitRate,
+  namedLifetime,
+  namedWrites,
   priceUsage,
   promptTokens,
   ratesFor,
   totalUsd,
   writeRate,
+  writeUsd,
 } from './pricing'
 import { writeQuote } from './pricecheck'
-import type { CacheTtl, Usage } from './pricing'
+import type { CacheTtl, Rates, Usage } from './pricing'
 import { checkPing, coldEstimate, impliedTtl, pingDelay, pingHit, repricedWrites, SUBAGENT_TTL, TTL_MS } from './keepalive'
 import type { ColdEstimate, PricedRequest, PricedWrite } from './keepalive'
 import { runDoctor } from './doctor'
@@ -232,12 +235,27 @@ async function recordSpend($: EngineInterface, usd: number) {
 
 type Step = { turnId: string; agentId?: string; startedAt: number }
 
+// The rate per million tokens a request's tool results are charged their
+// write at: what the request's writes came to a token where it named their
+// lifetime, else the rate of the lifetime believed.
+function toolWriteRate(usage: Usage, rates: Rates | undefined, ttl: CacheTtl): number {
+  if (rates === undefined) return 0
+  const written = usage.cache_creation_input_tokens
+  if (namedWrites(usage) === undefined || written <= 0) return writeRate(rates, ttl)
+  return (writeUsd(usage, rates, ttl) / written) * 1_000_000
+}
+
 async function recordStep($: EngineInterface, settings: Settings, usage: Usage & { model: string }, step: Step) {
   const isMainThread = step.agentId === undefined
   const ttl = isMainThread ? await cacheTtl($, settings) : SUBAGENT_TTL
   const rates = ratesFor(settings.table, usage.model, promptTokens(usage))
   const priced = priceUsage(usage, rates, ttl)
   if (rates === undefined) await noteUnpricedModel($, usage.model)
+  // The conversation's own request naming one lifetime for all it wrote is
+  // the plainest word there is on which cache it is on. A lifetime the
+  // cacheTtl setting names is the user's to decide and stays.
+  const shown = isMainThread && !isTtlSet(settings) ? namedLifetime(usage) : undefined
+  if (shown !== undefined && (await read($, learnedTtl))?.ttl !== shown) await noteTtl($, { ttl: shown, from: 'usage' })
 
   // A turn is measured by the conversation's own requests. A subagent's
   // request landing in it moves Claude Code's total by an amount those do not
@@ -249,7 +267,8 @@ async function recordStep($: EngineInterface, settings: Settings, usage: Usage &
     if (!isMainThread || listRates === undefined) measured.isSpoiled = true
     else {
       measured.requests.push({ usage, rates: listRates })
-      if (rates !== undefined) measured.writes.push({ tokens: usage.cache_creation_input_tokens, rates, ttl })
+      // Only a write priced by belief can turn out to have been priced wrong.
+      if (rates !== undefined && namedWrites(usage) === undefined) measured.writes.push({ tokens: usage.cache_creation_input_tokens, rates, ttl })
     }
   }
 
@@ -258,7 +277,7 @@ async function recordStep($: EngineInterface, settings: Settings, usage: Usage &
   const charged = chargeStep(
     loopsNow[loopId] ?? emptyLoop(),
     (rates?.cacheRead ?? 0) / 1_000_000,
-    (rates ? writeRate(rates, ttl) : 0) / 1_000_000,
+    toolWriteRate(usage, rates, ttl) / 1_000_000,
   )
   await update($, loops, all => ({ ...all, [loopId]: charged.loop }))
   const toolCosts = chargesAsUse(charged.charges)

@@ -14,11 +14,16 @@ export type RateCards = { base: Rates; longPrompt?: { above: number; rates: Rate
 
 export type CacheTtl = '5m' | '1h'
 
+// A request's token counts. The two ephemeral counts are the part of its cache
+// writes made for five minutes and for an hour, where the response named the
+// lifetime: both present or neither.
 export type Usage = {
   input_tokens: number
   output_tokens: number
   cache_read_input_tokens: number
   cache_creation_input_tokens: number
+  ephemeral_5m_input_tokens?: number
+  ephemeral_1h_input_tokens?: number
 }
 
 export const CATEGORIES: readonly Category[] = ['input', 'output', 'cacheRead', 'cacheWrite']
@@ -180,6 +185,39 @@ export function writeRate(rates: Rates, ttl: CacheTtl): number {
   return ttl === '1h' ? rates.cacheWrite1h : rates.cacheWrite5m
 }
 
+export type WritesByLifetime = Record<CacheTtl, number>
+
+const isCount = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0
+
+// A request's cache writes by the lifetime its response named for them, or
+// undefined where it named none: an older Claude Code, which did not pass the
+// counts on, or a provider that does not report them. What a naming response
+// leaves unnamed goes with the five minutes, which is how Claude Code's own
+// total prices it. The two never come to more than was written.
+export function namedWrites(usage: Usage): WritesByLifetime | undefined {
+  if (!isCount(usage.ephemeral_5m_input_tokens) || !isCount(usage.ephemeral_1h_input_tokens)) return undefined
+  const oneHour = Math.min(usage.ephemeral_1h_input_tokens, usage.cache_creation_input_tokens)
+  return { '1h': oneHour, '5m': usage.cache_creation_input_tokens - oneHour }
+}
+
+// The lifetime a request shows its conversation to be on: the one all of its
+// writes were named for. A request that wrote for both, or left some of what
+// it wrote unnamed, or wrote nothing, shows none.
+export function namedLifetime(usage: Usage): CacheTtl | undefined {
+  const written = usage.cache_creation_input_tokens
+  if (namedWrites(usage) === undefined || written <= 0) return undefined
+  if (usage.ephemeral_1h_input_tokens === written) return '1h'
+  return usage.ephemeral_5m_input_tokens === written ? '5m' : undefined
+}
+
+// What a request's cache writes cost: as named where the response named their
+// lifetime, else all at the lifetime the conversation is believed to be on.
+export function writeUsd(usage: Usage, rates: Rates, ttl: CacheTtl): number {
+  const named = namedWrites(usage)
+  if (named === undefined) return (usage.cache_creation_input_tokens * writeRate(rates, ttl)) / 1_000_000
+  return (named['5m'] * rates.cacheWrite5m + named['1h'] * rates.cacheWrite1h) / 1_000_000
+}
+
 export function emptyBreakdown(): Breakdown {
   return {
     tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -206,7 +244,7 @@ export function priceUsage(usage: Usage, rates: Rates | undefined, ttl: CacheTtl
       input: tokens.input * perToken(rates.input),
       output: tokens.output * perToken(rates.output),
       cacheRead: tokens.cacheRead * perToken(rates.cacheRead),
-      cacheWrite: tokens.cacheWrite * perToken(writeRate(rates, ttl)),
+      cacheWrite: writeUsd(usage, rates, ttl),
     },
     unpricedTokens: 0,
   }

@@ -14,6 +14,11 @@ import type { Settings } from './settings'
 import { forget, ledgerEntries, LEARNED_PRICING_KEY, remember, SESSION_PREFIX, SHARED_PREFIX_KEY, STORE_LIMIT_BYTES, UNPRICED_MODELS_KEY, WRITE_QUOTES_KEY } from './store'
 
 const PROBE_KEY = 'doctorProbe'
+const LEARNED_FROM: Record<LearnedTtl['from'], string> = {
+  'claude-code': 'reported by Claude Code',
+  usage: "named by its requests' cache writes",
+  pricing: "from Claude Code's pricing of a turn",
+}
 
 const localStamp = (ms: number) => {
   const d = new Date(ms)
@@ -168,7 +173,7 @@ export async function runDoctor($: EngineInterface, settings: Settings, session:
   const kind = session.isHeadless ? 'headless' : 'interactive'
   const learned =
     own !== null
-      ? `this session: ${own.ttl}, ${own.from === 'pricing' ? "from Claude Code's pricing of a turn" : 'reported by Claude Code'}`
+      ? `this session: ${own.ttl}, ${LEARNED_FROM[own.from]}`
       : stored === '5m' || stored === '1h'
         ? `not learned in this session yet; earlier ${kind} sessions: ${stored}`
         : 'not learned yet'
