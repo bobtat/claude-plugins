@@ -108,6 +108,12 @@ one row per unique record from this source, with `query_id` listing every string
 returned it, and `pre_screen` left as `kept`. Deduplication *across* sources happens at
 merge, not here.
 
+Give each record a `record_id` of **letters, digits, hyphens and underscores only**:
+your source prefix and the identifier with every other character turned into a hyphen
+(`ax-2609-29647`, `pm-40000001`), prefixed with the pass in a snowballing iteration
+(`s1-ax-2609-29647`). Never a dot or a slash — the ID becomes a file name, and the
+scripts refuse one that cannot.
+
 An abstracts file for the same records, keyed by `record_id`, wherever the route gave
 you one.
 

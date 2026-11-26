@@ -122,7 +122,9 @@ The check works only because of three rules upstream of it:
    title is matched against the record. Every agent reads that file and none fetches its
    own copy, so the check compares against the text that was actually read. A part
    fetched later — an appendix, a supplement — is saved as
-   `fulltext/<record_id>.<part>.txt` and counts as the same record's text.
+   `fulltext/<record_id>.<part>.txt` and counts as the same record's text. The first
+   dot ends the record ID, so an ID contains none: letters, digits, hyphens and
+   underscores only.
 2. **A quotation is copied, never reconstructed.** Double quotation marks mean these
    words, in this order, are in this paper. Shortening uses `...`; a paraphrase carries
    no quotation marks.

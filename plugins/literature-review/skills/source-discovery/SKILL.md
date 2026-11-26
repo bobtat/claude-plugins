@@ -58,6 +58,14 @@ draw different flow diagrams.
 record_id,source_type,source_db,query_id,iteration,doi,arxiv_id,pmid,openalex_id,title,authors,year,venue,retrieved_date,pre_screen,duplicate_of
 ```
 
+- `record_id` — unique across the whole review, and **letters, digits, hyphens and
+  underscores only**. Use a short source prefix and the record's identifier with every
+  other character turned into a hyphen: arXiv `2609.29647` → `ax-2609-29647`, PMID
+  `40000001` → `pm-40000001`, or a counter where there is no identifier (`oa-0007`).
+  A snowballing pass adds its iteration (`s1-ax-2609-29647`), because a work found
+  again is a new row. The ID becomes a file name, `fulltext/<record_id>.txt`, where a
+  dot separates a record from its supplement — so `ax-2609.29647` would be read as a
+  part of `ax-2609`. The scripts refuse an ID outside this form.
 - `source_type` — `database`, `register`, or `other`. Snowballing is `other`.
 - `query_id` — **every** string that returned the record, semicolon-separated, in
   protocol order (`ax-1;ax-4`). The first is the one credited for any cap allocation.
@@ -72,7 +80,7 @@ Title/abstract screening needs abstracts, and `records.csv` has no column for th
 Write them to **`abstracts.json`**, an object keyed by `record_id`:
 
 ```json
-{"ax-2609.29647": "Memory poisoning and decomposition attacks distribute…"}
+{"ax-2609-29647": "Memory poisoning and decomposition attacks distribute…"}
 ```
 
 The arXiv result page already carries each full abstract, and PubMed's `efetch` returns
