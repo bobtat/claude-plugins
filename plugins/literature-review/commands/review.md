@@ -76,6 +76,11 @@ the session outlives it. In print mode (`claude -p`) the session ends with the l
 turn, and its background work is stopped. The first end-to-end run of this pipeline
 was cut off partway through this way.
 
+**Asking for the foreground does not guarantee it.** In the second end-to-end run the
+harness launched 53 of 111 agents in the background although every one was requested in
+the foreground. When a launch comes back as started rather than finished, wait for that
+agent's result before going on, and never end the run with one outstanding.
+
 ### When no one can answer a gate
 
 In print mode, or wherever `AskUserQuestion` is unavailable, a gate cannot be put to
@@ -103,16 +108,18 @@ proceed through gates, stop.
 
 ### Long headless runs
 
-A headless run of this command takes hours. In print mode, Claude Code stops
-background tasks still running after the last turn once a time ceiling passes, unless
-told to wait indefinitely:
+A headless run of this command is long. The one measured run took 89 minutes and
+cost about $87 for a deliberately small review: 115 records screened, 52 studies
+appraised. A larger review takes longer. In print mode, Claude Code stops background
+tasks still running after the last turn once a time ceiling passes, unless told to
+wait indefinitely:
 
 ```
 CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 claude -p "/literature-review:review <question> --output <dir> --unattended"
 ```
 
-Foreground agents avoid the problem for this command's own work. Set the variable
-anyway, because a tool or a skill may still start a background task.
+Set the variable for every headless run. Foreground agents are requested, not
+guaranteed, and a tool or a skill may start a background task of its own.
 
 ---
 
