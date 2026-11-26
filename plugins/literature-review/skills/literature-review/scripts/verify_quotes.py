@@ -13,6 +13,7 @@ Verdicts per quotation:
   TRANSPLANT   absent from the attributed record but present in ANOTHER record's
                text — real words attached to the wrong paper
   UNCHECKABLE  no saved full text for the attributed record
+  OWN WORDS    not in the attributed record, but in a file named with --own
 
 Exits 1 if anything is not VERIFIED (use --allow-uncheckable to tolerate missing
 texts), 2 on bad input. A check that silently covered nothing must not pass.
@@ -20,6 +21,10 @@ texts), 2 on bad input. A check that silently covered nothing must not pass.
 Records are found from a record_id column, from a study_id column expanded with
 --map (a CSV with study_id and semicolon-separated report_ids), or in Markdown
 from a line such as "- Records: R09, R10".
+
+--own names files of the review's own wording (protocol.md, a brief). A quoted
+passage found in one of them is the review quoting itself, not a paper, and is
+counted as OWN WORDS rather than checked against the papers.
 
 A record's text is fulltext/<record_id>.txt plus any fulltext/<record_id>.<part>.txt
 (a supplement or appendix saved later). A support_quote column is a quotation in
@@ -33,8 +38,11 @@ as bad input rather than checked against the wrong text.
 import argparse, csv, glob, os, re, sys, unicodedata
 
 QUOTE_RES = [
-    re.compile(r'"([^"\n]{3,}?)"'),                 # straight double
-    re.compile(r'“([^”\n]{3,}?)”'),  # curly double
+    # Every pair is matched, however short, so the marks stay paired: skipping a
+    # short one ("A") would pair its closing mark with the next opening mark, check
+    # the words between two quotations, and miss the quotation that follows.
+    re.compile(r'"([^"\n]*)"'),                     # straight double
+    re.compile(r'“([^”\n]*)”'),      # curly double
     # single quotes only when they cannot be an apostrophe: opened after
     # start/space/punctuation and closed before space/punctuation/end
     re.compile(r"(?:(?<=^)|(?<=[\s(\[:]))'([^'\n]{8,}?)'(?=[\s.,;:)\]]|$)"),
@@ -141,13 +149,16 @@ def items_from(path, smap, min_words):
                 yield f"{path}:{i}", ids, q
 
 
-def judge(ids, quote, texts, min_words):
+def judge(ids, quote, texts, min_words, own=()):
     frags = fragments(quote, min_words)
     have = [i for i in ids if i in texts]
-    if not have:
-        return "UNCHECKABLE", ""
     if any(all(f in texts[i] for f in frags) for i in have):
         return "VERIFIED", ""
+    for name, t in own:
+        if all(f in t for f in frags):
+            return "OWN WORDS", "in " + name
+    if not have:
+        return "UNCHECKABLE", ""
     elsewhere = [k for k, t in texts.items() if k not in ids and all(f in t for f in frags)]
     if elsewhere:
         return "TRANSPLANT", "found in " + ", ".join(sorted(elsewhere))
@@ -160,17 +171,24 @@ def main():
     ap.add_argument("--fulltext", required=True, help="directory of <record_id>.txt files")
     ap.add_argument("--map", help="CSV mapping study_id to report_ids (e.g. extraction.csv)")
     ap.add_argument("--min-words", type=int, default=4, help="ignore quotations shorter than this")
+    ap.add_argument("--own", action="append", default=[], metavar="FILE",
+                    help="a file of the review's own wording, such as protocol.md; repeatable")
     ap.add_argument("--allow-uncheckable", action="store_true")
     ap.add_argument("--report", help="also write a Markdown report here")
     a = ap.parse_args()
 
-    rows, counts = [], {"VERIFIED": 0, "NOT FOUND": 0, "TRANSPLANT": 0, "UNCHECKABLE": 0}
+    rows = []
+    counts = {"VERIFIED": 0, "NOT FOUND": 0, "TRANSPLANT": 0, "UNCHECKABLE": 0, "OWN WORDS": 0}
     try:
         texts = load_texts(a.fulltext)
         smap = load_map(a.map)
+        own = []
+        for p in a.own:
+            with open(p, encoding="utf-8", errors="replace") as f:
+                own.append((os.path.basename(p), normalize(f.read())))
         for path in a.files:
             for loc, ids, q in items_from(path, smap, a.min_words):
-                v, note = judge(ids, q, texts, a.min_words)
+                v, note = judge(ids, q, texts, a.min_words, own)
                 counts[v] += 1
                 rows.append((v, loc, ";".join(ids), q, note))
     except (ValueError, KeyError, OSError) as e:
@@ -178,18 +196,19 @@ def main():
         return 2
 
     for v, loc, ids, q, note in rows:
-        if v != "VERIFIED":
+        if v not in ("VERIFIED", "OWN WORDS"):
             short = q if len(q) <= 90 else q[:87] + "..."
             print(f"{v:11}  {ids:14}  \"{short}\"  {note}  ({loc})")
+    shown = [(k, v) for k, v in counts.items() if k != "OWN WORDS" or a.own]
     print(f"\n{len(rows)} quotations checked against {len(texts)} saved texts: " +
-          ", ".join(f"{k.lower()} {v}" for k, v in counts.items()))
+          ", ".join(f"{k.lower()} {v}" for k, v in shown))
 
     if a.report:
         with open(a.report, "w", encoding="utf-8") as f:
             f.write("# Quote verification\n\n| Verdict | Records | Quotation | Note | Where |\n|---|---|---|---|---|\n")
             for v, loc, ids, q, note in rows:
                 f.write(f"| {v} | {ids} | {q.replace('|', '/')} | {note} | `{loc}` |\n")
-            f.write(f"\n{len(rows)} quotations; " + ", ".join(f"{k.lower()} {v}" for k, v in counts.items()) + ".\n")
+            f.write(f"\n{len(rows)} quotations; " + ", ".join(f"{k.lower()} {v}" for k, v in shown) + ".\n")
 
     bad = counts["NOT FOUND"] + counts["TRANSPLANT"] + (0 if a.allow_uncheckable else counts["UNCHECKABLE"])
     return 1 if bad else 0
