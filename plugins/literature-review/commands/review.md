@@ -173,9 +173,10 @@ pre-authorized decision. Re-run `screening_stats.py` if they change anything.
 ## Phase 4 — Appraisal
 
 Load `literature-review:source-appraisal`. One `literature-review:paper-reader` per
-study, in parallel, each starting from the texts in `fulltext/`. Check each reader's
-quotations before merging its rows into `rob.csv` and `extraction.csv`; a study that
-fails gets a fresh reader.
+study, in parallel, each starting from the texts in `fulltext/`. Each reader checks its
+own draft once and keeps that report in `checks/readers/`. Check what it returns before
+merging its rows into `rob.csv` and `extraction.csv`; a study that fails your check, or
+whose first check shows another paper's words, gets a fresh reader.
 
 A reader reporting that a study looks ineligible goes back to the user — excluding it here
 would make the flow diagram wrong.

@@ -20,7 +20,8 @@ others are what make item 27 (availability of data and materials) answerable.
 ├── screening.csv            per record: both screeners, criterion, adjudication
 ├── prisma-flow.json         flow counts and κ, derived from the two CSVs by script
 ├── appraisals/<study_id>.md one per included study; rejected/ holds replaced ones
-├── checks/                  quote-check reports from screening and appraisal
+├── checks/                  quote-check reports from screening and appraisal;
+│                            readers/ holds each reader's check of its own first draft
 ├── rob.csv                  risk-of-bias judgments, one row per study per domain
 ├── extraction.csv           study characteristics and data items, one row per study
 ├── figures/*.svg            one per figure in the budget
@@ -94,7 +95,12 @@ Every quotation in the screening and appraisal files was checked by script again
 the saved full text of the paper it is attributed to: <N> checked, <N> verified.
 <N> screening batches and <N> appraisals failed the check and were redone by a fresh
 agent; the discarded files are kept in `screening/rejected/` and
-`appraisals/rejected/`. κ is computed on the redone decisions. The check confirms
+`appraisals/rejected/`. κ is computed on the redone decisions.
+
+Appraisal readers checked their own drafts before returning: <N> of <N> readers had a
+failure on that first check and corrected <N> quotations between them; <N> of those
+were another paper's words, and those studies were replaced. <N> readers left no
+first-check report. The first-check reports are in `checks/readers/`. The check confirms
 that quoted words are in the paper named; it does not check paraphrase, or that a
 quotation supports the judgment it is cited for.
 

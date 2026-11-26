@@ -133,10 +133,11 @@ with a count each, and the count comes from this column.
 As each screener's file returns, **before comparing it with the other's**:
 
 ```
-python3 ${CLAUDE_SKILL_DIR}/../literature-review/scripts/verify_quotes.py --fulltext fulltext screening/ft-<batch>-s<n>.csv
+python3 ${CLAUDE_SKILL_DIR}/../literature-review/scripts/verify_quotes.py --fulltext fulltext --own protocol.md --own screening/brief.md screening/ft-<batch>-s<n>.csv
 ```
 
-It finds each quotation in the saved text of the record on its row. Any `NOT FOUND` or
+It finds each quotation in the saved text of the record on its row. `--own` keeps a
+criterion quoted from the protocol or the brief from being read as a paper's words. Any `NOT FOUND` or
 `TRANSPLANT` — real words from a different paper — fails the batch:
 
 1. **Discard that screener's whole batch**, not just the bad row. A screener that

@@ -88,14 +88,25 @@ part of a review a reader checks by eye.
 the pipeline's own reports in `checks/`:
 
 ```
-python3 ${CLAUDE_SKILL_DIR}/../literature-review/scripts/verify_quotes.py --fulltext fulltext --map extraction.csv --report audit-quotes.md screening/ft-*.csv screening/adjudication*.csv appraisals/*.md rob.csv
+python3 ${CLAUDE_SKILL_DIR}/../literature-review/scripts/verify_quotes.py --fulltext fulltext --map extraction.csv --own protocol.md --own screening/brief.md --report audit-quotes.md screening/ft-*.csv screening/adjudication*.csv appraisals/*.md rob.csv
 ```
+
+The script stops on a Markdown file that names no records. If `appraisals/` holds one
+that is not an appraisal, such as a brief, list the appraisal files without it; do not
+skip the check.
 
 Every `NOT FOUND` and `TRANSPLANT` is a high-severity finding: evidence the review
 relied on is not in the paper it names. List each, with the files that build on it —
 a transplanted risk-of-bias quote reaches `rob.csv` and from there the traffic-light
 figure. Also compare against `checks/`: a failure the pipeline reported and then
-shipped anyway is its own finding. Leave `audit-quotes.md` beside `audit.md`.
+shipped anyway is its own finding.
+
+**First checks.** `checks/readers/` holds each appraisal reader's check of its own
+draft, made before it corrected anything. Three things there are findings: a
+`TRANSPLANT` for a study that was not replaced; a passage that failed and now stands in
+the appraisal without quotation marks and with no passage supporting it; and a
+disclosure whose counts differ from these files. A study with no first-check report is
+a note, not a finding. Leave `audit-quotes.md` beside `audit.md`.
 
 ### 5. Prevalence sweep
 
