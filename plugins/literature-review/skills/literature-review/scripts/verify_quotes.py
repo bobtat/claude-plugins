@@ -24,6 +24,11 @@ from a line such as "- Records: R09, R10".
 A record's text is fulltext/<record_id>.txt plus any fulltext/<record_id>.<part>.txt
 (a supplement or appendix saved later). A support_quote column is a quotation in
 its entirety, with or without quotation marks around it.
+
+Because the first dot in a file name separates the record from the part, a record
+ID is letters, digits, hyphens and underscores only. An ID with a dot in it
+(ax-2609.29647) would be read as part "29647" of record "ax-2609", so it is refused
+as bad input rather than checked against the wrong text.
 """
 import argparse, csv, glob, os, re, sys, unicodedata
 
@@ -36,6 +41,14 @@ QUOTE_RES = [
 ]
 SPLIT_RE = re.compile(r'\s*(?:\.\.\.|…|\[\s*\.\.\.\s*\]|\[[^\]]{0,60}\])\s*')
 CITE_RE = re.compile(r'\[\d+(?:\s*[,–-]\s*\d+)*\]')
+ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]*$')
+ID_RULE = "a record ID is letters, digits, hyphens and underscores only"
+
+
+def check_ids(ids, where):
+    bad = [i for i in ids if not ID_RE.match(i)]
+    if bad:
+        raise ValueError(f"{where}: record ID {bad[0]!r} cannot be checked; {ID_RULE}")
 
 
 def normalize(s):
@@ -68,11 +81,20 @@ def quotes_in(text, min_words):
 
 
 def load_texts(d):
-    texts = {}
+    texts, whole, parts = {}, set(), {}
     for p in sorted(glob.glob(os.path.join(d, "*.txt"))):
-        rid = os.path.basename(p)[:-4].split(".")[0]   # R09.supplement.txt -> R09
+        rid, _, part = os.path.basename(p)[:-4].partition(".")   # R09.supplement.txt -> R09
+        check_ids([rid], p)
+        if part:
+            parts.setdefault(rid, p)
+        else:
+            whole.add(rid)
         with open(p, encoding="utf-8", errors="replace") as f:
             texts[rid] = (texts[rid] + " " if rid in texts else "") + normalize(f.read())
+    for rid, p in sorted(parts.items()):
+        if rid not in whole:
+            raise ValueError(f"{p}: read as a part of record {rid!r}, which has no {rid}.txt. "
+                             f"If the dot belongs to the record ID, rename it: {ID_RULE}")
     return texts
 
 
@@ -97,6 +119,7 @@ def items_from(path, smap, min_words):
                     ids = smap.get(row["study_id"].strip(), [row["study_id"].strip()])
                 else:
                     continue
+                check_ids(ids, f"{path}:{n}")
                 for col, val in row.items():
                     if col in ("record_id", "study_id") or not val:
                         continue
@@ -112,6 +135,7 @@ def items_from(path, smap, min_words):
         if not m:
             raise ValueError(f"{path}: no 'Records:' line naming the records this file quotes")
         ids = [x.strip(" `") for x in re.split(r"[;,]", m.group(1)) if x.strip(" `")]
+        check_ids(ids, path)
         for i, line in enumerate(text.splitlines(), start=1):
             for q in quotes_in(line, min_words):
                 yield f"{path}:{i}", ids, q
@@ -140,10 +164,10 @@ def main():
     ap.add_argument("--report", help="also write a Markdown report here")
     a = ap.parse_args()
 
-    texts = load_texts(a.fulltext)
-    smap = load_map(a.map)
     rows, counts = [], {"VERIFIED": 0, "NOT FOUND": 0, "TRANSPLANT": 0, "UNCHECKABLE": 0}
     try:
+        texts = load_texts(a.fulltext)
+        smap = load_map(a.map)
         for path in a.files:
             for loc, ids, q in items_from(path, smap, a.min_words):
                 v, note = judge(ids, q, texts, a.min_words)

@@ -1,0 +1,1 @@
+Memory poisoning of a retrieval store succeeded in most trials against the agent under test.

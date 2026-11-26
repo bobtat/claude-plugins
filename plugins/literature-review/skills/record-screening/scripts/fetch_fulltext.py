@@ -11,6 +11,10 @@ Routes, tested: arXiv HTML rendering (arxiv.org/html/<id>) for records with an
 arXiv ID; Europe PMC full-text XML for open-access PubMed records. A record with
 neither is logged as not retrieved by this script, for an agent to try by hand.
 
+A record ID becomes a file name, where a dot separates a record from a later
+supplement (<record_id>.<part>.txt). So an ID is letters, digits, hyphens and
+underscores only, and the script fetches nothing if one is not.
+
 Each saved text is checked against the record's title. A fetch whose text does not
 carry the title is NOT saved: getting the wrong paper is the failure this whole
 plugin is built against.
@@ -18,6 +22,7 @@ plugin is built against.
 import argparse, csv, html, json, os, re, sys, time, urllib.parse, urllib.request
 
 UA = "literature-review-plugin/0.1 (systematic review tooling)"
+ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 
 
 def get(url, timeout=40):
@@ -75,6 +80,11 @@ def main():
     ap.add_argument("--pause", type=float, default=3.0, help="seconds between arXiv requests")
     a = ap.parse_args()
 
+    bad = [i for i in a.ids if not ID_RE.match(i)]
+    if bad:
+        print(f"error: record ID {bad[0]!r} cannot name a file in {a.out}; a record ID is "
+              "letters, digits, hyphens and underscores only. Nothing fetched.", file=sys.stderr)
+        return 2
     with open(a.records, newline="", encoding="utf-8") as f:
         recs = {r["record_id"]: r for r in csv.DictReader(f)}
     os.makedirs(a.out, exist_ok=True)
