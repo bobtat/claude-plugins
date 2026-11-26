@@ -22,6 +22,7 @@ from collections import Counter, OrderedDict
 
 COL_A = {"database", "register"}
 DECISIONS = {"include", "exclude", "unsure"}
+ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 REMOVED_LABELS = {
     "duplicate": "Duplicate records removed",
     "automation_ineligible": "Records marked as ineligible by automation tools",
@@ -97,6 +98,10 @@ def validate(records, screening, labels=None):
     by_id = {r["record_id"]: r for r in records}
     if len(by_id) != len(records):
         errs.append("records.csv has duplicate record_id values")
+    for rid in by_id:
+        if not ID_RE.match(rid):
+            errs.append(f"{rid!r}: a record ID is letters, digits, hyphens and underscores only "
+                        "(it names the saved full text, where a dot marks a supplement)")
     kept = {rid for rid, r in by_id.items() if r["pre_screen"] == "kept"}
     rows = {}
     for s in screening:
