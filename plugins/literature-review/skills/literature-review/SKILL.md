@@ -157,7 +157,8 @@ choose.
   convention.
 - **`scripts/verify_quotes.py`** — checks every quotation in a review's working files
   against the saved full text of the record it is attributed to; `examples/quote-check/`
-  exercises each verdict, and `examples/dotted-id/` is the input it refuses.
+  exercises each verdict, `examples/own-words/` the `--own` option, and
+  `examples/dotted-id/` is the input it refuses.
 - **`references/search-strategy.md`** — question frameworks, Boolean block
   construction, per-database syntax, controlled vocabulary, snowballing, stopping
   rules, the logging PRISMA-S requires.

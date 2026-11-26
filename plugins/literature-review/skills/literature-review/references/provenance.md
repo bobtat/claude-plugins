@@ -115,6 +115,7 @@ text of the record it is attributed to.
 | `NOT FOUND` | In no saved text at all — invented, or reworded inside quotation marks |
 | `TRANSPLANT` | Absent from the attributed record, present in another's — real words, wrong paper |
 | `UNCHECKABLE` | The attributed record has no saved text |
+| `OWN WORDS` | Not in the attributed record, but in a file named with `--own` — the review quoting its own protocol or brief. Counted apart, and not a failure |
 
 The check works only because of three rules upstream of it:
 
@@ -137,10 +138,20 @@ nothing else. A failure **discards the whole unit**, a screener's batch or a rea
 study, and a fresh agent redoes it: the decisions made alongside a misattributed passage
 were made in the same context. Replacements are counted in the conduct disclosure.
 
+Appraisal readers are the one exception, and only in part. A reader checks its own
+draft once, saves that first report, and may correct a `NOT FOUND` before returning;
+the orchestrator then checks what it returned. A `TRANSPLANT` on the first check still
+discards the study. The exception exists because most first-check failures are a
+reader's own phrasing in quotation marks, not a misread paper, and it costs the record
+nothing as long as the first report is kept. Screeners have no shell and cannot check
+themselves, so a screening batch is replaced as before.
+
 `examples/quote-check/` exercises each verdict, a quotation split by an ellipsis, a
 supplement, and a `support_quote` cell without quotation marks. Run against it, the
 script reports twelve quotations: nine verified, and one each not found, transplanted
-and uncheckable.
+and uncheckable. `examples/own-words/`, run with `--own protocol.md`, reports three:
+one verified, one own words, one not found. It also holds a one-letter quoted code
+ahead of a quotation, which an earlier version of the script mis-paired.
 
 ### What the quote check does not do
 
