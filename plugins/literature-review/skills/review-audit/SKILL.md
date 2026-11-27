@@ -101,6 +101,21 @@ a transplanted risk-of-bias quote reaches `rob.csv` and from there the traffic-l
 figure. Also compare against `checks/`: a failure the pipeline reported and then
 shipped anyway is its own finding.
 
+**Numbers.** Re-run the trace over the finished document:
+
+```
+python3 ${CLAUDE_SKILL_DIR}/../review-synthesis/scripts/trace_numbers.py --fulltext fulltext --keys study-keys.csv --report audit-numbers.md review.md
+```
+
+A number `NOT IN SOURCE` is high severity when no included study has it, and medium when
+the report names the study it came from and the sentence fails to cite it. Read each
+`[computed: …]` it lists and redo the arithmetic.
+
+**Codes and ratings.** Re-run `appraisal_check.py` from the
+`literature-review:source-appraisal` skill over `extraction.csv` and `rob.csv`, without
+`--derive-overall`. A refusal means a figure was drawn from data the protocol does not
+allow. Then recompute one study's overall rating by hand against the rule.
+
 **Doubtful inclusions.** Count the studies `extraction.csv` marks `doubtful` and the
 `eligibility_doubt` figure in `prisma-flow.json`. If there are any, the review must
 say how many, count them in each section's evidence line, and state its main

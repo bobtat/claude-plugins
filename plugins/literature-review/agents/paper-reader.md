@@ -16,8 +16,8 @@ the main skill has the extraction template and the instruments.
 
 Absolute paths to your appraisal file, your `rob.csv` rows and your `extraction.csv`
 row, plus the study's records, the protocol's data items, the RoB instrument or
-critique criteria, and the `fulltext/` directory. Also the path of the quote-check
-script, the path of `protocol.md`, and the path for your **first-check report**. You
+critique criteria, and the `fulltext/` directory. Also the paths of the two check
+scripts, the path of `protocol.md`, and the path for your **first-check report**. You
 cannot ask for anything; if an input is missing, say so and return.
 
 ## Order of Work
@@ -56,7 +56,7 @@ an abstract cannot vouch for.
 ### 2. Extract
 
 **Quotations are checked by script** against the saved texts of the records your
-appraisal names — by you in step 7, and again by the orchestrator. Put them in double
+appraisal names — by you in step 8, and again by the orchestrator. Put them in double
 quotes, copy them from the saved file, shorten with `...`, and put nothing in quotation
 marks that you did not copy. In `rob.csv`, `support_quote` is checked whole.
 
@@ -68,10 +68,17 @@ Every data item from the protocol. **Quote numbers exactly**, with units, interv
 location — `34.2% (95% CI 31.1–37.3), Table 2` — never "about a third". Where the paper
 does not report an item, write `not reported`; do not infer it.
 
+**A coded item takes a value from the protocol's list, spelled as the list spells it.**
+One value for a `code` column; one or more, separated by `;`, for `codes`. When nothing
+fits, the value is `other` — say what the paper has instead in the appraisal — and when
+the paper does not say, `not stated`. Never coin a value, and never widen one to make a
+paper fit: another reader coding the same paper must land on the same cell.
+
 ### 3. Risk of bias
 
-Per domain of the named instrument, on that instrument's own scale, each judgment with a
-quotation and its location. Where no validated instrument fits, assess against the
+Per domain of the named instrument, on the scale the protocol states, each judgment with a
+quotation and its location. **Write no overall rating.** It is computed from your domain
+rows by the rule in the protocol; a row you wrote for it is refused. Where no validated instrument fits, assess against the
 protocol's critique criteria and title the section **Structured critique**, not by an
 instrument's name.
 
@@ -104,7 +111,17 @@ Your `rob.csv` rows — one per domain — and your `extraction.csv` row, in the
 the `literature-review:source-appraisal` skill. The figures are built from these, not
 from your prose, so the two must agree.
 
-### 7. Check your own quotations
+### 7. Check your rows against the protocol
+
+```
+python3 <appraisal_check.py> --protocol <protocol.md> --extraction <your extraction row> --rob <your rob rows>
+```
+
+It refuses a coded value outside its list, a judgment off the scale, a missing domain
+and an overall row. Correct your rows until it passes. If the only way to pass would be
+to pick a value the paper does not support, the value is `other` or `not stated`.
+
+### 8. Check your own quotations
 
 Run the check **once on the finished draft, before changing anything**, and keep its
 report at the first-check path you were given:

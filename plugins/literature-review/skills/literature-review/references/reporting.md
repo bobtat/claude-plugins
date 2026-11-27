@@ -22,11 +22,13 @@ others are what make item 27 (availability of data and materials) answerable.
 ├── appraisals/<study_id>.md one per included study; rejected/ holds replaced ones
 ├── checks/                  quote-check reports from screening and appraisal;
 │                            readers/ holds each reader's check of its own first draft
-├── rob.csv                  risk-of-bias judgments, one row per study per domain
+├── rob.csv                  risk-of-bias judgments, one row per study per domain,
+│                            plus an Overall row per study derived by script
 ├── extraction.csv           study characteristics and data items, one row per study
 ├── figures/*.svg            one per figure in the budget
 ├── review.md                the synthesis — the document people read
 ├── references.bib           verified BibTeX
+├── study-keys.csv           citation key → study → reports, for tracing numbers
 ├── prisma-checklist.md      42 rows × met / met-by-machine / requires-human
 └── conduct-disclosure.md    what a machine did, and what a person must still do
 ```
@@ -104,6 +106,11 @@ were another paper's words, and those studies were replaced. <N> readers left no
 first-check report. The first-check reports are in `checks/readers/`. The check confirms
 that quoted words are in the paper named; it does not check paraphrase, or that a
 quotation supports the judgment it is cited for.
+
+Every number credited to a study in `review.md` was traced by script to that study's
+saved text: <N> traced, <N> corrected or re-cited before the audit, <N> marked as the
+review's own arithmetic. Coded data items and risk-of-bias ratings were checked against
+the protocol's lists and scale, and each study's overall rating was derived by rule.
 
 ## What a human must still do
 - [ ] Review both approval gates, if the run was unattended — `gate-1.md`, `gate-2.md`

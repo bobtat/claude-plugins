@@ -159,6 +159,10 @@ choose.
   against the saved full text of the record it is attributed to; `examples/quote-check/`
   exercises each verdict, `examples/own-words/` the `--own` option, and
   `examples/dotted-id/` is the input it refuses.
+- **`appraisal_check.py`** and **`trace_numbers.py`**, in the appraisal and synthesis
+  skills — the first holds coded data and ratings to the protocol and derives each
+  study's overall rating; the second traces every number in the review to the saved text
+  of the study it is credited to.
 - **`references/search-strategy.md`** — question frameworks, Boolean block
   construction, per-database syntax, controlled vocabulary, snowballing, stopping
   rules, the logging PRISMA-S requires.

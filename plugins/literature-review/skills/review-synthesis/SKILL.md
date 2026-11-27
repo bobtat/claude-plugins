@@ -34,6 +34,15 @@ Spawn `literature-review:citation-verifier` over the included studies with a pat
 Write with those keys. A study whose reference did not verify is resolved before it is
 cited, not cited and fixed later.
 
+Write **`study-keys.csv`** as the keys are settled, one row per study:
+
+```csv
+citekey,study_id,report_ids
+chen2024agentpoison,S10,R09;R10
+```
+
+It is what lets a number in the review be traced to the paper it is credited to.
+
 ### 2. Build the threads
 
 Read across `appraisals/*.md` for questions **more than one study answers**. Each is a
@@ -101,6 +110,33 @@ the full text. Write "not rated — full text not retrieved for N of M studies".
 evidence does. Report gaps as absences in the included set, bounded by the search, and
 never fill one with reasoning about what the answer probably is.
 
+## Trace Every Number
+
+```
+python3 ${CLAUDE_SKILL_DIR}/scripts/trace_numbers.py --fulltext fulltext --keys study-keys.csv --report checks/number-trace.md review.md
+```
+
+Every number that shares a sentence or a table row with a citation key must appear,
+digit for digit, in the saved text of a study cited there. It checks decimals,
+percentages and integers of 100 or more; it skips small whole numbers, years, numbers
+inside names, and references such as `Table 2`.
+
+Each `NOT IN SOURCE` is resolved before the audit, one of three ways:
+
+- **The number is wrong** — a slip in copying, or a rounding. Correct it from the
+  appraisal. A review never rounds a paper's number.
+- **It belongs to a study the sentence does not cite.** The report names the studies
+  whose text has it. Cite the one it came from, in that sentence. Run on the second
+  end-to-end run's review, this was all six of its findings in 550 numbers: an original
+  paper's figure quoted beside the re-run that was being compared with it.
+- **It is the review's own arithmetic** — a difference, a count, a mean of reported
+  values. Write it as `[computed: 28.1]`, which the script skips and lists.
+
+`UNCHECKABLE` is a number credited to a study with no saved text. A tier-C study
+supports no number at all, so that is a finding too.
+
+`examples/number-trace/` exercises each verdict.
+
 ## The Checklist
 
 Write `prisma-checklist.md`: all 42 rows from `references/prisma.md`, each marked `met`,
@@ -126,6 +162,7 @@ stronger thing.
 - Every citation key in `review.md` exists in `references.bib`.
 - Every figure in the budget is placed with its caption, or its absence is explained.
 - The flow numbers in the prose match `prisma-flow.json` exactly.
+- `trace_numbers.py` reports no number `NOT IN SOURCE`.
 - If any study is `doubtful`, the sensitivity table exists and the abstract says how
   many there are.
 - The revision log exists, even if it has only the compiled date.
