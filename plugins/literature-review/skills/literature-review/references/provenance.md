@@ -30,7 +30,7 @@ findings rest on D has not been conducted; it has been recalled.
 These are mechanical. Do not deliberate.
 
 1. **Tier is assigned at the moment of reading, by the reader, and never revised
-   upward.** The `literature-review:paper-reader` agent records what it actually retrieved. A later
+   upward.** The `literature-review:study-extractor` agent records what it actually read. A later
    pass cannot promote C to A because the claim "seems solid."
 2. **An abstract is tier C, not tier B.** Reading the abstract is not reading a
    summary of the paper; it is reading the authors' summary of what they want you to
@@ -134,16 +134,16 @@ The check works only because of three rules upstream of it:
 
 Matching tolerates what extraction does to text — Unicode forms, line-break
 hyphenation, curly and straight quotes, dash variants, bracketed citation markers — and
-nothing else. A failure **discards the whole unit**, a screener's batch or a reader's
-study, and a fresh agent redoes it: the decisions made alongside a misattributed passage
+nothing else. A failure **discards the whole unit**, a screener's batch, an extraction or a
+judgment, and a fresh agent redoes it: the decisions made alongside a misattributed passage
 were made in the same context. Replacements are counted in the conduct disclosure.
 
-Appraisal readers are the one exception, and only in part. A reader checks its own
-draft once, saves that first report, and may correct a `NOT FOUND` before returning;
-the orchestrator then checks what it returned. A `TRANSPLANT` on the first check still
-discards the study. The exception exists because most first-check failures are a
-reader's own phrasing in quotation marks, not a misread paper, and it costs the record
-nothing as long as the first report is kept. Screeners have no shell and cannot check
+Appraisal agents are the one exception, and only in part. An extractor or a judge
+checks its own draft once, saves that first report, and may correct a `NOT FOUND` before
+returning; the orchestrator then checks what it returned. A `TRANSPLANT` on the first
+check still discards the work. The exception exists because most first-check failures
+are an agent's own phrasing in quotation marks, not a misread paper, and it costs the
+record nothing as long as the first report is kept. Screeners have no shell and cannot check
 themselves, so a screening batch is replaced as before.
 
 `examples/quote-check/` exercises each verdict, a quotation split by an ellipsis, a
@@ -203,7 +203,7 @@ The revision log at the head of the document records each one with a date.
 
 ## Worked Examples
 
-**Tier inflation.** A `literature-review:paper-reader` returns: *"Tier A. The paper reports 34% lower
+**Tier inflation.** A `literature-review:study-extractor` returns: *"Tier A. The paper reports 34% lower
 retrieval latency."* Its retrieval log shows it fetched the abstract page. → Tier C.
 The claim survives only as "the abstract reports 34% lower retrieval latency" and is
 flagged for a full-text read before it can be relied on.

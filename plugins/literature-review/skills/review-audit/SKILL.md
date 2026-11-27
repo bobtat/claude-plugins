@@ -122,9 +122,14 @@ say how many, count them in each section's evidence line, and state its main
 conclusions with and without them. A conclusion that rests on doubtful studies and
 does not say so is high severity; a missing sensitivity table is medium.
 
-**First checks.** `checks/readers/` holds each appraisal reader's check of its own
+**Agreement.** Re-run `appraisal_merge.py` over `appraisals/` and compare its figures
+with `appraisal-agreement.json` and with what the review reports. A rating in `rob.csv`
+that neither judge gave and no adjudication row decides is high severity. So is a
+review that reports the agreement without saying the two judges are one model.
+
+**First checks.** `checks/readers/` holds each extractor's and judge's check of its own
 draft, made before it corrected anything. Three things there are findings: a
-`TRANSPLANT` for a study that was not replaced; a passage that failed and now stands in
+`TRANSPLANT` for work that was not replaced; a passage that failed and now stands in
 the appraisal without quotation marks and with no passage supporting it; and a
 disclosure whose counts differ from these files. A study with no first-check report is
 a note, not a finding. Leave `audit-quotes.md` beside `audit.md`.

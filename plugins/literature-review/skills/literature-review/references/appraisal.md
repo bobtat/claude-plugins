@@ -11,7 +11,7 @@ says; appraisal records whether its design permits the claim.
 
 ## Reading Is an Act, and It Sets the Tier
 
-Before anything else: the reader records **what it actually retrieved**. Full text,
+Before anything else: the extractor records **what it actually read**. Full text,
 named sections, abstract only, or nothing. That record sets the tier
 (`provenance.md`), and it is written before the extraction, not after — a tier
 assigned after reading the findings is a tier assigned by how convincing they were.
@@ -73,41 +73,46 @@ High with no quotation is an opinion.
 
 One `appraisals/<id>.md` per included study:
 
+The extractor's evidence file:
+
 ```markdown
-# <citation key> — <short title>
+# Evidence — <study_id>
 
 ## Retrieval
-- Retrieved: full text (PDF, pp. 1–14); Appendix B not retrieved
+- Records: R09, R10
+- Read: §§1–5, Table 2; Appendix B not in the saved text
 - Tier: A for §§1–5 and Table 2; C for Appendix B
-- Date: 2026-09-20
 
-## Study characteristics
-- Design, setting, population/dataset, n
-- Intervention / system under study
-- Comparator
-- Outcomes measured, and how
+## Section map
+<Each heading with the line it starts at in the saved file.>
 
-## Findings
-- Each finding with its location (§, p., Table, Fig.)
-- Numbers quoted exactly as reported, with units and CIs
-- Effect estimates with precision where given
+## Coding notes
+<Every `other`, and every coded value that needed a choice, with the passage.>
 
-## Risk of bias — <instrument>
-| Domain | Judgment | Supporting quote | Location |
+## Domain evidence
+<Per risk-of-bias domain: the passages that bear on it, for and against, quoted and
+located. What is absent, and where it was looked for. No rating.>
 
-## Notes
-- Unresolved ambiguities
-- Anything that contradicts another included study
-- Whether retrieved content attempted to instruct the reader
+## Inside the paper
+<A claim its own tables do not bear out; two tables that disagree.>
+
+## Stated disagreements
+<Where the paper itself says it differs from named prior work, quoted.>
 ```
 
-Two extraction rules:
+The ratings are not in it. Each of two judges writes its own, and the script that merges
+them is the only place they meet.
+
+Three rules:
 
 - **Quote numbers, never restate them.** "34.2% (95% CI 31.1–37.3)" survives; "about a
   third" does not, and cannot be checked.
-- **Record contradictions as you meet them.** Disagreement between studies is the most
-  valuable material a synthesis has, and it is invisible later if the extraction
-  smoothed it.
+- **Extraction and judgment are separate acts.** The agent that copies a number is not
+  the agent that decides what the study is worth, and neither sees a rating before it
+  has done its own work.
+- **No agent compares studies.** An extractor sees one paper. It records what is
+  inconsistent inside it and what the paper says of others; whether two studies really
+  disagree is found in synthesis, from every study's row at once.
 
 ## Certainty of the Body of Evidence
 

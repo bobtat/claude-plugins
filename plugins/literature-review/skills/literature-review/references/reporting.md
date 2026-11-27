@@ -19,9 +19,13 @@ others are what make item 27 (availability of data and materials) answerable.
 │                            rejected/ — batches discarded by the quote check
 ├── screening.csv            per record: both screeners, criterion, adjudication
 ├── prisma-flow.json         flow counts and κ, derived from the two CSVs by script
-├── appraisals/<study_id>.md one per included study; rejected/ holds replaced ones
+├── appraisals/              per study: the extractor's evidence file and row, two
+│                            judges' ratings and judgments, any adjudication;
+│                            rejected/ holds replaced work
+├── appraisal-agreement.json agreement between the two judges, and what was adjudicated
 ├── checks/                  quote-check reports from screening and appraisal;
-│                            readers/ holds each reader's check of its own first draft
+│                            readers/ holds each extractor's and judge's check of its
+│                            own first draft
 ├── rob.csv                  risk-of-bias judgments, one row per study per domain,
 │                            plus an Overall row per study derived by script
 ├── extraction.csv           study characteristics and data items, one row per study
@@ -93,17 +97,26 @@ but they share training and therefore share systematic blind spots. Cohen's κ
 measures their agreement, and between two instances of one model it overstates what
 the same statistic means between two people.
 
+## Appraisal
+Each study was extracted once and judged twice, by two instances of one model given
+identical inputs and no knowledge of each other. Across <N> studies and <N> domain
+ratings the judges agreed on <N> (raw agreement <x>, κ <x>); <N> were adjudicated from
+the paper's text and <N> escalated. The judges gave the same eligibility verdict on <N>
+of <N> studies, and <N> studies are marked doubtful. The judges queried <N> extracted
+values; <N> were changed. Figures are from `appraisal-agreement.json`. The same caveat
+applies as to screening: this is two readings by one model, not two reviewers.
+
 ## Quotations
 Every quotation in the screening and appraisal files was checked by script against
 the saved full text of the paper it is attributed to: <N> checked, <N> verified.
-<N> screening batches and <N> appraisals failed the check and were redone by a fresh
-agent; the discarded files are kept in `screening/rejected/` and
+<N> screening batches, <N> extractions and <N> judgments failed the check and were redone
+by a fresh agent; the discarded files are kept in `screening/rejected/` and
 `appraisals/rejected/`. κ is computed on the redone decisions.
 
-Appraisal readers checked their own drafts before returning: <N> of <N> readers had a
+Extractors and judges checked their own drafts before returning: <N> of <N> had a
 failure on that first check and corrected <N> quotations between them; <N> of those
-were another paper's words, and those studies were replaced. <N> readers left no
-first-check report. The first-check reports are in `checks/readers/`. The check confirms
+were another paper's words, and that work was replaced. <N> left no first-check
+report. The first-check reports are in `checks/readers/`. The check confirms
 that quoted words are in the paper named; it does not check paraphrase, or that a
 quotation supports the judgment it is cited for.
 
@@ -118,7 +131,7 @@ the protocol's lists and scale, and each study's overall rating was derived by r
       `extraction.csv`
 - [ ] Register the protocol (PROSPERO) — item 24a
 - [ ] Second independent human screen — item 8
-- [ ] Adjudicate risk of bias — item 11
+- [ ] Review the adjudicated and escalated risk-of-bias ratings — item 11
 - [ ] Declare support and competing interests — items 25, 26
 ```
 
