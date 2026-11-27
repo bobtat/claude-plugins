@@ -4,7 +4,7 @@
     python tests/literature-review-tests/run.py        # from anywhere
     python tests/literature-review-tests/run.py -v     # print every check
 
-Two kinds of check. The plugin's five scripts are run against their fixtures and
+Two kinds of check. The plugin's seven scripts are run against their fixtures and
 against inputs they must refuse, with the expected numbers written here. The
 Markdown is checked for the repository's rules: manifests that agree, namespaced
 references that resolve, and command files with no shell expansion.
@@ -21,6 +21,10 @@ FETCH = os.path.join(SK, "record-screening", "scripts", "fetch_fulltext.py")
 STATS = os.path.join(SK, "record-screening", "scripts", "screening_stats.py")
 FLOW = os.path.join(SK, "review-figures", "scripts", "prisma_flow.py")
 FIGCHECK = os.path.join(SK, "review-figures", "scripts", "check_figure.py")
+APPRAISAL = os.path.join(SK, "source-appraisal", "scripts", "appraisal_check.py")
+TRACE = os.path.join(SK, "review-synthesis", "scripts", "trace_numbers.py")
+APP = os.path.join(SK, "source-appraisal", "examples")
+NT = os.path.join(SK, "review-synthesis", "examples", "number-trace")
 QC = os.path.join(SK, "literature-review", "examples")
 SCR = os.path.join(SK, "record-screening", "examples")
 
@@ -201,6 +205,56 @@ def stats_and_flow():
     check("the shipped example flow diagram passes check_figure", rc == 0, out[-300:])
 
 
+# ---------------------------------------------------------------- appraisal_check.py
+def appraisal():
+    rc, out, err = run(APPRAISAL, "--protocol", "protocol.md", "--extraction", "extraction.csv",
+                       "--rob", "rob.csv", cwd=APP)
+    check("appraisal fixture passes: 3 studies, 2 coded columns, 3 domains",
+          rc == 0 and "3 studies, 2 coded columns" in out and "3 studies x 3 domains" in out, out + err[-300:])
+    check("overall is the worst domain: Some concerns 1, High 1, No information 1",
+          "overall (worst domain): Some concerns 1, High 1, No information 1" in out, out)
+    with tempfile.TemporaryDirectory() as t:
+        rob = read(os.path.join(APP, "rob.csv")); ext = read(os.path.join(APP, "extraction.csv"))
+        p = os.path.join(t, "rob.csv"); open(p, "w", encoding="utf-8").write(rob)
+        rc, _, _ = run(APPRAISAL, "--protocol", os.path.join(APP, "protocol.md"), "--rob", p, "--derive-overall")
+        once = read(p)
+        check("--derive-overall writes one derived Overall row per study",
+              rc == 0 and once.count(",Overall,") == 3 and "S1,Structured critique,Overall,High,,derived: worst domain" in once, once[-300:])
+        run(APPRAISAL, "--protocol", os.path.join(APP, "protocol.md"), "--rob", p, "--derive-overall")
+        check("deriving twice changes nothing", read(p) == once)
+
+        def refused(label, kind, text):
+            q = os.path.join(t, kind + "-bad.csv"); open(q, "w", encoding="utf-8").write(text)
+            rc, _, err = run(APPRAISAL, "--protocol", os.path.join(APP, "protocol.md"), "--" + kind, q)
+            check(label, rc == 2, f"exit {rc}: {err[-200:]}")
+        refused("a coded value outside its list is refused", "extraction", ext.replace("direct write,GPT-4\n", "write access,GPT-4\n"))
+        refused("two values in a single-value column are refused", "extraction", ext.replace(",attack,direct", ",attack; defence,direct"))
+        refused("an empty coded cell is refused", "extraction", ext.replace(",benchmark,Not stated,", ",benchmark,,"))
+        refused("a judgment off the scale is refused", "rob", rob.replace(",Low,\"code", ",Moderate,\"code"))
+        refused("an overall row a reader wrote is refused", "rob", rob + "S1,Structured critique,Overall,High,,\n")
+        refused("a study missing a domain is refused", "rob", "\n".join(l for l in rob.splitlines() if not l.startswith("S2,Structured critique,D2")) + "\n")
+        bare = os.path.join(t, "protocol.md"); open(bare, "w").write("# Protocol\n\n## 7. Data items\nfree text only\n")
+        rc, _, _ = run(APPRAISAL, "--protocol", bare, "--rob", os.path.join(APP, "rob.csv"))
+        check("a protocol with no code lists or scale is refused", rc == 2, f"exit {rc}")
+
+
+# ---------------------------------------------------------------- trace_numbers.py
+def trace():
+    rc, out, _ = run(TRACE, "--fulltext", "fulltext", "--keys", "study-keys.csv", "review.md", cwd=NT)
+    check("number-trace fixture: 12 numbers, 9 traced, 2 not in source, 1 uncheckable, 1 computed",
+          "12 numbers traced against 2 saved texts: traced 9, not in source 2, uncheckable 1; 1 marked computed" in out, out[-300:])
+    check("number-trace fixture exits 1", rc == 1, f"exit {rc}")
+    check("a number from an uncited study names the study it is in",
+          re.search(r"NOT IN SOURCE\s+7\.92\s+@liu2026rerun.*is in @chen2024attack", out) is not None, out)
+    check("a number in no saved text is reported with no source", re.search(r"NOT IN SOURCE\s+44\.0\s+@chen2024attack\s+line \d+\s*$", out, re.M) is not None, out)
+    check("years, model names, table references and small integers are not traced",
+          not re.search(r"(NOT IN SOURCE|UNCHECKABLE)\s+(2026|5|2|250)\b", out), out)
+    with tempfile.TemporaryDirectory() as t:
+        k = os.path.join(t, "k.csv"); open(k, "w").write("key,reports\nx,R1\n")
+        rc, _, _ = run(TRACE, "--fulltext", os.path.join(NT, "fulltext"), "--keys", k, os.path.join(NT, "review.md"))
+        check("a keys file without citekey and report_ids columns is refused", rc == 2, f"exit {rc}")
+
+
 # ---------------------------------------------------------------- check_figure.py
 SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" role="img" aria-labelledby="t d">'
        '<title id="t">Test</title><desc id="d">Two labels, 3 and 4.</desc>'
@@ -226,7 +280,7 @@ def figures():
 
 
 def main():
-    for section in (manifests, markdown, quotes, fetch, stats_and_flow, figures):
+    for section in (manifests, markdown, quotes, fetch, stats_and_flow, appraisal, trace, figures):
         if VERBOSE:
             print(section.__name__)
         section()
