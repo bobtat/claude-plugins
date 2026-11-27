@@ -51,10 +51,15 @@ This is usually worth more to the review than any single decision you make.
 ## Output
 
 ```csv
-record_id,decision,criterion,reasoning
-R08,exclude,E2: Not adults,"§2.1: ""neonates admitted to the NICU"". Screener 2 took patients in the abstract to mean adults."
-R22,escalate,E1: Not a language model,"Both screeners read §2 correctly; E1 does not say whether retrieval-only systems count."
+record_id,decision,criterion,reasoning,doubt
+R08,exclude,E2: Not adults,"§2.1: ""neonates admitted to the NICU"". Screener 2 took patients in the abstract to mean adults.",
+R22,escalate,E1: Not a language model,"Both screeners read §2 correctly; E1 does not say whether retrieval-only systems count.",E1: do retrieval-only systems count?
 ```
+
+`doubt` names the criterion that did not clearly decide the record and the question it
+leaves open. Every escalation has one. Fill it too when you decided a record but the
+criterion needed a reading to get there, and keep a screener's doubt unless the paper's
+text settles it.
 
 Quotations go in double quotes, doubled inside a CSV field as above, copied from the
 saved text — a script checks each against the record on its row, and an adjudication

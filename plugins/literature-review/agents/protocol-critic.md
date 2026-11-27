@@ -35,6 +35,14 @@ count by severity and the most serious finding.
    the table. Sub-codes such as E2a, which are two criteria sharing a number. **These
    are the causes of low κ and unreadable flow diagrams**, and the highest-value
    findings you can make.
+
+   Then **test each criterion on its line.** For every criterion, construct the
+   hardest case you can that this literature plausibly contains — a simulated version
+   of the system, a study with the intervention but no comparator, the phenomenon
+   with no one causing it — and say which way the criterion, as written, decides it.
+   A case it does not decide is a finding, reported with the sentence that would
+   decide it. Two screeners that share a model read an unclear criterion the same way,
+   so κ will not show this later; you are the check.
 3. **A search built to confirm.** Criteria or strings that would exclude the work
    disagreeing with the question's premise. A review that cannot find its own
    counter-evidence is not a review.

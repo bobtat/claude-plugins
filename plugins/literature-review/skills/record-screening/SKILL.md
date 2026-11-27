@@ -52,6 +52,19 @@ Adjudicating a hundred disagreements caused by one vague criterion is the most e
 possible way to fix it. Calibration is standard practice for human teams for the same
 reason.
 
+### Agreement does not show a shared doubt
+
+κ finds criteria the two screeners read differently. It cannot find one they both read
+the same way while neither was sure, and two instances of one model usually do. In the
+second end-to-end run the pilot agreed on 15 of 15 records and no criterion was
+changed; 12 of the 52 studies later included were of doubtful eligibility.
+
+So each screener also fills a `doubt` column: the criterion that did not clearly decide
+a record, and the question it leaves open. After the pilot, read the doubts before
+reading κ. **A criterion that draws doubts in the pilot is revised now** — an amendment
+giving it a case on each side of the line, then a re-pilot — whatever the agreement
+was. One doubt is worth a look; the same criterion doubted on three records is a gap.
+
 ### Project the full-text volume
 
 The pilot also measures how many records advance. Before the full run, project it:
@@ -119,7 +132,8 @@ Batches are small because the failure they prevent is real. In this pipeline's f
 end-to-end run, a screener with a large batch in view quoted a passage from one paper
 as evidence about another.
 
-- **Both agree** → that is the decision.
+- **Both agree** → that is the decision. A doubt either of them recorded stays with
+  the record.
 - **They disagree** → `literature-review:screening-adjudicator` decides, citing the
   criterion and the passage, or escalates to the user when the criterion itself is
   ambiguous. It writes `screening/adjudication-<round>.csv`, where the round is the
@@ -183,11 +197,14 @@ inflates the human count the footnote exists to make visible.
 One row per record per stage:
 
 ```csv
-record_id,stage,screener_1,screener_1_criterion,screener_2,screener_2_criterion,agreed,adjudication,final,final_criterion,decided_by,full_text_retrieved,study_id
+record_id,stage,screener_1,screener_1_criterion,screener_2,screener_2_criterion,agreed,adjudication,final,final_criterion,decided_by,full_text_retrieved,study_id,doubt
 ```
 
 `stage` is `title_abstract` or `full_text`. `full_text_retrieved` and `study_id` apply
-to full-text rows. `examples/screening.csv` and `examples/records.csv` exercise every
+to full-text rows. `doubt` carries a doubt from either screener or the adjudicator at
+that stage: the criterion code first, then the open question; where two were recorded,
+the one on the criterion that mattered most to the decision. A doubt at title/abstract
+that the full text settled is not carried to the full-text row. `examples/screening.csv` and `examples/records.csv` exercise every
 case — a duplicate, an automation-ineligible record, human and automation exclusions,
 `unsure` votes, an adjudicated disagreement, an unretrieved report, and a
 preprint/published pair counted as one study.
@@ -208,6 +225,10 @@ record never screened, a screening row for a duplicate, a record advanced with n
 full-text row, a full-text exclusion with no reason, a record ID that could not name a
 saved text. Fix the data; do not work around
 the check.
+
+It also counts the included reports whose full-text row carries a doubt, by criterion,
+as `eligibility_doubt`. Those are the doubtful inclusions the gate lists and the
+synthesis reports with and without.
 
 `--protocol` renders each exclusion reason from the criteria table — `E2: Not adults`,
 not whatever a screener wrote — and counts sub-codes such as `E2a` under their parent.
@@ -231,6 +252,11 @@ there is a real choice:
 - κ and raw agreement per stage, and whether calibration changed any criterion
 - Every adjudicated record, with the adjudicator's reasoning
 - Anything the adjudicator escalated
+- **Doubtful inclusions**, grouped by criterion: every included record whose row
+  carries a doubt, the question each leaves open, and for each criterion the sentence
+  that would settle it. When they are more than about a tenth of the inclusion set,
+  recommend the amendment and re-screening the affected records over carrying them
+  forward
 - **Near-misses** — records that nearly met the criteria and why they were excluded.
   PRISMA item 16b asks for these by name
 - Reports not retrieved, which the user may be able to obtain. A text the user
@@ -254,3 +280,5 @@ user changes gets `decided_by=human`, and `screening_stats.py` is re-run.
 - **Never let an agent fetch a full text during screening.** Fetching is done once, by
   script, before screening.
 - **Never drop an unretrieved report.** It is a box in the flow diagram.
+- **Never let agreement clear a doubt.** Two screeners agreeing on an unclear criterion
+  is one reading, counted twice.

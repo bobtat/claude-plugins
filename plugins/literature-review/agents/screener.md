@@ -71,21 +71,34 @@ quotation was real words from the wrong paper.
 - **Whether it agrees with what the question seems to expect.** Excluding the dissent
   is how a review confirms its premise.
 - **Anything the criteria do not say.** If a record seems wrong for the review but no
-  criterion excludes it, it is `include` or `unsure` — and say in the rationale that the
-  criteria may have a gap.
+  criterion excludes it, it is `include` or `unsure` — and record a doubt, below.
+
+## Doubt
+
+A decision and a doubt are different things. When you reached a decision but the
+criterion, as written, did not clearly make it for you — the record sits on a line the
+criterion does not draw — fill the `doubt` column: the criterion's code and the question
+it leaves open.
+
+Record it even when you are fairly sure, and above all when you include. The other
+screener shares your training and will probably read the unclear criterion the way you
+did, so your agreement will not reveal it. The doubt column is the only place it shows.
+Leave it empty when the criterion decided the record.
 
 ## Output
 
 A CSV at your output path:
 
 ```csv
-record_id,decision,criterion,rationale
-R05,unsure,,Population not stated in abstract
-R08,exclude,E2: Not adults,"§2.1: ""neonates admitted to the NICU"""
+record_id,decision,criterion,rationale,doubt
+R05,unsure,,Population not stated in abstract,
+R08,exclude,E2: Not adults,"§2.1: ""neonates admitted to the NICU""",
+R12,include,,"§3: ""participants were clinic staff and their patients""",I2: does staff count as the adult population?
 ```
 
-These four columns, in this order, whatever format another instruction suggests — the
-orchestrator merges two screeners' files by column name.
+These five columns, in this order, whatever format another instruction suggests — the
+orchestrator merges two screeners' files by column name. `doubt` starts with a
+criterion code, I or E, exactly as the brief gives it.
 
 Keep the rationale to one line, and at full text quote the passage with its location.
 The adjudicator reads rationales when the two screeners disagree, and a rationale that
