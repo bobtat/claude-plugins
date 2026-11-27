@@ -101,6 +101,12 @@ a transplanted risk-of-bias quote reaches `rob.csv` and from there the traffic-l
 figure. Also compare against `checks/`: a failure the pipeline reported and then
 shipped anyway is its own finding.
 
+**Doubtful inclusions.** Count the studies `extraction.csv` marks `doubtful` and the
+`eligibility_doubt` figure in `prisma-flow.json`. If there are any, the review must
+say how many, count them in each section's evidence line, and state its main
+conclusions with and without them. A conclusion that rests on doubtful studies and
+does not say so is high severity; a missing sensitivity table is medium.
+
 **First checks.** `checks/readers/` holds each appraisal reader's check of its own
 draft, made before it corrected anything. Three things there are findings: a
 `TRANSPLANT` for a study that was not replaced; a passage that failed and now stands in

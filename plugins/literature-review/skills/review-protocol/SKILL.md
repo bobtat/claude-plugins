@@ -127,6 +127,14 @@ for someone who has only a title and an abstract.
 - **No sub-codes.** If E2 needs splitting into E2a and E2b, it is two criteria; give
   them separate numbers and labels. A sub-code a screener invents anyway is counted
   under its parent.
+- **Give every term a criterion turns on a case on each side of the line.** Defining
+  the term is not enough. Under the definition, name the nearest thing that is in and
+  the nearest thing that is out: "In: an agent run against a live model. Out: a
+  scripted stand-in that never calls one." The second end-to-end run defined its two
+  central terms carefully and still included 12 studies of doubtful eligibility out of
+  52, because the cases the literature actually contained — simulated agents,
+  state shared only within one task, corruption with no attacker — sat on lines the
+  definitions never drew.
 
 Ambiguous criteria are the cause of low κ, and low κ is fixed by rewriting criteria,
 not by adjudicating forty records one at a time.

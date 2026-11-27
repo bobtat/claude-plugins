@@ -51,15 +51,16 @@ which column of the flow diagram a record belongs to. Field meanings are in the
 `literature-review:source-discovery` skill.
 
 ```csv
-record_id,stage,screener_1,screener_1_criterion,screener_2,screener_2_criterion,agreed,adjudication,final,final_criterion,decided_by,full_text_retrieved,study_id
+record_id,stage,screener_1,screener_1_criterion,screener_2,screener_2_criterion,agreed,adjudication,final,final_criterion,decided_by,full_text_retrieved,study_id,doubt
 ```
 
 `stage` is `title_abstract` or `full_text`, because PRISMA counts exclusions at each
 separately. `screener_*` values are `include` / `exclude` / `unsure`. `decided_by` is
 `automation` or `human` — the split the PRISMA template's footnote requires of any
 review using automation tools. `full_text_retrieved` feeds "Reports not retrieved" and
-is copied from `retrieval.csv`; `study_id` groups several reports of one study. Field rules are in the
-`literature-review:record-screening` skill.
+is copied from `retrieval.csv`; `study_id` groups several reports of one study.
+`doubt` names a criterion that did not clearly decide the record. Field rules are in
+the `literature-review:record-screening` skill.
 
 The flow counts are never assembled by hand. `screening_stats.py` derives
 `prisma-flow.json` from the two CSVs and refuses when they are inconsistent.
@@ -106,6 +107,8 @@ quotation supports the judgment it is cited for.
 
 ## What a human must still do
 - [ ] Review both approval gates, if the run was unattended — `gate-1.md`, `gate-2.md`
+- [ ] Rule on the <N> included studies of doubtful eligibility — `gate-2.md`,
+      `extraction.csv`
 - [ ] Register the protocol (PROSPERO) — item 24a
 - [ ] Second independent human screen — item 8
 - [ ] Adjudicate risk of bias — item 11

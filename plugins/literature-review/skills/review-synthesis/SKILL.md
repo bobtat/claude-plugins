@@ -72,6 +72,22 @@ tier-C pair supply existence and topic, not findings.*
 And where the tiers are mixed, per claim. A sentence resting on tier C reads identically
 to one resting on tier A unless the difference is marked.
 
+### With and without the doubtful studies
+
+When `extraction.csv` marks any study `doubtful`, the review cannot lean on it
+silently. Three things follow:
+
+- **Every "Rests on" line counts them**: "…; 6 of the 26 are of doubtful eligibility".
+- **Every headline count and every thread's conclusion is stated both ways** — with all
+  included studies, and with the doubtful ones set aside — wherever the two differ. A
+  conclusion that holds only with them says so in the same sentence.
+- **One table in the Discussion**, "Sensitivity to eligibility": each main conclusion,
+  whether it survives without the doubtful studies, and which criterion the doubt is
+  about.
+
+This is arithmetic over `extraction.csv`, not a second synthesis. Do it for an
+unattended run above all, where nobody ruled on the doubts.
+
 ### Certainty
 
 GRADE per outcome, from the RoB judgments, consistency, directness and precision across
@@ -110,6 +126,8 @@ stronger thing.
 - Every citation key in `review.md` exists in `references.bib`.
 - Every figure in the budget is placed with its caption, or its absence is explained.
 - The flow numbers in the prose match `prisma-flow.json` exactly.
+- If any study is `doubtful`, the sensitivity table exists and the abstract says how
+  many there are.
 - The revision log exists, even if it has only the compiled date.
 
 Then Phase 6 audits the finished document. The audit exists because this phase is where

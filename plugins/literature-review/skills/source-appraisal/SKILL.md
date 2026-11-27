@@ -95,13 +95,18 @@ S10,RoB 2,Randomization process,Low,"Allocation by computer-generated sequence",
 table (PRISMA item 17):
 
 ```csv
-study_id,report_ids,design,population,setting,n,intervention,comparator,outcomes,tier
+study_id,report_ids,design,population,setting,n,intervention,comparator,outcomes,tier,eligibility
 ```
 
 …followed by one column per data item in `protocol.md` section 7.
 
 `tier` is the study's tier for its **findings** — `A` only if the sections carrying the
 results were read.
+
+`eligibility` is `clear` or `doubtful:<criterion code>`. It is `doubtful` when the
+reader said so on reading, or when screening recorded a doubt the reader could not
+settle from the text. Give each reader any doubt from the study's `screening.csv` rows
+so it can answer it.
 
 ## Check Every Quotation
 
@@ -160,9 +165,11 @@ python3 ${CLAUDE_SKILL_DIR}/../literature-review/scripts/verify_quotes.py --full
 ## What Appraisal Does Not Do
 
 - **Rate the body of evidence.** GRADE applies per outcome across studies, in synthesis.
-- **Decide eligibility.** That was screening. A study that turns out to be ineligible on
-  reading is reported to the user, not quietly excluded here — the flow diagram would
-  no longer match.
+- **Decide eligibility.** That was screening. A study that looks ineligible on reading
+  is marked `doubtful` and reported to the user, not quietly excluded here — the flow
+  diagram would no longer match. If the user excludes it, that is a `decided_by=human`
+  change to `screening.csv`, and `screening_stats.py` is re-run. If nobody can rule, it
+  stays in, marked, and the synthesis reports with and without it.
 - **Adjudicate RoB for PRISMA.** One agent assesses each study; item 11 is
   `met-by-machine` at best, and the checklist says so.
 

@@ -56,7 +56,7 @@ an abstract cannot vouch for.
 ### 2. Extract
 
 **Quotations are checked by script** against the saved texts of the records your
-appraisal names — by you in step 6, and again by the orchestrator. Put them in double
+appraisal names — by you in step 7, and again by the orchestrator. Put them in double
 quotes, copy them from the saved file, shorten with `...`, and put nothing in quotation
 marks that you did not copy. In `rob.csv`, `support_quote` is checked whole.
 
@@ -75,18 +75,36 @@ quotation and its location. Where no validated instrument fits, assess against t
 protocol's critique criteria and title the section **Structured critique**, not by an
 instrument's name.
 
-### 4. Contradictions
+### 4. Eligibility, on reading
+
+You have read more of this paper than the screeners did. Say whether it still meets the
+criteria:
+
+```markdown
+## Eligibility
+- clear
+```
+
+or `- doubtful — I4: the "agent" is a scripted stand-in; no model is called (§5.1)`,
+with the criterion's code and the passage. Put the same value in your `extraction.csv`
+row's `eligibility` column: `clear`, or `doubtful:<code>`. If screening already
+recorded a doubt for this study, answer it from the text.
+
+You do not exclude the study and you do not skip its appraisal. Deciding eligibility
+is the user's; your job is to make the doubt impossible to miss.
+
+### 5. Contradictions
 
 Anything this study reports that conflicts with another included study, or with how the
 field usually describes it. Record it with location. The synthesis depends on it.
 
-### 5. Write the data rows
+### 6. Write the data rows
 
 Your `rob.csv` rows — one per domain — and your `extraction.csv` row, in the schemas from
 the `literature-review:source-appraisal` skill. The figures are built from these, not
 from your prose, so the two must agree.
 
-### 6. Check your own quotations
+### 7. Check your own quotations
 
 Run the check **once on the finished draft, before changing anything**, and keep its
 report at the first-check path you were given:

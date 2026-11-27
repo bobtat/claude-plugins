@@ -172,8 +172,8 @@ pass that found nothing.
 ## GATE 2 — The Inclusion Set
 
 Present as the `literature-review:record-screening` skill describes: flow counts, κ,
-adjudications, escalations, near-misses, unretrieved reports, grouped reports, and the
-quote check with any batches replaced.
+adjudications, escalations, doubtful inclusions by criterion, near-misses, unretrieved
+reports, grouped reports, and the quote check with any batches replaced.
 **Appraisal does not start until the user approves** — or `gate-2.md` records the
 pre-authorized decision. Re-run `screening_stats.py` if they change anything.
 
@@ -186,7 +186,9 @@ merging its rows into `rob.csv` and `extraction.csv`; a study that fails your ch
 whose first check shows another paper's words, gets a fresh reader.
 
 A reader reporting that a study looks ineligible goes back to the user — excluding it here
-would make the flow diagram wrong.
+would make the flow diagram wrong. Either way the study is marked `doubtful` in
+`extraction.csv`, and the synthesis states its conclusions with and without the doubtful
+studies.
 
 ## Phase 5 — Figures, Then Prose
 
