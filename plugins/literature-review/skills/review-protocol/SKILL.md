@@ -99,9 +99,9 @@ Outcomes (item 10a), each defined. Then every other variable (10b) as a column:
 - No information: No information
 - Overall: worst domain | none
 
-| Domain | What undermines the claim |
-|---|---|
-| D1 … | … |
+| Domain | Low when | Some concerns when | High when |
+|---|---|---|---|
+| D1 … | … | … | … |
 
 ## 9. Synthesis
 Narrative or meta-analysis, and why. Planned threads if known.
@@ -159,7 +159,7 @@ not by adjudicating forty records one at a time.
 
 ### Data items and the rating scale
 
-Two readers of one paper will word a free-text field differently, and nothing is lost.
+Two extractors of one paper will word a free-text field differently, and nothing is lost.
 They must not *code* a field differently because the categories were never fixed. In
 the second end-to-end run, two readings of the same study put its memory type in
 "shared multi-agent memory" and in "other", and each would have drawn a different
@@ -168,11 +168,18 @@ evidence map.
 - **Every column a figure or a count is built from is `code` or `codes`**, with its
   allowed values listed and each defined well enough to choose between neighbours.
   `code` takes exactly one value; `codes` takes one or more, separated by `;`.
-- **Every list ends with `other` and `not stated`.** A reader with no fitting value
+- **Every list ends with `other` and `not stated`.** An extractor with no fitting value
   writes `other` and says why in the appraisal; it never coins a value.
 - **Section 8 states the scale in order**, least concern first, and how the overall
   rating follows from the domains: `worst domain`, or `none` for an instrument with no
   overall judgment. The overall rating is then computed, never judged.
+- **Every domain says what earns each level.** One column per level of the scale, each
+  naming what the paper must show: "Low when two or more baselines, one of them
+  adaptive. High when no baseline, or the authors' own re-implementation only." A domain
+  described only by what it is about leaves the level to impression. Two judges rating
+  the same three studies that way differed on one rating in five, always in the same
+  cells, and a second pair did no better. A validated instrument brings its own
+  signalling questions; cite them and anchor anything it leaves open.
 
 `appraisal_check.py`, in the `literature-review:source-appraisal` skill, holds the
 appraisal data to this section and refuses a protocol that leaves it out. Adding a value
@@ -214,7 +221,7 @@ This is what turns the gate from "does this look right?" into a decision with ev
 
 Then state the implied scale plainly: how many records reach title/abstract screening,
 roughly how many full texts, and that each record is screened by two agents and each
-full text read at least three times (two screeners and the appraisal reader). Present
+full text read at least five times (two screeners, an extractor and two judges). Present
 volumes, not a cost figure you cannot back.
 
 **Estimate full texts from the criteria, not from instinct.** A criterion marked
