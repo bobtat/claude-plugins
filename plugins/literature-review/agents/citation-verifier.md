@@ -80,12 +80,6 @@ Gives `citation_title`, `citation_author` (repeated), `citation_date`, and
 If the export API happens to answer in some other environment, prefer it — it is
 cleaner to parse. Detect, do not assume.
 
-### When the MCP servers are present
-
-`paper-search-mcp` and `arxiv-mcp-server` give structured metadata and, for arXiv
-works, authoritative BibTeX via `export_citations`. Prefer them when available; the
-curl routes are the fallback. Say in the report which was used.
-
 ### Semantic Scholar
 
 **Rate-limits to HTTP 429 without an API key.** Not a reliable unauthenticated

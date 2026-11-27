@@ -24,9 +24,9 @@ You cannot ask for anything. If an input is missing, say so and return.
 
 ## Routes
 
-Tested from an environment like this one on 2026-09-25. Prefer the MCP servers when
-their tools are present — `paper-search-mcp` for search, `arxiv-mcp-server` for arXiv
-— and fall back to these. Record which route answered.
+Plain HTTP. No MCP server is needed, and no key except where a route says so. Tested
+from a hosted environment on 2026-09-25 and used for a full review on 2026-11-26.
+Record which route answered.
 
 ### PubMed
 
@@ -122,7 +122,7 @@ The log entry:
 ```markdown
 ### <Source> — <date>
 - Mode: search | snowball (backward|forward), iteration <n>
-- Route: <MCP tool or URL pattern that answered>
+- Route: <URL pattern that answered>
 - String: <verbatim>
 - Limits: <date range, language, type>
 - Total matched: <N, as reported by the source — or "not reported by this route">

@@ -139,9 +139,9 @@ keys are checkable against the `.bib` mechanically.
 ### BibTeX
 
 Entries come from **resolved metadata** — Crossref for DOIs; for arXiv IDs the
-`citation_*` meta tags on the `arxiv.org/abs/<id>` page, or `export_citations` when
-`arxiv-mcp-server` is present — never hand-written. The arXiv export API is not a
-dependable route: it has returned HTTP 406 from hosted environments. A hand-written entry is
+`citation_*` meta tags on the `arxiv.org/abs/<id>` page — never hand-written. The
+arXiv export API is not a dependable route: it has returned HTTP 406 from hosted
+environments. A hand-written entry is
 an unverified citation with extra steps.
 
 Every entry carries its identifier. A reference with no resolvable identifier is

@@ -117,20 +117,27 @@ Deliberately not covered:
   framework synthesis — as methods in their own right. CASP is named; the methods are
   not implemented.
 - **Full-text acquisition behind paywalls.** Open-access routes only. Sci-Hub is
-  reachable through the discovery server and is never invoked.
+  never invoked, including through a third-party tool that offers it as a fallback.
 - **Diagnostic test accuracy and network meta-analysis** as specialized review types.
 - **Human adjudication.** The pipeline surfaces disagreements and stops; it does not
   pretend to settle them.
 
 ## What Is Untested
 
-The three things most likely to be wrong, in order:
+The pipeline has run end to end once, unattended, on an arXiv-heavy computing
+question. What that run did not exercise, most likely to be wrong first:
 
-1. **The MCP server pins.** Both servers are pinned, and `paper-search-mcp` is a 0.1.x
-   package that went 14 months between releases. A pin that stops resolving breaks
-   discovery, and the fallback is a tier-C web search.
-2. **The rasterizer chain on Windows.** The `svglib` fallback is the least-exercised
-   path and the one Windows users will land on.
-3. **The GRADE rate-down and rate-up lists**, which remain tier D.
+1. **Any field that is not on arXiv or in open-access PubMed Central.** 62 of the 64
+   full texts in that run came from arXiv's HTML rendering. Elsewhere most reports
+   will be "not retrieved" unless the user supplies them.
+2. **Resuming, and stopping at a gate for a person.** The run passed both gates
+   pre-authorized. The stop-and-resume path has not run.
+3. **A reader correcting a failed quotation.** The first-check procedure has run; no
+   reader in its test had a failure to correct.
+4. **Forward citation searching**, which needs an OpenAlex key the run did not have.
+5. **The rasterizer chain on Windows.** `svglib` worked on Linux; Windows is where
+   users will land on it.
+6. **The GRADE rate-down and rate-up lists**, which remain tier D.
 
-The methodology sources are stable on a decade timescale. The tooling is not.
+The methodology sources are stable on a decade timescale. The routes are not: one
+changed between the first test and the first full run.

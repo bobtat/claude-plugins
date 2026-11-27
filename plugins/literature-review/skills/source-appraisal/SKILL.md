@@ -53,9 +53,8 @@ Routes for the missing parts, tested:
 | Source | Route | Structure |
 |---|---|---|
 | arXiv | `https://arxiv.org/html/<id>` where an HTML rendering exists; the PDF otherwise | Sectioned — bounded reads by section heading |
-| arXiv | `arxiv-mcp-server` section tools, when present | `get_paper_latex_section` — bounded by design |
 | PubMed, open access | Europe PMC: `rest/search?query=EXT_ID:<PMID> AND SRC:MED` → `pmcid`, `isOpenAccess`; then `rest/<PMCID>/fullTextXML` | JATS XML with `<sec><title>` |
-| Other DOIs | Publisher open-access copy, or `paper-search-mcp`'s open-access fallback | Varies |
+| Other DOIs | The publisher's open-access copy, or an author's repository copy | Varies |
 
 **Prefer bounded section reads.** Retrieving §4 and Table 2 by name gives a citable
 location; ingesting forty pages gives an impression and fills the context window.

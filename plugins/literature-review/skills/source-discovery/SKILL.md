@@ -120,7 +120,6 @@ until a pass yields no new inclusions or the protocol's iteration cap is reached
 | Backward | Crossref `works/<DOI>` → `message.reference` | No | Crossref-registered DOIs where the publisher deposited references. **Not arXiv** |
 | Backward | OpenAlex single work → `referenced_works` | No, for single lookups | Published works. Returned **no references** for an arXiv DOI when tested |
 | Backward | arXiv HTML full text → `<li class="ltx_bibitem">` | No | **arXiv works** with an HTML rendering — the route that works for preprints |
-| Backward | `arxiv-mcp-server` citation tools | No | arXiv works, when the server is present |
 | Forward | PubMed `elink` with `linkname=pubmed_pubmed_citedin` | No | **PubMed-indexed citing work only** |
 | Forward | OpenAlex `/works?filter=cites:<id>` | **In practice, yes** | Broad |
 

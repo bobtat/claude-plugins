@@ -139,12 +139,12 @@ Stopping is a decision, and it needs a stated basis:
 ```markdown
 ### PubMed
 - Searched: 2026-09-20
-- Interface: paper-search-mcp 0.1.4 (search_pubmed)
+- Interface: NCBI E-utilities (esearch, efetch)
 - Query: ("large language model"[tiab] OR "LLM"[tiab]) AND (memory[tiab] OR ...)
 - Limits: 2020/01/01–2026/09/20; English
 - Records retrieved: 84
 - Cap: none / hit at 100 (relevance-ranked)
-- Notes: MeSH terms unavailable through this interface — free-text only
+- Notes: free-text only; no MeSH terms in this string
 ```
 
 A reader must be able to re-run the search from this file alone. If they cannot, the
