@@ -1,0 +1,2 @@
+study_id,report_ids,tier,contribution,injection_vector,models_evaluated,n
+S1,R1,A,attack,direct write,GPT-4,250 trials

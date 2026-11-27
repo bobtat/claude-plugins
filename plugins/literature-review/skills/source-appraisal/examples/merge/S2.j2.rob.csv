@@ -1,0 +1,4 @@
+study_id,instrument,domain,judgment,support_quote,location
+S2,Structured critique,D1 Baseline adequacy,High,"neither baseline is given the same budget",§5.1
+S2,Structured critique,D2 Reproducibility,Some concerns,"prompts are available on request",§A
+S2,Structured critique,D3 Evaluation validity,Low,"evaluated on deployed agents",§5.2
