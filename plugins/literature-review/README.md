@@ -16,6 +16,7 @@ A model reviewing literature fails in ways the methodology standards were not wr
 - **The numbers are derived, not typed.** Flow counts, exclusion reasons and screener agreement come from the screening files through a script that refuses inconsistent data. Each study's overall risk-of-bias rating is computed from its domain ratings.
 - **Categories are fixed before anyone reads.** Every coded data item has its allowed values in the protocol, and a script refuses a value outside them.
 - **Every number is traced.** A figure credited to a study must appear in that study's saved text.
+- **Each study is read once and judged twice.** An extractor turns the paper into coded, quoted data and makes no judgment. Two independent judges rate it against anchors fixed in the protocol, and an adjudicator settles what they leave open from the paper's text. Their agreement is reported.
 - **Figures are part of the standard.** The PRISMA flow diagram comes from a generator that will not draw arithmetic that does not close. The other figures are drawn from data files and validated for geometry, colliding labels, theming and accessibility.
 - **The review says what it is.** The PRISMA checklist is marked `met`, `met-by-machine` or `requires-human`, and every run writes a conduct disclosure naming what a person must still do.
 
@@ -35,7 +36,7 @@ One full run has been measured, on 2026-11-26: an unattended review of memory po
 | Wall-clock time | 89 minutes |
 | Cost | $86.67 |
 
-The agents configured for the larger model — the appraisal readers, critics, adjudicator and figure author — accounted for 57% of the cost. A larger review costs more; one run is not enough to say how it scales. Each record is screened twice and each included full text is read at least three times.
+That run used one appraisal reader per study, at about $0.73 each. Appraisal now uses an extractor and two judges per study, which a three-study test put at about $1.11 per study, so expect a review of that size to cost roughly $20 more. A larger review costs more; one run is not enough to say how it scales. Each record is screened twice, and each included full text is read by two screeners, an extractor and two judges.
 
 ## What It Produces
 
@@ -47,7 +48,8 @@ A directory, not a file. `review.md` is the deliverable; the rest is the evidenc
 | `search-log.md`, `records.csv` | What was searched, and every record retrieved |
 | `fulltext/`, `retrieval.csv` | Each full text, fetched once and title-checked |
 | `screening.csv`, `prisma-flow.json` | Both screeners' decisions, and the derived counts |
-| `appraisals/`, `rob.csv`, `extraction.csv` | One appraisal per study, and the data the figures use |
+| `appraisals/`, `rob.csv`, `extraction.csv` | Per study, one extraction and two independent judgments; and the merged data the figures use |
+| `appraisal-agreement.json` | How often the two judges agreed, and what was adjudicated |
 | `figures/*.svg` | The flow diagram, risk-of-bias plots and any others in the budget |
 | `review.md`, `references.bib` | The review and its verified bibliography |
 | `prisma-checklist.md`, `conduct-disclosure.md` | What was met, by whom, and what a person must still do |
@@ -58,7 +60,7 @@ A directory, not a file. `review.md` is the deliverable; the rest is the evidenc
 
 The plugin does not produce a publishable systematic review by itself, and it says so in every run.
 
-- **Two instances of one model are not two reviewers.** They share training, so their agreement overstates what the same figure means between two people. In the measured run the screeners agreed on 15 of 15 pilot records, and 12 of the 52 studies later included were of doubtful eligibility.
+- **Two instances of one model are not two reviewers.** They share training, so their agreement overstates what the same figure means between two people. That holds for the two screeners and for the two judges. In the measured run the screeners agreed on 15 of 15 pilot records, and 12 of the 52 studies later included were of doubtful eligibility.
 - **Approve the gates.** The protocol decides what the review can conclude. Read the criteria, and the doubtful inclusions listed at the second gate.
 - **The quote check proves the words are in the paper.** It does not prove they support the judgment beside them.
 - **The audit is a self-check** by the same pipeline. It found and fixed real errors in the measured run, including a wrong study named for one result. It is not an independent review.
@@ -85,7 +87,7 @@ If you enable a paper-search server yourself, the plugin's agents will not use i
 
 ## Requirements
 
-- **`python3`** and outbound HTTPS. The seven scripts use only the standard library.
+- **`python3`** and outbound HTTPS. The eight scripts use only the standard library.
 - **Optional: `OPENALEX_API_KEY`.** Without it, forward citation searching outside biomedicine does not run, and OpenAlex search depends on a shared quota. A missing key is raised at the first gate.
 - **Optional, for Word and PDF:** `pandoc`; an SVG rasterizer (`rsvg-convert`, `inkscape`, ImageMagick with an SVG delegate, or `svglib` through `uvx`); and for PDF an engine (`xelatex`, `tectonic`, `typst` or `weasyprint`). The toolchain is probed before the first gate, and a missing format is reported, never silently dropped.
 
@@ -119,7 +121,7 @@ The review command refuses a bare topic and asks for a question. A well-formed q
 Everything is addressed as `literature-review:<name>`, with no bare-name fallback.
 
 - **Skills:** `literature-review:literature-review`, `literature-review:review-protocol`, `literature-review:source-discovery`, `literature-review:record-screening`, `literature-review:source-appraisal`, `literature-review:review-figures`, `literature-review:review-synthesis`, `literature-review:review-audit`
-- **Agents:** `literature-review:protocol-critic`, `literature-review:source-hunter`, `literature-review:screener`, `literature-review:screening-adjudicator`, `literature-review:paper-reader`, `literature-review:figure-author`, `literature-review:citation-verifier`, `literature-review:review-critic`
+- **Agents:** `literature-review:protocol-critic`, `literature-review:source-hunter`, `literature-review:screener`, `literature-review:screening-adjudicator`, `literature-review:study-extractor`, `literature-review:study-judge`, `literature-review:appraisal-adjudicator`, `literature-review:figure-author`, `literature-review:citation-verifier`, `literature-review:review-critic`
 - **Commands:** `/literature-review:review`, `/literature-review:audit`
 
 ## Structure
@@ -130,7 +132,7 @@ literature-review/
 ├── commands/
 │   ├── review.md                  the pipeline, its gates and its rules
 │   └── audit.md                   findings only; never edits
-├── agents/                        eight, each with a fixed tool list
+├── agents/                        ten, each with a fixed tool list
 ├── skills/
 │   ├── literature-review/         the standard
 │   │   ├── references/            PRISMA, tiers, search, appraisal, synthesis,
@@ -143,7 +145,8 @@ literature-review/
 │   │   ├── scripts/fetch_fulltext.py
 │   │   ├── scripts/screening_stats.py
 │   │   └── examples/              a screening fixture covering every case
-│   ├── source-appraisal/          one reader per study
+│   ├── source-appraisal/          one extractor and two judges per study
+│   │   ├── scripts/appraisal_merge.py
 │   │   ├── scripts/appraisal_check.py
 │   │   └── examples/
 │   ├── review-figures/
@@ -170,7 +173,8 @@ One full run, on an arXiv-heavy computing question, is the evidence behind this 
 
 - any field whose papers are not on arXiv or in open-access PubMed Central;
 - stopping at a gate for a person, or resuming a stopped run;
-- a reader correcting a quotation that failed its first check;
+- a full review appraised by an extractor and two judges per study: that design has been tested on three studies only;
+- an adjudicator settling a rating in a live run;
 - forward citation searching;
 - the export chain on Windows.
 
