@@ -116,8 +116,9 @@ The review command refuses a bare topic and asks for a question. A well-formed q
 
 Everything is addressed as `literature-review:<name>`, with no bare-name fallback.
 
-- **Skills:** `literature-review`, `review-protocol`, `source-discovery`, `record-screening`, `source-appraisal`, `review-figures`, `review-synthesis`, `review-audit`
-- **Agents:** `protocol-critic`, `source-hunter`, `screener`, `screening-adjudicator`, `paper-reader`, `figure-author`, `citation-verifier`, `review-critic`
+- **Skills:** `literature-review:literature-review`, `literature-review:review-protocol`, `literature-review:source-discovery`, `literature-review:record-screening`, `literature-review:source-appraisal`, `literature-review:review-figures`, `literature-review:review-synthesis`, `literature-review:review-audit`
+- **Agents:** `literature-review:protocol-critic`, `literature-review:source-hunter`, `literature-review:screener`, `literature-review:screening-adjudicator`, `literature-review:paper-reader`, `literature-review:figure-author`, `literature-review:citation-verifier`, `literature-review:review-critic`
+- **Commands:** `/literature-review:review`, `/literature-review:audit`
 
 ## Structure
 
