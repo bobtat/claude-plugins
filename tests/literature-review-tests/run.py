@@ -281,6 +281,9 @@ def merge():
         check("--escalated worse takes the more severe rating and marks it",
               rc == 0 and "S2,Structured critique,D1 Baseline adequacy,High," in read(os.path.join(t, "rob.csv"))
               and "escalated: worse of two" in read(os.path.join(t, "rob.csv")), out)
+        esc = json.loads(read(os.path.join(t, "stats.json")))["escalated"]
+        check("every escalated item is listed in the statistics for a person to find",
+              [(x["item"], x["taken"]) for x in esc] == [("D1 Baseline adequacy", "High")] and "escalated, for a person" in out, str(esc))
 
         def refused(label, name, old, new):
             d = tempfile.mkdtemp(dir=t); os.rmdir(d); shutil.copytree(src, d)
