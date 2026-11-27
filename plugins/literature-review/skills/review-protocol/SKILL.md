@@ -85,10 +85,23 @@ Two independent screeners at title/abstract and at full text. Adjudication rule.
 The κ threshold below which criteria are revised rather than adjudicated.
 
 ## 7. Data items
-Outcomes (item 10a) and other variables (10b) to extract, each defined.
+Outcomes (item 10a), each defined. Then every other variable (10b) as a column:
+
+| Column | Type | Allowed values | Definition |
+|---|---|---|---|
+| `design` | code | rct; cohort; case-control; other; not stated | … |
+| `setting` | codes | hospital; community; other; not stated | Several may apply |
+| `funding` | text | — | As the paper states it |
 
 ## 8. Risk of bias
-Instrument per design, or the stated critique criteria where none is validated.
+- Instrument: <name per design, or "structured critique (not a validated instrument)">
+- Scale: Low < Some concerns < High
+- No information: No information
+- Overall: worst domain | none
+
+| Domain | What undermines the claim |
+|---|---|
+| D1 … | … |
 
 ## 9. Synthesis
 Narrative or meta-analysis, and why. Planned threads if known.
@@ -143,6 +156,27 @@ for someone who has only a title and an abstract.
 
 Ambiguous criteria are the cause of low κ, and low κ is fixed by rewriting criteria,
 not by adjudicating forty records one at a time.
+
+### Data items and the rating scale
+
+Two readers of one paper will word a free-text field differently, and nothing is lost.
+They must not *code* a field differently because the categories were never fixed. In
+the second end-to-end run, two readings of the same study put its memory type in
+"shared multi-agent memory" and in "other", and each would have drawn a different
+evidence map.
+
+- **Every column a figure or a count is built from is `code` or `codes`**, with its
+  allowed values listed and each defined well enough to choose between neighbours.
+  `code` takes exactly one value; `codes` takes one or more, separated by `;`.
+- **Every list ends with `other` and `not stated`.** A reader with no fitting value
+  writes `other` and says why in the appraisal; it never coins a value.
+- **Section 8 states the scale in order**, least concern first, and how the overall
+  rating follows from the domains: `worst domain`, or `none` for an instrument with no
+  overall judgment. The overall rating is then computed, never judged.
+
+`appraisal_check.py`, in the `literature-review:source-appraisal` skill, holds the
+appraisal data to this section and refuses a protocol that leaves it out. Adding a value
+after approval is an amendment.
 
 ### Search strings
 

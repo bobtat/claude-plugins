@@ -107,7 +107,9 @@ Exclusion reasons need a count each. A single "excluded (n=9)" box is non-compli
 
 ### RoB traffic light
 
-Rows are studies, columns are the instrument's domains plus an overall column.
+Rows are studies, columns are the instrument's domains plus an overall column. The
+overall column is drawn from the `Overall` rows `appraisal_check.py` derives, never
+from a reader's judgment, and is omitted when the protocol's rule is `none`.
 
 - Each cell carries **both** a color and its letter — `L` low, `S` some concerns,
   `H` high, `N` no information, `?` unclear. Color alone fails for the ~8% of readers
