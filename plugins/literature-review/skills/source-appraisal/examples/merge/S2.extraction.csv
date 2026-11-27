@@ -1,0 +1,2 @@
+study_id,report_ids,tier,contribution,injection_vector,models_evaluated,n
+S2,R2,A,attack,query only; external content,GPT-4o,3 seeds
