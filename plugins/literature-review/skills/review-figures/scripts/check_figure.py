@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 
 NS = "{http://www.w3.org/2000/svg}"
 TOL = 2.5
+GAP = 4      # two labels on one baseline need at least this much space between them
 
 
 def rects(root, cls="bx"):
@@ -40,6 +41,38 @@ def on_any_edge(px, py, boxes, tol=TOL):
         if y - tol <= py <= y + h + tol and (abs(px - x) <= tol or abs(px - (x + w)) <= tol):
             return True
     return False
+
+
+def text_boxes(root, src):
+    """Estimated (left, right, baseline, size, content) for each single-line <text>.
+
+    Widths are estimated from character count, so this finds labels that run into
+    each other, not ones that merely sit close. Rotated or moved text is skipped.
+    """
+    sizes = {m.group(1): float(m.group(2))
+             for m in re.finditer(r"\.([\w-]+)\s*\{[^}]*?font(?:-size)?:[^;}]*?(\d+(?:\.\d+)?)px", src)}
+    bold = set(re.findall(r"\.([\w-]+)\s*\{[^}]*?font:[^;}]*?(?:bold|[6-9]00)", src))
+    parent = {c: p for p in root.iter() for c in p}
+    out = []
+    for t in root.iter(f"{NS}text"):
+        e, moved = t, False
+        while e is not None:
+            moved = moved or bool(e.get("transform"))
+            e = parent.get(e)
+        content = " ".join("".join(t.itertext()).split())
+        if moved or not content or any(c.get("x") or c.get("dy") for c in t):
+            continue
+        try:
+            x, y = float(t.get("x")), float(t.get("y"))
+        except (TypeError, ValueError):
+            continue
+        cls = (t.get("class") or "").split()
+        size = float(t.get("font-size") or next((sizes[c] for c in cls if c in sizes), 12))
+        w = len(content) * size * (0.58 if any(c in bold for c in cls) else 0.53)
+        anchor = t.get("text-anchor", "start")
+        left = x - w if anchor == "end" else x - w / 2 if anchor == "middle" else x
+        out.append((left, left + w, y, size, content))
+    return out
 
 
 def check(path):
@@ -100,6 +133,27 @@ def check(path):
         if xs and max(xs) > vbw + 0.5:
             fails.append(f"text clipped horizontally: max x {max(xs):.0f} exceeds {vbw:.0f}")
         notes.append(f"{len(texts)} real <text> elements")
+
+        # Labels that run into each other. Nothing above sees this: both labels are
+        # real text, inside the viewBox, and no box overlaps.
+        tb = sorted(text_boxes(root, src))
+        hits = []
+        for i, (l1, r1, y1, s1, c1) in enumerate(tb):
+            for l2, r2, y2, s2, c2 in tb[i + 1:]:
+                if l2 >= r1 + GAP:
+                    break
+                if abs(y1 - y2) < 0.5 * min(s1, s2):
+                    hits.append(f'"{c1[:28]}" and "{c2[:28]}" near ({l2:.0f},{y1:.0f})')
+        if hits:
+            fails.append(f"text runs into text (under {GAP}px apart on one line): " + "; ".join(hits[:4])
+                         + (f"; and {len(hits) - 4} more" if len(hits) > 4 else ""))
+        seen, twice = set(), []
+        for *_, c in tb:
+            if len(c) >= 50 and c in seen and c not in twice:
+                twice.append(c)
+            seen.add(c)
+        if twice:
+            notes.append("the same sentence appears twice: " + "; ".join(f'"{c[:50]}"' for c in twice))
 
     # Accessibility
     if root.get("role") != "img":
