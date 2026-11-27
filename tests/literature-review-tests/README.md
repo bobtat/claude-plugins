@@ -14,15 +14,15 @@ copied to users when they install it.
 
 ## What it checks
 
-- **The seven scripts, against their fixtures.** The expected numbers are written in
+- **The eight scripts, against their fixtures.** The expected numbers are written in
   `run.py`: twelve quotations with nine verified, κ of 0.533 and 0.769, exclusion reasons
   rendered from the protocol, five reports of four studies, an overall rating derived
-  as the worst domain, twelve numbers with nine traced. A script whose output drifts
+  as the worst domain, two judges merged at κ 0.75 with one rating adjudicated, twelve numbers with nine traced. A script whose output drifts
   fails here before it reaches a review.
 - **The inputs the scripts must refuse.** A record ID with a dot in it, an appraisal that
   names no records, an exclusion that cites an inclusion code, a doubt that names no
   criterion, a coded value outside its list, a rating off the scale, an overall rating a
-  reader wrote, a flow whose arithmetic does not close, two figure labels that run into each
+  judge wrote, a judgment with no eligibility line, an adjudicated rating off the scale, a flow whose arithmetic does not close, two figure labels that run into each
   other. These failures are quiet when they regress: the script still runs and prints
   believable numbers.
 - **The repository's rules for a plugin.** `version` and `description` agree between
