@@ -90,6 +90,7 @@ It exits non-zero on any failure and reports what and where:
 | No overlapping content boxes | Two boxes drawn on top of each other |
 | **Arrow endpoints land on a box edge** | An arrow pointing at empty space |
 | Nothing outside the `viewBox` | Clipped boxes and clipped text |
+| **Labels on one line keep 4px apart** | A row label running into the first value beside it |
 | Real `<text>` elements exist | Text outlined into paths |
 | `role="img"`, non-empty `<title>` and `<desc>` | A figure a screen reader cannot read |
 | `<desc>` contains digits | A description that omits the figure's numbers |
@@ -103,8 +104,13 @@ other-methods column's arrow dropped into empty space and never reached the Incl
 box. It took a human looking at the render to see it. The check now catches it, and it
 is the reason "it parses and nothing overlaps" is not a sufficient standard.
 
+The label check estimates widths from character counts, and skips rotated text and
+multi-line `<tspan>` blocks, so it catches labels that collide and not ones that are
+merely tight. It also notes, without failing, a sentence that appears twice in one
+figure — usually a subtitle repeated as a footnote.
+
 What the checker still cannot judge: whether the figure **reads well** — crowding,
-label collisions inside a box, a layout that is technically correct and hard to follow.
+wrapped text inside a box, a layout that is technically correct and hard to follow.
 When a figure is new or its layout changed, render it and look, or ask someone to.
 
 Separately, and not the checker's job: **recompute the figure's numbers from the source
