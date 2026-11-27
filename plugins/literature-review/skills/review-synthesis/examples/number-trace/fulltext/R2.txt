@@ -1,0 +1,3 @@
+A re-run of the attack
+On the same benchmark we obtain 34.5% attack success with GPT-5-mini over 250 trials, against
+the 62.6 reported originally. Variance across seeds was .938 of the original.
