@@ -36,7 +36,7 @@ One full run has been measured, on 2026-11-26: an unattended review of memory po
 | Wall-clock time | 89 minutes |
 | Cost | $86.67 |
 
-That run used one appraisal reader per study, at about $0.73 each. Appraisal now uses an extractor and two judges per study, which a three-study test put at about $1.11 per study, so expect a review of that size to cost roughly $20 more. A larger review costs more; one run is not enough to say how it scales. Each record is screened twice, and each included full text is read by two screeners, an extractor and two judges.
+That run used one appraisal reader per study, at about $0.73 each. Appraisal now uses an extractor, two judges and an adjudicator where needed, which a three-study test of the finished design put at about $1.58 per study. At that rate a review of 52 studies would cost roughly $45 more than the run above. A larger review costs more; one run is not enough to say how it scales. Each record is screened twice, and each included full text is read by two screeners, an extractor and two judges.
 
 ## What It Produces
 
