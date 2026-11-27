@@ -138,8 +138,10 @@ keys are checkable against the `.bib` mechanically.
 
 ### BibTeX
 
-Entries come from **resolved metadata** — Crossref for DOIs, the arXiv API for arXiv
-IDs, `export_citations` for arXiv works — never hand-written. A hand-written entry is
+Entries come from **resolved metadata** — Crossref for DOIs; for arXiv IDs the
+`citation_*` meta tags on the `arxiv.org/abs/<id>` page, or `export_citations` when
+`arxiv-mcp-server` is present — never hand-written. The arXiv export API is not a
+dependable route: it has returned HTTP 406 from hosted environments. A hand-written entry is
 an unverified citation with extra steps.
 
 Every entry carries its identifier. A reference with no resolvable identifier is
@@ -180,7 +182,7 @@ Probe order:
 | `rsvg-convert` | `rsvg-convert --version` | librsvg. Best fidelity. Linux/macOS |
 | `inkscape` | `inkscape --version` | Cross-platform including Windows. Slow |
 | `magick` | `magick -version` | ImageMagick. Needs an SVG delegate; check it renders |
-| `svglib` | via `uvx` | Pure Python, no native libraries — the Windows fallback |
+| `svglib` | via `uvx` | Pure Python, no native libraries — the Windows fallback. Does not draw `<pattern>` fills, so hatching is lost; never encode by hatch alone |
 
 Verify by converting one figure and looking at the output, not by the version string.
 ImageMagick in particular reports success while producing a blank raster when its SVG
@@ -189,11 +191,27 @@ delegate is missing.
 Rasterize at **300 DPI minimum** for print. The figures are designed at ~800 units
 wide, so this is roughly a 2500px raster — sharp in Word and in print.
 
+### The PDF engine
+
+pandoc does not make a PDF by itself; it hands the document to an engine, and with none
+installed `-o review.pdf` fails. Probe at Phase 0 with the rasterizer, and name the one
+found with `--pdf-engine=<name>`:
+
+| Engine | Probe | Notes |
+|---|---|---|
+| `xelatex` or `tectonic` | `xelatex --version` | LaTeX. Best typography; a large install |
+| `typst` | `typst --version` | Small and fast |
+| `weasyprint` | `weasyprint --version`, or through `uvx` | HTML to PDF, pure Python. Legible, not typeset: wide tables wrap into narrow columns. The route the second end-to-end run used |
+| `wkhtmltopdf` | `wkhtmltopdf --version` | HTML to PDF; unmaintained |
+
+No engine means no PDF, reported as a missing format. A .docx does not need one.
+
 ### Degradation
 
 | Available | Produce |
 |---|---|
-| pandoc + rasterizer | .md, .bib, .docx, .pdf, figures embedded |
+| pandoc + rasterizer + PDF engine | .md, .bib, .docx, .pdf, figures embedded |
+| pandoc + rasterizer | .md, .bib, .docx with figures; **no PDF, named in the export report** |
 | pandoc only | .md, .bib, .docx with figures **listed as missing in the export report** |
 | neither | .md + .bib + `figures/`, and say plainly that no converted formats were produced |
 
