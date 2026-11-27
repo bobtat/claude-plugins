@@ -39,7 +39,8 @@ There is no bare-name fallback. `Skill("review-protocol")` does not resolve;
   `literature-review:review-synthesis`, `literature-review:review-audit`
 - **Agents** — `literature-review:protocol-critic`, `literature-review:source-hunter`,
   `literature-review:screener`, `literature-review:screening-adjudicator`,
-  `literature-review:paper-reader`, `literature-review:figure-author`,
+  `literature-review:study-extractor`, `literature-review:study-judge`,
+  `literature-review:appraisal-adjudicator`, `literature-review:figure-author`,
   `literature-review:citation-verifier`, `literature-review:review-critic`
 
 If a skill will not load, say so and stop — the phase skills carry the procedures, and
@@ -97,8 +98,8 @@ the user. Then:
   checklist cannot mark anything `met` on the strength of a gate approval.
 
 The same rule covers every other point where a skill says to stop for the user — a
-full-text projection well above the estimate, an escalated adjudication, a reader
-reporting an ineligible study. Unattended, take the conservative choice (keep the
+full-text projection well above the estimate, an escalated adjudication at screening
+or appraisal, a judge doubting a study's eligibility. Unattended, take the conservative choice (keep the
 record, accept the volume, follow the protocol as written), and log each decision in
 the gate file for the phase it falls in.
 
@@ -179,20 +180,27 @@ pre-authorized decision. Re-run `screening_stats.py` if they change anything.
 
 ## Phase 4 — Appraisal
 
-Load `literature-review:source-appraisal`. One `literature-review:paper-reader` per
-study, in parallel, each starting from the texts in `fulltext/`. Each reader checks its
-own draft once and keeps that report in `checks/readers/`. Check what it returns before
-merging its rows into `rob.csv` and `extraction.csv`; a study that fails your check, or
-whose first check shows another paper's words, gets a fresh reader.
+Load `literature-review:source-appraisal`. Each study is read once and judged twice:
 
-After the merge, run `appraisal_check.py`: it holds coded items and ratings to the
-protocol and derives each study's overall rating. A value it refuses goes back to a
-reader, never corrected by hand.
+1. One `literature-review:study-extractor` per study turns the saved text into coded,
+   quoted, located data and makes no judgment. Check each extraction before anyone
+   judges from it.
+2. Two `literature-review:study-judge` agents per study, with identical inputs and no
+   knowledge of each other, rate every domain against the protocol's anchors, rule on
+   eligibility and query extraction values they think are wrong.
+3. `appraisal_merge.py` is the only place the two sets of ratings meet. It lists what
+   the judges left open; `literature-review:appraisal-adjudicator` decides those from
+   the paper, and the merge runs again.
+4. `appraisal_check.py` holds the merged data to the protocol and derives each study's
+   overall rating.
 
-A reader reporting that a study looks ineligible goes back to the user — excluding it here
-would make the flow diagram wrong. Either way the study is marked `doubtful` in
-`extraction.csv`, and the synthesis states its conclusions with and without the doubtful
-studies.
+Never compare two judges' ratings yourself, and never write or correct a rating or a
+coded value: both are readings, and they go back to an agent that reads.
+
+A study either judge doubts is marked `doubtful` and goes to the user — excluding it
+here would make the flow diagram wrong. Unattended, it stays in, marked, and an
+adjudication the adjudicator escalated is settled with `--escalated worse`. The
+synthesis states its conclusions with and without the doubtful studies.
 
 ## Phase 5 — Figures, Then Prose
 
@@ -256,7 +264,7 @@ Point at `review.md` for the rest.
 - **Never treat a gate as passed by a human** unless a human answered it.
 - **Never change the protocol silently.** Every change after approval is an amendment,
   dated, with a reason.
-- **Never let one screener see the other's decisions.**
+- **Never let one screener see the other's decisions, or one judge the other's ratings.**
 - **Never raise a tier.** Never paraphrase a number, and never leave one untraced.
 - **Never accept a quotation the check has not passed.**
 - **Never draw a figure the data does not support**, or one assembled from impression.

@@ -101,7 +101,7 @@ A criterion that needs the full text is answered `unsure` at this stage, never g
 ### Fetch once, before anyone reads
 
 Retrieve every advanced record's text **once**, before either screener starts, so both
-screeners, the adjudicator and later the appraisal reader all read the same file — and
+screeners, the adjudicator and later the appraisal agents all read the same file — and
 every quotation they make can be checked against it:
 
 ```

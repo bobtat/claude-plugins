@@ -20,7 +20,7 @@ Every input to this phase is on disk: `protocol.md`, `prisma-flow.json`,
 needs when you write it**, and append the section to `review.md` before starting the
 next. Do not draft the review from your memory of earlier phases.
 
-Two reasons. A section written from the appraisal file carries that file's quotes and
+Two reasons. A section written from the evidence file carries that file's quotes and
 locations; one written from memory carries your impression of them. And a run that
 writes `review.md` a section at a time leaves a usable partial review if it is
 interrupted, instead of nothing.
@@ -45,9 +45,22 @@ It is what lets a number in the review be traced to the paper it is credited to.
 
 ### 2. Build the threads
 
-Read across `appraisals/*.md` for questions **more than one study answers**. Each is a
-thread and gets a section. A question only one study addresses is a single-study finding
-and is labelled as one.
+Read across `extraction.csv` and the evidence files, `appraisals/*.evidence.md`, for
+questions **more than one study answers**. Each is a thread and gets a section. A
+question only one study addresses is a single-study finding and is labelled as one.
+
+**Find the conflicts here, from the rows.** No appraisal agent saw more than one paper,
+so nothing upstream could tell you where studies disagree. For each thread, set the
+studies' reported results side by side from `extraction.csv` and look for three things:
+
+- the same outcome, measured the same way, with results that do not fit together;
+- a study that re-ran another included study and got a different number;
+- a paper's own claim about a named work, under `## Stated disagreements` in its evidence
+  file, where that work is in the review. Open the other study's row and check the
+  claim against what it reports.
+
+Record each in `synthesis-plan.md` with both studies, both figures and their locations.
+A conflict found this way is a finding of the review, not of either paper.
 
 Write the thread list to `synthesis-plan.md` first — thread, studies bearing on it,
 whether they agree. It is the outline you write against, and the audit can check the
@@ -149,7 +162,8 @@ Mark what the review does, not what it could do. Items 24a, 25 and 26 are always
 ## The Conduct Disclosure
 
 Write `conduct-disclosure.md` from the template in `references/reporting.md`, with the
-real values: κ and raw agreement per stage from `prisma-flow.json`, the count of
+real values: κ and raw agreement per stage from `prisma-flow.json`, the judges' agreement
+and what was adjudicated from `appraisal-agreement.json`, the count of
 decisions the user made or changed, the interface each source was searched through
 from `search-log.md`, and every route that failed or degraded.
 

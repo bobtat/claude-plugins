@@ -36,7 +36,7 @@ Gates. Each blocks the review until its condition is met.
 |---|---|
 | **Never cite unverified** | Every reference resolves to a real identifier **and title-matches** the work cited. Existence alone is not verification — a confident claim attached to a real-but-wrong paper passes it cleanly. |
 | **Never quote what was not read** | Every quotation is in the saved full text of the paper it is attributed to, checked by script. Real words from the wrong paper are the failure to catch, and an agent produced exactly that in this pipeline's first run. |
-| **Never inflate a tier** | An abstract read is tier C. A machine summary is tier B. The tier is set by the reader at the moment of retrieval and is never revised upward. |
+| **Never inflate a tier** | An abstract read is tier C. A machine summary is tier B. The tier is set by whoever read the source, at the moment of reading, and is never revised upward. |
 | **Never claim prevalence from snippets** | "most", "the field has converged", "no system does X" require having read the corpus. A bounded search supports "in the included studies". |
 | **Never fabricate a count** | A "records identified" total the tooling cannot supply is reported as unavailable, with the cap named. |
 | **Never invent a finding for a gap** | A thread with no evidence gets a sentence saying so. Absence in a bounded search is evidence of nothing but the bounds. |
@@ -71,7 +71,7 @@ are the evidence that it was conducted rather than composed.
 | **1 Protocol** | `protocol.md` — question, criteria, sources, strings, snowballing caps, RoB instrument, figure budget, pilot counts | `literature-review:review-protocol` |
 | **2 Discovery** | `search-log.md`, `records.csv` | `literature-review:source-discovery` |
 | **3 Screening** | `fulltext/`, `retrieval.csv`, `screening.csv`, `prisma-flow.json` with κ per stage | `literature-review:record-screening` |
-| **4 Appraisal** | `appraisals/<study_id>.md`, `rob.csv`, `extraction.csv` | `literature-review:source-appraisal` |
+| **4 Appraisal** | `appraisals/` (one extraction and two judgments per study), `rob.csv`, `extraction.csv`, `appraisal-agreement.json` | `literature-review:source-appraisal` |
 | **5a Figures** | `figures/*.svg`, drawn from the data files before any prose | `literature-review:review-figures` |
 | **5b Synthesis** | `review.md`, `references.bib`, `prisma-checklist.md`, `conduct-disclosure.md` | `literature-review:review-synthesis` |
 | **6 Audit** | `audit.md`, and the fixes it prompts | `literature-review:review-audit` |
@@ -159,10 +159,11 @@ choose.
   against the saved full text of the record it is attributed to; `examples/quote-check/`
   exercises each verdict, `examples/own-words/` the `--own` option, and
   `examples/dotted-id/` is the input it refuses.
-- **`appraisal_check.py`** and **`trace_numbers.py`**, in the appraisal and synthesis
-  skills — the first holds coded data and ratings to the protocol and derives each
-  study's overall rating; the second traces every number in the review to the saved text
-  of the study it is credited to.
+- **`appraisal_merge.py`**, **`appraisal_check.py`** and **`trace_numbers.py`**, in the
+  appraisal and synthesis skills — the first merges two judges' ratings and computes
+  their agreement; the second holds coded data and ratings to the protocol and derives
+  each study's overall rating; the third traces every number in the review to the saved
+  text of the study it is credited to.
 - **`references/search-strategy.md`** — question frameworks, Boolean block
   construction, per-database syntax, controlled vocabulary, snowballing, stopping
   rules, the logging PRISMA-S requires.
@@ -185,8 +186,9 @@ choose.
   apart from retrieved counts, deduplication, and the snowballing passes.
 - **`literature-review:record-screening`** — dual independent screening at both stages,
   calibration, adjudication, the human/automation split, and the flow-count script.
-- **`literature-review:source-appraisal`** — retrieval-first tiering, extraction, risk of
-  bias, and the data files the figures are built from.
+- **`literature-review:source-appraisal`** — one extractor and two independent judges per
+  study, adjudication of what they leave open, and the data files the figures are built
+  from.
 - **`literature-review:review-synthesis`** — threads, `review.md` written section by
   section from files, certainty, the checklist and the conduct disclosure.
 - **`literature-review:review-figures`** — turns the data files into SVG figures, with
@@ -212,8 +214,12 @@ choose.
   with no shared context.
 - **`literature-review:screening-adjudicator`** — decides full-text disagreements from the
   paper's text, and reports criteria the disagreements cluster on.
-- **`literature-review:paper-reader`** — appraises one study, recording what it read
-  before extracting anything.
+- **`literature-review:study-extractor`** — reads one study into coded, quoted, located
+  data, recording what it read before extracting anything. Makes no judgment.
+- **`literature-review:study-judge`** — rates one study's risk-of-bias domains against the
+  protocol's anchors and rules on its eligibility; spawned twice with no shared context.
+- **`literature-review:appraisal-adjudicator`** — settles the ratings two judges gave
+  differently and the extraction values they disputed, from the paper's text.
 - **`literature-review:citation-verifier`** — resolves every identifier and
   title-matches it, per reference. Emits BibTeX from resolved metadata. Verifies
   citations, never claims.
