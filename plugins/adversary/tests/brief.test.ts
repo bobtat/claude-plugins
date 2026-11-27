@@ -1,0 +1,143 @@
+import { expect, test } from 'claude-code/testing'
+
+import { classifyBrief, fetchBrief } from '../hooks/brief'
+import { atlassian, fakeHost, gh } from './support'
+
+test('classifies PROJ-123 and AB2-7 as jira', async () => {
+  expect(classifyBrief('PROJ-123')).toEqual({ kind: 'jira', key: 'PROJ-123' })
+  expect(classifyBrief('AB2-7')).toEqual({ kind: 'jira', key: 'AB2-7' })
+})
+
+test('does not classify near-misses as jira', async () => {
+  for (const value of ['proj-123', 'PROJ-', 'PROJ-123 is broken', '-123']) {
+    expect(classifyBrief(value)).toEqual({ kind: 'text', text: value })
+  }
+})
+
+test('classifies #45 and https://github.com/o/r/issues/45 as github', async () => {
+  expect(classifyBrief('#45')).toEqual({ kind: 'github', ref: '45' })
+  expect(classifyBrief('https://github.com/o/r/issues/45')).toEqual({ kind: 'github', ref: 'https://github.com/o/r/issues/45' })
+})
+
+test('a pull request URL is text', async () => {
+  const url = 'https://github.com/o/r/pull/45'
+  expect(classifyBrief(url)).toEqual({ kind: 'text', text: url })
+})
+
+test('fetches a jira issue through the atlassian server', async () => {
+  const host = fakeHost(atlassian({ 'PROJ-123': { summary: 'Refund fails', description: 'Steps to reproduce' } }))
+
+  const result = await fetchBrief(host, { kind: 'jira', key: 'PROJ-123' })
+
+  expect(result).toEqual({ ok: true, brief: { label: 'PROJ-123', text: 'PROJ-123: Refund fails\n\nSteps to reproduce' } })
+})
+
+test('jira without a connected atlassian server returns the verbatim Jira not connected message', async () => {
+  const result = await fetchBrief(fakeHost(atlassian('absent')), { kind: 'jira', key: 'PROJ-123' })
+
+  expect(result).toEqual({ ok: false, error: 'Jira not connected; paste the ticket with --brief "..."' })
+})
+
+test('a jira call that rejects is a failed brief, not a throw', async () => {
+  const connected = atlassian({ 'PROJ-123': { summary: 'S', description: 'D' } })
+  const rejectAll = fakeHost({ ...connected, mcpCall: async () => Promise.reject(new Error('server disconnected')) })
+  const rejectIssue = fakeHost({
+    ...connected,
+    mcpCall: async (server, tool, args) => (tool === 'getJiraIssue' ? Promise.reject(new Error('timeout')) : connected.mcpCall(server, tool, args)),
+  })
+  const rejectTools = fakeHost({ ...connected, mcpTools: async () => Promise.reject(new Error('tool list unavailable')) })
+
+  expect(await fetchBrief(rejectAll, { kind: 'jira', key: 'PROJ-123' })).toEqual({ ok: false, error: 'Jira not connected; paste the ticket with --brief "..."' })
+  expect(await fetchBrief(rejectIssue, { kind: 'jira', key: 'PROJ-123' })).toEqual({
+    ok: false,
+    error: 'Could not read PROJ-123 from Jira; paste the ticket with --brief "..."',
+  })
+  expect(await fetchBrief(rejectTools, { kind: 'jira', key: 'PROJ-123' })).toEqual({ ok: false, error: 'Jira not connected; paste the ticket with --brief "..."' })
+})
+
+test('uses the atlassian server the plugin bundles, under the name connect returns', async () => {
+  const bundled = 'plugin:adversary:atlassian'
+  const { mcpCall } = atlassian({ 'PROJ-123': { summary: 'S', description: 'D' } }, bundled)
+  const connected: string[] = []
+  const host = fakeHost({
+    mcpConnect: async key => {
+      connected.push(key)
+      return { isConnected: true, server: bundled }
+    },
+    mcpCall,
+  })
+
+  const result = await fetchBrief(host, { kind: 'jira', key: 'PROJ-123' })
+
+  expect(connected).toEqual(['atlassian'])
+  expect(result).toEqual({ ok: true, brief: { label: 'PROJ-123', text: 'PROJ-123: S\n\nD' } })
+})
+
+test('an atlassian server the session already runs is used when the bundled one is not connected', async () => {
+  const host = fakeHost({
+    ...atlassian({ 'PROJ-123': { summary: 'S', description: 'D' } }),
+    mcpConnect: async () => ({ isConnected: false, reason: 'disabled' }),
+  })
+
+  const result = await fetchBrief(host, { kind: 'jira', key: 'PROJ-123' })
+
+  expect(result).toEqual({ ok: true, brief: { label: 'PROJ-123', text: 'PROJ-123: S\n\nD' } })
+})
+
+test('a bundled server waiting for sign-in says to run /mcp', async () => {
+  const host = fakeHost({ mcpConnect: async () => ({ isConnected: false, reason: 'auth' }) })
+
+  const result = await fetchBrief(host, { kind: 'jira', key: 'PROJ-123' })
+
+  expect(result).toEqual({ ok: false, error: 'Atlassian needs you to sign in: run /mcp, or paste the ticket with --brief "..."' })
+})
+
+test('a connect call that rejects falls back to the servers the session runs', async () => {
+  const host = fakeHost({
+    ...atlassian({ 'PROJ-123': { summary: 'S', description: 'D' } }),
+    mcpConnect: async () => Promise.reject(new Error('no manifest')),
+  })
+
+  const result = await fetchBrief(host, { kind: 'jira', key: 'PROJ-123' })
+
+  expect(result).toEqual({ ok: true, brief: { label: 'PROJ-123', text: 'PROJ-123: S\n\nD' } })
+})
+
+test('fetches a github issue through gh', async () => {
+  const host = fakeHost(gh({ 'gh issue view 45 --json title,body': { exitCode: 0, stdout: JSON.stringify({ title: 'Crash on save', body: 'It crashes.' }) } }))
+
+  const result = await fetchBrief(host, { kind: 'github', ref: '45' })
+
+  expect(result).toEqual({ ok: true, brief: { label: '#45', text: '#45: Crash on save\n\nIt crashes.' } })
+})
+
+test('a github issue URL is labelled with its number', async () => {
+  const host = fakeHost(gh({ 'gh issue view https://github.com/o/r/issues/45': { exitCode: 0, stdout: JSON.stringify({ title: 'T', body: 'B' }) } }))
+
+  const result = await fetchBrief(host, { kind: 'github', ref: 'https://github.com/o/r/issues/45' })
+
+  expect(result).toEqual({ ok: true, brief: { label: '#45', text: '#45: T\n\nB' } })
+})
+
+test('gh failing returns the verbatim gh is not available message', async () => {
+  const host = fakeHost(gh({ 'gh issue view': { exitCode: 1, stdout: '', stderr: 'auth' } }))
+
+  const result = await fetchBrief(host, { kind: 'github', ref: '45' })
+
+  expect(result).toEqual({ ok: false, error: 'gh is not available: run gh auth login' })
+})
+
+test('text is returned as the brief with label pasted brief', async () => {
+  const result = await fetchBrief(fakeHost(), { kind: 'text', text: 'Make refunds idempotent' })
+
+  expect(result).toEqual({ ok: true, brief: { label: 'pasted brief', text: 'Make refunds idempotent' } })
+})
+
+test('a jira description that is not a string is serialised as JSON', async () => {
+  const description = { type: 'doc', content: [] }
+  const host = fakeHost(atlassian({ 'PROJ-123': { summary: 'S', description } }))
+
+  const result = await fetchBrief(host, { kind: 'jira', key: 'PROJ-123' })
+
+  expect(result).toEqual({ ok: true, brief: { label: 'PROJ-123', text: 'PROJ-123: S\n\n' + JSON.stringify(description) } })
+})

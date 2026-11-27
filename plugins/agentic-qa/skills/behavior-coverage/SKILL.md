@@ -1,37 +1,39 @@
 ---
 name: behavior-coverage
-description: Use when turning a validated ticket into a behavior spec for a live walkthrough — spawning agentic-qa:behavior-extractor to draft it and agentic-qa:behavior-coverage-critic to pair with it live, arguing findings out directly rather than reporting back. Governs the grounding split between what the acceptance criteria asked for and everything else, the round cap, and the Critique Exchange log. Invoked as the Extract Behaviors phase by /agentic-qa:walkthrough, between Intake and Plan Steps.
+description: Use when turning a validated ticket into a behavior spec for a live walkthrough — spawning agentic-qa:behavior-extractor to draft it and agentic-qa:behavior-coverage-critic to review it, with the orchestrator relaying each round. Governs the grounding split between what the acceptance criteria asked for and everything else, the round cap, and the Critique Exchange log. Invoked as the Extract Behaviors phase by /agentic-qa:walkthrough, between Intake and Plan Steps.
 ---
 
 ## Overview
 
 This is Phase 1: turning `intake.md`'s validated ticket into `behavior-spec.md`. It models a QA engineer's actual working knowledge, not a developer's — reasoning from the acceptance criteria and whatever docs were given, never from code. The plugin's edge over a human QA process lives entirely in the critic, which does read code, specifically to find what the ticket never called out.
 
-**Orchestrator-owned steps:** spawning both agents and enforcing the round cap. Neither agent has `AskUserQuestion`; nothing here reaches the User Gate directly.
+**Orchestrator-owned steps:** spawning both agents, relaying every round between them, and enforcing the round cap. Neither agent has `AskUserQuestion`; nothing here reaches the User Gate directly.
 
 ## Step 1 — Spawn the drafter
 
-Spawn `agentic-qa:behavior-extractor` with the absolute path to `intake.md`. Its entire input is that file's `Ticket` and `Docs` fields — no `Diff`, no environment, no credentials, nothing else. It follows `testing:behavior-extraction` to draft a numbered Given/When/Then behavior spec, each behavior anchored to a quote from the ticket.
+Spawn `agentic-qa:behavior-extractor` with the absolute path to `intake.md`. Its entire input is that file's `Ticket` and `Docs` fields and the `docs/<n>.md` snapshots they name — no `Diff`, no environment, no credentials, nothing else. It follows `testing:behavior-extraction` to draft a numbered Given/When/Then behavior spec, each behavior anchored to a quote from the ticket. It returns once the draft is written; keep the agent ID its spawn returned.
 
 The grounding model is two categories, not the four-tier confidence ladder `testing:behavior-extraction` uses elsewhere in this repo:
 
-- **From the acceptance criteria** — literal or a direct implication of it (`"implied by: <quote>"` if not verbatim). Not strikeable; it's what was actually asked for.
+- **From the acceptance criteria** — literal or a direct implication of it (`"implied by: <quote>"` if not verbatim). Not strikeable; it's what was actually asked for. A direct implication is what the criterion's words can't be true without. Something else on the page that the criterion doesn't name, a count, a total, a badge, is not implied by it however closely it follows: it is an `Added` row or a question, so that the criterion is not failed for what the ticket never said.
 - **`Added`** — grounded in something outside the acceptance criteria: a doc, a related ticket, or (from the critic) the PR diff. Strikeable later, at the User Gate — starts `included` by default, becomes `dropped` only if struck.
 
 A doc that actively disagrees with the acceptance criteria goes in `behavior-spec.md`'s `Conflicts` section rather than being silently picked one way — the drafter does not resolve it; it carries forward for the User Gate.
 
-## Step 2 — Spawn the critic and start the pairing
+## Step 2 — Spawn the critic and relay the rounds
 
-Spawn `agentic-qa:behavior-coverage-critic` with the absolute path to the draft `behavior-spec.md`. It reads the PR's diff — always available, since Intake requires a merged PR — and argues two things:
+Spawn `agentic-qa:behavior-coverage-critic` with the absolute paths to the draft `behavior-spec.md` and `intake.md`. It reads the PR's diff — always available, since Intake requires a merged PR — and, when the session is in a checkout of the PR's repository that holds the change, searches it for the code that uses what the diff changed. It argues two things:
 
-1. **Blast radius** — behaviors the ticket never called out but the change plausibly affects, each requiring a real code-location citation.
+1. **Blast radius** — behaviors the ticket never called out but the change plausibly affects, in the diff or in code the diff never touches, each requiring a real code-location citation.
 2. **Citation audit** — does each of the drafter's own `Added` rows actually say what it claims, not just whether a citation exists.
 
 A finding about the ticket's own clarity (an ambiguous criterion, no stated pass/fail) doesn't need a separate citation — the ticket text is already the artifact being critiqued.
 
-**This is a live pairing, not a report-back.** Relay the critic's findings to `agentic-qa:behavior-extractor` via `SendMessage` rather than editing `behavior-spec.md` yourself — the agent that reasoned through why it wrote a behavior a certain way is better positioned to revise it correctly than an orchestrator reconstructing intent from the file. Log every round in `behavior-spec.md`'s own `Critique Exchange` section as it happens: what was raised, how it was answered.
+**The drafter revises, not you.** The critic returns its findings. Relay them to `agentic-qa:behavior-extractor` with `SendMessage` to the agent ID its spawn returned, rather than editing `behavior-spec.md` yourself. That resumes the extractor with its full context, and the agent that reasoned through why it wrote a behavior a certain way is better positioned to revise it correctly than an orchestrator reconstructing intent from the file. It logs the round in `behavior-spec.md`'s own `Critique Exchange` section — what was raised, how it was answered — and returns a one-line reply per finding. For a second round, resume the critic by its ID with those replies.
 
-**Round cap:** two rounds at most. Re-run only if a behavior or an `Added` row actually changed as a result of the previous round — a reworded justification or an accepted-but-unchanged finding is not grounds for another round. "No material findings" is a valid and expected terminal result, not a failure to look hard enough.
+The two agents never message each other: neither holds the other's ID, and neither can wait for a reply. See `agentic-qa:agentic-qa`'s Agent messaging.
+
+**Round cap:** two rounds at most. Re-run only if a behavior or an `Added` row actually changed as a result of the previous round, or the extractor rejected a finding — a critic can't answer a rejection it never sees. A reworded justification or an accepted-but-unchanged finding is not grounds for another round. "No material findings" is a valid and expected terminal result, not a failure to look hard enough. When it is the critic's first result nothing is relayed, so add `### Round 1` with it to the spec's `Critique Exchange` yourself: otherwise the spec reads as if nobody reviewed it.
 
 ## `behavior-spec.md` format
 
@@ -53,6 +55,7 @@ A finding about the ticket's own clarity (an ambiguous criterion, no stated pass
 ## Unspecified — needs an answer before these become steps
 | # | Question | Affects | Options |
 |---|---|---|---|
+| Q1 | Must the search also find a cancelled order? | B7 (testable as written) | (a) any order (b) a cancelled one too |
 
 ## Conflicts — doc/ticket disagreement
 | Behavior | Ticket says | Doc says | Needs a decision from |
@@ -74,5 +77,7 @@ A finding about the ticket's own clarity (an ambiguous criterion, no stated pass
 ### Round 2 (if any)
 …
 ```
+
+In `Affects`, say for each behavior from the acceptance criteria whether it can still be judged as written: `B7 (testable as written)`, or `B5 (no result stated without this)`. Most questions are about a case beside the behavior — a boundary, a second time, another role — and the behavior is still what the ticket says. The planner blocks only the second kind.
 
 Every behavior from the acceptance criteria and every `Added`/`Unspecified`/`Conflicts` entry gets resolved or explicitly carried to the User Gate — nothing gets silently dropped. Hand `behavior-spec.md`'s absolute path to Phase 2 (`agentic-qa:step-planning`) once the pairing settles.

@@ -1,0 +1,10 @@
+{
+  "name": "cost-ledger-probe",
+  "version": "0.1.0",
+  "description": "Measures how $.model.fork behaves as a prompt-cache keep-alive, to settle the numbers cost-ledger's keep-alive will rely on. Not shipped.",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT"
+}

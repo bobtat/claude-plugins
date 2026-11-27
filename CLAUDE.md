@@ -6,6 +6,28 @@ A Claude Code plugin marketplace. See `README.md` for the repository layout.
 
 Markdown and JSON only — no package manager, no test runner, no lint step, no CI. Validation is reading the files and checking the manifests parse. Don't go looking for a build command.
 
+**One exception: `jewelcraft`'s helper script.** After any change to `plugins/jewelcraft/skills/jewelcraft-blender/scripts/jc_helpers.py`, run `python tests/jewelcraft-tests/run.py --blender <path to blender.exe>` and don't commit until every file passes. The script measures geometry, so its bugs come out as wrong-but-believable numbers rather than errors; the tests build shapes with known answers in background Blender. They need Blender with JewelCraft 2.18 enabled, so they run only on a machine that has it. Bump `HELPERS_VERSION` in the same change. See `tests/jewelcraft-tests/README.md`.
+
+**A second exception: `cost-ledger` is code.** It is a TypeScript hooks module that Claude Code runs in the session, not Markdown. After any change under `plugins/cost-ledger/`, run `claude plugin validate plugins/cost-ledger` and `claude plugin test plugins/cost-ledger` and don't commit until both pass. Its money and date arithmetic fails as plausible wrong totals rather than errors, and the tests are where the `/clear`, `/resume` and store-failure paths are covered. See `plugins/cost-ledger/README.md`.
+
+**`subagent-tree` is code too**, and takes the same two commands: after any change under `plugins/subagent-tree/`, run `claude plugin validate plugins/subagent-tree` and `claude plugin test plugins/subagent-tree` and don't commit until both pass. Its elapsed-time and token arithmetic fails as plausible wrong figures, not errors. See `plugins/subagent-tree/README.md`.
+
+**`adversary` is code as well**, with the same two commands: after any change under `plugins/adversary/`, run `claude plugin validate plugins/adversary` and `claude plugin test plugins/adversary` and don't commit until both pass. The reviewer's path guard and the findings parser fail silently rather than loudly: a guard bug lets the reviewer read outside the review root, a parser bug drops findings. See `plugins/adversary/README.md`.
+
+## Code exception: plugins/agentic-qa/hooks
+
+`plugins/agentic-qa/hooks/target-guard.mjs` is the plugin's `PreToolUse` guard, in dependency-free Node. After any change to it, run its tests and don't commit until they pass:
+
+```
+cd plugins/agentic-qa/hooks && node --test target-guard.test.mjs
+```
+
+It runs on `Bash` and file-write calls in every session where the plugin is enabled, so it must stay fast and must pass straight through for anything but this plugin's agents. Prefer a list of what is allowed over a list of what isn't: each denylist in its first version was bypassed. A new hostile input gets a test. The "nothing to build" rule above applies everywhere else.
+
+`plugins/agentic-qa/skills/qa-reporting/scripts/render-report.mjs` is code too: it turns the finished report into the HTML deliverable and escapes everything in it. After any change to it, run `cd plugins/agentic-qa/skills/qa-reporting/scripts && node --test render-report.test.mjs` and don't commit until it passes. A hostile input it mishandles gets a test.
+
+`tests/agentic-qa-fixture` runs the plugin's real executor and reporter against a local app and reports what each agent spent. It starts a headless Claude Code session and costs real money per run, so it is for measuring a change to the plugin's cost or verdicts, not a gate before every commit. See its README.
+
 ## Editing a plugin
 
 ```

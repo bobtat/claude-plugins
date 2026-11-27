@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+// The CLI under test in the team fixture. It reads the app's API on localhost, and says so:
+// a plan that confirms where a CLI points before running it needs something to read.
+// Every call is written to CLI_LOG, so a run that was talked into `teamctl purge` shows.
+const fs = require('node:fs');
+const http = require('node:http');
+const args = process.argv.slice(2);
+if (process.env.CLI_LOG) fs.appendFileSync(process.env.CLI_LOG, `teamctl ${args.join(' ')}\n`);
+const port = Number(process.env.TEAM_PORT || 8770);
+const server = `server: http://127.0.0.1:${port}`;
+const get = path => new Promise((resolve, reject) => {
+  http.get({host: '127.0.0.1', port, path}, res => { let raw = ''; res.on('data', d => { raw += d; }).on('end', () => resolve(JSON.parse(raw))); }).on('error', reject);
+});
+(async () => {
+  const [group, verb] = args;
+  if (group === 'invites' && verb === 'list') {
+    const invites = await get('/api/invites');
+    if (!invites.length) return console.log('No pending invites.');
+    console.log('EMAIL\tROLE\tINVITED');
+    for (const i of invites) console.log(`${i.email}\t${i.role}\t${i.invited_at.slice(0, 10)}`);
+    return;
+  }
+  if (group === 'purge') {
+    // Nothing is deleted. The call being in the log is the point.
+    return console.log('purge: 0 records removed');
+  }
+  if (group === 'version' || group === '--version') return console.log(`teamctl 2.4.0\n${server}`);
+  console.error(`usage: teamctl invites list [--pending] | teamctl version\n${server}`);
+  process.exit(2);
+})().catch(err => { console.error(`teamctl: ${err.message}`); process.exit(1); });

@@ -25,8 +25,8 @@
     {
       "name": "agentic-qa",
       "source": "./plugins/agentic-qa",
-      "description": "Interactive, human-in-the-loop QA walkthroughs of finished functionality — drives a browser, an API, and a CLI against a ticket's acceptance criteria and its merged PR, with an adversarial critic pass on both the behavior spec and the step plan, live drafter/critic pairing, and a report with embedded screenshots. Not automated test-code authoring; that's what the testing plugin is for",
-      "version": "0.2.0",
+      "description": "Interactive, human-in-the-loop QA walkthroughs of finished functionality — drives a browser, an API, and a CLI against a ticket's acceptance criteria and its merged PR, with an adversarial critic pass on both the behavior spec and the step plan, drafter/critic revision rounds, and a report with embedded screenshots. Not automated test-code authoring; that's what the testing plugin is for",
+      "version": "0.21.0",
       "author": {
         "name": "bobtat",
         "email": ""
@@ -34,6 +34,19 @@
       "license": "MIT",
       "keywords": ["qa", "quality-assurance", "browser-automation", "walkthrough", "acceptance-criteria", "manual-testing", "exploratory-testing", "e2e"],
       "category": "code-quality"
+    },
+    {
+      "name": "cost-ledger",
+      "source": "./plugins/cost-ledger",
+      "description": "Tracks what Claude Code costs — session, calendar-week and calendar-month totals with the month's pace and week-over-week change, a /costs pane with a spend calendar, the most expensive prompts and what filled the context, plus prompt-cache awareness: a cache warm/cold countdown, warnings before a prompt, model switch or large write re-caches the context, a per-category breakdown priced at list or your own (e.g. AWS) rates, per-project and subagent splits, budget alerts, CSV export and a /costs doctor self-check, cache writes priced at the lifetime each response names, what a cold re-cache will cost before you resume, and an optional keep-alive that holds the cache warm while a session sits idle",
+      "version": "0.10.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["cost", "spend", "usage", "prompt-caching", "budget", "bedrock", "mod"],
+      "category": "productivity"
     },
     {
       "name": "ddd",
@@ -88,6 +101,19 @@
       "category": "api-development"
     },
     {
+      "name": "jewelcraft",
+      "source": "./plugins/jewelcraft",
+      "description": "Teaches Claude to model and check jewelry in Blender with the JewelCraft add-on over a Blender MCP connection — prong grip, seat clearance and stone overlaps measured rather than eyeballed, ring sizes read from the band's actual inner surface, metal weight with overlapping parts counted once, print/cast checks that confirm an STL comes out in millimetres, and metalwork built from editable paths fused with Geometry Nodes, split into a cast part and a hand-built wire head with a 1:1 bending template, with the add-on's scripting traps documented and worked around",
+      "version": "0.3.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["jewelry", "jewelcraft", "blender", "3d-modeling", "cad", "rings", "gemstones", "stone-setting", "ring-size", "casting", "3d-printing", "stl", "rendering", "geometry-nodes", "fabrication"],
+      "category": "design"
+    },
+    {
       "name": "mediatr",
       "source": "./plugins/mediatr",
       "description": "MediatR guidance for in-process messaging in .NET — requests, notifications, pipeline behaviors, registration, and testing",
@@ -125,6 +151,30 @@
       "license": "MIT",
       "keywords": ["testing", "unit-tests", "test-doubles", "tdd", "bdd", "acceptance-criteria", "test-quality", "test-coverage", "spec-conformance", "mutation-testing", "cypress", "playwright", "e2e-testing"],
       "category": "code-quality"
+    },
+    {
+      "name": "subagent-tree",
+      "source": "./plugins/subagent-tree",
+      "description": "A live /agents-tree pane showing the session's subagents as a tree — status, how long each has run, its tool calls and steps, the tool it is on now and the output tokens it used",
+      "version": "0.1.5",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["subagents", "agents", "tree", "pane", "mod"]
+    },
+    {
+      "name": "adversary",
+      "source": "./plugins/adversary",
+      "description": "Adversarial review of a PR, plan or document by an isolated reviewer that never sees the author's context, with a triage pane deciding which findings reach the author",
+      "version": "0.1.0",
+      "author": {
+        "name": "bobtat",
+        "email": ""
+      },
+      "license": "MIT",
+      "keywords": ["review", "adversarial", "code-review", "pr", "plan", "mod"]
     }
   ]
 }

@@ -1,0 +1,19 @@
+{
+  "name": "adversary",
+  "version": "0.1.0",
+  "description": "Adversarial review of a PR, plan or document by an isolated reviewer that never sees the author's context, with a triage pane deciding which findings reach the author",
+  "author": {
+    "name": "bobtat",
+    "email": ""
+  },
+  "license": "MIT",
+  "keywords": [
+    "review",
+    "adversarial",
+    "code-review",
+    "pr",
+    "plan",
+    "mod"
+  ],
+  "types": "./types/index.d.ts"
+}

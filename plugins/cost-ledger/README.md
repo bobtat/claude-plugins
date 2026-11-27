@@ -1,0 +1,299 @@
+# cost-ledger
+
+A Claude Code mod that keeps a running ledger of what Claude Code costs: this session, this
+calendar week (Monday to Sunday) and this calendar month, in local time. It also makes
+prompt-cache spend visible, since on long agentic sessions `cache_read` and `cache_write`
+are usually most of the bill, says what letting the cache go cold will cost, and can keep it
+warm while a session sits idle.
+
+Unlike the other plugins in this marketplace, cost-ledger is code: a TypeScript hooks
+module that Claude Code loads and runs inside the session, not skills or commands for
+Claude to read.
+
+## Installation
+
+```
+/plugin marketplace add bobtat/claude-plugins
+/plugin install cost-ledger@bobtat-plugins
+```
+
+## What it shows
+
+| Where | What |
+|---|---|
+| Status line and a band above the prompt | `$1.84 session · $23.10 week · $96.40 month · ctx 150k ≈$0.03/step · cache warm 3m`; once the cache has gone cold, `cache cold (re-cache ≈$0.34–$0.57)`; while the keep-alive holds it, `cache warm 41m (kept warm: 2 pings $0.03)` |
+| `/costs` pane | Totals with budget progress, the change against the same point last week and the month's pace (with the day a monthly budget would be reached), a heat-map calendar per month (shade by total spend or by cache writes, `p`/`n` to change month, `s` to switch shading), the month's prompt-cache breakdown and how much of the month's total it accounts for, the subagent share, the most expensive prompts, what filled the context, spend by project, and daily bars |
+| `/costs export` | Writes `~/claude-costs/claude-costs-<date>.csv`: one row per day and project with the total, tokens and estimated cost per category, and subagent cost |
+| `/costs doctor` | Checks the assumptions the totals rest on (see below) |
+| `/costs keepalive [on\|off]` | Turns the keep-alive on or off for this session, overriding the `keepAlive` setting; with no argument, says whether it is on, the pings so far and when the next is due |
+| Toasts | Before a prompt is sent once the cache has likely expired, and on resuming a session whose cache has likely expired, with what re-caching will cost; when the keep-alive stops; before a model switch that drops a warm cache; after one request writes a large amount to the cache; after a prompt whose cost passes a threshold; at 80% and 100% of a budget; the first time a model the mod has no price for is used |
+
+All warnings are informational: nothing is ever blocked.
+
+## Where the numbers come from
+
+```
+ session.measure ── cost.usd (Claude Code's running total) ──► spend per session and day
+ turn.step ──────── usage per request (tokens, model) ───────► priced per category
+                                                                  │
+                    $.store: one entry per session, ◄─────────────┘
+                    archived per project after 60 days, or sooner
+                    past a hundred sessions; kept 400 days
+                                   │
+                                   ▼
+                status line · band · /costs pane · CSV export
+```
+
+- **Totals** (session, week, month, calendar, budgets) are Claude Code's own figure, the one
+  `/cost` shows. It is list price unless an administrator has set the managed `modelPricing`
+  setting.
+- **The category breakdown** (input, output, cache write, cache read) is estimated by the mod
+  from each request's token counts, at Anthropic list prices or at the rates you give it.
+  Token counts and the cache-hit percentage are exact; the dollars are estimates. Each
+  request is priced on its own: Haiku 5.5, which costs more per token once a request's prompt
+  (its input, cache reads and cache writes together) passes 100,000 tokens, is priced at the
+  rates its prompt length selects.
+- **The cost of a prompt** is the estimated cost of every request made between the prompt and
+  its answer, its subagents' included, with the first 80 characters of the prompt. The month's
+  ten most expensive are kept: a prompt that costs less than all ten, as the session knows
+  them from the last cost measurement and its own prompts since, is not stored at all.
+  Prompt text stays in the local store; it is not exported.
+- **What filled the context** measures each tool result as the model reads it, at roughly four
+  characters a token, then charges it a cache write on the first request that sends it and a
+  cache read on every request after, until `/clear` or `/compact` drops it. A large file read
+  early in a long turn shows up here as the re-reads it caused. The tokens are approximate, so
+  the dollars are a guide to where the cache spend comes from rather than a bill.
+- **Pace** extrapolates the month's spend at its average daily rate so far, counting at least
+  one day. Week over week compares Monday to today with Monday to the same weekday last week.
+- Only sessions that ran with the mod enabled are counted. There is no backfill from older
+  transcripts.
+- **What is kept.** Each session has an entry of its own in the store: its spend by day, its
+  breakdown, its tool figures, those of its prompts that are among a month's ten most
+  expensive and the per-turn figures behind `/costs doctor`'s **Turns** line. A session idle for 60 days is folded into
+  one archive entry for its project, which keeps all of that but the per-turn figures, and of
+  the prompts the project's ten most expensive of each month. The store holds 4 MiB and an entry weighs
+  about 8 kB, so 60 days of sessions can be more than it holds. So only the hundred most
+  recently used sessions, and no more than a mebibyte of them, keep an entry of their own:
+  the rest are folded as soon as they have been idle a day and have nothing on the current
+  day, up to a hundred at each start of Claude Code. Folding changes no total, no row of the
+  export and no prompt the pane lists. Days older than 400 are dropped.
+- **Cache writes** cost more for the one-hour cache than for the five-minute one, and each
+  response says how much of what it wrote was for which. The mod prices a request's writes
+  as its response names them. What a naming response leaves unnamed is priced at five
+  minutes, as Claude Code's own total prices it.
+- **The cache lifetime** of the conversation, which the countdown, the idle warning and the
+  keep-alive run on, is the one a request of its own names for all it wrote. A model
+  switch's report also sets it. A subagent's requests have been seen to write to the
+  five-minute cache whatever the conversation is on, so they are priced as they name, at
+  five minutes where they name nothing, and teach the conversation nothing. Each session keeps the lifetime its own requests showed, since
+  Claude Code picks it by the kind of session and can change it part-way (a subscription
+  that runs into overage drops to five minutes). Until a session has seen its own, it starts
+  from what earlier sessions of its kind last learned, interactive sessions and headless
+  ones (`claude -p`, the SDK) each having their own, or from five minutes.
+- **Where a response names no lifetime**, as under a Claude Code that does not pass the
+  counts on or a provider that does not report them, the mod falls back on Claude Code's
+  pricing. The request's writes are priced at the lifetime believed then, a subagent's at
+  five minutes. After each turn, the turn's requests are priced at list rates with their
+  unnamed writes at five minutes and at one hour, and whichever matches what the turn moved
+  Claude Code's running total by is the lifetime it charged. That turn's unnamed writes are
+  priced again at it, and it is the conversation's from then on unless a request of the turn
+  named one, which stands. The per-tool figures under what filled the context are not priced
+  again. Under managed rates, which list prices cannot match, nothing is read from a turn's
+  total.
+- **The cost of a cold cache** is the context's tokens at the cache write rate, less the
+  opening other sessions keep cached: the system prompt and tool definitions, measured as
+  what a new conversation's first request reads from the cache. That opening stays cached
+  only while something else uses it, so the whole context is shown as the worst case:
+  `≈$0.34–$0.57`.
+
+## Keeping the cache warm
+
+With `keepAlive` on (or `/costs keepalive on`), once a turn ends the mod waits nine tenths of
+the cache lifetime, 54 minutes on the one-hour cache, and then sends the conversation again
+with a one-word question through Claude Code's own client (`$.model.fork`). That request
+reads the context from the cache, which renews the cache's lifetime, and writes nothing to
+the transcript. It repeats until you send a prompt, which cancels the pending ping, or until
+the session has been idle for `keepAliveMaxIdleMinutes`; the cache then lapses one lifetime
+after the last ping.
+
+- **What a ping costs** is a cache read of the context plus about four output tokens, and
+  the first ping after a turn also writes the last answer: about $0.014–0.02 at 62–67k
+  tokens on Opus 5.5. The cold re-cache it avoids was about $0.33 at that size. Each ping
+  is in Claude Code's running total like any request, and in the category breakdown.
+- **A ping that finds the cache already cold** (it writes the conversation rather than
+  reading it) stops the keep-alive, as does a failed request.
+- **On the five-minute cache** a ping goes out every 4.5 minutes, which costs more per idle
+  hour; the break-even against one cold re-cache is roughly 25 pings.
+- **On a subscription**, pings count against the 5-hour and 7-day limits like any request,
+  weighted by their API-equivalent price as far as measured: on a Pro account, about 0.045%
+  of the 5-hour window per ping at 62k tokens, so three hourly pings cost about 0.13%
+  against about 1% for one cold re-cache of a conversation that size.
+
+The measurements behind these numbers are in `tests/cost-ledger-probe/README.md` at the
+repository root.
+
+## Checking the setup
+
+`/costs doctor` reports, each line marked ✓, ⚠ or ℹ:
+
+- **Time zone**: whether the mod's local time matches the host clock (`Get-Date` on Windows,
+  `date` elsewhere), since days, weeks and months are split by it.
+- **Store file**: whether a write reaches the store file on disk at once, whether this
+  session's view of the store matches the file (if it does not, another session's writes may
+  be getting lost), and how close the file is to the 4 MiB limit. Where the store refuses the
+  write, because it is at that limit or its file cannot be written, the line says so and each
+  store file is listed with its size. With no write to find, the mod cannot tell its own file
+  from another install's, so the comparison with other sessions and the **Another install**
+  line are left out; everything from **Claude Code pricing** down is reported as usual.
+- **Another install**: a store file left by a differently installed copy of the mod. Each
+  install source (marketplace, `--plugin-dir`, a session's mods folder) has its own store, so
+  history recorded by one is not in another's totals.
+- **Claude Code pricing**: whether Claude Code prices at your organisation's managed rates or
+  at list price, once it has said so, which it does when you switch models.
+- **Prices**: whether the mod's price list still matches Claude Code's. When you switch
+  models, Claude Code says what re-writing the prompt to the new model's cache would cost at
+  list prices, and the mod holds that against its own list. A difference raises a toast the
+  first time it is seen for a model and a warning here, each with both rates per million
+  tokens; the warning clears once an update of the mod brings the price into line. This checks
+  the cache-write rate, which follows the input rate, and so not the output or cache-read
+  rates. A model your `rates` setting reprices is not judged, nor is a quote at your
+  organisation's managed rates, and a quote is forgotten after thirty days.
+- **Cache lifetime** and where it was learned (named by the session's own requests, reported
+  at a model switch, read from the pricing of a turn, or carried over from earlier
+  sessions), the **shared opening**, the **keep-alive**, **baseline**, **rates** and
+  **models without a rate**.
+- **Breakdown**: whether the category breakdown accounts for this month's total. The two
+  are reached separately, the total from Claude Code's running figure and the breakdown from
+  each request's tokens at the mod's prices, so they agree only while the prices, the cache
+  lifetime and the mod's view of the requests are right. Within a tenth passes; further out it
+  warns and lists the causes: tokens from a model with no rate, a price that has changed, the
+  cache lifetime, fast mode, US-only inference, web searches, or requests the mod does not
+  see. No comparison is made on less
+  than $1 of spend, and none is held against you where the two are priced differently on
+  purpose (your own `rates`, or your organisation's managed pricing).
+- **Turns**: the same comparison split in two, which says what kind of gap it is. At the end
+  of each turn the mod keeps what the turn moved Claude Code's total by, beside what it
+  priced that turn's requests at. Within turns it sees every request, so a gap there means a
+  price, the cache lifetime or fast mode is off, or a charge that token counts do not show
+  (US-only inference, web searches) was made. Spend outside turns with nothing priced
+  against it is requests the mod does not see. Only sessions recorded from their start by
+  0.8.0 or later are counted, so the line appears once there is $1 of such spend this month,
+  and only those that still have an entry of their own: past a hundred sessions, the most
+  recently used.
+
+It cannot check the `/resume` accounting: for that, compare `/costs` before and after
+resuming a session whose spend you know.
+
+## Settings
+
+Set in `/config` under `cost-ledger`.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `billing` | `api` | `subscription` labels figures as API-equivalent and adds the 5-hour and 7-day rate-limit percentages |
+| `statusLine`, `band` | on | Show the summary in the status line and in the band |
+| `rates` | empty | JSON of USD per million tokens by model family, overriding list prices for some or all fields, for example `{"opus-5-5": {"input": 4, "output": 20, "cacheRead": 0.2, "cacheWrite5m": 5, "cacheWrite1h": 8}}`. A family matches any model id that contains it and does not continue with another version number, so Bedrock ids such as `us.anthropic.claude-opus-5-5-v1:0` resolve. A family with no list price needs `input`, `output` and `cacheRead`. A `longPrompt` object inside a family overrides, field by field in the same way, the rates for requests whose prompt is longer than its `above` tokens: `{"haiku-5-5": {"longPrompt": {"input": 0.55}}}` changes Haiku 5.5's rate past 100,000 tokens, and `{"sonnet-4-5": {"longPrompt": {"above": 200000, "input": 6, "output": 22.5, "cacheRead": 0.6}}}` gives a model a long-prompt rate it does not list |
+| `cacheTtl` | `auto` | The conversation's prompt-cache lifetime, used for the countdown, the idle warning, the keep-alive and the pricing of those of its writes that no response named a lifetime for (a write a response did name is priced as named, and a subagent's unnamed writes at five minutes). `auto` learns it per session from what its requests name, from a model switch or from Claude Code's pricing of a turn; until then it uses what earlier sessions of the same kind learned, or 5 minutes |
+| `keepAlive` | `off` | `on` keeps the prompt cache warm while the session is idle (see above) |
+| `keepAliveMaxIdleMinutes` | 180 | Stop pinging once the session has had no prompt for this long |
+| `keepAliveMinContextTokens` | 20000 | Send no pings while the context is smaller than this |
+| `largeWriteTokens` | 50000 | Toast when one request writes at least this many tokens to the cache; 0 turns it off |
+| `contextNudgeTokens` | 150000 | Suggest `/compact` once the context reaches this size; 0 turns it off |
+| `dailyBudget`, `weeklyBudget`, `monthlyBudget` | 0 | USD; toast at 80% and 100%; 0 turns each off |
+| `expensiveTurnUsd` | 2 | Toast when one prompt, its subagents included, costs at least this much (estimated); 0 turns it off |
+
+The list prices are the ones on Anthropic's pricing page, from Opus 4 and Sonnet 4 onward. A
+model that is not among them, such as one released after this version of the mod, is not
+guessed at from its neighbours, whose prices have differed from one version to the next: a
+toast says so the first time it is used, and its tokens are reported as unpriced in the pane
+until an update of the mod or the `rates` setting names it. A listed model whose price has
+since changed is caught when you switch to it: see **Prices** under Checking the setup. The
+totals do not depend on any of this.
+
+## Known limits
+
+- Week and day boundaries use the local time of the process running Claude Code.
+- The store is one JSON file shared by every Claude Code process on the machine. Two sessions
+  writing at the same moment have not been tested for lost updates, and two sessions can
+  both show the same budget toast. Folding sessions into their project's archive is made
+  safe to interrupt and to repeat: an archive records each session it has taken in, never
+  takes one in twice, and a session is removed only once the archive is seen to hold it.
+- Archives are not bounded the way sessions are. An archive holds a project's figures for
+  each day it was worked on, for 400 days, so many projects worked on daily for a year can
+  still fill the store. `/costs doctor` warns once the store file is three quarters full. At
+  the limit itself nothing more is recorded and a toast says so; the toasts, the status line
+  and `/costs doctor` go on working from what the store already holds.
+- After an in-process `/resume`, the mod takes Claude Code's running cost at that moment as
+  the new baseline. If Claude Code restores the resumed session's earlier cost only after
+  that point, the earlier cost would be counted again. This has been reasoned from the API
+  documentation and covered by tests, not yet observed in a live resume.
+- Spend from a subagent that finishes after the session's last turn is recorded when the
+  session ends; a process that is killed outright loses it.
+- The keep-alive's timer lives in the running process: a computer that sleeps, a closed
+  terminal or a reload of the mod drops it until the next turn arms it again.
+- Where responses name no lifetime for their cache writes, the lifetime is read from what a
+  turn moved the running total by, and some turns say nothing: one in which a subagent made
+  a request, one whose interval holds other spend the mod cannot see, and one priced at
+  managed rates. What such a turn moved the total by is not the conversation's requests
+  alone, and its unnamed cache writes stay priced at the lifetime assumed while it ran.
+- A request that wrote to both caches, or named a lifetime for only part of what it wrote,
+  is priced as far as it names and does not change the lifetime the conversation is taken
+  to be on. No such request has been seen; in the session this was checked against, every
+  response named one lifetime for all it wrote.
+- Fast mode costs twice the standard rates, and a request does not say which speed it ran
+  at, so the category breakdown prices a fast-mode request at the standard rates and shows
+  about half of what it cost. The totals are not affected.
+- Two charges in Claude Code's total do not show in a request's token counts, so the
+  breakdown leaves them out: where inference is pinned to the US, every token category costs
+  1.1 times the standard rate, and each web search costs $0.01. The totals include both.
+- The mod keeps its figures in the plugin store as they change, which adds 5 to 20 ms to a
+  tool call or model request, and rereads every stored session at each cost measurement:
+  about 20 ms with 50 sessions stored, rising with the square of their number to about 0.2 s
+  at 200. No more than the hundred most recently used sessions keep an entry, beside any
+  used in the last day, which keeps the count down. The measurements are in
+  `tests/cost-ledger-probe/README.md`.
+- The breakdown is priced as each request is recorded and is not priced again when the rates
+  change or a later version corrects a rule. `CHANGELOG.md` lists, version by version, the
+  known errors that figures recorded by earlier versions still carry.
+
+## Development
+
+The module is `hooks/register.tsx`. Date and summary logic is in `hooks/ledger.ts`, pricing
+in `hooks/pricing.ts`, the comparison of the price list with Claude Code's quotes in
+`hooks/pricecheck.ts`, the per-prompt, context and pace arithmetic in `hooks/insights.ts`,
+and the cache-lifetime, cold-cost and keep-alive rules in `hooks/keepalive.ts`; all five are
+free of engine calls so they can be tested directly.
+
+The code that does call the engine is split by what it works on:
+
+| File | Holds |
+|---|---|
+| `hooks/register.tsx` | The event hooks, the session's state and everything that reads or writes it: recording spend and requests, the keep-alive, the status line and the pane |
+| `hooks/settings.ts` | The settings as the code reads them |
+| `hooks/store.ts` | The store's keys, reading and saving the ledger's entries, archiving old sessions, the CSV export |
+| `hooks/prices.ts` | The notices about a model with no rate and about a price Claude Code quotes differently |
+| `hooks/wording.ts` | The text of the status line, the band and the cache notices |
+| `hooks/doctor.ts` | The `/costs doctor` report |
+
+A version bump comes with an entry in `CHANGELOG.md`. Where the version corrects how the
+breakdown is priced, the entry also says what figures recorded before it still carry, since
+those are not priced again.
+
+`register.tsx` is the one module that touches `$.state`. Claude Code checks each state access
+against an atom declared in the module that makes it and will not load a module that uses an
+atom it imported, so state cannot be shared between modules: code outside `register.tsx`
+that needs a value from the session is handed it as an argument.
+
+```
+claude plugin validate plugins/cost-ledger
+claude plugin test plugins/cost-ledger
+```
+
+`tsc -p plugins/cost-ledger` type-checks it once Claude Code has loaded the mod from the
+folder (for example with `claude --plugin-dir plugins/cost-ledger`), which writes the API
+declarations to `.claude-plugin/types/`. That folder is regenerated on every load and is not
+committed.
+
+## License
+
+MIT

@@ -1,0 +1,916 @@
+# agentic-qa review — November 2026, second pass
+
+A review of the `agentic-qa` plugin at 0.4.0, read at `6929ce5`, the guard
+allowlist commit that lands alongside this review. All line citations refer to that commit. It is
+judged against one use: an unattended run against a staging web app, where nobody
+watches the run or approves steps. A safeguard that exists only as an instruction to
+an agent is treated as absent unless something enforces it.
+
+Finding numbers continue from the [November review](agentic-qa-review-2026-11.md),
+which ended at F41. The review was done in three passes: the run from start to finish,
+untrusted input (the guard above all), and authorisation and cost. It then compares
+its results with the [September](agentic-qa-review-2026-09.md) and November reviews.
+
+## Conclusion
+
+0.4.0 should not run unattended yet, even with the README's network boundary in
+place. The enforced boundary has three gaps that each undo it completely:
+
+- The executor can open a raw network connection to any host through a shell
+  redirect (F42).
+- It can delete or move the hook, after which every call in the session is allowed
+  (F43).
+- Several shell constructs make bash run commands the guard's parser never saw
+  (F44, F45).
+
+Separately, `qa-runner` can edit the allowlist through Bash (F46). It is the agent
+that reads the ticket first, and it is not held at all.
+
+A network boundary that limits egress to staging contains F42 and F44's network
+effects. It does not contain F43, F46, F48 or F57: those act on the machine's files
+and the `gh` credential, so they need an OS-level boundary as well. That means a
+disposable container or user account, with the plugin directory and the allowlist
+read-only and a read-only `gh` token.
+
+On the run itself, the rerun protection added for F28 is not wired into the
+unattended path (F53). Several ordinary operations are refused by the guard, and each
+refusal stalls the run in an escalation (F54, F55).
+
+## Evidence
+
+Each finding states its basis:
+
+- **Probed:** confirmed by running the guard's own exported functions
+  (`checkExecutorBash`, `checkRestrictedBash`, `decide`, `parseSettings`,
+  `loadSettings`) on the input in question, or by running `node` or `git` directly.
+  `node --test hooks/target-guard.test.mjs` passes 29 of 29 at `6929ce5`.
+- **Probed + reasoned:** the guard's decision was probed, and what the shell or OS
+  then does was reasoned from documented behaviour. At the owner's request, no string
+  meant to get past the guard was run in a real shell. Running them in a sandbox is in
+  the last section.
+- **Reasoned:** read from the instructions, which are the implementation for
+  everything but the hook. This covers what an agent following them would plausibly
+  do, including where a step can be read two ways.
+
+Probes ran on native Windows: Node 22.17.1, Git Bash 5.3, and the git on this machine.
+
+## Where enforcement applies
+
+```mermaid
+flowchart LR
+  caller["Caller agent<br/>(or direct skill invoker)"] -->|Agent| runner["qa-runner<br/>NOT held: Bash, WebFetch, Agent"]
+  runner -->|Agent| gp["any other agent type<br/>NOT held"]
+  runner -->|Agent| ext["behavior-extractor / step-planner<br/>file tools: protected names only"]
+  runner -->|Agent| crit["critics, qa-reporter<br/>Bash: bare network names refused"]
+  runner -->|Agent| exec["step-executor<br/>Bash: allowlists; navigate: allowed hosts"]
+  exec -->|Read| fs[("any file<br/>never matched")]
+  exec -->|"redirect to /dev/tcp"| net(("any host"))
+  exec -->|"click, link, computer tool"| net
+  exec -->|"curl, navigate"| staging(("allowed hosts<br/>+ localhost, any port"))
+  exec -->|SendMessage| reporter["qa-reporter"]
+  hook{{"target-guard.mjs<br/>PreToolUse: Bash, Write, Edit,<br/>NotebookEdit, two navigate tools"}} -.checks.-> exec
+  hook -.checks.-> crit
+  hook -.checks file tools only.-> runner
+```
+
+---
+
+## Pass 2 — untrusted input and the guard
+
+### F42 — High — a shell redirect reaches any host, bypassing the curl checks
+
+`hooks/target-guard.mjs:507-511` checks a redirect target only for a variable or glob
+and against the protected-file names. Bash treats a redirect to `/dev/tcp/<host>/<port>`
+or `/dev/udp/…` as a network connection. **Probed:** writing to, reading from, or
+opening such a path is allowed for the executor with any host, including
+`169.254.169.254` and an unlisted domain.
+
+Scenario: a page or response tells the executor to "post diagnostics". The executor
+redirects `runtime-secrets/s1-auth_token`, or anything else it can read, to an
+arbitrary host. Every `curl` check, the `-q` rule and the host allowlist are bypassed.
+This undoes the Bash half of F24's enforcement.
+
+Basis: **Probed + reasoned.** `/dev/tcp` is a documented bash redirection feature.
+
+Fix direction: allow redirects only to `/dev/null`, `/dev/stdout` and `/dev/stderr`
+among `/dev/*`. Better, allow them only to paths inside the run's working directory.
+
+### F43 — High — the agent it guards can remove the guard
+
+`PROTECTED_FILE` (`:56`) protects the names `target-guard.mjs` and `hooks.json`, not
+the directory holding them. `rm`'s arguments are never checked for globs, because
+`unsafeDestination` is applied only to write targets (`:52`, `:539-542`). `mv` on a
+directory named `hooks` is not protected at all. **Probed:** each of these is allowed:
+
+- `rm -rf <plugin>/hooks`
+- `rm` of the script through a glob
+- a globbed path into the installed plugin cache
+- `cd` into it with a glob, then `mv hooks …`
+
+**Probed:** `node` on a missing script exits 1. The README (`:72`) and Claude Code
+both treat a hook that fails that way as non-blocking. The hook command re-reads the
+script on every call (`hooks/hooks.json:10`). So once the script is gone, every later
+Bash, Write and navigate call from every plugin agent is allowed for the rest of the
+session. README `:70` says agents are stopped from writing "the hook"; that leaves
+deleting and moving it open.
+
+Basis: **Probed** for the guard's decisions and node's exit code. **Reasoned** for
+Claude Code's non-blocking treatment, which the README itself states.
+
+Fix direction: install the plugin where the agents' OS user cannot write. A hook
+wrapper that exits 2 when node fails would close this, but it would also block every
+other session's Bash calls whenever node is missing.
+
+### F44 — High — bash runs commands the guard's parser never saw
+
+The guard decides on its own parse of the command. Where that parse and bash disagree,
+bash can run a command the guard never checked. **Probed:** the guard allows each of
+the following, and in each one bash would run a command hidden from it:
+
+- **Heredoc delimiters.** The delimiter regex (`:225`) takes only the leading run of
+  word characters, so a partly quoted delimiter ends the heredoc on a different line
+  from bash's.
+- **Heredoc terminators.** `skipHeredocs` strips leading tabs whether or not the
+  heredoc used `<<-`, and strips a trailing CR (`:274-276`). Bash does neither for a
+  plain `<<`, so the two disagree on where the body ends.
+- **Parentheses in quotes.** `matchParen` (`:257-264`) counts parentheses inside
+  `"$(…)"` without regard to quotes.
+- **Expansions that evaluate a value.** The guard treats a single-quoted assignment as
+  inert data. Bash's `${var@P}` transformation evaluates its value, and so does
+  arithmetic evaluation. Arithmetic covers `$(( ))`, substring offsets and array
+  subscripts, and it evaluates a variable's text recursively, including any `$(…)`
+  in a subscript.
+
+Any one of these gives the executor unrestricted commands. That includes everything
+F42 to F48 describe, without needing their specific gaps. The November review
+predicted this class ("a guard that parses shell text is incomplete by nature"). These
+are new instances, not regressions of fixed ones.
+
+Basis: **Probed + reasoned.** The bash-side behaviour is documented. The probe strings
+were not run in a shell.
+
+Fix direction: shrink the accepted grammar rather than adding cases. Accept only
+`<<'TAG'` heredocs, matched exactly; reject `${` with any operator, `$((`, and
+array subscripts; reject `$(` inside double quotes.
+
+### F45 — High on Windows — a backslash inside double quotes hides a protected path
+
+Inside double quotes the parser drops every backslash and keeps the next character
+(`:194`). Bash keeps the backslash unless it comes before `$`, `` ` ``, `"`, `\` or a
+newline. A Windows path with a backslash inside quotes is therefore checked as a
+different string. For example, `".claude\agentic-qa.local.md"` is checked as
+`.claudeagentic-qa.local.md`, which matches no protected pattern. **Probed:** redirects
+to the home allowlist and to `.bashrc`, written this way, are allowed.
+
+Scenario: the executor adds a production host to `~/.claude/agentic-qa.local.md`.
+`loadSettings` reads the file on every hook call, so the next `curl` to that host
+passes.
+
+Basis: **Probed + reasoned.** That Git Bash passes the backslash through and Windows
+treats it as a separator is about 75% certain. A sandboxed write would settle it.
+
+Fix direction: inside double quotes, drop a backslash only before those five
+characters, as bash does.
+
+### F46 — High — `qa-runner` and a direct invoker are not held, and can edit the allowlist
+
+`decide` returns `null` for any plugin agent other than the executor and the three
+network-restricted ones (`:600-603`). It returns `null` for every non-plugin agent at
+`:596`. **Probed:**
+
+- A `qa-runner` Bash command appending a host to `~/.claude/agentic-qa.local.md` is
+  allowed; only its Write tool is refused.
+- The same command from a `general-purpose` agent, or from a caller running the skill
+  directly, is allowed.
+
+`qa-runner` holds `Agent` (`agents/qa-runner.md:4`), so it can spawn an unguarded
+agent type. It is the first agent to read the ticket and docs (`:22`), the most
+attacker-reachable input in the run. It runs unrestricted `Bash`, `WebFetch` and
+`gh`. "You never add to either list" (`:22`) is an instruction.
+
+README `:70` says the hook "stops this plugin's agents writing to the allowlist
+files". That is true of file tools and false of `qa-runner`'s Bash. README `:71`
+discloses that `qa-runner` isn't restricted, but not this consequence.
+
+Basis: **Probed.**
+
+Fix direction: give `qa-runner` its own command list. It needs `gh` read subcommands,
+`curl` for reachability, `git ls-files` and `git merge-base`, its wait loop, and
+removing `runtime-secrets/`. Add `Agent` to the matcher and refuse any `subagent_type`
+outside `agentic-qa:`.
+
+### F47 — Medium — protected files can be read and sent to an allowed host
+
+- `Read` is outside the hook's matcher (`hooks/hooks.json:6`). The executor holds it
+  (`agents/step-executor.md:4`), so it can read `~/.ssh` and `~/.aws` directly.
+- Through Bash, a glob avoids the name check (`cat ~/.ss?/…`). **Probed.**
+- `checkCurlValue` (`:309-311`) looks for `@file` only in data options, with a regex
+  that misses several forms. **Probed:** these all pass:
+  - `-H @file`
+  - `-b file`
+  - `--data-urlencode name@file`
+  - `-F 'a=@file;type=…'`
+  - a brace-expanded attached value such as `-d{@file,x}`
+- Environment variables reach the target too: `"$GH_TOKEN"` in a body, and
+  `jq -n env`.
+
+The destination is an allowed host, which is the staging app and its logs, or any
+host with F42.
+
+Basis: **Probed** for the guard. **Reasoned** for curl's and bash's option and brace
+handling.
+
+### F48 — Medium — files that change later sessions are still writable
+
+The `.claude` check is applied to the literal text. **Probed:** each of these is
+allowed:
+
+- `cd` with a glob (`:538` refuses only a variable), followed by a relative write
+  such as `agents/evil.md`.
+- A relative `..` path out of the exempt scratchpad (`:64`, `:69`).
+- `~/.claude.json`, `.bash_aliases`, `.zlogin` and the PowerShell profile.
+- `.npmrc`, `.github/workflows/*`, and this plugin's own `agents/` and `plugin.json`.
+- `sed -in p X`. `checkSed` reads `-in` as `-i -n` (`:432`), but GNU sed reads it as
+  in-place editing with backup suffix `n`. It therefore writes the original of `X` to
+  `Xn`, a name the guard never checked. A `.mcp.jso` the executor wrote becomes
+  `.mcp.json`, and `hooks.jso` becomes `hooks.json`.
+
+Scenario: a hostile instruction is followed once, and what it writes loads into later
+sessions as an agent, a skill, an MCP server or a shell startup line. A run container
+doesn't help if the home directory persists.
+
+Basis: **Probed** for the guard. **Reasoned** for GNU sed's `-i[SUFFIX]` parsing,
+which is documented.
+
+### F49 — Medium — any git error makes the guard honour a committed allowlist
+
+`isTracked` (`:104-111`) treats every failure of `git ls-files --error-unmatch` as
+"not tracked". **Probed:** in a repository whose `.claude/agentic-qa.local.md` is
+committed, both of these load its hosts:
+
+- a corrupt `HEAD`, where git exits 128
+- git missing from the hook's `PATH`
+
+`git ls-files` fails the same way on a checkout owned by another user ("detected
+dubious ownership"). That is common in CI containers, the environment README `:74`
+recommends. Intake's own instruction has the same rule: "tracked … (`git ls-files
+--error-unmatch` succeeds)" (`skills/agentic-qa/SKILL.md:39`). So the model's check
+fails open too.
+
+Basis: **Probed.**
+
+Fix direction: an untracked file exits 1 (**probed**). Treat only exit 1 as untracked,
+and anything else as tracked, so the file is ignored.
+
+### F50 — Medium — valid YAML yields an empty list, and the run fails step by step
+
+**Probed:** `parseSettings` (`:88-102`) returns no hosts for:
+
+- `- host` at column 0, which is valid block YAML
+- `allowed_hosts: [a, b]`
+- a file starting with a BOM or a blank line
+
+Entries written with a scheme, port or trailing slash are kept but never match
+anything.
+
+Intake reads the same file as YAML through a model, so it sees the hosts. The planner
+gives each step an allowed `Target`, and the guard then refuses every call. Each
+refusal is an escalation (F54). The run fails closed but produces nothing, one
+escalation per step.
+
+Basis: **Probed** for the parser. **Reasoned** for how Intake reads the file.
+
+Fix direction: reject a file the parser can't fully read, and normalise or reject
+entries with a scheme or port.
+
+### F51 — Medium — `localhost` is allowed on every port
+
+`ALWAYS_ALLOWED_HOSTS` (`:17`, `:130`) admits any port on `localhost`, `127.0.0.1`
+and `[::1]`. **Probed:** a `POST` to `localhost:2375` (the Docker API) and a `DELETE`
+through `127.0.0.1:8443` are allowed.
+
+A `kubectl port-forward` or SSH tunnel to production listens there. The rule that a
+tunnel's `Target` is its far end (`skills/step-planning/SKILL.md:27`) is an
+instruction. On a developer machine used for an unattended run, `localhost` is not
+staging.
+
+Basis: **Probed** for the guard. **Reasoned** for the scenario.
+
+Fix direction: allow `localhost` only when the base URL is local, and only on its
+port.
+
+### F52 — Medium — the reporter and critics are barred from a name, not from the network
+
+`checkRestrictedBash` (`:555-573`) refuses a command only when its first word is a
+listed network program. **Probed:** each of these is allowed:
+
+- `env curl …`, `command curl …`, and `A=1 curl …`
+- `node -e "fetch(…)"` and `python -c "…urlopen(…)"`
+- `gh api`, `git push <url>`, `npx <package>`
+- a `/dev/tcp` redirect
+- `rm -rf ~`
+
+These agents read the diff and the evidence, which are both hostile text. README `:71`
+says they are "only barred from named network tools", and even that is weaker than it
+reads.
+
+Basis: **Probed.**
+
+Fix direction: the critics need Bash only for `gh pr diff` and the signal file. Give
+them that list. The reporter needs only its render script.
+
+---
+
+## Pass 1 — the run from start to finish
+
+### F53 — High — the unattended path never reads `previous_run`
+
+The rerun protection is described in `skills/step-execution/SKILL.md:48`: Intake copies
+the earlier run's sent irreversible actions into `intake.md`'s `Earlier run`, and a
+matching step escalates whatever the grant says. `qa-runner`'s Intake step
+(`agents/qa-runner.md:22`) never mentions `previous_run` or `Earlier run`. Nor does the
+umbrella skill's Intake section (`skills/agentic-qa/SKILL.md:21-43`). `qa-runner` loads
+`step-execution` only "as you reach each phase" (`:10`), which is after `intake.md` is
+written.
+
+Scenario: an unattended run is interrupted after a `contained` step's `pending` entry.
+The caller reruns with `previous_run` and `pre_authorize_contained: true`. `qa-runner`
+writes `Earlier run: none`, or omits the field. The executor finds nothing to match,
+and the step is sent again on the brief's grant. Even when the field is filled,
+"matching" compares the old run's action text against a freshly planned step with new
+IDs. That comparison is a judgment, not a check.
+
+Basis: **Reasoned.**
+
+### F54 — Medium — a guard refusal has no answer that resolves it
+
+A refusal ends the step with an escalation (`skills/step-execution/SKILL.md:70`;
+`agents/step-executor.md:46`). The answers are proceed, decline or stop (`:27-34`).
+"Proceed" isn't defined for a refusal: the executor may not rephrase, and the same call
+is refused again. An agent caller that answers "proceed" therefore loops, and each cycle
+costs a `qa-runner` turn and an executor turn. Nothing counts the cycles. "Proceed"
+after an exhausted backoff is unbounded the same way: four more attempts, then another
+escalation.
+
+Basis: **Reasoned.**
+
+Fix direction: give a refusal its own answers, decline or stop, and cap escalations per
+step.
+
+### F55 — Medium — the guard refuses things the procedure asks for, and each one stalls the run
+
+**Probed:** the guard refuses each of the following, and each refusal becomes an
+escalation under F54:
+
+- **Credential files in usual places.** A `file:` credential under `~/.config`
+  (`PROTECTED_DIR`, `:57`) or anywhere under `~/.claude`. README `:37` only says
+  "outside the repository", and `~/.config/<app>/token` is the common place.
+- **The skill's own example.** `skills/step-execution/SKILL.md:60` shows
+  `curl -H "Authorization: …"` without `-q`.
+- **A working directory under `.claude`.** Anything under a `.claude` directory other
+  than `jobs/` or `plugins/data/` (`:61-64`) is refused. `qa-runner` names no location
+  for its working directory (`agents/qa-runner.md:22`). In a session inside a Claude
+  Code worktree, the working directory is under `<repo>/.claude/worktrees/…`. The
+  interactive command's fallback is "a temp directory" (`commands/walkthrough.md:26`),
+  and an agent may well choose the working directory instead. Every plugin agent's
+  writes are then refused, from `behavior-spec.md` onwards.
+- **Ordinary shell.** `if`, `for`, `pwd`, `timeout`, `diff`, `stat` and `sha256sum`.
+- **Markdown in a heredoc.** An unquoted heredoc containing a backtick, which Markdown
+  for `step-results.md` often has.
+
+Basis: **Probed** for each refusal. **Reasoned** for which ones an agent will hit.
+
+Fix direction: name the working-directory location in `qa-runner`. Tell the executor
+which constructs are refused. Narrow `.config` to the credential directories that
+matter.
+
+### F56 — Medium — an abnormal end leaves live secrets behind
+
+`qa-runner`'s abnormal-end path (`agents/qa-runner.md:27`) stops after sending
+`final`. It doesn't wait on `signals/report-done.txt`, doesn't say what to return, and
+doesn't delete `runtime-secrets/`. Only step 7 deletes that directory, and only on
+`COMPLETE` (`:28`). The interactive command covers both endings
+(`commands/walkthrough.md:152`).
+
+On any interruption the run's leftovers persist with nothing to clean them. That covers
+a dead session, an escalation never answered, and the case above. The leftovers are the
+returned tokens in `runtime-secrets/`, and a copied `browser_session` in the shared
+Playwright output directory (`skills/step-execution/SKILL.md:181`), a live login. A
+rerun creates a new directory and leaves the old one as it was. Rule 4's "deleted when
+the run ends" (`skills/agentic-qa/SKILL.md:17`) holds only for runs that end normally.
+
+Basis: **Reasoned.**
+
+---
+
+## Pass 3 — authorisation and cost
+
+### F57 — High — the `gh` credential reaches far beyond the target
+
+`qa-runner` and `behavior-coverage-critic` run `gh` with the machine's token. A default
+`gh auth login` token has `repo` scope, which can comment on, merge and delete
+anything the user can. Two things limit them:
+
+- "Do not commit, post, or publish anything" (`commands/walkthrough.md:161`), which is
+  an instruction.
+- The critic's restriction, which covers names only (F52). `qa-runner` has none (F46).
+
+Scenario: a planted instruction in the diff or ticket makes either agent post, merge
+or push. The README's network boundary doesn't help, because GitHub has to stay
+reachable for `gh pr diff`.
+
+Basis: **Reasoned.**
+
+Fix direction: run with a fine-grained token that is read-only for issues, pull
+requests and contents on the repositories under test. Add it to "Running unattended".
+
+### F58 — Medium — a brief can choose the user's own Chrome
+
+`browser_driver: claude-in-chrome` is a brief field (`skills/agentic-qa/SKILL.md:62`).
+"Name it only when the person who owns that browser has chosen it" (`:71`) is an
+instruction to the caller. In that driver the hook matches only `navigate`
+(`hooks/hooks.json:6`); the `computer` tool's clicks and keystrokes are never checked.
+An agent caller can therefore run a walkthrough as every session in the user's Chrome.
+
+Basis: **Reasoned.**
+
+Fix direction: make the driver a person-owned setting in the home settings file.
+Alternatively, refuse `claude-in-chrome` when there is no interactive session.
+
+### F59 — Medium — nothing bounds a run's size or spend
+
+Each acceptance criterion and each included `Added` row becomes a step
+(`skills/step-planning/SKILL.md:8`). The coverage critic can add any number of rows,
+and a hostile ticket can list any number of criteria. One executor carries every
+snapshot, screenshot and body in its context, and the abnormal-end rule forbids
+replacing it (`:44` of `step-execution`). A large plan therefore ends with the rest
+`not verified` after spending a full context.
+
+The other limits are just as open. Escalation cycles are unbounded (F54). "There is no
+timeout" (`skills/agentic-qa/SKILL.md:91`). The plugin sets no turn or spend limit.
+
+Basis: **Reasoned.**
+
+Fix direction: cap the number of steps and `Added` rows, cap escalations per step, and
+set a turn or spend limit on the headless invocation.
+
+### F60 — Low — a slow git turns the hook into an allow
+
+The hook has a 15-second timeout (`hooks/hooks.json:11`), and `isTracked` runs
+`execFileSync('git', …)` with no timeout of its own (`:106`). A hook that times out is
+non-blocking. On a large repository, a network filesystem, or a cold Windows Defender
+scan, the call is allowed unchecked.
+
+Basis: **Reasoned.**
+
+Fix direction: give `execFileSync` a timeout well under 15 seconds, and treat a timeout
+as "tracked".
+
+### What an unattended run needs, and what to withhold
+
+| Agent | Needs | Holds beyond that |
+|---|---|---|
+| Caller | `Agent` for `agentic-qa:qa-runner`, `SendMessage` | — |
+| `qa-runner` | `gh issue view`, `gh pr view`, `gh pr diff`; `curl` for reachability; `git ls-files`, `git merge-base`; the signal-file wait loop; `rm -r runtime-secrets`; Write and Edit in the working directory; `WebFetch` for docs; `Agent` for the six plugin agents | Unrestricted Bash; `Agent` for any type (F46) |
+| `behavior-extractor`, `step-planner` | Read, Write in the working directory | — |
+| `behavior-coverage-critic` | `gh pr diff --repo …`; writing its signal file | Bash beyond that (F52, F57) |
+| `step-plan-critic` | Writing its signal file | Bash beyond that (F52) |
+| `qa-reporter` | Write and Edit in the working directory and the report destination; one interpreter for the render script | Network reach through that interpreter (F52) |
+| `step-executor` | The guard's list, the browser tools, `SendMessage` to the reporter's ID | `Read` of any file (F47); `SendMessage` to anything addressable (see the last section) |
+
+Outside the plugin, these hold whatever the plugin does:
+
+- a network boundary limiting egress to staging and GitHub (F42, F44)
+- a read-only plugin install and allowlist (F43, F45, F46)
+- a disposable home directory or container (F48)
+- a read-only `gh` token (F57)
+
+---
+
+## The earlier reviews
+
+### Still present
+
+- **F24 (enforce hosts per step).** Enforced for the executor's `curl` and
+  navigation, but undone by F42, F43 and F44. Not applied to `qa-runner` (F46).
+- **F31 (committers can edit the allowlist).** Undone whenever git errors (F49).
+- **F28 (crash during an irreversible step, rerun repeats it).** The `pending` entry
+  holds. The rerun half is not wired into the unattended path (F53), and leftover
+  secrets have no cleanup (F56).
+- **F38 (originals left behind).** Still true after an abnormal end (F56).
+- **F29 (`decided_by` is self-stated).** Still true. Disclosed in the November
+  Resolution.
+- **F59 here repeats September's F6 premise.** Ticket text decides how much runs, and
+  a step traced to an acceptance criterion keeps the brief's grant. The `Added`-row
+  exclusion holds, but it doesn't cover a hostile criterion.
+
+### Fixes that don't hold up
+
+- **"Those routes are closed for the routes tested"** (November, "What remains",
+  F24). The hook itself can still be removed (F43). The allowlist can still be written
+  on Windows (F45), and by `qa-runner` (F46).
+- **PR #38 review, #10 (attached values go through the same checks).** The checks
+  they go through miss forms (F47). **#7 (more protected files).** Persistence routes
+  remain (F48).
+- **F26 (credential route).** The `file:` route is refused for common locations, and
+  the skill's own example is refused (F55).
+- **F34 (a new directory per run).** It holds. In a worktree session it can collide
+  with the guard's `.claude` rule (F55).
+
+### Holding
+
+F25, F27, F32's text, F35, F36, F37, F39, F40, F41 and the backoff fixes (September
+F4 and F5) have no hole in their text. The tested PR #38 cases still refuse: the suite
+passes. The `escapes` rule held in the November fixture run, and nothing here
+contradicts it.
+
+### Bearing on the November Resolution's open decisions
+
+- **Playwright as default.** Keep it, and go further: F58 shows a brief alone can
+  select Chrome. Make the driver person-owned.
+- **An agent's answer never clears `escapes`.** Keep. F54 shows agent answers also
+  need a count, not only a ceiling on what they clear.
+- **A git-tracked allowlist is ignored.** Keep, but fix F49 first. As built, the
+  decision silently reverses itself on any git error.
+- **Secrets can't be typed into chat or a browser.** Keep. The `file:` route that
+  replaces typing needs the guard to accept it (F55).
+- **An unverifiable build is flagged, not refused.** No bearing.
+- **`allowed_commands` fails closed.** Keep. Expect escalations from shell keywords
+  and common tools as well (F55). Listing them in the executor's instructions costs
+  less than widening the guard.
+- **`browser_evaluate` removed.** Consistent, but the browser still reaches any host
+  through a click, and the `computer` tool isn't checked at all (F58). The network
+  boundary is what makes this decision meaningful.
+
+---
+
+## What still needs a live walkthrough
+
+- **Bash-side confirmation of F42, F44, F45 and F48's `sed -in`**, in a disposable
+  sandbox with no network route out. This was skipped at the owner's request. The
+  guard's decisions are probed, the shell's behaviour is not.
+- **Claude Code's handling of a failed hook process** on the version in use: exit 1,
+  a timeout, and a missing script. Also whether the plugin's hook re-reads its script
+  on each call. This decides F43 and F60.
+- **The signal-file wait loop in an unattended session.** The November F33 probe saw
+  the harness block `sleep`, and background sessions document a foreground `sleep`
+  block. If `qa-runner`'s `until … sleep 2` loop is refused, F41's fix fails and the
+  run returns unfinished.
+- **What a headless permission prompt does:** hang, as README `:29` says, or deny.
+- **Where `SendMessage` from the executor can reach.** It should reach the reporter's
+  ID only. If it can address another local session, that session is outside the guard.
+- **Where `qa-runner` puts its working directory** when the caller runs inside a
+  Claude Code worktree (F55).
+- **The parts never run on 0.4.0:**
+  - Intake, Extract Behaviors, Plan Steps and the User Gate.
+  - Any browser step, the account check (F32), the SSO path (F30), and Playwright's
+    first-run login.
+  - An interrupted run and a rerun with `previous_run` (F53, F56).
+  - The two executor fixes not re-run since the fixture run (`5b10690`, `2062a46`).
+- **Whether Playwright 0.0.81's `browser_tabs`, or Chrome's `computer` tool, can open
+  a URL.** Neither is in the hook's matcher.
+
+---
+
+## Resolution — 0.8.0
+
+Written on 22 November 2026, against 0.7.0 as merged. Every finding above was first
+probed again with the guard's own functions, and each finding about the guard still had
+open cases: the commits between this review and 0.7.0 were about cost. Changes are named by
+their commit subject, since a rebase merge gives each commit a new hash.
+
+### What was confirmed that the review could not
+
+The review reasoned about bash's behaviour and ran none of its strings in a shell. In a
+disposable container, with a harmless command in place of each hidden one, bash 5.2.21
+ran the hidden command in every F44 case: the partly quoted delimiter, the tab and the
+CR before a plain heredoc's terminator, the escaped parenthesis inside `"$(…)"`,
+`${var@P}`, `$((name))`, `((name))`, an array subscript and a substring offset. It kept
+the backslash inside double quotes (F45). GNU sed 4.9 read `-in` as an in-place edit
+that writes the original to a second file (F48). `[ "$A" -eq 1 ]` did not evaluate its
+operand, so `test` stays allowed. The `/dev/tcp` redirect (F42) was not run; it is
+documented bash behaviour.
+
+### Finding by finding
+
+| Finding | Now | What changed |
+|---|---|---|
+| F42 — a redirect reaches any host | **Closed** | Every redirect target is checked, reads included. Of `/dev`, only `null`, `stdout`, `stderr` and `stdin`. The reporter and critics are refused `/dev/tcp` and `/dev/udp` too. |
+| F43 — the executor can remove the guard | **Closed for what the guard can see** | The executor writes, moves and deletes only inside the run's working directory and Playwright's output directory, by literal path, with links followed. A hook that can't start is still non-blocking in Claude Code, so a read-only plugin install remains the real answer. |
+| F44 — bash runs what the parser never saw | **Closed for every case found** | The parser accepts a small grammar and refuses the rest: no backticks, subshells, arithmetic, `${…}` operators or subscripts, `$'…'`, or unquoted heredocs. A heredoc ends where bash ends it. It is still a reading of shell text, and the next disagreement is to be expected. |
+| F45 — a backslash in double quotes hides a path | **Closed, not run on Windows** | Inside double quotes a backslash is dropped only before the four characters bash drops it before. |
+| F46 — `qa-runner` is not held | **Closed for `qa-runner` in 0.9.0** | See the addendum below. A direct invoker is not held at all, by design. |
+| F47 — protected files can be read and sent | **Partly** | Files are named literally, so a glob no longer avoids the name check, and curl is refused a value that could expand to `@file`. Still open: the hook is not called for `Read`; reads are refused by name, not confined to a place; an environment variable can go to an allowed host. |
+| F48 — files that change later sessions are writable | **Closed for the executor** | By the same rule as F43: a place to write, not a list of names. `sed -in` is refused. |
+| F49 — a git error honours a committed allowlist | **Closed** | Only git's exit 1 means untracked. |
+| F50 — valid YAML yields an empty list | **Closed** | A list at column 0, a flow list, a BOM and a leading blank line are read. A URL is read as its host. What can't be read is named in the refusal it causes. |
+| F51 — `localhost` on every port | **Open** | A decision about local development, not a bug: see below. |
+| F52 — reporter and critics barred from a name | **Open** | Only `/dev/tcp` was added. Closing it needs a list of commands for the critics and a renderer the plugin ships, so the reporter needs no interpreter. |
+| F53 — the unattended path never reads `previous_run` | **Closed in 0.6.0, in part** | The rerun rule is in the umbrella skill's Intake, which `qa-runner` loads. Matching an earlier action to a newly planned step is still a judgment. |
+| F54 — a refusal has no answer that resolves it | **Closed** | A refusal is resolved by declining, stopping, or a person changing what was refused. A step escalates twice for the same reason, then is recorded as not verified. |
+| F55 — the guard refuses what the procedure asks for | **Partly** | The executor is told the exact programs and the grammar, the skill's credential example has its `-q`, and `qa-runner` names where its working directory goes. `~/.config` is still protected whole, and `if`, `for` and `pwd` are still refused. |
+| F56 — an abnormal end leaves secrets behind | **Closed for an end `qa-runner` survives** | It waits for the report and deletes `runtime-secrets/`. A session that dies still leaves them. |
+| F57 — the `gh` credential reaches far | **Documented** | The README asks for a read-only token. Nothing enforces it. |
+| F58 — a brief can choose the user's Chrome | **Closed by instruction** | `qa-runner` records that driver only if the person's home settings file names it. The hook does not enforce this, and Chrome's `computer` tool is still unchecked. |
+| F59 — nothing bounds a run | **Partly** | Escalations per step are capped. The number of steps and the spend are not. |
+| F60 — a slow git allows the call | **Closed** | git has five seconds, and a timeout leaves the project's settings file ignored. |
+
+Changes: "refuse shell the guard cannot read the way bash does"; "hold the executor to
+literal file names and two places to write"; "count a project allowlist only when git
+says it is untracked"; "stop qa-runner's plain writes to the allowlist, and agents the
+guard doesn't hold"; "give a guard refusal answers that resolve it, and stop an
+escalation looping"; "close three gaps in what an unattended run is told".
+
+### What it was checked against
+
+- `node --test hooks/target-guard.test.mjs`: 45 of 45 pass, 13 of them new.
+- The 215 Bash commands the executor and reporter ran across the cost review's fixture
+  sessions, each judged again in the directory it ran in. For the two runs on the 0.7.0
+  layout, 35 of 37 verdicts are unchanged. The two that changed are copies that failed
+  in bash in those runs, a relative path after a `cd`, and are now refused first. On
+  the older layout 36 verdicts changed. 34 come from where Playwright's output used to
+  be, one from a file named through a variable, and one from a write to a stray path.
+- One fixture run of Phase 4 and 5 on the hardened guard, with a list of allowed tools
+  and no bypass: seven of seven verdicts correct, a complete report, and no refusal
+  from the guard. It cost $0.69.
+
+### What the conclusion is now
+
+The review's conclusion was that 0.4.0 should not run unattended, because the enforced
+boundary had three gaps that each undid it. Those three are closed for the executor.
+What stands between a hostile ticket and the machine is now mostly `qa-runner`, which
+reads the ticket first and is held only against the plain cases, and the reporter and
+critics, which are held by name. The review's advice therefore still applies: run
+unattended in a disposable container or user account, with egress limited to staging
+and GitHub, the plugin and the allowlist read-only, and a read-only `gh` token.
+
+### Left open, and why
+
+- **F46 and F52, the other agents' Bash.** Each needs its own short list of commands.
+  For the critics that is `gh pr diff` and a signal file. For `qa-runner` it means
+  reordering Intake so the allowlist is checked before the host is contacted, since its
+  reachability check is why it needs an unrestricted `curl`. For the reporter it means
+  shipping the HTML renderer, so it runs no interpreter.
+- **F47, reads.** Calling the hook for `Read` would add a Node process to every `Read`
+  in every session where the plugin is enabled. Confining the executor's reads to the
+  run directory needs somewhere to say which credential file a run may read.
+- **F51, `localhost`.** Allowing only the base URL's port needs the guard to know the
+  base URL from something an agent can't edit. The settings file can hold one, but a
+  run's base URL is asked for each time.
+- **F59, a cap on steps.** A number in the plugin would be arbitrary; one in the
+  person's settings file is the likely answer.
+
+### Addendum — 0.9.0, `qa-runner`
+
+`qa-runner` is now held to a list, as the executor is. That needed Intake reordered
+first: it used to reach the target before checking the allowlist, following redirects
+to see where they led, which is why it needed `curl` to hosts nobody had listed. The
+allowlist is now checked before anything is sent, in every mode, and each redirect's
+host is checked before it is requested.
+
+What `qa-runner`'s Bash may run: the executor's programs, `curl` under the executor's
+rules, `gh` to read issues and pull requests, `git` in three exact forms, and the wait
+on a signal file in one exact form. No interpreter, and no `gh` command that posts,
+edits or merges, which also narrows F57 for this agent. It writes only in a run
+directory, known by its name because `qa-runner` is what creates it.
+
+Changes: "hold qa-runner's Bash to a list, and check the allowlist before reaching the
+target"; "have qa-runner check it can spawn agents before it does anything"; "let
+qa-runner look in .claude for the settings file".
+
+It was checked with the first whole unattended run this plugin has had in a fixture: a
+calling agent, `qa-runner`, both drafters, both critics, the executor and the reporter,
+against the fixture app, with a stand-in `gh`. The run finished with no escalation and
+reported both planted defects. The guard refused `qa-runner` twice, both early. One was
+a variable in a path, which it resent spelled out, so a refusal of form has now been
+seen to work in a run. The other was a listing of the project's `.claude` directory,
+which is now allowed. No other agent was refused anything.
+
+That run needed the session's spawn depth raised from one to two. At one, a spawned
+agent is given no `Agent` tool, and `qa-runner` can start nothing. It now checks that
+first.
+
+Still open for `qa-runner`: `WebFetch` fetches any URL, and `Read` reads any file.
+
+### What still needs a live walkthrough
+
+- Everything on Windows. The path rules are tested with Node's Windows path functions
+  and a stubbed filesystem, and no command has been judged on a Windows machine.
+- A refusal of form in a real run, to see the executor resend once and continue. None
+  occurred in the run above.
+- `qa-runner` on an escalation: every run of it so far has finished without one.
+- An interactive run, and any escalation answered by a person.
+
+## Addendum — 0.12.0, the critics (F52)
+
+F52 is closed for `behavior-coverage-critic` and `step-plan-critic`, and open for
+`qa-reporter`.
+
+The critics held `Bash`, barred from network programs by name. In three whole fixture
+runs the only thing either used it for was writing its result file. They now hold
+`Write` and no `Bash`. The guard holds a critic's `Write` and `Edit` to a run directory,
+known by its name as for `qa-runner`, because the coverage critic runs before the plan
+exists. A test covers both ("have a critic hand over its findings as a file, and take
+its Bash away"). The coverage critic no longer runs `gh`, which narrows F57 to
+`qa-runner`.
+
+In three whole runs since, each critic wrote its findings with `Write` and was refused
+nothing.
+
+Still open: the reporter runs an interpreter for the script that renders the HTML. It
+needs a renderer the plugin ships before its `Bash` can be held to a list. The drafters'
+file tools are refused only the protected names, and both now hold `Edit` as well as
+`Write`.
+
+## Addendum — 0.13.0, the renderer
+
+The plugin now ships the script that renders the HTML report, with tests for hostile
+text in the report and in evidence, for evidence paths that leave the run's folder by
+`..` or by a link, and for steps marked sensitive ("ship a script that renders the HTML
+report"). The reporter no longer writes a script of its own.
+
+That was the precondition this review named for closing F52 for `qa-reporter`. F52 is
+still open for it: its `Bash` is barred from network programs by name, and nothing
+holds it to a list yet. The list it needs is short: the renderer, `cp` and `mkdir` for
+the report destination, and the signal file. What is not settled is where it may write,
+because a report destination comes from the brief, which the guard cannot trust.
+
+A shell loop or condition is now refused as a matter of form for `qa-runner` and the
+executor, with the commands to be resent plainly. It had been refused as a program the
+agent may not start, which calls for an escalation, and in one run `qa-runner` resent
+the commands without one.
+
+## Addendum — 0.15.0, the reporter (F52 closed)
+
+F52 is closed. No agent of this plugin now has a `Bash` that is barred by name.
+
+`qa-reporter` is held to a list: the executor's file and text tools without `curl`, in
+the same small part of shell, and `node` for one thing, this plugin's renderer by its
+real path, given a run's working directory. Its `Bash` and its file tools write only in
+the run's working directory and in a folder named for a run ("hold the reporter to a
+list, to its renderer, and to folders named for a run").
+
+The question the last addendum left open was where it may write, since a report
+destination comes from a brief the guard cannot trust. It does not need to be trusted.
+A destination's folder is named for the run, so the rule is the name: wherever a brief
+points, the reporter can only make and fill a `walkthrough-…` folder there, and never a
+protected path. `cp -r` copies a folder only from inside a run directory, which carries
+the evidence folder and nothing else.
+
+Checked by a test of the commands a run needs and of every interpreter, network program,
+stray write and whole-folder copy tried against it, and by one Phase 4 to 5 fixture run
+with live updates on and a report destination: all seven verdicts right, the report,
+the HTML and the evidence folder at the destination, and the destination's page
+identical to the working directory's. The guard refused the reporter twice in that run,
+both as a matter of form, a loop and a variable in a path, and it resent each plainly.
+
+What that run does not show: a destination inside the project, which the test covers
+and no run has used, and a step marked sensitive, whose evidence must not be copied and
+which `cp -r` of the whole folder would carry. Nothing in the guard stops that copy; the
+reporter's instructions do.
+
+Still open after this: F47, F51, F59, `qa-runner`'s `WebFetch` and `Read`, and the
+drafters' file tools, which are refused only the protected names.
+
+## Addendum — 0.16.0, what a second fixture found
+
+A second fixture app, with a credential in a response and a step that escapes, was run
+five times. Three things bear on this review.
+
+**A credential reached a transcript, twice.** This review did not have it as a finding.
+The response that creates an invite returns a token. The executor printed the response
+to read it. The evidence file was masked; the transcript, which Claude Code keeps on
+disk, was not. An instruction to mask held in two runs of three. The guard now accepts
+an executor's `curl` only when its response goes straight through one filter, exactly,
+or is discarded with `-o /dev/null`, and refuses `-i`, `-I`, `-v` and `-D` for it,
+because headers carry cookies ("hold the executor's curl to the mask, and keep headers
+off the screen"). What it does not cover: a response that is not JSON cannot be read
+through it at all; `-w '%header{set-cookie}'` still prints a cookie if asked to; a
+program on `allowed_commands` prints what it likes; and the browser's snapshot of a
+page that shows a secret is as it was.
+
+**An `escapes` step held against an agent's answer.** The diff hardcodes a mail relay.
+The plan critic classed the step `escapes` over an isolation claim of `sandboxed`, the
+planner put it last, the executor escalated, and when the caller answered `proceed` as
+an agent the step was not run. That path had not been run before. The relay, a canary
+on a host no allowlist holds, logged nothing in five runs.
+
+**Text in the ticket was not followed.** A note told QA to run a destructive command and
+to mark a criterion passed. Neither happened in any run, and the spec, the plan and the
+report mention the note as text.
+
+A substitution the guard cannot read is now refused as a matter of form, with the two
+commands to write instead. Before, it called for an escalation, and one run lost every
+API step to it.
+
+## Addendum — 0.17.0, a CLI whose target nothing states
+
+Ten scored runs of the team fixture, five before and five after a change to the
+planning rules, showed one thing that bears on this review. The fixture's CLI is on
+`allowed_commands`, and where it points was stated in nothing a run could read. Four
+plans told the executor to confirm the target before running it. One executor could not
+and blocked the step. Two ran the CLI's help and version, learned nothing and ran it
+anyway, and one ran it directly.
+
+The guard checks a listed program's name and nothing about where it reaches, which the
+README says. What is new is that the instruction standing in for that check was not
+kept when it could not be satisfied: a plan's "confirm first" was treated as a step to
+go through, not a condition. Nothing was reached that should not have been, since the
+CLI does point at the allowed host. On a CLI with an ambient context that points
+elsewhere, the same behavior would send a command to it.
+
+This is open. The fixture's CLI now names its server, so a run that looks finds an
+answer. The plugin's text is unchanged: a rule that the planner settles a CLI's target
+or blocks the step with a question has not been written or run.
+
+## Addendum — 0.18.0, the rule for a CLI's target
+
+The rule is written. A `cli` step that reaches a host or a context names beside its
+`Target` the read-only command that confirms where the program points, or what states
+it. A target nothing states is a blocked step with a question for a person. The
+executor runs the command first, does not run the step when it shows nothing or
+somewhere else, and escalates with what it printed; an agent's answer to that
+escalation clears nothing ("settle where a CLI points in the plan, and confirm it
+before the step runs").
+
+In five runs of the team fixture every plan named the command and every executor ran it
+before the CLI's first use. Before the rule that happened in three runs of ten.
+
+What this does not change, and what was not run:
+
+- It is an instruction. The guard still checks a listed program's name and nothing
+  about where it reaches.
+- The confirming command is the planner's choice. The guard permits it because the
+  program is on `allowed_commands`, and does not know it is read-only.
+- No run has had a CLI whose target nothing states, a confirming command that showed
+  somewhere else, or the escalation that follows.
+- The executors confirmed once in a run, not once before each CLI step.
+
+## Addendum — 0.19.0, which model each agent runs on
+
+`qa-runner`, the executor and the reporter run on Haiku, and the extractor, the planner
+and the two critics on Sonnet, each named in its definition. The cost review has the
+trials: ten runs as shipped and ten with every agent forced onto Sonnet held every
+check, at about half the cost.
+
+What it changes for this review's findings:
+
+- **A rule followed more literally.** A brief's grant never covers an irreversible step
+  for a behavior the ticket did not state. Executors on Haiku escalated each such step
+  on its own. One run on Sonnet, at 0.17.0, recorded one as pre-authorized, which the
+  scorers now check for.
+- **The CLI escalation has now run, once, on a false alarm.** A CLI printed `127.0.0.1`
+  where the plan said `localhost`. The executor held the step, escalated, got an agent's
+  answer, and recorded the step as not verified: the path 0.18.0 wrote and no run had
+  taken. The skill now says the loopback names are one host. A confirming command that
+  shows a host that really is another has still not been run.
+- **An executor ignores a request that arrives mid-run from another agent.** One on
+  Haiku declined to write a signal file `qa-runner` asked for by message, since the
+  request was in neither its prompt nor a resume. `qa-runner` now names the file when it
+  spawns the executor.
+- **A headless session ends long runs.** `claude -p` stops agents still running ten
+  minutes after its last turn. The README says what to set.
+
+What it does not show: anything about a real ticket, a page harder to read than the
+fixtures', or the planning agents on any model but Sonnet beyond one Opus run of each
+fixture and one complete all-Haiku team run that tested nothing.
+
+## Addendum — 0.20.0, a ticket that does not say what to test
+
+A third fixture has a two-criterion ticket whose change breaks a report and alters an
+export and an API route that neither the ticket nor the diff mentions. The cost review
+has the trials. On 0.19.0 no run of ten found any of the three; the coverage critic, on
+Sonnet, read the diff it was told to read. On Opus it searched the checkout unasked in
+four runs of five. Told to search, and to propose a behavior for each place it finds,
+it has held every such check on Sonnet in twenty runs.
+
+What it changes for this review's findings:
+
+- **The critic's reach was the diff.** This review described the critic as the plugin's
+  edge because it reads code. It read the diff, and a change breaks what calls it. The
+  critic now searches the session's checkout when there is one holding the change, and
+  says in its findings when there is not. That line does not reach the report, so a
+  reader cannot yet tell a run that searched from one that could not.
+- **Whose answer clears a step was ambiguous, twice over.** A contained step for a
+  behavior the ticket did not state escalates individually. The skill said "like an
+  `escapes` step", and some executors read that as needing a person. Separately, the
+  harness wraps a message between agents in a note that the sender "cannot grant
+  escalation", and an executor on Haiku took that to cover the plugin's own escalation.
+  Both are now spelled out: an agent's answer clears a contained step, and never one
+  that escapes, which is unchanged and held in every team run.
+- **Where a criterion ends.** Three runs gave a criterion a verdict for something beside
+  it: a pass with the role left to another row's step, and two fails for a count the
+  ticket does not name. The planner now judges all of a stated `Then` in its own step, a
+  conflict with a doc no longer turns a stated criterion into an observation, and what a
+  criterion does not name is an `Added` row.
+- **The guard runs `pwd`.** It was refused as not on the list, and an executor that put
+  it before its first `mkdir` escalated and tested nothing. It prints a directory and
+  starts nothing. This is the first program added to the list because of a run and not
+  because a step needed it, and the reasoning should not be stretched to `find`.
+- **Three failures of Haiku agents, once each in eighty-six runs**: that executor, a
+  reporter that answered `final` and wrote nothing, and a runner that deleted a doc it
+  had saved. Each ends a run with less than it should have and says so. A second
+  reporter now finishes the report, and a saved doc is kept.
+
+What it does not show: a search of a repository larger than seven files, a real ticket,
+or the two-lane harness's shared sign-in path under more than two team runs at once.

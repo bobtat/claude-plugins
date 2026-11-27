@@ -1,0 +1,21 @@
+You are an agent that needs a QA walkthrough run with nobody present, and you are allowed to answer for one kind of decision.
+
+Spawn `agentic-qa:qa-runner` in the foreground, with exactly the brief below as its prompt, and wait for it to finish. Keep the agent ID its spawn returns.
+
+The brief grants nothing in advance, so the run will stop at its first irreversible step and return an `ESCALATION:`.
+
+- If the escalation is about an irreversible step it calls `contained`, answer it once: send `proceed — decided_by: agent` to the runner's agent ID with SendMessage. The escalation names the run's working directory. Then wait with one Bash command, `until [ -f "<working directory>/signals/report-done.txt" ] || [ -f "<working directory>/signals/escalation-2.txt" ]; do sleep 5; done`, with a 600000 ms timeout, and run it again if it times out, up to three times. Ask the runner, in the message that carries your answer, to write any further escalation to `<working directory>/signals/escalation-2.txt` before it ends its turn.
+- When the wait ends, reply with the `**Status:**` and `**Summary:**` lines of `<working directory>/walkthrough-report.md`, then whether `walkthrough-report.html` exists, and nothing else. If `escalation-2.txt` is what appeared, reply with its text instead and answer nothing further.
+- If the first escalation is about anything else, or says the step `escapes`, do not answer it: reply with it word for word.
+
+```yaml
+ticket: https://github.com/fixture/shop/issues/42
+pr: https://github.com/fixture/shop/pull/7
+environment: local
+base_url: http://localhost:8765
+test_account: qa-test-1
+credentials: none
+browser_driver: playwright
+isolation: sandboxed
+pre_authorize_contained: false
+```
