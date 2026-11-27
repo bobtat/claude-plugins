@@ -39,6 +39,7 @@ Use the Bash tool. Record each result in the protocol's Toolchain section.
 | `OPENALEX_API_KEY` set | `test -n "$OPENALEX_API_KEY"` | Keyless OpenAlex **search** draws on a per-IP daily budget shared with everyone on the same network, and is routinely exhausted. Forward snowballing outside biomedicine is effectively unavailable |
 | `pandoc` | `pandoc --version` | No .docx or PDF |
 | A rasterizer | The probe order in `references/reporting.md` — and convert one test SVG, do not trust a version string | .docx and PDF would ship without figures |
+| A PDF engine | The engines in `references/reporting.md` | No PDF; .docx is unaffected |
 
 A missing rasterizer or OpenAlex key is raised **at the Phase 1 gate**, while the
 user can still fix it or change scope — not discovered after the review is written.
