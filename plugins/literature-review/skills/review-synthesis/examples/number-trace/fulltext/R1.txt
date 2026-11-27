@@ -1,0 +1,3 @@
+Attack success on the agent benchmark
+We evaluate on 1,157 tasks. The attack reaches an attack success rate of 62.6 on the driving
+agent and 81.2% retrieval success (Table 2). With the defence enabled the rate falls to 7.92.
