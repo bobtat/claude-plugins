@@ -13,7 +13,9 @@ A model reviewing literature fails in ways the methodology standards were not wr
 - **Every claim carries an evidence tier**, A to E, set by how the source was actually read. An abstract supports "this work exists and concerns the topic", never a finding.
 - **Every citation is resolved and title-matched.** A real identifier attached to the wrong paper passes an existence check; it does not pass this one.
 - **Every quotation is checked by script** against the saved full text of the paper it is attributed to. Words from a different paper are reported as a transplant.
-- **The numbers are derived, not typed.** Flow counts, exclusion reasons and screener agreement come from the screening files through a script that refuses inconsistent data.
+- **The numbers are derived, not typed.** Flow counts, exclusion reasons and screener agreement come from the screening files through a script that refuses inconsistent data. Each study's overall risk-of-bias rating is computed from its domain ratings.
+- **Categories are fixed before anyone reads.** Every coded data item has its allowed values in the protocol, and a script refuses a value outside them.
+- **Every number is traced.** A figure credited to a study must appear in that study's saved text.
 - **Figures are part of the standard.** The PRISMA flow diagram comes from a generator that will not draw arithmetic that does not close. The other figures are drawn from data files and validated for geometry, colliding labels, theming and accessibility.
 - **The review says what it is.** The PRISMA checklist is marked `met`, `met-by-machine` or `requires-human`, and every run writes a conduct disclosure naming what a person must still do.
 
@@ -83,7 +85,7 @@ If you enable a paper-search server yourself, the plugin's agents will not use i
 
 ## Requirements
 
-- **`python3`** and outbound HTTPS. The five scripts use only the standard library.
+- **`python3`** and outbound HTTPS. The seven scripts use only the standard library.
 - **Optional: `OPENALEX_API_KEY`.** Without it, forward citation searching outside biomedicine does not run, and OpenAlex search depends on a shared quota. A missing key is raised at the first gate.
 - **Optional, for Word and PDF:** `pandoc`; an SVG rasterizer (`rsvg-convert`, `inkscape`, ImageMagick with an SVG delegate, or `svglib` through `uvx`); and for PDF an engine (`xelatex`, `tectonic`, `typst` or `weasyprint`). The toolchain is probed before the first gate, and a missing format is reported, never silently dropped.
 
@@ -142,11 +144,15 @@ literature-review/
 │   │   ├── scripts/screening_stats.py
 │   │   └── examples/              a screening fixture covering every case
 │   ├── source-appraisal/          one reader per study
+│   │   ├── scripts/appraisal_check.py
+│   │   └── examples/
 │   ├── review-figures/
 │   │   ├── scripts/prisma_flow.py
 │   │   ├── scripts/check_figure.py
 │   │   └── examples/
 │   ├── review-synthesis/          threads, certainty, checklist, disclosure
+│   │   ├── scripts/trace_numbers.py
+│   │   └── examples/number-trace/
 │   └── review-audit/              the seven-step audit
 └── README.md
 ```
