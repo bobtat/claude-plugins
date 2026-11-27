@@ -28,8 +28,10 @@ adjudicated or escalated), extraction.csv (with adjudicated corrections and the
 eligibility column) and the agreement statistics. Run appraisal_check.py on the results.
 
 --escalated worse settles what the adjudicator escalated when nobody can rule: the more
-severe of the two ratings is taken, and a queried value is kept as extracted. Both are
-marked `escalated` so a person can find them.
+severe of the two ratings is taken, and a queried value is kept as extracted. Every such
+item is listed under `escalated` in the statistics, and an escalated rating is also
+marked in rob.csv's basis column, so a person can find them. A kept value may be wrong:
+it was escalated because the protocol could not say which value is right.
 """
 import argparse, csv, glob, json, os, re, sys
 from collections import Counter, OrderedDict
@@ -84,7 +86,7 @@ def main():
         print(f"error: no <study>.extraction.csv in {a.dir}", file=sys.stderr)
         return 2
 
-    pending, rob_out, ext_out, pairs, disagreements = [], [], [], [], []
+    pending, rob_out, ext_out, pairs, disagreements, decided = [], [], [], [], [], []
     elig_same = queries_raised = changed = kept = adjudicated = escalated = 0
     for sid in studies:
         f = lambda suffix: os.path.join(a.dir, f"{sid}.{suffix}")
@@ -141,12 +143,16 @@ def main():
                 rob_out.append({**base, "judgment": scale[ac.norm(worse["judgment"])], "support_quote": worse["support_quote"],
                                 "location": worse["location"], "basis": "escalated: worse of two"})
                 escalated += 1
+                decided.append({"study_id": sid, "kind": "rating", "item": dom, "judge_1": j1, "judge_2": j2,
+                                "taken": scale[ac.norm(worse["judgment"])], "basis": "escalated"})
             elif ac.norm(d["decision"]) not in scale:
                 errs.append(f"{sid} {dom}: adjudicated rating {d['decision']!r} is not on the scale")
             else:
                 rob_out.append({**base, "judgment": scale[ac.norm(d["decision"])], "support_quote": d.get("support_quote", ""),
                                 "location": d.get("location", ""), "basis": "adjudicated"})
                 adjudicated += 1
+                decided.append({"study_id": sid, "kind": "rating", "item": dom, "judge_1": j1, "judge_2": j2,
+                                "taken": scale[ac.norm(d["decision"])], "basis": "adjudicated"})
 
         asked = OrderedDict()
         for j in ("j1", "j2"):
@@ -162,12 +168,16 @@ def main():
                 continue
             if basis == "escalated" or ac.norm(d["decision"]) == "keep":
                 kept += 1; escalated += basis == "escalated"
+                decided.append({"study_id": sid, "kind": "extraction", "item": col, "extracted": ext[col],
+                                "suggested": " / ".join(dict.fromkeys(suggested)), "taken": ext[col], "basis": basis})
                 continue
             if col in proto["codes"]:
                 ok = {ac.norm(v) for v in proto["codes"][col][1]}
                 bad = [v for v in (x.strip() for x in d["decision"].split(";")) if v and ac.norm(v) not in ok]
                 if bad:
                     errs.append(f"{sid}: adjudicated {col} = {bad[0]!r} is not in the protocol's list"); continue
+            decided.append({"study_id": sid, "kind": "extraction", "item": col, "extracted": ext[col],
+                            "suggested": " / ".join(dict.fromkeys(suggested)), "taken": d["decision"].strip(), "basis": "adjudicated"})
             ext[col] = d["decision"].strip(); changed += 1
 
         (s1, c1), (s2, c2) = elig["j1"], elig["j2"]
@@ -200,6 +210,8 @@ def main():
                                      ("doubtful_studies", sum(1 for e in ext_out if e["eligibility"] != "clear"))])),
         ("extraction_queries", OrderedDict([("raised", queries_raised), ("changed", changed), ("kept", kept)])),
         ("disagreements", disagreements),
+        ("decided", decided),
+        ("escalated", [x for x in decided if x["basis"] == "escalated"]),
     ])
     if a.rob:
         with open(a.rob, "w", newline="", encoding="utf-8") as f:
@@ -217,6 +229,9 @@ def main():
           + (f", {r['escalated_taken_as_worse']} escalated and taken as the worse" if r["escalated_taken_as_worse"] else ""))
     print(f"Eligibility: same verdict from both judges on {elig_same} of {len(studies)}; "
           f"{stats['eligibility']['doubtful_studies']} doubtful. Extraction queries: {queries_raised} raised, {changed} changed, {kept} kept.")
+    for x in stats["escalated"]:
+        print(f"  escalated, for a person: {x['study_id']} {x['item']} taken as {x['taken']!r}"
+              + (f" (suggested {x['suggested']!r})" if x["kind"] == "extraction" else f" ({x['judge_1']!r} vs {x['judge_2']!r})"))
     return 0
 
 

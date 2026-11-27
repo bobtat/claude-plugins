@@ -132,8 +132,9 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/appraisal_check.py --protocol protocol.md --
 python3 ${CLAUDE_SKILL_DIR}/../literature-review/scripts/verify_quotes.py --fulltext fulltext --own protocol.md --map appraisals/<study_id>.extraction.csv appraisals/<study_id>.<j>.md appraisals/<study_id>.<j>.rob.csv appraisals/<study_id>.<j>.queries.csv
 ```
 
-A failure, or a `TRANSPLANT` on its first check, replaces **that judge** with a fresh
-one. The other judge's files are untouched and never shown to the replacement.
+A first-check report showing `UNCHECKABLE` quotations means the judge left out `--map`;
+your own run above is then the check that counts. A failure, or a `TRANSPLANT` on its
+first check, replaces **that judge** with a fresh one. The other judge's files are untouched and never shown to the replacement.
 
 **Never compare the two judges' ratings yourself.** The merge does it.
 
@@ -157,8 +158,10 @@ merge again.
   the criterion named. Agreement does not clear a doubt.
 - **An `escalate` goes to the user**: the anchor or the definition supports both
   readings, and choosing one is an amendment to the protocol. When nobody can rule, run
-  the merge with `--escalated worse`: the more severe rating is taken, a queried value
-  is kept as extracted, and both are marked `escalated` for a person to find.
+  the merge with `--escalated worse`: the more severe rating is taken and a queried
+  value is kept as extracted. Each is listed under `escalated` in
+  `appraisal-agreement.json`, and the conduct disclosure repeats the list. A kept value
+  may be wrong; it was escalated because the protocol could not say which is right.
 - **A pattern is worth more than the decisions.** When the adjudicator reports several
   disagreements on one domain, its anchors do not separate the levels. Raise that
   amendment with the user rather than adjudicating the same question for every study.
