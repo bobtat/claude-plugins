@@ -4,7 +4,7 @@
     python tests/literature-review-tests/run.py        # from anywhere
     python tests/literature-review-tests/run.py -v     # print every check
 
-Two kinds of check. The plugin's seven scripts are run against their fixtures and
+Two kinds of check. The plugin's eight scripts are run against their fixtures and
 against inputs they must refuse, with the expected numbers written here. The
 Markdown is checked for the repository's rules: manifests that agree, namespaced
 references that resolve, and command files with no shell expansion.
@@ -22,6 +22,7 @@ STATS = os.path.join(SK, "record-screening", "scripts", "screening_stats.py")
 FLOW = os.path.join(SK, "review-figures", "scripts", "prisma_flow.py")
 FIGCHECK = os.path.join(SK, "review-figures", "scripts", "check_figure.py")
 APPRAISAL = os.path.join(SK, "source-appraisal", "scripts", "appraisal_check.py")
+MERGE = os.path.join(SK, "source-appraisal", "scripts", "appraisal_merge.py")
 TRACE = os.path.join(SK, "review-synthesis", "scripts", "trace_numbers.py")
 APP = os.path.join(SK, "source-appraisal", "examples")
 NT = os.path.join(SK, "review-synthesis", "examples", "number-trace")
@@ -238,6 +239,62 @@ def appraisal():
         check("a protocol with no code lists or scale is refused", rc == 2, f"exit {rc}")
 
 
+# ---------------------------------------------------------------- appraisal_merge.py
+def merge():
+    import shutil
+    src, proto = os.path.join(APP, "merge"), os.path.join(APP, "protocol.md")
+    with tempfile.TemporaryDirectory() as t:
+        def go(d, *extra):
+            return run(MERGE, "--protocol", proto, "--dir", d, "--rob", os.path.join(t, "rob.csv"),
+                       "--extraction", os.path.join(t, "extraction.csv"), "--stats", os.path.join(t, "stats.json"), *extra)
+        rc, out, err = go(src)
+        check("merge fixture: 2 studies, 6 pairs, raw agreement 0.833, kappa 0.75, 1 adjudicated",
+              rc == 0 and "6 pairs, raw agreement 0.833, kappa 0.75; 1 adjudicated" in out, out + err[-300:])
+        if rc == 0:
+            rob, ext = read(os.path.join(t, "rob.csv")), read(os.path.join(t, "extraction.csv"))
+            st = json.loads(read(os.path.join(t, "stats.json")))
+            check("an agreed rating is kept and marked agreed", "S1,Structured critique,D1 Baseline adequacy,Some concerns," in rob and rob.count(",agreed") == 5, rob)
+            check("a disputed rating takes the adjudicator's decision", "S2,Structured critique,D1 Baseline adequacy,High," in rob and rob.count(",adjudicated") == 1, rob)
+            check("an adjudicated extraction query changes the value", "S2,R2,A,both," in ext, ext)
+            check("a study either judge doubts is doubtful; agreement does not clear it",
+                  ext.strip().splitlines()[1].endswith(",clear") and ext.strip().endswith(",doubtful:I4"), ext)
+            check("the statistics record the disagreement and the query",
+                  st["disagreements"] == [{"study_id": "S2", "domain": "D1 Baseline adequacy", "judge_1": "Some concerns", "judge_2": "High"}]
+                  and st["extraction_queries"] == {"raised": 1, "changed": 1, "kept": 0}, str(st))
+            rc2, out2, _ = run(APPRAISAL, "--protocol", proto, "--extraction", os.path.join(t, "extraction.csv"),
+                               "--rob", os.path.join(t, "rob.csv"), "--derive-overall")
+            check("the merged files pass the appraisal check and derive overall ratings", rc2 == 0 and "overall (worst domain): High 2" in out2, out2)
+
+        d = os.path.join(t, "pending"); shutil.copytree(src, d); os.remove(os.path.join(d, "S2.adjudication.csv"))
+        for f in ("rob.csv", "extraction.csv"):
+            if os.path.exists(os.path.join(t, f)): os.remove(os.path.join(t, f))
+        rc, out, _ = go(d)
+        check("undecided items stop the merge (exit 1) and are listed", rc == 1 and "2 item(s) undecided" in out
+              and os.path.exists(os.path.join(d, "pending-adjudication.csv")) and not os.path.exists(os.path.join(t, "rob.csv")), out)
+
+        d = os.path.join(t, "esc"); shutil.copytree(src, d)
+        adj = read(os.path.join(d, "S2.adjudication.csv")).replace("S2,D1 Baseline adequacy,High,", "S2,D1 Baseline adequacy,escalate,")
+        open(os.path.join(d, "S2.adjudication.csv"), "w", encoding="utf-8").write(adj)
+        rc, out, _ = go(d)
+        check("an escalated rating stays undecided without --escalated", rc == 1 and "escalated: needs a person" in out, out)
+        rc, out, _ = go(d, "--escalated", "worse")
+        check("--escalated worse takes the more severe rating and marks it",
+              rc == 0 and "S2,Structured critique,D1 Baseline adequacy,High," in read(os.path.join(t, "rob.csv"))
+              and "escalated: worse of two" in read(os.path.join(t, "rob.csv")), out)
+
+        def refused(label, name, old, new):
+            d = tempfile.mkdtemp(dir=t); os.rmdir(d); shutil.copytree(src, d)
+            txt = read(os.path.join(d, name)); assert old in txt, (name, old)
+            open(os.path.join(d, name), "w", encoding="utf-8").write(txt.replace(old, new))
+            rc, _, err = go(d)
+            check(label, rc == 2, f"exit {rc}: {err[-200:]}")
+        refused("a judgment with no eligibility line is refused", "S1.j1.md", "- Eligibility: clear", "- Eligible")
+        refused("a doubt with no criterion code is refused", "S2.j2.md", "doubtful:I4", "doubtful")
+        refused("an adjudicated rating off the scale is refused", "S2.adjudication.csv", "S2,D1 Baseline adequacy,High,", "S2,D1 Baseline adequacy,Severe,")
+        refused("an adjudicated code outside its list is refused", "S2.adjudication.csv", "S2,contribution,both,", "S2,contribution,attack and defence,")
+        refused("a judge's rating off the scale is refused", "S2.j2.rob.csv", ",High,", ",Critical,")
+
+
 # ---------------------------------------------------------------- trace_numbers.py
 def trace():
     rc, out, _ = run(TRACE, "--fulltext", "fulltext", "--keys", "study-keys.csv", "review.md", cwd=NT)
@@ -280,7 +337,7 @@ def figures():
 
 
 def main():
-    for section in (manifests, markdown, quotes, fetch, stats_and_flow, appraisal, trace, figures):
+    for section in (manifests, markdown, quotes, fetch, stats_and_flow, appraisal, merge, trace, figures):
         if VERBOSE:
             print(section.__name__)
         section()
