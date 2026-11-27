@@ -97,13 +97,13 @@ The `- Records:` and `- Eligibility:` lines are read by script. Write the second
 
 ```
 python3 <appraisal_check.py> --protocol <protocol.md> --rob <your ratings file>
-python3 <verify_quotes.py> --fulltext <fulltext dir> --own <protocol.md> --report <first-check path> <your judgment file> <your ratings file>
+python3 <verify_quotes.py> --fulltext <fulltext dir> --own <protocol.md> --map <the extraction row> --report <first-check path> <your judgment file> <your ratings file> <your queries file>
 ```
 
-Run the quote check once on the finished draft and never overwrite that report. Correct
-failures by copying the passage again from the saved text; re-run without `--report`
-until clean. Note that the ratings file is keyed by study, so pass `--map <extraction
-row>` if the quote check says it cannot find the records.
+`--map` is required: your ratings and queries are keyed by study, and without it their
+quotations come back `UNCHECKABLE` and the report proves nothing. Run the quote check
+once on the finished draft and never overwrite that report. Correct failures by copying
+the passage again from the saved text; re-run without `--report` until clean.
 
 A `TRANSPLANT` on that first check means you gave this study another paper's words.
 Correct it and say so in your return; the orchestrator replaces a judgment whose first

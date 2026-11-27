@@ -103,7 +103,8 @@ identical inputs and no knowledge of each other. Across <N> studies and <N> doma
 ratings the judges agreed on <N> (raw agreement <x>, κ <x>); <N> were adjudicated from
 the paper's text and <N> escalated. The judges gave the same eligibility verdict on <N>
 of <N> studies, and <N> studies are marked doubtful. The judges queried <N> extracted
-values; <N> were changed. Figures are from `appraisal-agreement.json`. The same caveat
+values; <N> were changed. Escalated and still open for a person: <each item from the
+`escalated` list, with the value taken>. Figures are from `appraisal-agreement.json`. The same caveat
 applies as to screening: this is two readings by one model, not two reviewers.
 
 ## Quotations
