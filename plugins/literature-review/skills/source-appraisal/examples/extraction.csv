@@ -1,0 +1,4 @@
+study_id,report_ids,design,n,tier,eligibility,contribution,injection_vector,models_evaluated
+S1,R1,computational experiment,250 trials,A,clear,attack,direct write,GPT-4
+S2,R2,computational experiment,3 seeds,A,clear,both,query only; external content,GPT-4o; Llama 3.1
+S3,R3;R4,benchmark,310 tasks,A,doubtful:I4,benchmark,Not stated,not reported

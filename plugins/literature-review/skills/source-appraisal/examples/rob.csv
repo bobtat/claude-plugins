@@ -1,0 +1,10 @@
+study_id,instrument,domain,judgment,support_quote,location
+S1,Structured critique,D1 Baseline adequacy,Some concerns,"compared against a single prior attack",§4.1
+S1,Structured critique,D2 Reproducibility,Low,"code and prompts are released",§6
+S1,Structured critique,D3 Evaluation validity,High,"the attacker is assumed to write to the memory directly",§3
+S2,Structured critique,D1 Baseline adequacy,Low,"four baselines including two adaptive attacks",§5
+S2,Structured critique,D2 Reproducibility,Some concerns,"prompts are available on request",§A
+S2,Structured critique,D3 Evaluation validity,Low,"evaluated on deployed agents",§5.2
+S3,Structured critique,D1 Baseline adequacy,No information,"",
+S3,Structured critique,D2 Reproducibility,No information,"",
+S3,Structured critique,D3 Evaluation validity,No information,"",
