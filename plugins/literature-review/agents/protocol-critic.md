@@ -60,10 +60,12 @@ count by severity and the most serious finding.
    not PubMed-indexed.
 8. **Appraisal mismatched to design.** RoB 2 planned for observational studies. A
    validated instrument claimed for computational work, where none exists. No scale
-   stated in order, or no rule for the overall rating.
+   stated in order, or no rule for the overall rating. **A domain with no anchor for
+   each level**, or anchors two judges could read differently: name a paper that would
+   earn two levels at once.
    **Data items that cannot be coded the same way twice.** A column a figure or a count
    depends on with no list of allowed values. A list with no `other` or `not stated`.
-   Two values a reader could not choose between: name a paper that fits both.
+   Two values an extractor could not choose between: name a paper that fits both.
 9. **A figure budget the review cannot deliver.** The flow diagram or, where RoB is
    planned, the RoB pair missing. A figure needing data the data-items section never
    collects. A forest plot with a narrative synthesis.
