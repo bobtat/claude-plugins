@@ -114,8 +114,8 @@ Mark what the review does, not what it could do. Items 24a, 25 and 26 are always
 
 Write `conduct-disclosure.md` from the template in `references/reporting.md`, with the
 real values: κ and raw agreement per stage from `prisma-flow.json`, the count of
-decisions the user made or changed, the MCP server versions and fallbacks from
-`search-log.md`, and every route that failed or degraded.
+decisions the user made or changed, the interface each source was searched through
+from `search-log.md`, and every route that failed or degraded.
 
 The κ caveat stays in, unedited: two instances of one model are not two independent
 reviewers, and a reader who does not know the screening was automated will read κ as the

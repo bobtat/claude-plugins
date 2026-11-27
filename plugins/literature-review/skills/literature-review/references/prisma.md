@@ -229,8 +229,9 @@ The items that bind hardest on this plugin:
 - **Any citation chaining** (snowballing), stated as a method with its direction.
 - **Any automation tool** used at any stage, named and versioned.
 
-`search-log.md` is structured to satisfy all of these; the pinned MCP server versions
-are recorded there for the last one.
+`search-log.md` is structured to satisfy all of these; the interface each source was
+searched through, and the scripts that fetched and checked, are recorded there for
+the last one.
 
 ## What PRISMA Does Not Cover
 
