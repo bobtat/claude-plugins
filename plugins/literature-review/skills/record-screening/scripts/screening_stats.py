@@ -129,6 +129,15 @@ def validate(records, screening, labels=None):
             _, e = reason(s["final_criterion"], labels)
             if e:
                 errs.append(f"{s['record_id']} {s['stage']}: {e}")
+        d = (s.get("doubt") or "").strip()
+        if d:
+            m = CODE_RE.match(d)
+            code = m.group(1).upper() + m.group(2) if m else None
+            if not code:
+                errs.append(f"{s['record_id']} {s['stage']}: doubt {d!r} names no criterion code")
+            elif labels is not None and code not in labels:
+                errs.append(f"{s['record_id']} {s['stage']}: doubt cites {code}, "
+                            "which is not in the protocol's criteria table")
     for rid in kept:
         if (rid, "title_abstract") not in rows:
             errs.append(f"{rid}: kept but never screened at title/abstract")
@@ -210,6 +219,24 @@ def derive(records, screening, labels=None):
     included = [s for s in screening if s["stage"] == "full_text" and s["final"] == "include"]
     out["included_reports"] = len(included)
     out["included_studies"] = len({(s.get("study_id") or s["record_id"]) for s in included})
+
+    # An inclusion a screener or the adjudicator made while saying the criterion, as
+    # written, did not clearly decide it. Agreement between screeners does not clear it.
+    doubted = [s for s in included if (s.get("doubt") or "").strip()]
+    if doubted:
+        codes = Counter()
+        for s in doubted:
+            m = CODE_RE.match(s["doubt"])
+            codes[m.group(1).upper() + m.group(2)] += 1
+        out["eligibility_doubt"] = OrderedDict([
+            ("included_reports", len(doubted)),
+            ("included_studies", len({(s.get("study_id") or s["record_id"]) for s in doubted})),
+            ("by_criterion", OrderedDict(sorted(codes.items(), key=lambda kv: -kv[1]))),
+        ])
+        notes.append(
+            f"Eligibility doubt on {len(doubted)} of {len(included)} included reports ("
+            + ", ".join(f"{c} x{n}" for c, n in out["eligibility_doubt"]["by_criterion"].items())
+            + "). List them at the gate; the synthesis reports with and without them.")
 
     stats = OrderedDict()
     for stage in ("title_abstract", "full_text"):
