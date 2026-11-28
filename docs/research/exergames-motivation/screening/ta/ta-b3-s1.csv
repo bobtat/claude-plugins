@@ -1,0 +1,31 @@
+record_id,decision,criterion,rationale,doubt
+pm-42551496,unsure,,"Wii Fit exergame vs whole-body vibration, both with PT, 12 weeks, randomized; abstract lists strength and balance outcomes only, no motivation instrument named so none shown absent",E5: abstract lists outcomes without a motivation instrument; unlisted secondary outcomes possible
+oa-W4404159996,exclude,E9: Not a primary report,Perspective/narrative article on cognitive training; no trial data,
+oa-W7213433529,unsure,,Title only: pilot RCT of game-based upper limb rehabilitation; duration comparator and motivation measure not stated,
+pm-42763302,unsure,,"Exergame plus elastic band vs health education, randomized, 12 weeks; instruments listed are IPAQ-SF and a self-efficacy scale, no motivation instrument named but motivation explored in interviews; full text needed",E5: listed outcomes name no motivation instrument; unlisted secondary outcomes possible
+pm-41789604,exclude,E9: Not a primary report,Scoping review,
+pm-40790569,unsure,,"Kinect game vs physiotherapy, randomized, two weeks (10 sessions); outcomes pain ROM motor function, no motivation instrument named",E5: abstract lists outcomes without a motivation instrument
+pm-40321768,exclude,E4: Under two weeks,"Three sessions across one week; all three arms are robotic game training variants",I1: whether a finger-robot video game counts as an exergame (and so whether E1 or E3 would also apply) is not settled by the criterion
+oa-W7165228557,exclude,E9: Not a primary report,Review of exergaming and phygital sport studies (also Russian-language full text),
+pm-39964707,unsure,,"Robotic manipulandum game vs task-specific training, randomized, 8 weeks; abstract names only motor outcomes and interviews; motivation instrument not shown absent",I1: hand-arm manipulation game with assistive robot; unclear whether it meets exergame definition vs hand-only control
+pm-39622701,unsure,,"Motion-based video games, randomized, 18 weeks, control group; outcomes frailty related, motivation instrument not shown absent",E5: abstract lists outcomes without a motivation instrument
+oa-W4407925935,exclude,E4: Under two weeks,Single session of three shoulder exercise conditions in healthy participants,
+oa-W4416819434,exclude,E9: Not a primary report,Overview/narrative review of exergames in ASD,
+oa-W7220702081,unsure,,"VR shooting game vs app, counseling, pharmacotherapy; randomized, six weeks; motivation instrument not mentioned, whether movement is game input not stated",I1: unclear whether VR shooting game is driven by limb or trunk movement
+pm-38965612,exclude,E6: No motivation results by arm,Trial protocol; no results,
+pm-41168901,unsure,,"Exergaming and VR 12-week programme vs no intervention, randomized; motivation appears only in qualitative interviews, instruments for well-being not stated; full text needed",E5: abstract does not show whether a named motivation instrument was used
+pm-41449562,exclude,E5: No named motivation instrument,Qualitative-only study of views on a feasibility trial (interviews and diaries),
+oa-W4414442255,exclude,E9: Not a primary report,Review of VR exergaming in musculoskeletal rehabilitation,
+oa-W7119829267,exclude,E3: No non-exergame comparator,Both randomized groups (balance and strength) trained with Nintendo Wii VR; outcome was quality of life,
+pm-42046589,unsure,,"EMG biofeedback video games vs same exercises without games, randomized, 10 weeks; motivation only via interviews in abstract, instrument not shown absent",I1: whether EMG-driven game counts as movement of limbs as game input
+pm-42261097,unsure,,"Myoelectric game training vs sham, randomized, about 6-10 weeks; feasibility included motivation, instrument not named",I3: sham arm uses 1 muscle and may also play games; abstract does not say
+oa-W4395005416,unsure,,Title only: self-control training video game pilot; design movement input and motivation measure not stated,I1: title suggests cognitive-training game but does not settle movement input
+pm-40575461,exclude,E3: No non-exergame comparator,Both arms play the same active video game; only animation narrative varied,
+oa-W7117546523,exclude,E1: Not an exergame,Wireless communications signal processing; unrelated,
+pm-41713931,exclude,E4: Under two weeks,Randomized crossover with a single VR cycling session per condition,
+pm-38975352,unsure,,"Exergaming 6 weeks vs usual care, randomized by home; outcomes feasibility and usability, motivation instrument not shown absent",I2: one home per arm; unclear whether allocation was truly random and cluster-level
+pm-41002748,unsure,,"Nintendo Switch therapy vs board game, randomized, 8 weeks; outcomes cognitive tests only, motivation not shown absent",I1: abstract does not say whether the Switch games are driven by body movement
+oa-W7164739728,unsure,,"Nintendo Switch Sports vs conventional therapy, randomized; duration not given; outcomes SPADI and ROM, motivation not shown absent",I4: duration not stated
+pm-42536979,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+oa-W7130314881,unsure,,"Educational game-based PE vs traditional teaching, 12 weeks; learning motivation reported with an unnamed instrument; abstract does not say the game is digital",I1: abstract does not say whether the game is digital or movement-driven
+pm-42179992,exclude,E5: No named motivation instrument,"Motivation assessed with a visual analog scale, per abstract",E5: a VAS is presumed single-item but abstract does not state item count

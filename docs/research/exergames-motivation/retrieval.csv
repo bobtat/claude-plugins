@@ -1,0 +1,63 @@
+record_id,full_text_retrieved,route,title_match,chars,note
+oa-W4413422558,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-40567995,yes,europepmc:PMC12188645,yes,33942,
+oa-W7143500910,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-39024000,yes,europepmc:PMC11294767,yes,66448,
+pm-39952553,no,europepmc:not-open-access,,0,
+oa-W4414250592,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+oa-W4394692400,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-41628428,yes,europepmc:PMC12910271,yes,82298,
+pm-43021294,yes,europepmc:PMC13761108,yes,52263,
+pm-40493776,yes,europepmc:PMC12173152,yes,67150,
+pm-42247423,yes,europepmc:PMC13240639,yes,77181,
+pm-41384807,yes,europepmc:PMC12699957,yes,48474,
+pm-41627139,yes,europepmc:PMC13159033,yes,63281,
+pm-40983137,no,europepmc:not-open-access,,0,
+oa-W4413201399,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-42974341,yes,europepmc:PMC13727002,yes,41556,
+pm-39069966,no,europepmc:not-open-access,,0,
+pm-38801680,no,europepmc:not-open-access,,0,
+oa-W4405999390,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-42223906,no,europepmc:not-open-access,,0,
+oa-W7220200190,no,none,,0,"No arXiv ID, PMID or DOI: no route to PubMed Central or arXiv. Not retrieved (protocol: PMC and arXiv only)."
+oa-W7237392436,no,none,,0,"No arXiv ID, PMID or DOI: no route to PubMed Central or arXiv. Not retrieved (protocol: PMC and arXiv only)."
+pm-42405262,yes,europepmc:PMC13332716,yes,70855,
+oa-W4414186250,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+oa-W7165591188,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-41032869,yes,europepmc:PMC12530152,yes,58595,
+pm-41307454,yes,europepmc:PMC12750068,yes,51449,second attempt; the first failed with a connection reset
+oa-W7125699163,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-42583323,no,europepmc:not-open-access,,0,
+pm-42551496,no,europepmc:not-open-access,,0,
+oa-W7213433529,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-42763302,yes,europepmc:PMC13589766,yes,29186,
+pm-40790569,yes,europepmc:PMC12337479,yes,44653,
+pm-39964707,yes,europepmc:PMC11888099,yes,65279,
+pm-39622701,yes,europepmc:PMC11600656,yes,66318,
+oa-W7220702081,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-41168901,yes,europepmc:PMC12577419,yes,71729,
+pm-42046589,yes,europepmc:PMC13110886,yes,68492,
+pm-42261097,no,europepmc:not-open-access,,0,
+oa-W4395005416,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-38975352,yes,europepmc:PMC11227257,yes,62344,
+pm-41002748,yes,europepmc:PMC12468899,yes,42005,
+oa-W7164739728,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+oa-W7130314881,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-40989272,yes,europepmc:PMC12450890,yes,57839,
+oa-W4416431672,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-40604775,yes,europepmc:PMC12217201,yes,52362,
+oa-W7220097264,no,none,,0,"No arXiv ID, PMID or DOI: no route to PubMed Central or arXiv. Not retrieved (protocol: PMC and arXiv only)."
+oa-W4415152829,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+oa-W7167468688,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-42384950,yes,europepmc:PMC13379635,yes,57070,
+pm-39931102,yes,europepmc:PMC11807768,yes,65117,
+pm-42857931,no,europepmc:not-open-access,,0,
+oa-W4402875116,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+oa-W4413463698,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+oa-W4415982674,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+pm-42958576,yes,europepmc:PMC13721456,yes,81386,
+pm-41990569,no,europepmc:not-open-access,,0,
+pm-41664928,no,europepmc:not-open-access,,0,
+oa-W4408275182,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
+s1-oa-W4403263759,yes,europepmc:PMC11731695,yes,48963,
+s1-oa-W4399730896,yes,europepmc:PMC11209055,yes,36601,

@@ -1,0 +1,31 @@
+record_id,decision,criterion,rationale,doubt
+pm-40278000,exclude,E1: Not an exergame,"Cluster-randomized VR mystery game with minigames teaching emotional regulation for vaping; no sign that body movement is the game input; motivation measured is to quit vaping, not exercise",E1: abstract does not say whether the VR minigames are driven by limb or trunk movement
+oa-W4407560557,exclude,E9: Not a primary report,Invited commentary on another trial; no primary data,
+pm-42958576,unsure,,"Randomized VR vs traditional vs control, 8 weeks; abstract does not say whether the VR is an exergame and lists no motivation instrument",I1: is generic 'VR-based exercise' a movement-driven game with a goal or score?
+oa-W4406131796,exclude,E1: Not an exergame,Title only: depth map completion for indoor scenes is computer vision; no exergame,
+oa-W4415982674,unsure,,"Ring Fit Adventure vs aerobic exercise, RCT, 6 weeks; outcomes listed are cardiorespiratory; no motivation instrument named, so per A1 the full text must show it",
+oa-W4416431672,unsure,,"RCT 8 weeks VR-based exercises vs manual physiotherapy; abstract does not show whether VR is an exergame, and no motivation instrument is listed (engagement and enjoyment mentioned only)",I1: is 'VR-based exercise' an exergame as defined?
+pm-39931102,unsure,,"Randomized 8-week gamified non-immersive VR exercise vs usual activity; questionnaires not named, motivation reported from logbooks and interview; full text needed",I5: motivation appears only as participant comments and logbooks; instrument unknown
+pm-40627595,exclude,E2: Not randomized,"Abstract: ""non-randomized controlled feasibility trial""; children were allocated to intervention and control groups without randomization",
+pm-42384950,unsure,,"RCT 8 weeks IVR exergaming vs home-based exercise; no motivation instrument listed in abstract, so full text needed",
+pm-40433613,exclude,E9: Not a primary report,Meta-analysis of randomized controlled trials,
+pm-42857931,unsure,,"Kinect games plus NDT vs NDT alone, randomized, 12 weeks; abstract lists no motivation instrument, so full text needed",
+pm-40989272,exclude,E5: No named motivation instrument,"Abstract says data were collected using two validated questionnaires, the Subjective Vitality Scale and the Life Hope Questionnaire, neither a motivation instrument",E5: abstract may not list every outcome; also unclear whether gamified VR group exercise is an exergame
+pm-39019442,exclude,E3: No non-exergame comparator,"Within-participant crossover of Standard vs Dosed Failure versions of the same exergame; every condition is an exergame",
+oa-W4415152829,unsure,,"Randomised Wii vs conventional trial; abstract says Wii increased motivation but names no instrument; title is Portuguese, language of full text not known",E8: English abstract with a Portuguese title; the full-text language cannot be settled from the record
+pm-41990569,unsure,,"Video game-based exercises plus physiotherapy vs physiotherapy, randomized, 10 weeks; satisfaction questionnaire only listed, motivation instrument not shown",I5: abstract mentions motivation only in the conclusion
+oa-W4408275182,unsure,,"No abstract; title only: immersive VR upper-limb RCT in children with cerebral palsy; French title, full-text language not known",E8: French title; full text language is not confirmed by the record
+pm-40738100,exclude,E9: Not a primary report,Rapid scoping review,
+oa-W4402875116,exclude,E1: Not an exergame,Title only: teaching shoulder dystocia management by demonstration vs telesimulation vs game-based training is education not a movement-driven exergame,
+pm-42393428,exclude,E2: Not randomized,"Single-arm 8-week feasibility study of 20 participants with a multimodal intervention; protocol for the later randomised trial, not this one",
+oa-W7220097264,unsure,,"Randomized VR exergame vs control, exercise motivation measured; instrument not named and programme span of eight sessions not stated",I4: eight sessions with no stated length in weeks; I5: instrument unnamed in abstract
+pm-40862308,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+oa-W7135015982,exclude,E9: Not a primary report,Systematic review,
+pm-41445941,exclude,E9: Not a primary report,Systematic review of RCTs,
+pm-40604775,unsure,,"Randomized Naji Iriano game vs no intervention, 6-week assessments, PA motivation questionnaire measured; unclear if the game is movement-driven and instrument not named",I1: is this health video game an exergame or a seated serious game?
+pm-39054204,exclude,E2: Not randomized,"Abstract: ""Single-centre, non-randomised proof-of-concept clinical trial""",
+oa-W7170076918,exclude,E1: Not an exergame,Multiplayer VR serious game teaching Scrum to students; learning not exercise,
+pm-41664928,unsure,,"Randomized VR + usual care vs usual care, 3 weeks; VR is for pain management and the abstract does not say whether it is movement-driven; no motivation instrument listed",I1: is this immersive VR a game driven by body movement?
+oa-W7167468688,unsure,,"Abstract field holds only a reference list, no usable content; design and population unknown (it may be a commentary)",
+oa-W4413463698,unsure,,"Random groups, semester-long Kinect sports-dance training vs control, sport dance motivation scores reported; instrument not named and unclear if it is a game",I1: Kinect used for movement detection and assisted training; is there a game goal or score?
+oa-W4404486674,exclude,E3: No non-exergame comparator,"Pilot RCT compares two doses (13 vs 28 min) of the same AR exergame, a single bout; every arm receives an exergame",E4: single bout would also fail duration

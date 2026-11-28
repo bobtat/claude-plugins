@@ -1,0 +1,3 @@
+record_id,decision,criterion,rationale,doubt
+s1-oa-W4399730896,exclude,E4: Under two weeks,"§2.3.2: ""Participants played the VR exergaming for 8 min."" - single session; also no motivation instrument measured (reaction time only)",
+s1-oa-W4403263759,exclude,E4: Under two weeks,"Introduction: ""we focused on the acute effects of a single session of the game""; crossover with one session per condition (Experimental Design: ""performed 48 hours apart""). SIMS was used and reported for both conditions but the trial is a single-session crossover",

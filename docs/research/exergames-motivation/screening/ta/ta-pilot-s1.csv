@@ -1,0 +1,21 @@
+record_id,decision,criterion,rationale,doubt
+oa-W4413422558,unsure,,"No abstract; title says exergaming vs aerobic exercise, randomised, but duration, motivation instrument and results not known",
+pm-42856006,exclude,E9: Not a primary report,Narrative review of game-based interventions in cerebral palsy,
+pm-40567995,include,,"Randomised, Kinect aerobic dance 8 weeks vs aerobic dance with video at home; BREQ-2 named as outcome","I6: abstract reports a BREQ-2 difference only for the experimental group at 12 weeks; unclear whether control-arm BREQ-2 results are given. I1: abstract does not say the Kinect dance has a goal or score."
+oa-W7143500910,unsure,,"Randomised exergame vs same protocol without exergames, 16 sessions twice weekly; outcomes listed (NPI) name no motivation instrument, but unlisted secondary outcomes are possible","E5: NPI apathy subscale is an apathy scale (Out list), not motivation for exercise; whether another motivation measure exists is unknown"
+oa-W7116711481,exclude,E5: No named motivation instrument,"Qualitative component only: ""Data collection involved focus groups"" and semi-structured interviews; thematic analysis",E7: qualitative report of a cluster RCT; parent trial results may be the eligible report and this one groups with it
+pm-39024000,unsure,,"Randomised, Ring Fit Adventure plus standard care vs standard care, 12 weeks; listed outcomes name no motivation instrument but secondary outcomes may be unlisted",
+pm-42713861,exclude,E9: Not a primary report,Systematic review,
+oa-W7128679188,exclude,E9: Not a primary report,Systematic review of reviews and RCTs on active video games,
+oa-W4406747628,exclude,E4: Under two weeks,"""a single session of HIIT"" with VR headset",
+pm-39952553,unsure,,"Randomised 6-month Wii Fit/Kinect vs maintain activity; outcomes listed are anthropometric, PA, medical history; no motivation instrument named but may be unlisted",
+pm-42066290,exclude,E6: No motivation results by arm,"Trial protocol, ""no participants had been enrolled, and no data analysis had been conducted""",E9: does a protocol count as not a primary report (E9) or no results (E6)? E6 cited because I6 says protocols are out
+pm-40505143,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+pm-40902721,exclude,E6: No motivation results by arm,"Study protocol; outcomes are muscle strength, flexibility, balance, pain; no results",E2: described as a partially randomised trial; unclear whether allocation was random
+pm-39135010,exclude,E1: Not an exergame,"Facebook group weekly challenges supplementing a wearable activity monitor; gamification of walking, not a game with movement as input; also a protocol",I1: does a social-media walking game with a wearable count as an exergame or as gamification?
+oa-W4414250592,unsure,,"Exergames among movement games, randomised, 8 weeks vs control; outcomes are learning-disability scales, no motivation instrument named; full-text language not known (Persian-language journal)",E8: English abstract but full text language not shown; E5: no motivation instrument listed but secondary outcomes may be unlisted
+pm-39421950,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+oa-W4392373743,exclude,E4: Under two weeks,"Crossover with ""each session lasting 30 min"", one session per condition",
+oa-W7164533076,exclude,E9: Not a primary report,Scoping review,
+pm-42293369,exclude,E9: Not a primary report,Systematic review,
+oa-W4394692400,unsure,,"Randomised Wii Fit Plus vs conventional balance training, 8 weeks; listed outcomes name no motivation instrument but secondary outcomes may be unlisted",

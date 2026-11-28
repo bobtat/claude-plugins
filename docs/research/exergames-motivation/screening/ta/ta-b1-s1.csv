@@ -1,0 +1,31 @@
+record_id,decision,criterion,rationale,doubt
+pm-41108898,exclude,E5: No named motivation instrument,Process evaluation of a pilot RCT: song feedback questionnaire plus semi-structured interviews with thematic analysis; motivation appears only as an interview theme; intervention group only,E5: does a process evaluation of an eligible trial count as qualitative only when it includes a feedback questionnaire?
+pm-40682190,exclude,E3: No non-exergame comparator,All three randomized arms (Standard / Virtual / Proprioceptive) play robot-assisted video games; also only three sessions over one week,
+pm-41628428,include,,12-week trial; exergame tennis plus on-court vs on-court only; Sport Motivation Scale with results by group; participants described as randomized,I2: titled quasi-experimental but abstract says participants were randomized; does that count as random allocation?
+pm-43021294,unsure,,Pilot RCT with game-based core/balance exercise vs none for 24 weeks; motivation to participate in physical activity is a secondary outcome but instrument not named; whether the games are movement-controlled is not stated,I1: abstract does not show body movement is the game input
+pm-39940403,exclude,E1: Not an exergame,Carbohydrate mouth rinse and coach encouragement during soccer games; no exergame,
+oa-W7201847614,exclude,E2: Not randomized,Quasi-experimental single-group pilot (20 stroke patients) with pre-post design,
+oa-W4391630540,exclude,E9: Not a primary report,Conference-style abstract summarising a project with preliminary data and ongoing trial; no full paper with results,
+oa-W7223168671,exclude,E9: Not a primary report,Literature review of eight studies,
+pm-42956019,exclude,E9: Not a primary report,Meta-analysis and systematic review,
+pm-40493776,unsure,,Randomized feasibility study with exergame vs dose-matched exercise; motivation instrument not named in abstract; duration is until hospital discharge (average about 3.5 sessions) so may be under two weeks,E4: scheduled duration is length of hospital stay with no stated length; is it under two weeks?
+pm-40446290,exclude,E9: Not a primary report,Systematic literature review,
+pm-42355702,exclude,E9: Not a primary report,Systematic review,
+pm-42247423,unsure,,RCT of 8-week Switch exergame vs usual activities; abstract lists depression/anxiety/sleep outcomes and names no motivation instrument; unlisted secondary outcomes possible,
+pm-41384807,unsure,,Randomized 7-week trial of exergames vs traditional exercise with intrinsic motivation results by group; instrument not named in abstract,I5: is the intrinsic motivation measure a named multi-item instrument (e.g. IMI)?
+pm-41627139,unsure,,RCT 4 weeks of game-based VR vs conventional training; BREQ-2 reported but abstract shows a value for VR group only; whether VR games are movement-driven and control results exist need full text,I6: BREQ-2 results by arm not visible in abstract
+pm-40983137,unsure,,Randomized 12-week VR tele-exercise vs conventional tele-exercise; enjoyment scale listed but no motivation instrument named; whether VR exercise is a game with goal not stated,I1: is immersive VR exercise an exergame?
+oa-W4412397141,exclude,E9: Not a primary report,Invited commentary on a secondary analysis,
+oa-W4401919830,exclude,E9: Not a primary report,Interim analysis reported as a conference abstract; cognitive control videogame plus tDCS; IMI not reported by arm,
+pm-39695572,exclude,E9: Not a primary report,Systematic review,
+oa-W4413201399,unsure,,No abstract; title suggests randomized trial of non-immersive VR plus conventional therapy with motivation outcome,
+pm-42974341,unsure,,Wii Fit vs wobble board vs control for 4 weeks with IMI; allocation described as pseudo-randomized in a quasi-experimental trial; IMI compared only between training groups in abstract,I2: does pseudo-randomized allocation count as random?
+pm-39069966,unsure,,Randomized 10-week trial with exergame vs cognitive vs physical training groups; motivation to complete training measured but instrument not named,I5: unnamed feedback items on motivation may not be a named instrument
+pm-38801680,unsure,,RCT of 6-week VR hand games vs control; abstract lists clinical outcomes only and names no motivation instrument,
+pm-41747255,exclude,E3: No non-exergame comparator,Both arms play exergames (augmented auditory plus visual feedback vs visual feedback only); single session,
+oa-W4405999390,unsure,,Randomized trial of Nintendo Switch gaming vs none among house officers; abstract does not say whether play is movement-controlled; no motivation instrument named,I1: whether Switch gaming involves body movement as input is not stated
+oa-W4400747992,exclude,E2: Not randomized,Pilot where randomization was tested but all patients were assigned to the exergame group; single arm,
+pm-39335412,exclude,E5: No named motivation instrument,Motivation assessed with the Pittsburgh Rehabilitation Participation Scale per session; this is a clinician-rated participation measure,I5: is the PRPS participation score a motivation instrument or clinician-rated participation?
+pm-39919038,exclude,E9: Not a primary report,Scoping review,
+pm-42223906,include,,Randomized 6-week Kinect and balance board vs conventional balance training; Intrinsic Motivation Inventory with group comparison,
+oa-W7220200190,include,,Randomized 3-month mobile exergame programme vs health education; BREQ-2 with time x group results,I1: is a mobile fitness game app movement-driven or driven by accumulated steps?

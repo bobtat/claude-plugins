@@ -1,0 +1,632 @@
+[
+ {
+  "id": "oa-W4413422558",
+  "title": "24-hour blood response comparison between exergaming and aerobic exercise in type-1 diabetes: A randomised study.",
+  "authors": "Jorge Luiz de Brito Gomes",
+  "year": "2025",
+  "venue": "Science & Sports",
+  "doi": "10.1016/j.scispo.2025.07.009",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.1016/j.scispo.2025.07.009"
+ },
+ {
+  "id": "oa-W7143500910",
+  "title": "Effects of exergames intervention on neuropsychiatric symptoms in older adults with neurocognitive disorders",
+  "authors": "Alexandre Faria Rocha",
+  "year": "2026",
+  "venue": "Jornal Brasileiro de Psiquiatria",
+  "doi": "10.1590/0047-2085-2025-0080",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "E5: NPI apathy subscale is an apathy scale (Out list), not motivation for exercise; whether another motivation measure exists is unknown",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.1590/0047-2085-2025-0080"
+ },
+ {
+  "id": "pm-39952553",
+  "title": "Is exergaming a viable exercise option for obese black women?",
+  "authors": "Hicks J",
+  "year": "2025",
+  "venue": "Contemp Clin Trials",
+  "doi": "10.1016/j.cct.2025.107846",
+  "pmid": "39952553",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.1016/j.cct.2025.107846"
+ },
+ {
+  "id": "oa-W4414250592",
+  "title": "The effect of Game-Based Interventions on the Learning Disabilities of Primary School Students",
+  "authors": "Rasouli Nasim",
+  "year": "2024",
+  "venue": "مجله علوم پزشکی رازی",
+  "doi": "10.47176/rjms.31.110",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "E8: English abstract but full text language not shown; E5: no motivation instrument listed but secondary outcomes may be unlisted",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.47176/rjms.31.110"
+ },
+ {
+  "id": "oa-W4394692400",
+  "title": "Video-based exergaming versus conventional rehabilitation on balance in pediatric brain tumor survivors: a randomized clinical trial",
+  "authors": "Müberra Tanrıverdi",
+  "year": "2024",
+  "venue": "Virtual Reality",
+  "doi": "10.1007/s10055-024-00988-z",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.1007/s10055-024-00988-z"
+ },
+ {
+  "id": "pm-40983137",
+  "title": "The effect of a 12-week tele-exercise using immersive virtual reality on functional capacity in adolescents with cystic fibrosis: A randomized controlled, single (assessor) - blind study.",
+  "authors": "Ozyemisci Taskiran O",
+  "year": "2025",
+  "venue": "Respir Med",
+  "doi": "10.1016/j.rmed.2025.108362",
+  "pmid": "40983137",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I1: is immersive VR exercise an exergame?",
+  "oa": null,
+  "lang": null,
+  "url": null
+ },
+ {
+  "id": "oa-W4413201399",
+  "title": "Augmenting Conventional Therapy with Non-immersive Virtual Reality to Enhance Balance, Coordination, Motivation, and Functional Performance in Children with Spastic Diplegia Cerebral Palsy: A Single-Blinded Randomized Trial",
+  "authors": "Agrawal Luckykumar Dwarkadas",
+  "year": "2025",
+  "venue": "Arabian Journal for Science and Engineering",
+  "doi": "10.1007/s13369-025-10535-w",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.1007/s13369-025-10535-w"
+ },
+ {
+  "id": "pm-39069966",
+  "title": "Older Adults' Perceptions of Cognitive, Physical, and Exergame Training: A Mixed Methods Investigation of a Four-Armed Randomized Controlled Pilot Trial.",
+  "authors": "Stephan AT",
+  "year": "2024",
+  "venue": "Games Health J",
+  "doi": "10.1089/g4h.2023.0208",
+  "pmid": "39069966",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I5: unnamed feedback items on motivation may not be a named instrument",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.1089/g4h.2023.0208"
+ },
+ {
+  "id": "pm-38801680",
+  "title": "Effectiveness of Immersive Virtual Reality-Based Hand Rehabilitation Games for Improving Hand Motor Functions in Subacute Stroke Patients.",
+  "authors": "Amin F",
+  "year": "2024",
+  "venue": "IEEE Trans Neural Syst Rehabil Eng",
+  "doi": "10.1109/tnsre.2024.3405852",
+  "pmid": "38801680",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I1: are VR games driven by hand and forearm movements exergames or finger/hand-only games?",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.1109/tnsre.2024.3405852"
+ },
+ {
+  "id": "oa-W4405999390",
+  "title": "Impact of Gaming Skills on Laparoscopic Performance: A Single-Blinded Randomised Controlled Trial",
+  "authors": "Zhan Huai Teoh",
+  "year": "2024",
+  "venue": "Education in Medicine Journal",
+  "doi": "10.21315/eimj2024.16.4.10",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I1: whether Switch gaming involves body movement as input is not stated",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.21315/eimj2024.16.4.10"
+ },
+ {
+  "id": "pm-42223906",
+  "title": "Impact of virtual reality versus conventional balance training on balance function and fear of falling in older adults: a single blinded, randomized controlled trial.",
+  "authors": "Shamsoddini A",
+  "year": "2026",
+  "venue": "Eur Geriatr Med",
+  "doi": "10.1007/s41999-026-01493-z",
+  "pmid": "42223906",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "include",
+   "include"
+  ],
+  "doubt": "",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.1007/s41999-026-01493-z"
+ },
+ {
+  "id": "oa-W7220200190",
+  "title": "Impact of Mobile Fitness Game Apps on Motivation and Lifestyle Change Readiness",
+  "authors": "Mohammad Bagher Jafari",
+  "year": "2025",
+  "venue": "Game Nexus",
+  "doi": "",
+  "pmid": "",
+  "route": "none",
+  "ta": [
+   "include",
+   "unsure"
+  ],
+  "doubt": "I1: is a mobile fitness game app movement-driven or driven by accumulated steps?",
+  "oa": true,
+  "lang": "en",
+  "url": "https://game-nexus.org/index.php/gamenexus/article/view/23"
+ },
+ {
+  "id": "oa-W7237392436",
+  "title": "Radiology, Nuclear Medicine and Medical Imaging at the vanguard of artificial intelligence integration: A preliminary study of AI in medical research",
+  "authors": "مریم شامی",
+  "year": "2025",
+  "venue": "Bushehr University of Medical Sciences Repository (Bushehr University of Medical Sciences)",
+  "doi": "",
+  "pmid": "",
+  "route": "none",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I1: does a health video game described as serious/active video game meet the movement-as-input definition?",
+  "oa": false,
+  "lang": "en",
+  "url": "http://eprints.bpums.ac.ir/10054/1/35.pdf"
+ },
+ {
+  "id": "oa-W4414186250",
+  "title": "The effect of exergaming on balance among children with intellectual disability",
+  "authors": "S Sivapriya",
+  "year": "2026",
+  "venue": "Journal of Associated Medical Sciences",
+  "doi": "10.12982/jams.2026.008",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "E5: abstract names only balance outcome; unlisted secondary motivation outcome possible",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.12982/jams.2026.008"
+ },
+ {
+  "id": "oa-W7165591188",
+  "title": "Efficacy of a Therapist-Guided Virtual Reality Exercise Program for Chronic Nonspecific Low Back Pain",
+  "authors": "Ausaf Chaudhary",
+  "year": "2026",
+  "venue": "Journal of Health Wellness and Community Research",
+  "doi": "10.61919/3vp5w327",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I1: is therapist-guided VR exercise a game with a goal or score?",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.61919/3vp5w327"
+ },
+ {
+  "id": "oa-W7125699163",
+  "title": "COMPARISON BETWEEN THE EFFECT OF EXERGAMING AEROBICS ANDTRADITIONAL AEROBICS EXERCISE PROGRAM ON BODY MASS INDEX,RATE OF PERCEIVED EXERTION, WAIST HIP RATIO AND TOTAL FAT % INGRADE 1 OBESE POPULATION",
+  "authors": "Bulbul Bhajikhaye",
+  "year": "2026",
+  "venue": "Indian journal of physical therapy",
+  "doi": "10.63299/ijopt.070192",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "E5: abstract lists outcomes without a motivation instrument; unlisted outcome possible",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.63299/ijopt.070192"
+ },
+ {
+  "id": "pm-42583323",
+  "title": "Effectiveness of Computer-based Exergaming on Upper Limb Motor Function, Functional Independence, and Quality of Life in Individuals with Spinal Cord Injury: A Randomized Control Trial.",
+  "authors": "Singh I",
+  "year": "2026",
+  "venue": "Top Spinal Cord Inj Rehabil",
+  "doi": "10.46292/sci25-00098",
+  "pmid": "42583323",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "E5: abstract lists motor and QOL outcomes only; unlisted motivation outcome possible",
+  "oa": true,
+  "lang": "en",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13460074/"
+ },
+ {
+  "id": "pm-42551496",
+  "title": "Effects of Virtual Reality Versus Whole-Body Vibration on Muscle Strength and Balance in Children with Duchenne Muscular Dystrophy: a Randomized Controlled Trial.",
+  "authors": "Ali MS",
+  "year": "2026",
+  "venue": "NeuroRehabilitation",
+  "doi": "10.1177/10538135261473293",
+  "pmid": "42551496",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "E5: abstract lists outcomes without a motivation instrument; unlisted secondary outcomes possible",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.1177/10538135261473293"
+ },
+ {
+  "id": "oa-W7213433529",
+  "title": "ROLE OF BIOMIMETIC CONTROL MECHANISMS IN GAME-BASED REHABILITATION ON UPPER LIMB MOTOR FUNCTION IN PATIENTS WITH STROKE: A PILOT RANDOMIZED CONTROLLED TRIAL PROVIDE HIGH REPETITION MOTIVATION & ENGAGEMENT",
+  "authors": "Senthil Kumaran D",
+  "year": "2025",
+  "venue": "",
+  "doi": "10.13140/rg.2.2.23549.12000",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.13140/rg.2.2.23549.12000"
+ },
+ {
+  "id": "oa-W7220702081",
+  "title": "Designing and evaluating the effect of a motivational VR game-based intervention on metabolic management in children and adolescents diagnosed with diabetes",
+  "authors": "Ruhollah Solat",
+  "year": "2026",
+  "venue": "Rooyesh Psychological Journal",
+  "doi": "10.66224/rooyesh.15.5.21",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I1: unclear whether VR shooting game is driven by limb or trunk movement",
+  "oa": true,
+  "lang": "fa",
+  "url": "https://doi.org/10.66224/rooyesh.15.5.21"
+ },
+ {
+  "id": "pm-42261097",
+  "title": "Wearable Myoelectric Interface for Neurorehabilitation (MINT) to Recover Arm Activity After Stroke: A Randomized Controlled Trial.",
+  "authors": "Khorasani A",
+  "year": "2026",
+  "venue": "Neurorehabil Neural Repair",
+  "doi": "10.1177/15459683261454937",
+  "pmid": "42261097",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I3: sham arm uses 1 muscle and may also play games; abstract does not say",
+  "oa": null,
+  "lang": null,
+  "url": null
+ },
+ {
+  "id": "oa-W4395005416",
+  "title": "The Effectiveness of the Self-Control Training Video Game Slankers: A Pilot Study",
+  "authors": "Maryam Ansari",
+  "year": "2024",
+  "venue": "Journal of Cognitive Enhancement",
+  "doi": "10.1007/s41465-024-00296-z",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I1: title suggests cognitive-training game but does not settle movement input",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.1007/s41465-024-00296-z"
+ },
+ {
+  "id": "oa-W7164739728",
+  "title": "Effectiveness of Exergames Using Nintendo Switch Sports for Rehabilitation with Stage 3 Frozen Shoulder",
+  "authors": "Gwynneth Rizzamelle S. Bolima",
+  "year": "2026",
+  "venue": "Zenodo (CERN European Organization for Nuclear Research)",
+  "doi": "10.5281/zenodo.20688691",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I4: duration not stated",
+  "oa": true,
+  "lang": "en",
+  "url": "https://weblogoa.com/articles/wjptr.2026.e2505"
+ },
+ {
+  "id": "oa-W7130314881",
+  "title": "The Effectiveness of Educational Game-Based Physical Education Learning on the Development of Elementary School Students' Physical Literacy: A Quasi-Experimental Study",
+  "authors": "Sulaiman Sulaiman",
+  "year": "2025",
+  "venue": "Jurnal Porkes",
+  "doi": "10.29408/porkes.v8i3.31349",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "exclude"
+  ],
+  "doubt": "I1: abstract does not say whether the game is digital or movement-driven",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.29408/porkes.v8i3.31349"
+ },
+ {
+  "id": "oa-W4416431672",
+  "title": "Virtual Reality-Based Exercises Versus Manual Physiotherapy for Post-ACL Reconstruction Rehabilitation: A Randomized Controlled Trial",
+  "authors": "Saima Bibi",
+  "year": "2025",
+  "venue": "The Healer Journal of Physiotherapy and Rehabilitation Sciences",
+  "doi": "10.55735/tjvxqq39",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I1: is the VR-based exercise a game with a goal or score?",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.55735/tjvxqq39"
+ },
+ {
+  "id": "oa-W7220097264",
+  "title": "Effect of a VR Exergame Intervention on Exercise Motivation and Self-Efficacy",
+  "authors": "Mariana Nikolova",
+  "year": "2025",
+  "venue": "Game Nexus",
+  "doi": "",
+  "pmid": "",
+  "route": "none",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I4: eight sessions with no stated weeks; does schedule span 14 days or more?",
+  "oa": true,
+  "lang": "en",
+  "url": "https://game-nexus.org/index.php/gamenexus/article/view/20"
+ },
+ {
+  "id": "oa-W4415152829",
+  "title": "Wii™ e prevenção de quedas: Uma abordagem para melhorar o equilíbrio em pessoas idosas – estudo-piloto",
+  "authors": "Andrea Ribeiro",
+  "year": "2025",
+  "venue": "TER ISAVE",
+  "doi": "10.71399/hcagkw98",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "E8: English abstract but Portuguese title; is the full text English?",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.71399/hcagkw98"
+ },
+ {
+  "id": "oa-W7167468688",
+  "title": "Two Goals with One Approach: Elevating Patient Engagement and Outcomes through a Person-Specific Dual Task Prescription",
+  "authors": "Mike Studer",
+  "year": "2026",
+  "venue": "Journal of Psychology and Neuroscience",
+  "doi": "10.47485/2693-2490.1166",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "E9: cannot tell whether this is a primary report",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.47485/2693-2490.1166"
+ },
+ {
+  "id": "pm-42857931",
+  "title": "The effect of video-based games on upper extremity function and activity participation in children with hemiparetic cerebral palsy.",
+  "authors": "Şen Tekin Ş",
+  "year": "2026",
+  "venue": "Dev Neurorehabil",
+  "doi": "10.1080/17518423.2026.2738676",
+  "pmid": "42857931",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "",
+  "oa": null,
+  "lang": null,
+  "url": null
+ },
+ {
+  "id": "oa-W4402875116",
+  "title": "Examination of the effect of different techniques (demonstration, telesimulation and game-based training) in teaching the management of shoulder dystocia: A randomized controlled trial",
+  "authors": "İlknur Münevver Gönenç",
+  "year": "2024",
+  "venue": "Clinical Simulation in Nursing",
+  "doi": "10.1016/j.ecns.2024.101611",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "exclude"
+  ],
+  "doubt": "E1: game-based training in simulation education is probably not an exergame but title alone does not show it",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.1016/j.ecns.2024.101611"
+ },
+ {
+  "id": "oa-W4413463698",
+  "title": "Research on the strategy of optimizing the training path of sports dance and aesthetics for college students in general colleges and universities based on mathematical modeling",
+  "authors": "Liu, Ruilin",
+  "year": "2025",
+  "venue": "International journal for housing science and its applications.",
+  "doi": "10.70517/ijhsa463600",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I1: Kinect movement detection for training may lack a game goal or score",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.70517/ijhsa463600"
+ },
+ {
+  "id": "oa-W4415982674",
+  "title": "Effects of a virtual reality exergame on cardiorespiratory function in older adults",
+  "authors": "Dina Fatiyah Bakri",
+  "year": "2025",
+  "venue": "Physical Therapy Journal of Indonesia",
+  "doi": "10.51559/ptji.v6i2.321",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "",
+  "oa": true,
+  "lang": "en",
+  "url": "https://doi.org/10.51559/ptji.v6i2.321"
+ },
+ {
+  "id": "pm-41990569",
+  "title": "The effect of video game-based exercises on selective motor control, balance, fear of falling, and functional capacity in individuals with spastic cerebral palsy: A randomized controlled trial.",
+  "authors": "Yavaş S",
+  "year": "2026",
+  "venue": "Res Dev Disabil",
+  "doi": "10.1016/j.ridd.2026.105292",
+  "pmid": "41990569",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I5: is the Satisfaction Questionnaire or any other tool a motivation instrument?",
+  "oa": false,
+  "lang": "en",
+  "url": "https://doi.org/10.1016/j.ridd.2026.105292"
+ },
+ {
+  "id": "pm-41664928",
+  "title": "Effect of fully immersive virtual reality on daily pain, functional mobility, and health-related quality of life in pediatric sickle cell disease: a single-blinded randomized clinical trial.",
+  "authors": "Hassan Bakri AA",
+  "year": "2026",
+  "venue": "Disabil Rehabil",
+  "doi": "10.1080/09638288.2026.2625551",
+  "pmid": "41664928",
+  "route": "europepmc:not-open-access",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "I1: VR used for pain management may not involve movement as game input",
+  "oa": null,
+  "lang": null,
+  "url": null
+ },
+ {
+  "id": "oa-W4408275182",
+  "title": "Effets d’un dispositif de réalité virtuelle immersive sur la rééducation du membre supérieur chez des enfants et adolescents atteints de paralysie cérébrale : un essai contrôlé randomisé",
+  "authors": "Simone Burin-Chu",
+  "year": "2025",
+  "venue": "Kinésithérapie la Revue",
+  "doi": "10.1016/j.kine.2024.12.110",
+  "pmid": "",
+  "route": "europepmc-doi-lookup:no-record",
+  "ta": [
+   "unsure",
+   "unsure"
+  ],
+  "doubt": "E8: French title suggests full text may not be English but this is not shown",
+  "oa": false,
+  "lang": "fr",
+  "url": "https://doi.org/10.1016/j.kine.2024.12.110"
+ }
+]

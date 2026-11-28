@@ -1,0 +1,21 @@
+record_id,decision,criterion,rationale,doubt
+pm-42066290,exclude,E6: No motivation results by arm,"Trial protocol, no data yet (""no participants had been enrolled""); protocols are decidable under I6",E9: does a trial protocol count as 'not a primary report' or is E6 the right code?
+pm-42856006,exclude,E9: Not a primary report,"Narrative review (""This narrative review synthesizes evidence"")",
+oa-W4406747628,exclude,E4: Under two weeks,"Single session per arm (""a single session of HIIT"")",E1: is a VR headset HIIT session an exergame (goal or score driven by movement)? Not settled; E4 decides regardless
+oa-W4414250592,unsure,,"Randomised, 8-week exergame arm vs control, but instruments listed are learning-difficulty and reading tests; no motivation instrument named and not shown absent; full-text language (Persian-language journal) unknown",I8: abstract is English but journal is Persian; full-text language not stated
+oa-W4392373743,exclude,E4: Under two weeks,"Crossover with one 30-min session per condition (""each session lasting 30 min"")",
+oa-W7164533076,exclude,E9: Not a primary report,"Scoping review (""present scoping review"")",
+pm-40505143,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+pm-39952553,unsure,,"Exergaming vs no-intervention control, 6-month RCT, but motivation instrument not named in abstract; outcomes listed do not show there is none",
+pm-40567995,include,,"Randomized, Kinect aerobic dance 8 weeks vs video aerobic dance at home, BREQ-2 measured and reported",I6: BREQ-2 result is described only for the experimental group in the abstract; are results given for the control arm too?
+oa-W4394692400,unsure,,"Randomized 8-week Wii Fit vs conventional exercise, but listed outcomes name no motivation instrument; motivation only mentioned as explanation",
+pm-42713861,exclude,E9: Not a primary report,Systematic review,
+oa-W7128679188,exclude,E9: Not a primary report,Systematic review of reviews and RCTs,
+pm-39135010,exclude,E1: Not an exergame,"Protocol; intervention is Facebook weekly challenges added to a wearable (gamification, no movement-input game); also a protocol with no results",E1: do walking challenges posted on social media count as a game played by walking in real time? E6 would apply anyway as a protocol
+oa-W7116711481,exclude,E5: No named motivation instrument,"Qualitative study only (""focus groups"" and ""semi-structured interviews"") with thematic analysis",E9: is a qualitative sub-study of a cluster RCT a primary report; also first results date of parent trial unknown
+pm-40902721,exclude,E6: No motivation results by arm,"Study protocol, no results reported; outcomes are strength, flexibility, balance, pain",E2: 'partially randomised' allocation is not clearly random
+oa-W4413422558,unsure,,No abstract; title says randomised exergaming vs aerobic exercise but motivation measure and duration unknown,
+oa-W7143500910,unsure,,"Randomized exergame vs same exercise without exergames, 16 sessions twice weekly; outcome NPI (apathy scale is out) and no motivation instrument named or ruled out",
+pm-39024000,unsure,,"Randomized RFA 12 weeks vs standard care, 2024; listed outcomes name no motivation instrument but secondary outcomes may be unlisted",
+pm-42293369,exclude,E9: Not a primary report,Systematic review,
+pm-39421950,exclude,E9: Not a primary report,Systematic review and meta-analysis,

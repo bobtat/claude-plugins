@@ -1,0 +1,31 @@
+record_id,decision,criterion,rationale,doubt
+oa-W4410929396,exclude,E4: Under two weeks,"Crossover with one 20-minute session per condition; one session per condition is out under I4",
+pm-41636301,exclude,E1: Not an exergame,VR restaurant game training auditory processing; no body movement as game input,
+pm-41875203,exclude,E9: Not a primary report,Systematic review,
+oa-W7237392436,unsure,,"Randomized, no-intervention control, 6-week follow-up; unclear whether Naji Iriano is movement-controlled and whether the PA motivation questionnaire is named and multi-item",I1: does a health video game described as serious/active video game meet the movement-as-input definition?
+oa-W4402849759,exclude,E6: No motivation results by arm,Trial protocol only (8-week IVR exergame); protocols fail I6,
+oa-W4414428620,exclude,E9: Not a primary report,Editorial/commentary on exercise and aging,
+pm-40253902,exclude,E9: Not a primary report,Systematic review,
+pm-38420024,exclude,E9: Not a primary report,Systematic review,
+oa-W4401333021,exclude,E9: Not a primary report,Systematic review,
+pm-41186516,exclude,E9: Not a primary report,Systematic review,
+pm-41440044,exclude,E9: Not a primary report,Systematic review,
+pm-40193185,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+oa-W7159664024,exclude,E9: Not a primary report,Scoping review,
+pm-42405262,unsure,,"Randomized VR vs traditional exercise, 4 weeks; abstract lists no motivation instrument and unclear whether the VR tasks are a game with goal/score",I1: is immersive VR rehab software an exergame if abstract does not describe game goal or score?
+oa-W4414186250,unsure,,"Randomized exergaming vs occupational therapy, 3 months; only Pediatric Balance Scale listed, motivation instrument not shown absent",E5: abstract names only balance outcome; unlisted secondary motivation outcome possible
+oa-W7147417683,exclude,E9: Not a primary report,Umbrella review,
+oa-W7165591188,unsure,,"Randomized VR exercise vs conventional, 8 weeks; unclear if VR is a game with score; no motivation instrument listed",I1: is therapist-guided VR exercise a game with a goal or score?
+pm-41032869,unsure,,"Randomized AVG vs control, 6 weeks; abstract reports a behavioral intention questionnaire, motivation instrument not shown absent",E5: behavioral intention alone is out under I5; may a separate motivation instrument exist at full text?
+oa-W4399792849,exclude,E9: Not a primary report,Integrative literature review,
+pm-40669044,exclude,E2: Not randomized,Development and single-session usability study with 10 patients; one arm,
+pm-41307454,include,,"Randomized 4-week VirZoom VR cycling vs no-intervention control; BREQ-2 exercise motivation measured pre and post; 2025",
+pm-39138516,exclude,E3: No non-exergame comparator,Both groups played the same rehabilitation games with scaffolded versus algorithm-controlled difficulty,
+pm-40675354,exclude,E4: Under two weeks,Acute single 30-minute session,
+pm-43075335,exclude,E9: Not a primary report,Narrative review,
+oa-W4409644457,exclude,E1: Not an exergame,Conceptual paper on AI and narrative medicine; no arm receives an exergame,
+oa-W7203788916,exclude,E4: Under two weeks,Brief single exercise session; outcome is PACES enjoyment,
+oa-W7130508021,exclude,E9: Not a primary report,Narrative review,
+pm-42446902,exclude,E6: No motivation results by arm,Trial protocol; results not yet available,
+oa-W7125699163,unsure,,"Randomized exergaming vs treadmill, 4 weeks; outcomes listed are BMI, RPE, WHR, fat %, no motivation instrument shown absent",E5: abstract lists outcomes without a motivation instrument; unlisted outcome possible
+pm-42583323,unsure,,"Randomized computer exergame vs conventional rehab, 4 weeks; motivation instrument not listed",E5: abstract lists motor and QOL outcomes only; unlisted motivation outcome possible
