@@ -65,6 +65,14 @@ reading κ. **A criterion that draws doubts in the pilot is revised now** — an
 giving it a case on each side of the line, then a re-pilot — whatever the agreement
 was. One doubt is worth a look; the same criterion doubted on three records is a gap.
 
+**An amendment is the user's to approve, and calibration is no exception.** The
+protocol was approved as written. Put the proposed wording and the pilot records that
+prompted it to the user, and re-pilot once they agree. Where no one can be asked, the
+`/literature-review:review` command's rule for gates applies: stop and write the
+question down, unless the run is unattended, in which case take the change that can
+only advance records and log it for ratification. In the first attended run the
+orchestrator amended a criterion during calibration and told the user afterwards.
+
 ### Project the full-text volume
 
 The pilot also measures how many records advance. Before the full run, project it:
