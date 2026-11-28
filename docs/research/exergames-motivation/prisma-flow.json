@@ -34,11 +34,11 @@
   "included_reports": 6,
   "included_studies": 6,
   "eligibility_doubt": {
-    "included_reports": 4,
-    "included_studies": 4,
+    "included_reports": 3,
+    "included_studies": 3,
     "by_criterion": {
-      "I6": 2,
-      "I1": 2
+      "I1": 2,
+      "I6": 1
     }
   },
   "screening_agreement": {
@@ -55,6 +55,6 @@
   },
   "notes": [
     "Other methods: 10 identified, 0 removed before screening and 5 excluded at title/abstract before 5 were sought. The v2 template has no box for these; state them in the caption.",
-    "Eligibility doubt on 4 of 6 included reports (I6 x2, I1 x2). List them at the gate; the synthesis reports with and without them."
+    "Eligibility doubt on 3 of 6 included reports (I1 x2, I6 x1). List them at the gate; the synthesis reports with and without them."
   ]
 }

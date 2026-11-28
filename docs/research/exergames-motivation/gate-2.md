@@ -1,7 +1,7 @@
 # Gate 2 — The inclusion set (revised)
 
 **First written:** 2026-11-28 · **Answered by the user:** 2026-11-28 · **Rewritten for the revised set:** 2026-11-28
-**Decision on the revised set:** — (awaiting the user) · **Decided by:** —
+**Decision on the revised set:** approved, six studies, with the answers recorded in the next section · **Decided by:** user · **Date:** 2026-11-28
 
 The user answered the first version of this gate (kept as
 `screening/gate-2.as-first-written.md`). The answers changed the inclusion set, so the
@@ -13,6 +13,43 @@ Every count comes from `prisma-flow.json`, which `screening_stats.py` re-derived
 `records.csv` and `screening.csv` after the re-screening. One screening decision is
 now a human decision (`pm-41628428`, section 0); every other one was made by
 language-model agents (`decided_by=automation`).
+
+## Decision on the revised set — decided by the user, 2026-11-28
+
+Everything below this section is the gate as it was put to the user (also kept
+unchanged as `screening/gate-2.revised-as-put-to-user.md`). The user answered it on
+2026-11-28. Their answers, and what was done with each:
+
+| # | Answer (decided by: user, 2026-11-28) | What was done |
+|---|---|---|
+| 1 | **The inclusion set of six studies is approved.** No full texts are being supplied; the 21 reports not retrieved stay in the flow as not retrieved, and the review says its answer rests on the reports that could be read | Appraisal starts from the six. No `route=user` row in `retrieval.csv`. The limitation is carried into `review.md` and the conduct disclosure |
+| 2 | **`oa-W7220097264` (Nikolova et al., 2025) is kept, marked doubtful.** The second I1 sentence in decision 1.2 is adopted: an intervention the paper calls an exergame and describes as exercise performed in the game meets I1 (unless the text shows the input is not body movement). The appraisal judges rule on its eligibility from the full paper, and the synthesis states its conclusions with and without the doubtful studies | Amendment **A6** entered in `protocol.md` (sections 2 and 14). The record's I1 doubt stays on its `screening.csv` row; the decision to include it was the two screeners' and remains `decided_by=automation` |
+| 3 | **Both I6 sentences are adopted:** a composite or total score of the I5 instrument reported for both arms meets I6; and in a trial with several non-exergame arms, results for the exergame arm and any one non-exergame arm meet I6 | Amendments **A7** and **A8** entered. The I6 doubt on `oa-W7220097264` is settled by A7 and the I6 doubt on `pm-42974341` by A8; each is noted on its row. The I6 doubt on `pm-40567995` was not the subject of either sentence and stays |
+| 4 | **`pm-42261097` is excluded under E1**, and the proposed I1 Out sentence about muscle-activation input is adopted as written | Amendment **A9** entered. The row's code is E1 by the user's ruling: `decided_by=human` |
+| 5 | **`oa-W7220200190` stays excluded** as the adjudicator decided | Row unchanged apart from a note of the confirmation; `decided_by=automation` |
+
+**What changed in the counts.** `screening_stats.py` was re-run after these edits.
+No flow count and no exclusion-reason label changed: `pm-42261097` was already carried
+as E1. Doubtful inclusions went from 4 of 6 (I1 ×2, I6 ×2) to **3 of 6 (I1 ×2, I6 ×1)**:
+`oa-W7220097264` (I1), `pm-43021294` (I1) and `pm-40567995` (I6). Two screening
+decisions are now human decisions: the inclusion of `pm-41628428` and the exclusion
+code of `pm-42261097`, a full-text exclusion both screeners had already made. The flow
+diagram's count of records excluded by a human reviewer covers title/abstract
+exclusions and stays 0. The files as they stood before these answers are
+`screening/screening.before-revised-gate2-answers.csv` and
+`screening/prisma-flow.before-revised-gate2-answers.json`.
+
+**Carried into the conduct disclosure and the limitations, on the user's instruction:**
+both approval gates were decided by the user; amendment A1 was made before the user saw
+it and ratified afterwards; the open-access-copy retrieval route was added, and the
+plugin went from 0.3.0 to 0.4.0, after the first version of gate 2; and the targets of
+roughly 150 records and backward-only citation searching were set by the operator and
+accepted by the user.
+
+**Standing instruction for appraisal (user, 2026-11-28).** The run remains attended.
+If either appraisal judge disputes a study's eligibility, or an adjudication is
+escalated and nobody can rule, the orchestrator does not decide it: it finishes the
+appraisal work that does not depend on it, writes the question down, and stops.
 
 ## 0. The user's answers to the first version — decided by the user, 2026-11-28
 

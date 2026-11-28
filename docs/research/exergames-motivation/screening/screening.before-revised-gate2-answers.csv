@@ -1,0 +1,216 @@
+record_id,stage,screener_1,screener_1_criterion,screener_2,screener_2_criterion,agreed,adjudication,final,final_criterion,decided_by,full_text_retrieved,study_id,doubt
+oa-W4413422558,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+pm-42856006,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-40567995,title_abstract,include,,include,,yes,,include,,automation,,,I6: abstract reports a BREQ-2 difference only for the experimental group at 12 weeks; unclear whether control-arm BREQ-2 results are given. I1: abstract does not say the Kinect dance has a goal or score.
+oa-W7143500910,title_abstract,unsure,,unsure,,yes,,include,,automation,,,"E5: NPI apathy subscale is an apathy scale (Out list), not motivation for exercise; whether another motivation measure exists is unknown"
+oa-W7116711481,title_abstract,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,,,E7: qualitative report of a cluster RCT; parent trial results may be the eligible report and this one groups with it
+pm-39024000,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+pm-42713861,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W7128679188,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W4406747628,title_abstract,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,,,E1: is a VR headset HIIT session an exergame (goal or score driven by movement)? Not settled; E4 decides regardless
+pm-39952553,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+pm-42066290,title_abstract,exclude,E6: No motivation results by arm,exclude,E6: No motivation results by arm,yes,,exclude,E6: No motivation results by arm,automation,,,E9: does a protocol count as not a primary report (E9) or no results (E6)? E6 cited because I6 says protocols are out
+pm-40505143,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-40902721,title_abstract,exclude,E6: No motivation results by arm,exclude,E6: No motivation results by arm,yes,,exclude,E6: No motivation results by arm,automation,,,E2: described as a partially randomised trial; unclear whether allocation was random
+pm-39135010,title_abstract,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,,,I1: does a social-media walking game with a wearable count as an exergame or as gamification?
+oa-W4414250592,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E8: English abstract but full text language not shown; E5: no motivation instrument listed but secondary outcomes may be unlisted
+pm-39421950,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W4392373743,title_abstract,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,,,
+oa-W7164533076,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-42293369,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W4394692400,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+pm-41108898,title_abstract,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,,,E5: does a process evaluation of an eligible trial count as qualitative only when it includes a feedback questionnaire?
+pm-40682190,title_abstract,exclude,E3: No non-exergame comparator,exclude,E3: No non-exergame comparator,yes,,exclude,E3: No non-exergame comparator,automation,,,
+pm-41628428,title_abstract,include,,include,,yes,,include,,automation,,,I2: titled quasi-experimental but abstract says participants were randomized; does that count as random allocation?
+pm-43021294,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: abstract does not show body movement is the game input
+pm-39940403,title_abstract,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,,,
+oa-W7201847614,title_abstract,exclude,E2: Not randomized,exclude,E2: Not randomized,yes,,exclude,E2: Not randomized,automation,,,
+oa-W4391630540,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,E9: could a full paper of the phase 3 RCT exist; abstract mixes design pilot and preliminary results
+oa-W7223168671,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-42956019,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-40493776,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E4: scheduled duration is length of hospital stay with no stated length; is it under two weeks?
+pm-40446290,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-42355702,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-42247423,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+pm-41384807,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I5: is the intrinsic motivation measure a named multi-item instrument (e.g. IMI)?
+pm-41627139,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I6: BREQ-2 results by arm not visible in abstract
+pm-40983137,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: is immersive VR exercise an exergame?
+oa-W4412397141,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W4401919830,title_abstract,exclude,E9: Not a primary report,exclude,E1: Not an exergame,yes,,exclude,E9: Not a primary report,automation,,,
+pm-39695572,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W4413201399,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+pm-42974341,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I2: does pseudo-randomized allocation count as random?
+pm-39069966,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I5: unnamed feedback items on motivation may not be a named instrument
+pm-38801680,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: are VR games driven by hand and forearm movements exergames or finger/hand-only games?
+pm-41747255,title_abstract,exclude,E3: No non-exergame comparator,exclude,E3: No non-exergame comparator,yes,,exclude,E3: No non-exergame comparator,automation,,,
+oa-W4405999390,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: whether Switch gaming involves body movement as input is not stated
+oa-W4400747992,title_abstract,exclude,E2: Not randomized,exclude,E2: Not randomized,yes,,exclude,E2: Not randomized,automation,,,
+pm-39335412,title_abstract,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,,,I5: is the PRPS participation score a motivation instrument or clinician-rated participation?
+pm-39919038,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-42223906,title_abstract,include,,include,,yes,,include,,automation,,,
+oa-W7220200190,title_abstract,include,,unsure,,no,,include,,automation,,,I1: is a mobile fitness game app movement-driven or driven by accumulated steps?
+oa-W4410929396,title_abstract,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,,,I1: is immersive VR exercise an exergame (goal or score driven by body movement)? Not settled by abstract
+pm-41636301,title_abstract,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,,,I1: does the VR game involve movement of limbs or trunk as game input? Abstract does not say
+pm-41875203,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W7237392436,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: does a health video game described as serious/active video game meet the movement-as-input definition?
+oa-W4402849759,title_abstract,exclude,E6: No motivation results by arm,exclude,E6: No motivation results by arm,yes,,exclude,E6: No motivation results by arm,automation,,,
+oa-W4414428620,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-40253902,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-38420024,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W4401333021,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-41186516,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-41440044,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-40193185,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W7159664024,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-42405262,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: is immersive VR rehab software an exergame if abstract does not describe game goal or score?
+oa-W4414186250,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E5: abstract names only balance outcome; unlisted secondary motivation outcome possible
+oa-W7147417683,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W7165591188,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: is therapist-guided VR exercise a game with a goal or score?
+pm-41032869,title_abstract,unsure,,exclude,E5: No named motivation instrument,no,,include,,automation,,,E5: behavioral intention alone is out under I5; may a separate motivation instrument exist at full text?
+oa-W4399792849,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-40669044,title_abstract,exclude,E2: Not randomized,exclude,E2: Not randomized,yes,,exclude,E2: Not randomized,automation,,,
+pm-41307454,title_abstract,include,,include,,yes,,include,,automation,,,
+pm-39138516,title_abstract,exclude,E3: No non-exergame comparator,exclude,E3: No non-exergame comparator,yes,,exclude,E3: No non-exergame comparator,automation,,,
+pm-40675354,title_abstract,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,,,
+pm-43075335,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W4409644457,title_abstract,exclude,E1: Not an exergame,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,E9: not formally a review or editorial; is a conceptual paper without data a non-primary report?
+oa-W7203788916,title_abstract,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,,,I1: is AI-driven gameplay distraction an exergame? E5 would also apply since PACES is enjoyment alone
+oa-W7130508021,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-42446902,title_abstract,exclude,E6: No motivation results by arm,exclude,E6: No motivation results by arm,yes,,exclude,E6: No motivation results by arm,automation,,,
+oa-W7125699163,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E5: abstract lists outcomes without a motivation instrument; unlisted outcome possible
+pm-42583323,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E5: abstract lists motor and QOL outcomes only; unlisted motivation outcome possible
+pm-42551496,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E5: abstract lists outcomes without a motivation instrument; unlisted secondary outcomes possible
+oa-W4404159996,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W7213433529,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+pm-42763302,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E5: listed outcomes name no motivation instrument; unlisted secondary outcomes possible
+pm-41789604,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-40790569,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E5: abstract lists outcomes without a motivation instrument
+pm-40321768,title_abstract,exclude,E4: Under two weeks,exclude,E3: No non-exergame comparator,yes,,exclude,E3: No non-exergame comparator,automation,,,I1: whether a finger-robot video game counts as an exergame (and so whether E1 or E3 would also apply) is not settled by the criterion
+oa-W7165228557,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-39964707,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: hand-arm manipulation game with assistive robot; unclear whether it meets exergame definition vs hand-only control
+pm-39622701,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E5: abstract lists outcomes without a motivation instrument
+oa-W4407925935,title_abstract,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,,,
+oa-W4416819434,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W7220702081,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: unclear whether VR shooting game is driven by limb or trunk movement
+pm-38965612,title_abstract,exclude,E6: No motivation results by arm,exclude,E6: No motivation results by arm,yes,,exclude,E6: No motivation results by arm,automation,,,
+pm-41168901,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E5: abstract does not show whether a named motivation instrument was used
+pm-41449562,title_abstract,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,,,
+oa-W4414442255,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W7119829267,title_abstract,exclude,E3: No non-exergame comparator,exclude,E3: No non-exergame comparator,yes,,exclude,E3: No non-exergame comparator,automation,,,
+pm-42046589,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: whether EMG-driven game counts as movement of limbs as game input
+pm-42261097,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I3: sham arm uses 1 muscle and may also play games; abstract does not say
+oa-W4395005416,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: title suggests cognitive-training game but does not settle movement input
+pm-40575461,title_abstract,exclude,E3: No non-exergame comparator,exclude,E3: No non-exergame comparator,yes,,exclude,E3: No non-exergame comparator,automation,,,
+oa-W7117546523,title_abstract,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,,,
+pm-41713931,title_abstract,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,,,
+pm-38975352,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I2: one home per arm; unclear whether allocation was truly random and cluster-level
+pm-41002748,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: abstract does not say whether the Switch games are driven by body movement
+oa-W7164739728,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I4: duration not stated
+pm-42536979,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W7130314881,title_abstract,unsure,,exclude,E1: Not an exergame,no,,include,,automation,,,I1: abstract does not say whether the game is digital or movement-driven
+pm-42179992,title_abstract,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,,,E5: a VAS is presumed single-item but abstract does not state item count
+pm-40989272,title_abstract,unsure,,exclude,E5: No named motivation instrument,no,,include,,automation,,,I1: does gamified group exercise in VR have movement as game input and a goal or score?
+pm-39019442,title_abstract,exclude,E3: No non-exergame comparator,exclude,E3: No non-exergame comparator,yes,,exclude,E3: No non-exergame comparator,automation,,,
+oa-W4416431672,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: is the VR-based exercise a game with a goal or score?
+pm-40604775,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: Naji Iriano health video game may be a seated serious game rather than an exergame
+pm-40627595,title_abstract,exclude,E2: Not randomized,exclude,E2: Not randomized,yes,,exclude,E2: Not randomized,automation,,,
+oa-W7220097264,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I4: eight sessions with no stated weeks; does schedule span 14 days or more?
+oa-W4415152829,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E8: English abstract but Portuguese title; is the full text English?
+oa-W7167468688,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E9: cannot tell whether this is a primary report
+pm-42384950,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+pm-39931102,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I5: acceptance and motivating feel reported via interview; a named instrument may exist in the full text
+pm-42857931,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+oa-W4402875116,title_abstract,unsure,,exclude,E1: Not an exergame,no,,include,,automation,,,E1: game-based training in simulation education is probably not an exergame but title alone does not show it
+pm-39054204,title_abstract,exclude,E2: Not randomized,exclude,E2: Not randomized,yes,,exclude,E2: Not randomized,automation,,,
+oa-W4413463698,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: Kinect movement detection for training may lack a game goal or score
+pm-40862308,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-41445941,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-40278000,title_abstract,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,,,E9: is a trial protocol a not-a-primary-report record or an E6 case?
+pm-40738100,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W7135015982,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W4406131796,title_abstract,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,,,
+oa-W4404486674,title_abstract,exclude,E3: No non-exergame comparator,exclude,E3: No non-exergame comparator,yes,,exclude,E3: No non-exergame comparator,automation,,,E4: single bout would also fail duration
+pm-40433613,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+pm-42393428,title_abstract,exclude,E2: Not randomized,exclude,E2: Not randomized,yes,,exclude,E2: Not randomized,automation,,,
+oa-W4415982674,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+oa-W4407560557,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+oa-W7170076918,title_abstract,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,,,
+pm-42958576,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: is VR-based exercise a game with a goal or score?
+pm-41990569,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I5: is the Satisfaction Questionnaire or any other tool a motivation instrument?
+pm-41664928,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I1: VR used for pain management may not involve movement as game input
+oa-W4408275182,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E8: French title suggests full text may not be English but this is not shown
+s1-oa-W4410002514,title_abstract,exclude,E1: Not an exergame,exclude,E2: Not randomized,yes,,exclude,E1: Not an exergame,automation,,,E1: E1 and E5 (qualitative only) both fit; E1 cited as lowest-numbered code. Does a study with no intervention arm count as E1 or E2?
+s1-oa-W4407781242,title_abstract,exclude,E3: No non-exergame comparator,exclude,E3: No non-exergame comparator,yes,,exclude,E3: No non-exergame comparator,automation,,,
+s1-oa-W4403263759,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I4: crossover with possibly one session per condition; abstract does not give sessions or duration
+s1-oa-W4399730896,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I2: 'assigned to one of three groups' with unequal sizes does not say whether allocation was random
+s1-oa-W4392652772,title_abstract,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,,,E4: crossover with one test per condition inferred from abstract; programme length not stated explicitly
+s1-oa-W4399814884,title_abstract,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,,,
+s1-oa-W4401613739,title_abstract,unsure,,unsure,,yes,,include,,automation,,,
+s1-oa-W4411350775,title_abstract,unsure,,unsure,,yes,,include,,automation,,,I7: does a Research Square posting count as a preprint (not first results) when a journal version may exist?
+s1-oa-W4403443509,title_abstract,exclude,E3: No non-exergame comparator,exclude,E3: No non-exergame comparator,yes,,exclude,E3: No non-exergame comparator,automation,,,
+s1-oa-W4405428558,title_abstract,unsure,,unsure,,yes,,include,,automation,,,E5: outcomes list psychological measures (TSK and CAIT) but not motivation; unlisted secondary outcomes possible
+oa-W4413422558,full_text,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,yes,,I7: the reference list cites an earlier 2023 report of what may be the same registered trial (ref 29); not resolved because the record is excluded on E4.
+pm-40567995,full_text,include,,include,,yes,,include,,automation,yes,pm-40567995,"I6: Table 2 gives within-group P values and between-group P values per interval, with no clear single between-group test for BREQ-2 labelled as such. (The I1 and I3 doubts recorded at screening were settled by amendment A4, approved by the user 2026-11-28.)"
+oa-W7143500910,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,E5: does the NPI apathy domain count as a motivation subscale? Criteria list apathy scales as out; treated as out.
+pm-39024000,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,I5: the instrument list is in Multimedia Appendix 2 (Table S3) which is not in the saved text; could it name a motivation measure?
+pm-39952553,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+oa-W4414250592,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+oa-W4394692400,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+pm-41628428,full_text,exclude,E2: Not randomized,include,,no,"adjudicator: ESCALATED to the user (I2). User decided include on 2026-11-28 in answer to gate 2, with amendment A3",include,,human,yes,pm-41628428,
+pm-43021294,full_text,include,,include,,yes,,include,,automation,yes,pm-43021294,"I1: balance-board and camera pose-based games (BeCure Balance, Smart Pose Runner) are described only briefly in the main text, game mechanics are in Appendix 2 and not seen; whether limb or trunk movement is the game input and a goal or score is pursued is not fully settled. I1: the game arm is a mixed programme and the first 4 weeks were conventional in both arms."
+pm-40493776,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,"I4: intervention ran daily from ward transfer until discharge (mean 3.47 sessions) with no stated length, so whether it was scheduled for two weeks or more is unclear."
+pm-42247423,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,E5: Motivation was measured per registry but is reported in a separate paper not named here; is a trial whose motivation results sit in another report excluded under E5 or E6?
+pm-41384807,full_text,exclude,E4: Under two weeks,include,,no,adjudicator: exclude — see screening/adjudication-main.csv,exclude,E4: Under two weeks,automation,yes,,"I4: the Abstract (7 weeks) contradicts the Methods and Results (1 week). The criterion does not say which section governs when a paper contradicts itself; decided on the detailed Methods schedule, which the Results confirm."
+pm-41627139,full_text,exclude,E6: No motivation results by arm,exclude,E6: No motivation results by arm,yes,,exclude,E6: No motivation results by arm,automation,yes,,I6: BREQ-2 is reported as a single RAI value described as the patients' motivation towards VR; the text does not say whether the control group completed it. Does a missing control result count as absent or only unreported?
+pm-40983137,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+oa-W4413201399,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+pm-42974341,full_text,include,,include,,yes,"re-screened 2026-11-28 on all criteria under amended I2 (A3), files ft-ft9-s1/s2.csv; the first-round decisions (both exclude, E2: Not randomized; ft-ft3-s1/s2.csv) are superseded",include,,automation,yes,pm-42974341,"I6: the Intrinsic Motivation Inventory was given after training to the two training groups only, not to the no-training control, so the non-exergame arm with results is the wobble-board group; Table 2 also gives N=12 for the Wii Fit arm where the text says n=9. I2: allocation was by ""a pseudo-randomized procedure constrained to produce approximately equal group sizes"" in a study the authors call quasi-experimental; included under amendment A3."
+pm-39069966,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+pm-38801680,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,
+oa-W4405999390,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,I1: Nintendo Switch 1-2-Switch Joy-Con motion games with a score - does a short mixed set of motion mini-games meet the exergame definition? Not decided here because E5 applies regardless.
+pm-42223906,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+oa-W7220200190,full_text,exclude,E1: Not an exergame,include,,no,"adjudicator: exclude, E1: Not an exergame",exclude,E1: Not an exergame,automation,yes,,"I1: the paper calls its app an exergame but never describes how its mini-games or aerobic tasks are controlled. Excluded because the text does not show movement as game input. A fuller description, if obtained, could reverse this."
+oa-W7237392436,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+pm-42405262,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,I1: The VR arm uses Meta Quest 2 low-back-pain modules with movement-driven tasks; unclear whether this meets the exergame definition. Not needed for the decision because E5 applies.
+oa-W4414186250,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,"I2: paper calls itself ""quasi-experimental"" yet says children were ""randomly allocated""; treated as random under I2 (moot given E5)."
+oa-W7165591188,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,I1: the VR programme is described only as immersive VR therapeutic exercises with no stated game goal or score; unclear whether it is an exergame.
+pm-41032869,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,"I1: Nintendo Switch Mario Party minigames played by shaking Joy-Cons and raising arms, with some button-only minigames; whether this is an exergame as I1 defines it is unclear. I5: does an intention-to-play questionnaire count as measuring motivation? Judged no."
+pm-41307454,full_text,include,,include,,yes,,include,,automation,yes,pm-41307454,
+oa-W7125699163,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+pm-42583323,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+pm-42551496,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+oa-W7213433529,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+pm-42763302,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,E8: the body text is in Chinese with an English abstract; E8 would also apply but E5 is lower-numbered.
+pm-40790569,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,
+pm-39964707,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,
+pm-39622701,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,
+oa-W7220702081,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+pm-41168901,full_text,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,yes,,I1: The paper calls the intervention exergaming and virtual reality but describes only fitness-tracking and workout apps; does a label the authors apply count when the described intervention does not meet the I1 definition?
+pm-42046589,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,"I1: EMG-biofeedback game controlled by quadriceps contraction (with weight shifting, mini-squats); whether muscle activation counts as limb or trunk movement as game input is unclear, so E1 might also apply."
+pm-42261097,full_text,exclude,E3: No non-exergame comparator,exclude,E1: Not an exergame,yes,"adjudicator: ESCALATED to the user on the exclusion code only (E1 or E3; excluded under either). Carried as E1, the code the adjudicator cited, pending the user; see gate-2.md",exclude,E1: Not an exergame,automation,yes,,"I1: does a game controlled by EMG muscle activation, without a stated limb movement, count as movement of limbs or trunk as game input? It decides between E1 and E3."
+oa-W4395005416,full_text,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,yes,,
+pm-38975352,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,I2: two sheltered homes were randomised as clusters (one per arm); does a two-cluster allocation count as random allocation? Not needed for the decision.
+pm-41002748,full_text,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,yes,,E1: Does a hybrid Switch console with cognitive-training mini-games count as movement-input when the paper itself calls the platform motion-based?
+oa-W7164739728,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,I4: intervention duration is not stated in the text; E5 cited because it is decisive regardless.
+oa-W7130314881,full_text,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,yes,,I1: Does a non-digital educational game in physical education count as an exergame? The criterion says 'digital game' but the paper calls it game-based PE.
+pm-40989272,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,I5: does the Subjective Vitality Scale count as a motivation instrument? Judged no (it measures vitality/well-being).
+oa-W4416431672,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+pm-40604775,full_text,exclude,E1: Not an exergame,exclude,E1: Not an exergame,yes,,exclude,E1: Not an exergame,automation,yes,,I1: the paper calls it a health/serious video game and cites active video games; if a seated PC game with no movement input is borderline for I1 is left to the criterion's 'seated video game' exclusion.
+oa-W7220097264,full_text,include,,include,,yes,,include,,automation,yes,oa-W7220097264,"I1: the paper never names the VR game or says body movement is the game input, so exergame status rests on the authors' label ""VR exergame"". I6: the BREQ-3 has six subscales but one composite ""Exercise Motivation"" score per arm is reported, and some means (4.08) exceed the 0-4 BREQ-3 range, so it is unclear how the composite was formed."
+oa-W4415152829,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+oa-W7167468688,full_text,exclude,E9: Not a primary report,exclude,E9: Not a primary report,yes,,exclude,E9: Not a primary report,automation,yes,,
+pm-42384950,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,
+pm-39931102,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,
+pm-42857931,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+oa-W4402875116,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+oa-W4413463698,full_text,exclude,E1: Not an exergame,exclude,E5: No named motivation instrument,yes,"adjudicator (exclusion code only; both screeners excluded): exclude, E1: Not an exergame",exclude,E1: Not an exergame,automation,yes,,
+oa-W4415982674,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,
+pm-42958576,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,
+pm-41990569,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+pm-41664928,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+oa-W4408275182,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+s1-oa-W4403263759,full_text,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,yes,,I4: crossover with one session per condition 48 hours apart after a familiarization visit; the criterion text excludes this explicitly but the trial is otherwise eligible (randomized sequence and named instrument)
+s1-oa-W4399730896,full_text,exclude,E4: Under two weeks,exclude,E4: Under two weeks,yes,,exclude,E4: Under two weeks,automation,yes,,
+s1-oa-W4401613739,full_text,unsure,,unsure,,yes,"not retrieved: no full text, not screened, no criterion applied",exclude,,automation,no,,
+s1-oa-W4411350775,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,"I2: allocation was ""a partially randomised trial (PRT)"" in which participants with stronger rejection of the technology or discomfort ""were allocated to the control group""; unclear whether this is random allocation with a minority reassigned (A3) or allocation by participant preference (E2). Not decided here because E5 applies regardless."
+s1-oa-W4405428558,full_text,exclude,E5: No named motivation instrument,exclude,E5: No named motivation instrument,yes,,exclude,E5: No named motivation instrument,automation,yes,,

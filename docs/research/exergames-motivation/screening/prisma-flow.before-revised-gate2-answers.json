@@ -1,0 +1,60 @@
+{
+  "databases": {
+    "PubMed": 83,
+    "OpenAlex": 106
+  },
+  "removed_before_screening": {
+    "Duplicate records removed": 49
+  },
+  "screened": 140,
+  "excluded": {
+    "by automation tools": 80,
+    "by a human reviewer": 0
+  },
+  "sought": 60,
+  "not_retrieved": 20,
+  "assessed": 40,
+  "excluded_with_reasons": {
+    "E5: No named motivation instrument": 22,
+    "E1: Not an exergame": 8,
+    "E4: Under two weeks": 2,
+    "E6: No motivation results by arm": 1,
+    "E9: Not a primary report": 1
+  },
+  "other_methods": {
+    "Citation searching (backward)": 10
+  },
+  "other_sought": 5,
+  "other_not_retrieved": 1,
+  "other_assessed": 4,
+  "other_excluded_with_reasons": {
+    "E4: Under two weeks": 2,
+    "E5: No named motivation instrument": 2
+  },
+  "included_reports": 6,
+  "included_studies": 6,
+  "eligibility_doubt": {
+    "included_reports": 4,
+    "included_studies": 4,
+    "by_criterion": {
+      "I6": 2,
+      "I1": 2
+    }
+  },
+  "screening_agreement": {
+    "title_abstract": {
+      "pairs": 150,
+      "raw_agreement": 0.967,
+      "kappa": 0.935
+    },
+    "full_text": {
+      "pairs": 44,
+      "raw_agreement": 0.932,
+      "kappa": 0.732
+    }
+  },
+  "notes": [
+    "Other methods: 10 identified, 0 removed before screening and 5 excluded at title/abstract before 5 were sought. The v2 template has no box for these; state them in the caption.",
+    "Eligibility doubt on 4 of 6 included reports (I6 x2, I1 x2). List them at the gate; the synthesis reports with and without them."
+  ]
+}

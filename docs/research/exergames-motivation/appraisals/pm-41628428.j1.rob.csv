@@ -1,0 +1,6 @@
+study_id,instrument,domain,judgment,support_quote,location
+pm-41628428,RoB 2,D1 Randomization process,High,"However, about 9%-10% (OCTT×2 [n=3] and EBTT+OCTT [n=4]) of participants in each group requested to change their assigned allocation, and these requests were accommodated to minimize participant dropout.","Methods, Study and Trial Designs"
+pm-41628428,RoB 2,D2 Deviations from intended interventions,Some concerns,"Final analysis was conducted per protocol outlined in the “Data Analysis” section, where participants were analyzed according to the group they actually participated in, instead of their original randomized groups.","Methods, Data Analysis"
+pm-41628428,RoB 2,D3 Missing outcome data,Some concerns,"Dropouts, n (%) 5 (15) 4 (12)","Results, Overview, Table 1"
+pm-41628428,RoB 2,D4 Measurement of the outcome,Some concerns,"The SMT, developed by Pelletier et al [ 34 ], is a self-report questionnaire that assessed 7 types or subscales of motivation","Methods, Measurement of Motivation and Confidence Level"
+pm-41628428,RoB 2,D5 Selection of the reported result,Some concerns,"This trial was not preregistered, as it did not measure any clinical outcomes.","Methods, Ethical Considerations"

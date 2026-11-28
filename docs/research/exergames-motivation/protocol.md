@@ -1,6 +1,6 @@
 # Protocol — Exergames and exercise motivation
 
-**Drafted:** 2026-11-28 · **Approved:** 2026-11-28 · **Approved by:** user · **Status:** approved; amended 2026-11-28 after gate 2 (section 14, A1–A5, each approved by the user)
+**Drafted:** 2026-11-28 · **Approved:** 2026-11-28 · **Approved by:** user · **Status:** approved; amended 2026-11-28 after gate 2 (section 14, A1–A9, each approved by the user; A1 was made before the user saw it and ratified afterwards)
 
 This review is machine-conducted. Screening, extraction and appraisal are done by
 language-model agents; the two approval gates are decided by the user.
@@ -118,7 +118,9 @@ with the arm, or shifting weight; a game played by walking or running in real ti
 (location-based or audio-narrative running games); a robot- or exoskeleton-assisted
 game in which the patient moves actively; a movement-training system that gives the
 player a running score for matching target movements, whether or not the paper calls
-it a game (amendment A4).
+it a game (amendment A4); an intervention the paper calls an exergame and describes
+as exercise performed in the game, unless the text shows the input is not body
+movement (amendment A6).
 Out: movement feedback alone — speed, distance, heart rate, accuracy or posture cues,
 or virtual scenery that moves with pedalling or walking — with no goal or score: that
 is not a game; a fitness app or wearable that awards points or badges for steps
@@ -126,7 +128,8 @@ is not a game; a fitness app or wearable that awards points or badges for steps
 distance totals accumulated outside a play session; a seated video game played with a
 hand controller; a game controlled only by finger or hand movement on a screen or
 controller; cognitive-training games; a robot or exoskeleton that moves the limb
-passively.
+passively; a game whose input is muscle activation sensed by EMG, force or torque
+sensors without required movement of the limb or trunk (amendment A9).
 A mixed programme (exergame plus conventional exercise in the same arm) is in under
 I1; whether it is in overall turns on I3.
 
@@ -184,7 +187,10 @@ I5 asks only whether such an instrument was used; in which arms is I6's question
 
 **I6 / E6 — results.**
 In: means, change scores, or a between-group test for the motivation instrument, in
-text, table, figure or supplement.
+text, table, figure or supplement; a composite or total score of the I5 instrument
+reported for both arms (how it was formed is a matter for extraction and D4;
+amendment A7); in a trial with several non-exergame arms, results on the I5
+instrument for the exergame arm and any one non-exergame arm (amendment A8).
 Out: a trial protocol or registry record; a report that lists the instrument in its
 methods and gives no result for it; a report giving motivation results for the
 exergame arm only (an instrument given only to the exergame arm fails I6, not I5); in
@@ -483,3 +489,7 @@ What they imply:
 | 2026-11-28 | **A3 — I2/E2, two borderline kinds of allocation are in.** I2 now counts as random allocation (a) random allocation after which a minority of participants were reassigned at their own request before the intervention began, and (b) allocation the paper describes as random but made by a constrained or pseudo-randomized procedure. E2 carries the mirror wording: it is not cited for either. The weakness is carried by risk of bias (D1, D2). Consequences: `pm-41628428` is included by the user's decision; `pm-42974341`, excluded by both screeners under E2 and judged on I2 only, is re-screened at full text on all criteria; every other E2 exclusion at either stage is checked against the new wording and re-screened if it could be decided differently. **Approved by the user on 2026-11-28, in their answer to gate 2 (decision 1.2).** | Gate 2: the adjudicator escalated `pm-41628428` because I2/E2 did not say which side of the line reassignment-after-randomization falls; the user chose to include both borderline trials and let the risk-of-bias rating carry the weakness. |
 | 2026-11-28 | **A4 — I1, a scored movement-training system is an exergame.** Added to I1's In cases: a movement-training system that gives the player a running score for matching target movements is an exergame under I1, whether or not the paper calls it a game. `pm-40567995` and `pm-43021294` stay in; the appraisal judges rule on eligibility again from the full paper. **Approved by the user on 2026-11-28, in their answer to gate 2 (decision 1.3).** | Gate 2: three of four inclusions were doubtful, two of them on I1 (a Kinect system that scores limb angles against a model and is never called a game). |
 | 2026-11-28 | **A5 — I4, conflicting durations.** Added to I4/E4: where a paper gives conflicting durations, the schedule in the Methods decides over the Abstract. **Approved by the user on 2026-11-28, in their answer to gate 2 (decision 1.4).** | Proposed by the screening adjudicator on `pm-41384807`, whose Abstract says seven weeks and whose Methods and Results say one; the exclusion under E4 now follows from the criterion rather than from a reading. |
+| 2026-11-28 | **A6 — I1, an authors' label with exercise described in the game.** Added to I1's In cases: an intervention the paper calls an exergame and describes as exercise performed in the game meets I1 unless the text shows the input is not body movement. `oa-W7220097264` is kept, marked doubtful; the appraisal judges rule on its eligibility from the full paper, and the synthesis states its conclusions with and without the doubtful studies. `oa-W7220200190` stays excluded as the adjudicator decided: its text describes the input, and it is tracking. **Approved by the user on 2026-11-28, in their answer to the revised gate 2 (decisions 1.2 and 1.3).** | Revised gate 2: `oa-W7220097264` never names its game or headset and never says body movement is the game input; its exergame status rested on the authors' label, and I1 did not say whether a label is enough. |
+| 2026-11-28 | **A7 — I6, a composite score counts.** Added to I6's In cases: a composite or total score of the I5 instrument, reported for both arms, meets I6; how it was formed is a matter for extraction and D4. **Approved by the user on 2026-11-28, in their answer to the revised gate 2 (decision 1.2).** | Revised gate 2: `oa-W7220097264` reports one composite "Exercise Motivation" score per arm from a six-subscale instrument, and both screeners recorded a doubt on I6. |
+| 2026-11-28 | **A8 — I6, any one non-exergame arm is enough.** Added to I6's In cases: in a trial with several non-exergame arms, results on the I5 instrument for the exergame arm and any one non-exergame arm meet I6. **Approved by the user on 2026-11-28, in their answer to the revised gate 2 (decision 1.2).** | Revised gate 2: `pm-42974341` gave its motivation instrument to the exergame and wobble-board groups and not to the no-training control, and both screeners recorded a doubt on I6. |
+| 2026-11-28 | **A9 — I1, muscle-activation input is out.** Added to I1's Out cases: a game whose input is muscle activation sensed by EMG, force or torque sensors without required movement of the limb or trunk. `pm-42261097` is excluded under E1 by the user's decision (`decided_by=human`); it was excluded under either reading, and only the code was open. No other record screened uses myoelectric or isometric control, so none was re-checked. **Approved by the user on 2026-11-28, in their answer to the revised gate 2 (decision 1.3).** | Revised gate 2: the screening adjudicator escalated `pm-42261097` on the exclusion code (E1 or E3), because I1's cases did not cover myoelectric input. |

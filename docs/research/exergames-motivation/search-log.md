@@ -151,3 +151,18 @@ OpenAlex open-access-copy route (a Research Square preprint, `submittedVersion`)
 `s1-oa-W4401613739` not retrieved (no PMID, and OpenAlex lists no open-access copy).
 Both retrieved reports were excluded at full text (E5), so the pass added no inclusion.
 
+
+## Appraisal: a supplement fetched for one included report (2026-11-28)
+
+`pm-43021294` (Tunç et al., 2026): gate 2 noted that its game mechanics are in
+Appendix 2, which the saved text lacks. Before extraction the orchestrator fetched the
+paper's supplementary files from the Europe PMC open-access route
+(`https://www.ebi.ac.uk/europepmc/webservices/rest/PMC13761108/supplementaryFiles`, a
+zip holding three .docx files named `13102_2026_1981_MOESM1–3_ESM.docx`, matching the
+paper's DOI `10.1186/s13102-026-01981-6`). Supplementary Material 1 (Appendix 1, the
+exercise protocols) and 2 (Appendix 2, the game characteristics) were converted to
+text, one table cell per line, and saved as `fulltext/pm-43021294.appendix1.txt` and
+`fulltext/pm-43021294.appendix2.txt`. Supplementary Material 3 is the CONSORT checklist
+and was not saved. The screeners did not see these files; the extractor and the judges
+do. The other appendix gate 2 named (`pm-39024000`, an excluded report) was not
+fetched: its exclusion was approved at gate 2 as it stood.
