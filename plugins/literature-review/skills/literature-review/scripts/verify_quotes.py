@@ -35,7 +35,7 @@ ID is letters, digits, hyphens and underscores only. An ID with a dot in it
 (ax-2609.29647) would be read as part "29647" of record "ax-2609", so it is refused
 as bad input rather than checked against the wrong text.
 """
-import argparse, csv, glob, os, re, sys, unicodedata
+import argparse, csv, functools, glob, os, re, sys, unicodedata
 
 QUOTE_RES = [
     # Every pair is matched, however short, so the marks stay paired: skipping a
@@ -149,17 +149,29 @@ def items_from(path, smap, min_words):
                 yield f"{path}:{i}", ids, q
 
 
+@functools.lru_cache(maxsize=None)
+def unhyphenated(s):
+    """Hyphens between letters removed. A PDF breaks "self-determination" across two
+    lines exactly as it breaks "motivation", and nothing in the text says which hyphen
+    was real. A hyphen before a digit is a minus sign and is kept."""
+    return re.sub(r"(?<=[^\W\d_])-\s*(?=[^\W\d_])", "", s)
+
+
+def has(text, frags):
+    return all(f in text for f in frags) or all(unhyphenated(f) in unhyphenated(text) for f in frags)
+
+
 def judge(ids, quote, texts, min_words, own=()):
     frags = fragments(quote, min_words)
     have = [i for i in ids if i in texts]
-    if any(all(f in texts[i] for f in frags) for i in have):
+    if any(has(texts[i], frags) for i in have):
         return "VERIFIED", ""
     for name, t in own:
-        if all(f in t for f in frags):
+        if has(t, frags):
             return "OWN WORDS", "in " + name
     if not have:
         return "UNCHECKABLE", ""
-    elsewhere = [k for k, t in texts.items() if k not in ids and all(f in t for f in frags)]
+    elsewhere = [k for k, t in texts.items() if k not in ids and has(t, frags)]
     if elsewhere:
         return "TRANSPLANT", "found in " + ", ".join(sorted(elsewhere))
     return "NOT FOUND", ""

@@ -1,0 +1,21 @@
+record_id,decision,criterion,rationale,doubt
+oa-W4413422558,unsure,,No abstract; title shows a randomised exergaming vs aerobic exercise study but duration and motivation instrument are unknown,
+pm-42856006,exclude,E9: Not a primary report,Narrative review,
+pm-40567995,include,,Randomised; Kinect aerobic dance 8 weeks vs video aerobic dance at home; BREQ-2 named,I6: abstract reports a BREQ-2 difference only for the experimental group at 12 weeks; unclear whether both arms' BREQ-2 results are reported
+oa-W7143500910,exclude,E5: No named motivation instrument,Randomised 16-session exergame vs active control but the only outcome assessed is the Neuropsychiatric Inventory (apathy subscale is not a motivation instrument),E5: abstract lists only the NPI; could unlisted secondary outcomes include a motivation scale?
+oa-W7116711481,exclude,E5: No named motivation instrument,Qualitative focus-group/interview report from a cluster RCT; motivation discussed only in interviews,E5: does a qualitative companion report of an eligible trial belong with its parent for I6?
+pm-39024000,exclude,E5: No named motivation instrument,Ring Fit Adventure RCT 12 weeks; abstract lists all primary and secondary outcomes and none is a motivation instrument,E5: abstract outcome list is full but a motivation scale could be unlisted
+pm-42713861,exclude,E9: Not a primary report,Systematic review,
+oa-W7128679188,exclude,E9: Not a primary report,Systematic review of reviews and RCTs,
+oa-W4406747628,exclude,E4: Under two weeks,Single VR HIIT session; flow state scale only,
+pm-39952553,exclude,E5: No named motivation instrument,Wii/Kinect 6-month RCT; assessments listed are anthropometrics and physical activity; motivation only named as a future direction,E5: abstract lists assessments without a motivation scale; could one be unlisted?
+pm-42066290,exclude,E6: No motivation results by arm,Trial protocol with no data,
+pm-40505143,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+pm-40902721,exclude,E6: No motivation results by arm,Study protocol; no motivation instrument listed among outcomes,E2: described as partially randomised; unclear whether allocation was random
+pm-39135010,exclude,E1: Not an exergame,Social media (Facebook) walking challenges supplementing a wearable; gamification not movement-as-input game,I1: does a game-framed walking intervention count as a location-based walking game?
+oa-W4414250592,exclude,E5: No named motivation instrument,Outcomes are learning difficulty and reading/writing tests only,
+pm-39421950,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+oa-W4392373743,exclude,E4: Under two weeks,Crossover with one 30-min session per condition,
+oa-W7164533076,exclude,E9: Not a primary report,Scoping review,
+pm-42293369,exclude,E9: Not a primary report,Systematic review,
+oa-W4394692400,exclude,E5: No named motivation instrument,Wii Fit vs conventional balance training 8 weeks randomised; outcomes balance function and PedsQL; motivation only mentioned as explanation,E5: abstract lists outcomes without a motivation scale; could one be unlisted?

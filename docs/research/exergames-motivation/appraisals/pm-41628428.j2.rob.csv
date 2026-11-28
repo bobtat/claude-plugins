@@ -1,0 +1,6 @@
+study_id,instrument,domain,judgment,support_quote,location
+pm-41628428,RoB 2,D1 Randomization process,Some concerns,"participants were initially randomly allocated to either the EBTT+OCTT group or the OCTT×2 group as a parallel-group experimental study (aged 18 to 40 years, with balanced randomization in a ratio of 1:1)","Methods, Study and Trial Designs"
+pm-41628428,RoB 2,D2 Deviations from intended interventions,Some concerns,"In addition, a modified intention-to-treat (ITT) analysis was also performed, in which all participants who were randomized initially and completed the study were included in the analysis according to their originally assigned groups.","Methods, Data Analysis"
+pm-41628428,RoB 2,D3 Missing outcome data,Some concerns,"Second, the dropout rate was approximately 12% in the OCTT×2 group and 15% in the EBTT+OCTT group.","Discussion, Limitations"
+pm-41628428,RoB 2,D4 Measurement of the outcome,Some concerns,"The SMT, developed by Pelletier et al [ 34 ], is a self-report questionnaire that assessed 7 types or subscales of motivation","Methods, Measurement of Motivation and Confidence Level"
+pm-41628428,RoB 2,D5 Selection of the reported result,Some concerns,"This trial was not preregistered, as it did not measure any clinical outcomes.","Methods, Ethical Considerations"

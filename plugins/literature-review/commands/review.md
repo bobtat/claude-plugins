@@ -107,11 +107,24 @@ the gate file for the phase it falls in.
 It is never assumed: without the flag, or an explicit instruction in the invocation to
 proceed through gates, stop.
 
+### A ruling covers what it names
+
+When the user rules on an escalated item, the ruling settles that item. If its
+reasoning seems to reach another study, a rating both judges agreed, or a code nobody
+queried, that is a new question, and it is the user's. List it with the others at the
+next stop, or stop for it. Do not send the other study back to fresh agents under the
+user's sentence and apply what comes back. In the first attended run the orchestrator
+did that with a ruling on one trial's direction of effect: two more trials were
+recoded, the headline count moved, and one of the two changes was wrong, because the
+ruling's reason did not apply to a null result. The user restored it.
+
 ### Long headless runs
 
-A headless run of this command is long. The one measured run took 89 minutes and
-cost about $87 for a deliberately small review: 115 records screened, 52 studies
-appraised. A larger review takes longer. In print mode, Claude Code stops background
+A headless run of this command is long. An unattended run took 89 minutes and cost
+about $87 for a deliberately small review: 115 records screened, 52 studies appraised.
+An attended run that stopped five times for its user took 104 minutes of running time
+and about $66 for 150 records screened and 6 studies appraised. A larger review takes
+longer. In print mode, Claude Code stops background
 tasks still running after the last turn once a time ceiling passes, unless told to
 wait indefinitely:
 

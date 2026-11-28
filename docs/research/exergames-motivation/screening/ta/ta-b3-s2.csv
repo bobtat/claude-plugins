@@ -1,0 +1,31 @@
+record_id,decision,criterion,rationale,doubt
+pm-41449562,exclude,E5: No named motivation instrument,Qualitative-only study (interviews and e-diary) of participants in a feasibility RCT; no instrument-based motivation results,
+oa-W7213433529,unsure,,Title only: pilot RCT of game-based stroke rehab; motivation instrument and design details not available,
+oa-W7165228557,exclude,E9: Not a primary report,Review study synthesising prior work,
+pm-42551496,unsure,,Wii Fit VR vs whole-body vibration RCT for 12 weeks; outcomes listed are strength and balance and no motivation instrument is named so one cannot be ruled out,I5: abstract lists outcomes without a motivation instrument; unlisted secondary outcome possible
+oa-W4414442255,exclude,E9: Not a primary report,Systematic analysis of 15 studies (review),
+pm-40321768,exclude,E3: No non-exergame comparator,All three randomised arms (Standard / Virtual Assistance / Proprioceptive) play robot video games; also only one week of training (E4),
+pm-39964707,unsure,,Randomised 8-week RMD game-based programme vs task-specific training; listed outcomes are motor measures and interviews with no motivation instrument named,I1: does a robotic manipulandum game driven by hand/arm manipulation count as an exergame (limb movement as input)?
+pm-40790569,unsure,,Kinect game vs physiotherapy randomised for two weeks; listed outcomes are pain/ROM/motor function and no motivation instrument is named so one cannot be ruled out,I4: two weeks exactly - at the boundary of the 2-week rule
+oa-W4395005416,unsure,,Title only: self-control training video game pilot; unclear whether movement is the input or whether the study is randomised,I1: self-control training game may be cognitive training rather than exergame
+pm-42536979,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+pm-42261097,unsure,,Randomised sham-controlled 6-week myoelectric game training; motivation assessed for feasibility but instrument not named,I1: does a game controlled by muscle activation (EMG) count as limb/trunk movement input?
+oa-W7220702081,unsure,,Randomised 6-week VR shooting game vs non-game arms; whether movement drives the game and which questionnaires were used is not stated,I1: VR first-person shooting game - is body movement the game input?
+pm-38975352,unsure,,6-week MIRA exergame vs usual care; randomised by home; outcomes are feasibility/usability and focus groups with no motivation instrument named,I2: one facility per arm randomised - is this adequate random allocation of clusters?
+oa-W4416819434,exclude,E9: Not a primary report,Overview/narrative review,
+pm-42179992,exclude,E5: No named motivation instrument,Motivation assessed with a visual analog scale only (single item); VR stress inoculation also unlikely to be an exergame,E1: unclear whether the VR serious games are driven by body movement
+pm-41713931,exclude,E4: Under two weeks,Crossover with one 30-minute VR cycling session per condition,
+pm-41002748,unsure,,Randomised 8-week Nintendo Switch therapy vs board games; outcomes WISC-V/STROOP/CARAS-R with no motivation instrument named; unclear whether games need body movement,I1: Switch cognitive games may be seated controller play (cognitive training) rather than exergame
+oa-W7130314881,exclude,E1: Not an exergame,Educational game-based physical education taught in class; not a digital game driven by movement,
+pm-41168901,unsure,,12-week exergaming/VR RCT vs no intervention; motivation appears only in qualitative interviews and no motivation instrument is named in the abstract,
+pm-42763302,unsure,,12-week exergame plus elastic band RCT vs health education; abstract names IPAQ-SF and a self-efficacy scale only and motivation in interviews; instrument unlisted could exist,I8: bracketed title suggests the full text may be in Chinese
+pm-42046589,unsure,,Randomised 10-week EMG-based video game rehab vs same exercises without games; outcomes KOOS/IKDC/strength and interviews with no motivation instrument named,I1: EMG-controlled biofeedback game - does it count as movement input?
+oa-W4407925935,exclude,E4: Under two weeks,Single-session exercise conditions in healthy participants (randomised order crossover),
+oa-W7164739728,unsure,,Switch Sports vs conventional therapy RCT; duration and any motivation instrument not stated in abstract,
+pm-40575461,exclude,E3: No non-exergame comparator,Both randomised groups play the same active video game; only the narrative format varies,
+pm-41789604,exclude,E9: Not a primary report,Scoping review,
+oa-W7119829267,exclude,E3: No non-exergame comparator,Both randomised groups (balance and strength) receive Wii VR rehabilitation,
+oa-W4404159996,exclude,E9: Not a primary report,Perspective/opinion piece on cognitive training with no trial data,
+pm-38965612,exclude,E6: No motivation results by arm,Study protocol for an RCT; no results,
+pm-39622701,unsure,,18-week RCT of motion-based video games vs control; abstract does not list a motivation instrument ("client-related metrics" unspecified),I1: individualized MBVG programme mixed with intergenerational support and therapy frameworks; control not described
+oa-W7117546523,exclude,E1: Not an exergame,Wireless communications signal-processing paper unrelated to exergames,

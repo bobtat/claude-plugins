@@ -1,0 +1,31 @@
+record_id,decision,criterion,rationale,doubt
+pm-40989272,unsure,,RCT of gamified VR group exercise; instruments are Subjective Vitality Scale and Life Hope Questionnaire; no motivation instrument named but outcomes may not be fully listed; duration not given,I1: does gamified group exercise in VR have movement as game input and a goal or score?
+pm-39019442,exclude,E3: No non-exergame comparator,Within-participant crossover where both conditions (Standard and Dosed Failure) are the same stepping exergame,
+oa-W4416431672,unsure,,"RCT VR exercise vs manual physiotherapy for 8 weeks; outcomes listed name no motivation instrument, which does not show there is none",I1: is the VR-based exercise a game with a goal or score?
+pm-40604775,unsure,,Randomized vs no intervention; 6-week follow-up design; PA motivation questionnaire not named; unclear whether game is movement-driven,I1: Naji Iriano health video game may be a seated serious game rather than an exergame
+pm-40627595,exclude,E2: Not randomized,Non-randomized controlled feasibility trial,
+oa-W7220097264,unsure,,"VR exergame RCT with exercise motivation measured, but instrument is not named in abstract; eight sessions, programme length in weeks not stated",I4: eight sessions with no stated weeks; does schedule span 14 days or more?
+oa-W4415152829,unsure,,Randomised Wii vs conventional; motivation reported but no instrument named; Portuguese title so full-text language is unclear,E8: English abstract but Portuguese title; is the full text English?
+oa-W7167468688,unsure,,Abstract field contains only a reference list; design and population not determinable from it,E9: cannot tell whether this is a primary report
+pm-42384950,unsure,,"RCT of IVR exergaming vs home-based exercise, 8 weeks; outcomes listed name no motivation instrument, not conclusive",
+pm-39931102,unsure,,Randomized 8-week non-immersive VR gamified exercise vs usual activity; motivation only via logbooks and interview in abstract; instruments unlisted,I5: acceptance and motivating feel reported via interview; a named instrument may exist in the full text
+pm-42857931,unsure,,Kinect plus NDT vs NDT for 12 weeks randomized; listed outcomes name no motivation instrument; unlisted secondary outcomes possible,
+oa-W4402875116,unsure,,Title only: teaching shoulder dystocia management with game-based training; title does not settle whether any arm is an exergame,E1: game-based training in simulation education is probably not an exergame but title alone does not show it
+pm-39054204,exclude,E2: Not randomized,Single-centre non-randomised proof-of-concept trial,
+oa-W4413463698,unsure,,Kinect-based sport dance training with random groups over a semester; sport dance motivation scores reported but instrument unnamed,I1: Kinect movement detection for training may lack a game goal or score
+pm-40862308,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+pm-41445941,exclude,E9: Not a primary report,Systematic review,
+pm-40278000,exclude,E1: No exergame,"VR vaping prevention mystery game with minigames teaching coping skills, no exercise movement as game input; also a protocol",E9: is a trial protocol a not-a-primary-report record or an E6 case?
+pm-40738100,exclude,E9: Not a primary report,Rapid scoping review,
+oa-W7135015982,exclude,E9: Not a primary report,Systematic review,
+oa-W4406131796,exclude,E1: No exergame,Title is about depth map completion for indoor scenes; no exergame,
+oa-W4404486674,exclude,E3: No non-exergame comparator,Both arms receive the AR exergame at different doses (13 vs 28 min) in a single bout,
+pm-40433613,exclude,E9: Not a primary report,Meta-analysis of RCTs,
+pm-42393428,exclude,E2: Not randomized,Single-arm 8-week feasibility protocol with multimodal intervention,
+oa-W4415982674,unsure,,Ring Fit Adventure vs aerobic exercise RCT 6 weeks; outcomes listed are cardiorespiratory only; no motivation instrument named but unlisted outcomes possible,
+oa-W4407560557,exclude,E9: Not a primary report,Invited commentary on another trial,
+oa-W7170076918,exclude,E1: No exergame,VR serious game teaching Scrum; educational game not driven by exercise movement,
+pm-42958576,unsure,,Three-arm RCT VR exercise vs traditional vs control for 8 weeks; outcomes listed name no motivation instrument; unlisted outcomes possible,I1: is VR-based exercise a game with a goal or score?
+pm-41990569,unsure,,Randomized 10-week video game-based exercise vs conventional physiotherapy; abstract lists no motivation instrument (only a Satisfaction Questionnaire),I5: is the Satisfaction Questionnaire or any other tool a motivation instrument?
+pm-41664928,unsure,,Randomized immersive VR plus usual care vs usual care for 3 weeks; VR content not described; no motivation instrument listed,I1: VR used for pain management may not involve movement as game input
+oa-W4408275182,unsure,,Title only: French-language RCT of immersive VR upper limb rehabilitation in cerebral palsy; no abstract,E8: French title suggests full text may not be English but this is not shown

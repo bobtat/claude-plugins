@@ -1,0 +1,5 @@
+__pycache__/
+
+# Saved full texts of third-party papers. Each review's retrieval.csv records
+# where its texts came from, so they can be fetched again.
+docs/research/*/fulltext/

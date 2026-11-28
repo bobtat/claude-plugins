@@ -124,16 +124,22 @@ Deliberately not covered:
 
 ## What Is Untested
 
-The pipeline has run end to end once, unattended, on an arXiv-heavy computing
-question. What that run did not exercise, most likely to be wrong first:
+The pipeline has run end to end twice: once unattended, on an arXiv-heavy computing
+question, and once attended, on a health-science question. What is least tested, most
+likely to be wrong first:
 
-1. **Any field that is not on arXiv or in open-access PubMed Central.** 62 of the 64
-   full texts in that run came from arXiv's HTML rendering. Elsewhere most reports
-   will be "not retrieved" unless the user supplies them.
-2. **Resuming, and stopping at a gate for a person.** The run passed both gates
-   pre-authorized. The stop-and-resume path has not run.
-3. **A reader correcting a failed quotation.** The first-check procedure has run; no
-   reader in its test had a failure to correct.
+1. **Any field whose papers are mostly paywalled.** 62 of the 64 full texts in the
+   first run came from arXiv's HTML rendering. In the health-science run, arXiv and
+   open-access PubMed Central reached 27 of 62 reports and the open-access copies
+   OpenAlex lists, read as PDFs, reached 15 more. Twenty-one of 65 reports sought
+   stayed "not retrieved". Text taken from a PDF is rougher than the other routes'.
+2. **Supplementary files.** No script fetches them. In the second run an appendix
+   that settled one study's eligibility was fetched by hand, and another report was
+   excluded with its instrument list in an appendix nobody saw.
+3. **The orchestrator at a stop.** The second run stopped five times and resumed
+   each time. Twice it acted first and asked afterwards: a criterion amended during
+   calibration, and a user's ruling extended to two studies it did not name. Both now
+   have a written rule; neither rule has been run.
 4. **Forward citation searching**, which needs an OpenAlex key the run did not have.
 5. **The rasterizer chain on Windows.** `svglib` worked on Linux; Windows is where
    users will land on it.

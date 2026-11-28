@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1042 584" role="img" aria-labelledby="t d">
+<title id="t">Evidence map: population group by direction of result, with overall risk of bias</title>
+<desc id="d">Evidence map of 6 included studies by population group (rows) and direction of the between-group result as coded (columns, in order of first appearance in the file, not a scale: other, no between-group difference, favours exergame, mixed across subscales). One square per study, coloured and lettered by its overall risk-of-bias rating and labelled by first author and year. Cell counts: adults × other: 1 (Nikolova 2025 (oa-W7220097264) High †); adults × no between-group difference: 0; adults × favours exergame: 2 (Liu 2025 (pm-41307454) High, Anderson 2026 (pm-42974341) High); adults × mixed across subscales: 1 (Ngo 2026 (pm-41628428) Some concerns); older adults × other: 0; older adults × no between-group difference: 1 (Huang 2025 (pm-40567995) Some concerns); older adults × favours exergame: 0; older adults × mixed across subscales: 0; children and adolescents × other: 1 (Tunc 2026 (pm-43021294) High); children and adolescents × no between-group difference: 0; children and adolescents × favours exergame: 0; children and adolescents × mixed across subscales: 0. Overall risk of bias: 4 High, 2 Some concerns. † eligibility kept marked doubtful by the user: Nikolova 2025 (oa-W7220097264). Direction codes come from each trial's own between-group test and are not effect sizes. 'other' means the trial reported only a total or composite score of unstated construction or valence, so no direction is coded (amendment A11), and each such trial has at least one between-group test showing a difference; 'no between-group difference' is coded whatever the score's construction (amendment A14). Source: evidence-map.csv; record IDs are in its study_id column.</desc>
+<style>
+.lab{font:13px system-ui,sans-serif;fill:#5a6478}.hd{font:600 13px system-ui,sans-serif;fill:#5a6478}
+.ttl{font:600 15px system-ui,sans-serif;fill:#5a6478}.sm{font:12px system-ui,sans-serif;fill:#6b7488}
+.let{font:700 14px system-ui,sans-serif;fill:#1f2633}.grid{stroke:#8a93a6;stroke-width:1;fill:none}
+.dash{stroke:#5a6478;stroke-width:1.5;fill:none;stroke-dasharray:4 3}
+@media (prefers-color-scheme: dark){.lab,.hd,.ttl{fill:#c3cad8}.sm{fill:#aab2c2}.dash{stroke:#c3cad8}}
+</style>
+<text class="ttl" x="12" y="28">Included studies by population group and direction of the between-group result</text>
+<text class="hd" x="620.0" y="56" text-anchor="middle">Direction (as coded; columns in order of first appearance in the file — the order is not a scale)</text>
+<text class="hd" x="312.5" y="100" text-anchor="middle">other</text>
+<text class="hd" x="517.5" y="84" text-anchor="middle">no between-group</text>
+<text class="hd" x="517.5" y="100" text-anchor="middle">difference</text>
+<text class="hd" x="722.5" y="100" text-anchor="middle">favours exergame</text>
+<text class="hd" x="927.5" y="100" text-anchor="middle">mixed across subscales</text>
+<text class="hd" x="12" y="100">Population group</text>
+<text class="lab" x="12" y="166.0">adults</text>
+<rect class="grid" x="210" y="112" width="205" height="98"/>
+<rect class="dash" x="222" y="124" width="181" height="38" rx="4"/>
+<rect x="226" y="128" width="30" height="30" rx="3" fill="#d0504a"/>
+<text class="let" x="241.0" y="148" text-anchor="middle">H</text>
+<text class="lab" x="264" y="148">Nikolova 2025 †</text>
+<rect class="grid" x="415" y="112" width="205" height="98"/>
+<text class="sm" x="517.5" y="165.0" text-anchor="middle">no studies</text>
+<rect class="grid" x="620" y="112" width="205" height="98"/>
+<rect x="636" y="128" width="30" height="30" rx="3" fill="#d0504a"/>
+<text class="let" x="651.0" y="148" text-anchor="middle">H</text>
+<text class="lab" x="674" y="148">Liu 2025</text>
+<rect x="636" y="168" width="30" height="30" rx="3" fill="#d0504a"/>
+<text class="let" x="651.0" y="188" text-anchor="middle">H</text>
+<text class="lab" x="674" y="188">Anderson 2026</text>
+<rect class="grid" x="825" y="112" width="205" height="98"/>
+<rect x="841" y="128" width="30" height="30" rx="3" fill="#e0a526"/>
+<text class="let" x="856.0" y="148" text-anchor="middle">S</text>
+<text class="lab" x="879" y="148">Ngo 2026</text>
+<text class="lab" x="12" y="264.0">older adults</text>
+<rect class="grid" x="210" y="210" width="205" height="98"/>
+<text class="sm" x="312.5" y="263.0" text-anchor="middle">no studies</text>
+<rect class="grid" x="415" y="210" width="205" height="98"/>
+<rect x="431" y="226" width="30" height="30" rx="3" fill="#e0a526"/>
+<text class="let" x="446.0" y="246" text-anchor="middle">S</text>
+<text class="lab" x="469" y="246">Huang 2025</text>
+<rect class="grid" x="620" y="210" width="205" height="98"/>
+<text class="sm" x="722.5" y="263.0" text-anchor="middle">no studies</text>
+<rect class="grid" x="825" y="210" width="205" height="98"/>
+<text class="sm" x="927.5" y="263.0" text-anchor="middle">no studies</text>
+<text class="lab" x="12" y="362.0">children and adolescents</text>
+<rect class="grid" x="210" y="308" width="205" height="98"/>
+<rect x="226" y="324" width="30" height="30" rx="3" fill="#d0504a"/>
+<text class="let" x="241.0" y="344" text-anchor="middle">H</text>
+<text class="lab" x="264" y="344">Tunc 2026</text>
+<rect class="grid" x="415" y="308" width="205" height="98"/>
+<text class="sm" x="517.5" y="361.0" text-anchor="middle">no studies</text>
+<rect class="grid" x="620" y="308" width="205" height="98"/>
+<text class="sm" x="722.5" y="361.0" text-anchor="middle">no studies</text>
+<rect class="grid" x="825" y="308" width="205" height="98"/>
+<text class="sm" x="927.5" y="361.0" text-anchor="middle">no studies</text>
+<text class="hd" x="12" y="436">Overall risk of bias</text>
+<rect x="170" y="420" width="22" height="22" rx="3" fill="#d0504a"/>
+<text class="let" x="181" y="436" text-anchor="middle">H</text>
+<text class="lab" x="200" y="436">High (4)</text>
+<rect x="330" y="420" width="22" height="22" rx="3" fill="#e0a526"/>
+<text class="let" x="341" y="436" text-anchor="middle">S</text>
+<text class="lab" x="360" y="436">Some concerns (2)</text>
+<rect class="dash" x="490" y="420" width="22" height="22" rx="3"/>
+<text class="lab" x="520" y="436">† eligibility kept marked doubtful by the user</text>
+<text class="sm" x="12" y="470" xml:space="preserve">(a) Direction codes come from each trial’s own between-group test; they are not effect sizes.</text>
+<text class="sm" x="12" y="490" xml:space="preserve">(b) “other”: the trial reported only a total or composite score whose construction or valence the paper does not state,</text>
+<text class="sm" x="12" y="510" xml:space="preserve">      so no direction is coded (protocol amendment A11). Each such trial has at least one between-group test showing a difference.</text>
+<text class="sm" x="12" y="530" xml:space="preserve">(c) “no between-group difference” is coded whatever the construction of the score, because a null result needs no direction</text>
+<text class="sm" x="12" y="550" xml:space="preserve">      (protocol amendment A14).</text>
+<text class="sm" x="12" y="570" xml:space="preserve">(d) Source: evidence-map.csv, n = 6 studies; record IDs are in that file’s study_id column.</text>
+</svg>

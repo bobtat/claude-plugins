@@ -1,0 +1,6 @@
+study_id,instrument,domain,judgment,support_quote,location
+pm-42974341,RoB 2,D1 Randomization process,High,"Because a single investigator enrolled participants, generated the allocation, and performed all testing, allocation was not concealed, and outcome assessment was not blinded.","Methods, Participants (line 45)"
+pm-42974341,RoB 2,D2 Deviations from intended interventions,Some concerns,"The three participants excluded for sport-related injury discontinued before completing the protocol and were not included in the final analysis","Methods, Procedures (line 67)"
+pm-42974341,RoB 2,D3 Missing outcome data,High,"gamified: n = 9; traditional: n = 11; control: n = 10","Results (line 78); allocated gamified n = 12, Participants (line 45)"
+pm-42974341,RoB 2,D4 Measurement of the outcome,Some concerns,"Following post-testing, participants in the two training groups (gamified and traditional) completed the Intrinsic Motivation Inventory (IMI) (Supplementary Table XX).","Methods, Instrumentation (line 64)"
+pm-42974341,RoB 2,D5 Selection of the reported result,Some concerns,"The study is reported in accordance with the Transparent Reporting of Evaluations with Nonrandomized Designs (TREND) statement.","Methods, Study Design (line 42)"

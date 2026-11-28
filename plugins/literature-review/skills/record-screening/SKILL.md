@@ -65,6 +65,14 @@ reading κ. **A criterion that draws doubts in the pilot is revised now** — an
 giving it a case on each side of the line, then a re-pilot — whatever the agreement
 was. One doubt is worth a look; the same criterion doubted on three records is a gap.
 
+**An amendment is the user's to approve, and calibration is no exception.** The
+protocol was approved as written. Put the proposed wording and the pilot records that
+prompted it to the user, and re-pilot once they agree. Where no one can be asked, the
+`/literature-review:review` command's rule for gates applies: stop and write the
+question down, unless the run is unattended, in which case take the change that can
+only advance records and log it for ratification. In the first attended run the
+orchestrator amended a criterion during calibration and told the user afterwards.
+
 ### Project the full-text volume
 
 The pilot also measures how many records advance. Before the full run, project it:
@@ -112,10 +120,36 @@ It saves `fulltext/<record_id>.txt` from the arXiv HTML rendering or Europe PMC'
 open-access XML, and **refuses to save a text that does not carry the record's title**.
 For each record the log says whether it was retrieved, by which route, and why not.
 
-For a record the script could not route — a DOI with no arXiv ID or PMID — try an
-open-access copy yourself. Check its title against the record before saving it as
-`fulltext/<record_id>.txt`, and update that record's `retrieval.csv` row with the route
-you used. Open-access routes only.
+Those two routes reach little outside computing and biomedicine. In the one run made in
+another field, they left 35 of 62 reports unread. So run the script a second time, on
+the records it logged as not retrieved, with `--oa-copies`:
+
+```
+python3 ${CLAUDE_SKILL_DIR}/scripts/fetch_fulltext.py records.csv <record_id>... --out fulltext --log retrieval.csv --oa-copies
+```
+
+It asks OpenAlex which open-access copies exist for each record, by DOI or OpenAlex ID,
+and tries them in order. It accepts **a PDF only** and converts it with `pdftotext`: a
+publisher's landing page carries the abstract, and saved as a full text it would get
+the paper excluded for what the page does not say. In that run this route reached 15 of
+the 35. Three things to carry forward from its log:
+
+- **The note gives the copy's version.** `submittedVersion` is a preprint, and may
+  differ from the paper of record in its numbers. Say so in the gate file and in the
+  review's limitations, and name the records.
+- **Text from a PDF is rougher** than the other two routes': a sidebar or a running
+  header can land in the middle of a sentence. A quotation across one will not verify.
+  Tell the screeners to quote from within a paragraph.
+- **A record logged twice** has two rows, the second from this pass. The later row is
+  the one that counts.
+
+The protocol's Information sources section names the routes used. If it was approved
+naming fewer, this pass is an amendment and goes to the user first.
+
+Do not fetch a copy by hand, and never from a location OpenAlex does not mark open
+access. A report the script cannot reach is `not retrieved`, and the user is the one who
+can supply it: a text they provide is saved as `fulltext/<record_id>.txt` and logged
+with `route=user`.
 
 `full_text_retrieved` in `screening.csv` comes from `retrieval.csv`, not from the
 screeners. A record with no saved text is `full_text_retrieved=no`. That is the "Reports

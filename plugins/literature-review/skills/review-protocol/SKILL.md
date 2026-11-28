@@ -39,14 +39,16 @@ Use the Bash tool. Record each result in the protocol's Toolchain section.
 | `pandoc` | `pandoc --version` | No .docx or PDF |
 | A rasterizer | The probe order in `references/reporting.md` — and convert one test SVG, do not trust a version string | .docx and PDF would ship without figures |
 | A PDF engine | The engines in `references/reporting.md` | No PDF; .docx is unaffected |
+| `pdftotext` | `pdftotext -v` | Full text comes only from arXiv and open-access PubMed Central. Open-access copies elsewhere, which are PDFs, cannot be read |
 
 The plugin ships no MCP server and needs none: every route is plain HTTP. A paper-search
 server the user happens to have enabled is not a substitute for the routes below, and
 **a download tool that can fall back to Sci-Hub is never called** — at least one
 popular server's fallback download does so by default.
 
-A missing rasterizer or OpenAlex key is raised **at the Phase 1 gate**, while the
-user can still fix it or change scope — not discovered after the review is written.
+A missing rasterizer, OpenAlex key or `pdftotext` is raised **at the Phase 1 gate**,
+while the user can still fix it or change scope — not discovered after the review is
+written.
 
 ## Phase 1 — The Protocol
 
@@ -265,13 +267,24 @@ path it writes its findings to. Address each finding you accept; say why for any
 reject. **Two critic rounds at most.** "No material findings" is a valid result, not a
 failure to look hard enough.
 
+**Say how many of those full texts can be read.** Full text is fetched from three
+places only: arXiv, open-access PubMed Central, and the open-access copies OpenAlex
+lists. Count them before the gate. PubMed's `pubmed pmc open access[filter]`, added to
+the search string, counts the records with a text in PubMed Central. An OpenAlex
+search with `open_access.is_oa:true` added counts the ones with an open copy
+somewhere. Put both in section 13 and state the share. Name the three routes in
+section 3, and say that a report none of them reaches is reported as not retrieved and
+goes to the user at the second gate. In the one run outside computing this count was
+not taken, and 35 of the 62 reports sought could not be retrieved by the two routes
+the plugin then had.
+
 ## The Gate
 
 Present, with `AskUserQuestion` where there is a real choice:
 
 - The question and the criteria table
 - Sources, and the pilot counts per source
-- The implied scale
+- The implied scale, and the share of full texts that can be retrieved
 - Snowballing directions and caps, including any direction unavailable for lack of a key
 - The RoB instrument, or the critique criteria if none fits
 - The figure budget

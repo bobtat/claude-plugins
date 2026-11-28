@@ -1,0 +1,21 @@
+record_id,decision,criterion,rationale,doubt
+pm-42066290,exclude,E6: No motivation results by arm,Trial protocol with no results; no participants enrolled yet,E9: does a trial protocol count as 'not a primary report' or only as E6 (no results)?
+pm-42856006,exclude,E9: Not a primary report,Narrative review,
+oa-W4406747628,exclude,E4: Under two weeks,Single session of HIIT per arm; outcome is Flow State Scale,
+oa-W4414250592,exclude,E5: No named motivation instrument,Abstract lists the research tools (Colorado Learning Difficulties Scale and a reading test); no motivation instrument,E5: is the abstract's tool list exhaustive enough to settle absence of a motivation instrument?
+oa-W4392373743,exclude,E4: Under two weeks,Randomized crossover with one 30-min session per condition (IMI used but single sessions),
+oa-W7164533076,exclude,E9: Not a primary report,Scoping review,
+pm-40505143,exclude,E9: Not a primary report,Systematic review and meta-analysis,
+pm-39952553,exclude,E5: No named motivation instrument,Assessments listed are anthropometric physical activity and medical/sociodemographic; motivation only named as a future research factor,E5: abstract lists assessments but may not be exhaustive; motivation measure possible in full text
+pm-40567995,include,,"RCT of Kinect aerobic dance vs home video, 8 weeks, BREQ-2 measured; 2025",I1: does Kinect aerobic dance have a game goal or score? I6: BREQ-2 results reported for experimental group; control arm results not clear from abstract
+oa-W4394692400,exclude,E5: No named motivation instrument,Outcomes listed are balance functional and PedsQL tests; motivation only mentioned as explanation in the discussion,E5: is the abstract outcome list exhaustive?
+pm-42713861,exclude,E9: Not a primary report,Systematic review,
+oa-W7128679188,exclude,E9: Not a primary report,Systematic review of reviews and RCTs,
+pm-39135010,exclude,E1: Not an exergame,Protocol of Facebook-group walking challenges supplementing wearable step monitors; gamification not a movement-input game,I1: does a game played by walking in real time include weekly social-media challenges around wearable step counts?
+oa-W7116711481,exclude,E5: No named motivation instrument,Qualitative focus groups and interviews only; motivation discussed only in interviews,E5: companion report of a cluster RCT whose main report may be eligible; parent trial should be checked
+pm-40902721,exclude,E5: No named motivation instrument,Protocol; listed outcomes are muscle strength flexibility balance and pain,E2: 'partially randomised' allocation is unclear
+oa-W4413422558,unsure,,Title only; randomised exergaming vs aerobic exercise in T1D but motivation instrument and duration not known,
+oa-W7143500910,exclude,E5: No named motivation instrument,Only instrument is the Neuropsychiatric Inventory (apathy is a symptom domain); no motivation instrument,E5: does the NPI apathy domain count? Criteria list apathy scales as out
+pm-39024000,exclude,E5: No named motivation instrument,Primary and secondary outcomes listed are frailty muscle function ADL SF-36 cognition; no motivation instrument,E5: is the abstract outcome list exhaustive?
+pm-42293369,exclude,E9: Not a primary report,Systematic review,
+pm-39421950,exclude,E9: Not a primary report,Systematic review and meta-analysis,

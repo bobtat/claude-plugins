@@ -115,7 +115,11 @@ from a reader's judgment, and is omitted when the protocol's rule is `none`.
   `H` high, `N` no information, `?` unclear. Color alone fails for the ~8% of readers
   with a color vision deficiency and fails entirely in grayscale print.
 - Cell shape may also vary (circle / square / triangle) for a third redundant channel.
-- Study labels on the left as citation keys, in the same form as the bibliography.
+- Study labels on the left by first author and year, in the same form as the
+  bibliography. **Never the record ID**: `pm-40567995` names nothing to a reader. The
+  data file keys studies by ID, so join it to `study-keys.csv` for the labels, and
+  give the IDs in the figure's source note. The same holds for an evidence map and any
+  other figure that names studies.
 - A legend, always.
 - **Separate panels per instrument.** RoB 2 and ROBINS-I have different scales; a
   shared legend across both misrepresents each.

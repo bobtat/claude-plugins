@@ -1,0 +1,6 @@
+study_id,instrument,domain,judgment,support_quote,location
+pm-40567995,RoB 2,D1 Randomization process,Some concerns,"Block randomization with a block size of 4 was used. The allocation was carried out by independent researchers using a computer-generated random number sequence.",§2.3
+pm-40567995,RoB 2,D2 Deviations from intended interventions,Some concerns,"Initially 65 older adults participated in the study and randomly assigned to the experimental group or control group. But finally 60 participants finished the training session and all the measurements.",§3.1
+pm-40567995,RoB 2,D3 Missing outcome data,Some concerns,"Initially 65 older adults participated in the study and randomly assigned to the experimental group or control group. But finally 60 participants finished the training session and all the measurements.",§3.1
+pm-40567995,RoB 2,D4 Measurement of the outcome,Some concerns,"The Chinese version of the Exercise Behavior Regulation Questionnaire is a measurement tool used to measure the general public's exercise motivation.",§2.5.4
+pm-40567995,RoB 2,D5 Selection of the reported result,High,"The scale is divided into five aspects: internal regulation aspect, identity regulation aspect, interjective regulation aspect, external regulation aspect, and motivation ( 22 ).",§2.5.4

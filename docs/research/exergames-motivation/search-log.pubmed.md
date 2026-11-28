@@ -1,0 +1,12 @@
+### PubMed — 2026-11-28
+- Mode: search, iteration 0 (query_id pm-1, source_type database)
+- Route: NCBI E-utilities (no key): esearch.fcgi (db=pubmed, retmax=10000), esummary.fcgi, efetch.fcgi (rettype=abstract, retmode=xml)
+- String: `(exergam*[tiab] OR "exer-gam*"[tiab] OR "active video gam*"[tiab] OR "active videogam*"[tiab] OR "exercise video gam*"[tiab] OR "exercise videogam*"[tiab] OR "active gaming"[tiab] OR "fitness gam*"[tiab] OR "interactive video gam*"[tiab] OR "motion-based gam*"[tiab] OR "motion-controlled gam*"[tiab] OR "movement-based gam*"[tiab] OR "exertion game*"[tiab] OR "dance game*"[tiab] OR "location-based game*"[tiab] OR "game-based exercise"[tiab] OR "game-based training"[tiab] OR "game-based rehabilitation"[tiab] OR "video game-based"[tiab] OR "gamified exercise"[tiab] OR "virtual reality exercise"[tiab] OR "virtual reality-based exercise"[tiab] OR "VR exercise"[tiab] OR "virtual reality game*"[tiab] OR "VR game*"[tiab] OR "Ring Fit"[tiab] OR "Nintendo Switch"[tiab] OR "Kinect"[tiab] OR "Wii"[tiab] OR Xbox[tiab] OR "EyeToy"[tiab] OR "Just Dance"[tiab] OR "Dance Dance Revolution"[tiab] OR "Beat Saber"[tiab] OR "Exergaming"[MeSH]) AND (motivat*[tiab] OR amotivation[tiab] OR motive*[tiab] OR "self-determination"[tiab] OR "self-determined"[tiab] OR "basic psychological need*"[tiab] OR "need satisfaction"[tiab] OR "behavioral regulation"[tiab] OR "behavioural regulation"[tiab] OR "autonomous regulation"[tiab] OR BREQ[tiab] OR "Motivation"[MeSH]) AND (randomized controlled trial[pt] OR randomi*[tiab] OR randomly[tiab] OR RCT[tiab]) AND 2024/01/01:2026/11/28[dp]`
+- Limits: date only (2024/01/01:2026/11/28[dp]); no language or publication-type limit
+- Total matched: 83 (esearchresult.count)
+- Retrieved: 83 (unique PMIDs)
+- Overlap with this source's other strings: n/a (single string)
+- Cap: none (retrieved = total matched)
+- Abstracts: 83 with, 0 without
+- DOI: 83 with, 0 without
+- Notes: String read verbatim from protocol.md section 4 and sent URL-encoded via curl --data-urlencode, unmodified. No warnings: phrasesignored and quotedphrasesnotfound empty. PubMed's querytranslation rewrote "exer-gam*" as "exer gam*" (hyphen handled by the parser); the string submitted was unchanged. Dates are publication dates per [dp]; year column is the first four characters of esummary pubdate.

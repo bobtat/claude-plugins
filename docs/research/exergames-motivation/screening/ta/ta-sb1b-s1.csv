@@ -1,0 +1,5 @@
+record_id,decision,criterion,rationale,doubt
+s1-oa-W4401613739,unsure,,"No abstract; title alone does not settle design, comparator or motivation instrument",
+s1-oa-W4411350775,unsure,,"AR exergame vs traditional training for 6 weeks, but allocation method and any named motivation instrument not stated; Research Square venue suggests a preprint",I7: does a Research Square posting count as a preprint (not first results) when a journal version may exist?
+s1-oa-W4403443509,exclude,E3: No non-exergame comparator,"All conditions are versions of the same VR cycling exergame (solo, self-competition, virtual opponent)",
+s1-oa-W4405428558,unsure,,"Randomized exergaming vs balance training; listed outcomes name no motivation instrument but abstract does not show there is none; duration not stated",E5: outcomes list psychological measures (TSK and CAIT) but not motivation; unlisted secondary outcomes possible

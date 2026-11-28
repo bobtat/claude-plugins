@@ -1,0 +1,6 @@
+study_id,instrument,domain,judgment,support_quote,location
+pm-41307454,RoB 2,D1 Randomization process,Some concerns,"Randomization was executed using a computer-generated sequence in Microsoft Excel, allocating participants in a 1:1 ratio to either the intervention or control group.","Methods, Randomization"
+pm-41307454,RoB 2,D2 Deviations from intended interventions,Some concerns,"A robust regression–based outlier detection procedure was used to identify outliers, and any identified outliers were excluded from the analyses.","Methods, Statistical Analysis"
+pm-41307454,RoB 2,D3 Missing outcome data,High,"Notably, 2 (5%) participants dropped out of the intervention group during the first week of intervention, expressing concerns about participating in an in-person study during the COVID-19 pandemic.","Results, Participant Flow"
+pm-41307454,RoB 2,D4 Measurement of the outcome,Some concerns,"After 4 weeks, all participants returned for postintervention assessments identical to the baseline measures.","Methods, Procedure"
+pm-41307454,RoB 2,D5 Selection of the reported result,Some concerns,"This trial was registered on ClinicalTrials.gov ( NCT06902727 ).","Methods, Ethical Considerations"

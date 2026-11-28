@@ -1,0 +1,6 @@
+study_id,instrument,domain,judgment,support_quote,location
+pm-43021294,RoB 2,D1 Randomization process,Some concerns,"T0 33.70 ± 7.90 33.00 (10) 27.84 ± 2.32 29.00 (4) 0.12 b (−1.27, 9.67) 0.72",Results Table 4 T0 row
+pm-43021294,RoB 2,D2 Deviations from intended interventions,High,"Participants who did not demonstrate adequate adherence to the treatment protocol after randomization were not included in the final analyses.",Methods Statistical analysis
+pm-43021294,RoB 2,D3 Missing outcome data,High,"In the RGBEG, 3 participants were lost to follow-up because of personal reasons and insufficient brace use. The final analyses included 20 participants, with 10 participants in each group.",Results Demographic and clinical characteristics
+pm-43021294,RoB 2,D4 Measurement of the outcome,Some concerns,"because participants' awareness of group allocation may have influenced responses to self-reported measures such as the WRVAS, MSPPA, and SUS, these findings should be interpreted cautiously",Limitations
+pm-43021294,RoB 2,D5 Selection of the reported result,Some concerns,ClinicalTrials.gov identifier NCT06469021 (Record date: 16/06/2024).,Abstract Trial registration

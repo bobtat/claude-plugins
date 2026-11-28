@@ -26,17 +26,21 @@ A systematic review is expensive, and most questions do not want one. For a quic
 
 ## What a Run Costs
 
-One full run has been measured, on 2026-11-26: an unattended review of memory poisoning attacks on LLM agents, with the search deliberately capped.
+Two full runs have been measured, both with the search deliberately capped.
 
-| | |
-|---|---|
-| Records identified / screened | 132 / 115 |
-| Studies included and appraised | 52 (54 reports) |
-| Agents launched | 111 |
-| Wall-clock time | 89 minutes |
-| Cost | $86.67 |
+| | Unattended, 2026-11-26 | Attended, 2026-11-28 |
+|---|---|---|
+| Question | Memory poisoning attacks on LLM agents | Exergames and exercise motivation |
+| Records identified / screened | 132 / 115 | 199 / 150 |
+| Reports sought / not retrieved | 64 / 0 | 65 / 21 |
+| Studies included and appraised | 52 | 6 |
+| Stops for the user | 0 | 5 |
+| Running time | 89 minutes | 104 minutes |
+| Cost | $86.67 | $66.08 |
 
-That run used one appraisal reader per study, at about $0.73 each. Appraisal now uses an extractor, two judges and an adjudicator where needed, which a three-study test of the finished design put at about $1.58 per study. At that rate a review of 52 studies would cost roughly $45 more than the run above. A larger review costs more; one run is not enough to say how it scales. Each record is screened twice, and each included full text is read by two screeners, an extractor and two judges.
+The two runs are not comparable study for study. The first used one appraisal reader per study, at about $0.73 each. The second used the current design, an extractor, two judges and an adjudicator where needed, and spent more of its cost outside appraisal: screening twice after a retrieval route was added, three rounds of rulings, and two audit passes. Its appraisal leg cost $13.93 for six studies, which includes recording a gate and drawing two figures. A three-study test had put the design at about $1.58 per study.
+
+A small inclusion set does not make a cheap review. Most of the second run's cost was the protocol, the search and the screening of 150 records, which do not shrink with the number of studies that survive. Each record is screened twice, and each included full text is read by two screeners, an extractor and two judges.
 
 ## What It Produces
 
@@ -91,7 +95,9 @@ If you enable a paper-search server yourself, the plugin's agents will not use i
 - **Optional: `OPENALEX_API_KEY`.** Without it, forward citation searching outside biomedicine does not run, and OpenAlex search depends on a shared quota. A missing key is raised at the first gate.
 - **Optional, for Word and PDF:** `pandoc`; an SVG rasterizer (`rsvg-convert`, `inkscape`, ImageMagick with an SVG delegate, or `svglib` through `uvx`); and for PDF an engine (`xelatex`, `tectonic`, `typst` or `weasyprint`). The toolchain is probed before the first gate, and a missing format is reported, never silently dropped.
 
-Full texts come from arXiv's HTML rendering and open-access PubMed Central. Anything else is logged as not retrieved unless you supply it; open-access routes only.
+- **Optional: `pdftotext`** (poppler). Without it, an open-access copy that exists only as a PDF cannot be read.
+
+Full texts come from three places: arXiv's HTML rendering, open-access PubMed Central, and the open-access copies OpenAlex lists for a paper, which are read as PDFs. Anything else is logged as not retrieved unless you supply it. A paywalled paper is never fetched.
 
 ## Installation
 
@@ -169,14 +175,14 @@ literature-review/
 
 ## What Is Untested
 
-One full run, on an arXiv-heavy computing question, is the evidence behind this version. It did not exercise:
+Two full runs are the evidence behind this version: one unattended on an arXiv-heavy computing question, one attended on a health-science question. The second stopped at both gates and three more times, resumed each time, and had an adjudicator settle ratings. Neither run exercised:
 
-- any field whose papers are not on arXiv or in open-access PubMed Central;
-- stopping at a gate for a person, or resuming a stopped run;
-- a full review appraised by an extractor and two judges per study: that design has been tested on three studies only;
-- an adjudicator settling a rating in a live run;
+- a field whose papers are mostly paywalled, without the user supplying texts: the health-science run could not read 21 of the 65 reports it sought, and one of those looked eligible from its abstract;
+- supplementary files by a scripted route: one appendix that decided a study's eligibility was fetched by hand;
+- a review of more than six studies under the extractor-and-two-judges design;
 - forward citation searching;
-- the export chain on Windows.
+- the export chain on Windows;
+- a version in which the attended-run fixes of 0.4.0 and 0.4.1 were in place from the start. Three of them answer faults that run showed: a criterion amended without asking, a user's ruling extended to studies it did not name, and figures that named studies by record ID.
 
 `skills/literature-review/references/sources.md` lists where each convention comes from, and which of this plugin's own claims did not verify.
 

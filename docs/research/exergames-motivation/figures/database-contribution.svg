@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 340" role="img" aria-labelledby="figTitle figDesc">
+  <title id="figTitle">Records contributed by each source</title>
+  <desc id="figDesc">Records retrieved per source, from records.csv. PubMed returned 83 records: 34 found only in PubMed and 49 also found in OpenAlex. OpenAlex returned 106 records: 57 found only in OpenAlex and the same 49 shared with PubMed, which were removed as duplicates. Backward citation searching added 10 records, none found by either database. After deduplication: 34 plus 57 plus 49 gives 140 unique database records, plus 10 from citation searching, 150 records in total.</desc>
+  <style>
+    .t { fill: #4a5468; }
+    @media (prefers-color-scheme: dark) { .t { fill: #b8c2d6; } }
+  </style>
+  <text class="t" x="12" y="30" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#4a5468">Records contributed by each source</text>
+  <text class="t" x="12" y="52" font-family="system-ui, sans-serif" font-size="12" fill="#4a5468">Bar length and end number = records retrieved from that source; "shared" = found by both databases</text>
+
+  <!-- PubMed: 83 = 34 unique + 49 shared; scale 4.8 units per record -->
+  <text class="t" x="220" y="102" text-anchor="end" font-family="system-ui, sans-serif" font-size="13" fill="#4a5468">PubMed (pm-1)</text>
+  <rect x="230" y="80" width="163.2" height="34" fill="#4e8fcf" stroke="#2f5f8f" stroke-width="1"/>
+  <text x="311.6" y="102" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#14202e">34 PubMed only</text>
+  <rect x="393.2" y="80" width="235.2" height="34" fill="#d1a93a" stroke="#8a6d1c" stroke-width="1"/>
+  <text x="510.8" y="102" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#2a2208">49 shared</text>
+  <text class="t" x="636" y="102" font-family="system-ui, sans-serif" font-size="13" fill="#4a5468">83</text>
+
+  <!-- OpenAlex: 106 = 49 shared + 57 unique -->
+  <text class="t" x="220" y="162" text-anchor="end" font-family="system-ui, sans-serif" font-size="13" fill="#4a5468">OpenAlex (oa-1)</text>
+  <rect x="230" y="140" width="235.2" height="34" fill="#d1a93a" stroke="#8a6d1c" stroke-width="1"/>
+  <text x="347.6" y="162" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#2a2208">49 shared</text>
+  <rect x="465.2" y="140" width="273.6" height="34" fill="#5aa874" stroke="#356b47" stroke-width="1"/>
+  <text x="602" y="162" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#122a19">57 OpenAlex only</text>
+  <text class="t" x="746" y="162" font-family="system-ui, sans-serif" font-size="13" fill="#4a5468">106</text>
+
+  <!-- Citation searching: 10 unique -->
+  <text class="t" x="220" y="222" text-anchor="end" font-family="system-ui, sans-serif" font-size="13" fill="#4a5468">Backward citation searching</text>
+  <rect x="230" y="200" width="48" height="34" fill="#a07cc5" stroke="#654685" stroke-width="1"/>
+  <text x="254" y="222" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#1f1430">10</text>
+  <text class="t" x="286" y="222" font-family="system-ui, sans-serif" font-size="13" fill="#4a5468">10 new, none found by either database</text>
+
+  <line x1="230" y1="70" x2="230" y2="244" stroke="#7a8496" stroke-width="1"/>
+
+  <text class="t" x="12" y="282" font-family="system-ui, sans-serif" font-size="13" fill="#4a5468">After removing the 49 cross-database duplicates: 34 + 49 + 57 = 140 unique database records;</text>
+  <text class="t" x="12" y="302" font-family="system-ui, sans-serif" font-size="13" fill="#4a5468">with 10 from citation searching, 150 records went forward (pre_screen = kept).</text>
+  <text class="t" x="12" y="326" font-family="system-ui, sans-serif" font-size="11" fill="#4a5468">Source: records.csv (199 rows). Counts of records only; inclusion is not shown.</text>
+</svg>

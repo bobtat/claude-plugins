@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1172 552" role="img" aria-labelledby="ttl dsc">
+<title id="ttl">PRISMA 2020 flow diagram</title>
+<desc id="dsc">PRISMA 2020 flow. 189 records identified from databases and registers and 10 from other methods; 140 screened; 6 studies included.</desc>
+<style>.bx{fill:none;stroke:#44506b;stroke-width:1.2}.t{font:11.5px system-ui,-apple-system,Segoe UI,sans-serif;fill:#44506b}.hd{font:600 12px system-ui,sans-serif;fill:#44506b}.bandbx{fill:none;stroke:#6b7488;stroke-width:1}.band{font:600 11px system-ui,sans-serif;fill:#6b7488}.ar{stroke:#44506b;stroke-width:1.2;fill:none;marker-end:url(#a)}.fn{font:11px system-ui,sans-serif;fill:#6b7488}@media (prefers-color-scheme: dark){.bx{stroke:#9fb0d0}.t,.hd{fill:#9fb0d0}.bandbx{stroke:#8f9ab4}.band,.fn{fill:#8f9ab4}.ar{stroke:#9fb0d0}#ah{fill:#9fb0d0}}</style>
+<defs><marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path id="ah" d="M0 0 L8 4 L0 8 z" fill="#44506b"/></marker></defs>
+<text class="hd" x="320" y="42" text-anchor="middle">Identification of studies via databases and registers</text>
+<text class="hd" x="894" y="42" text-anchor="middle">Identification of studies via other methods</text>
+<rect class="bandbx" x="10" y="62" width="26" height="75" rx="2"/>
+<text class="band" x="23" y="100" text-anchor="middle" transform="rotate(-90 23 100)">Identification</text>
+<rect class="bandbx" x="10" y="152" width="26" height="260" rx="2"/>
+<text class="band" x="23" y="282" text-anchor="middle" transform="rotate(-90 23 282)">Screening</text>
+<rect class="bandbx" x="10" y="432" width="26" height="46" rx="2"/>
+<text class="band" x="23" y="455" text-anchor="middle" transform="rotate(-90 23 455)">Included</text>
+<path class="ar" d="M179 122 L179 152"/>
+<path class="ar" d="M304 92 L336 92"/>
+<path class="ar" d="M304 168 L336 168"/>
+<path class="ar" d="M179 184 L179 238"/>
+<path class="ar" d="M304 254 L336 254"/>
+<path class="ar" d="M179 270 L179 296"/>
+<path class="ar" d="M304 312 L336 312"/>
+<path class="ar" d="M753 108 L753 238"/>
+<path class="ar" d="M878 254 L910 254"/>
+<path class="ar" d="M753 270 L753 296"/>
+<path class="ar" d="M878 312 L910 312"/>
+<path class="ar" d="M179 328 L179 432"/>
+<path class="ar" d="M753 328 L753 455 L364 455"/>
+<rect class="bx" x="54" y="62" width="250" height="60" rx="2"/><text class="t" x="63" y="82.5">Records identified from*:</text><text class="t" x="63" y="96.5">  PubMed (n = 83)</text><text class="t" x="63" y="110.5">  OpenAlex (n = 106)</text>
+<rect class="bx" x="336" y="62" width="250" height="46" rx="2"/><text class="t" x="345" y="82.5">Records removed before screening:</text><text class="t" x="345" y="96.5">  Duplicate records removed (n = 49)</text>
+<rect class="bx" x="628" y="62" width="250" height="46" rx="2"/><text class="t" x="637" y="82.5">Records identified from:</text><text class="t" x="637" y="96.5">  Citation searching (backward) (n = 10)</text>
+<rect class="bx" x="54" y="152" width="250" height="32" rx="2"/><text class="t" x="63" y="172.5">Records screened (n = 140)</text>
+<rect class="bx" x="336" y="152" width="250" height="60" rx="2"/><text class="t" x="345" y="172.5">Records excluded**:</text><text class="t" x="345" y="186.5">  by automation tools (n = 80)</text><text class="t" x="345" y="200.5">  by a human reviewer (n = 0)</text>
+<rect class="bx" x="54" y="238" width="250" height="32" rx="2"/><text class="t" x="63" y="258.5">Reports sought for retrieval (n = 60)</text>
+<rect class="bx" x="336" y="238" width="250" height="32" rx="2"/><text class="t" x="345" y="258.5">Reports not retrieved (n = 20)</text>
+<rect class="bx" x="54" y="296" width="250" height="32" rx="2"/><text class="t" x="63" y="316.5">Reports assessed for eligibility (n = 40)</text>
+<rect class="bx" x="336" y="296" width="250" height="102" rx="2"/><text class="t" x="345" y="316.5">Reports excluded:</text><text class="t" x="345" y="330.5">  E5: No named motivation instrument (n = 22)</text><text class="t" x="345" y="344.5">  E1: Not an exergame (n = 8)</text><text class="t" x="345" y="358.5">  E4: Under two weeks (n = 2)</text><text class="t" x="345" y="372.5">  E6: No motivation results by arm (n = 1)</text><text class="t" x="345" y="386.5">  E9: Not a primary report (n = 1)</text>
+<rect class="bx" x="628" y="238" width="250" height="32" rx="2"/><text class="t" x="637" y="258.5">Reports sought for retrieval (n = 5)</text>
+<rect class="bx" x="910" y="238" width="250" height="32" rx="2"/><text class="t" x="919" y="258.5">Reports not retrieved (n = 1)</text>
+<rect class="bx" x="628" y="296" width="250" height="32" rx="2"/><text class="t" x="637" y="316.5">Reports assessed for eligibility (n = 4)</text>
+<rect class="bx" x="910" y="296" width="250" height="60" rx="2"/><text class="t" x="919" y="316.5">Reports excluded:</text><text class="t" x="919" y="330.5">  E4: Under two weeks (n = 2)</text><text class="t" x="919" y="344.5">  E5: No named motivation instrument (n = 2)</text>
+<rect class="bx" x="54" y="432" width="310" height="46" rx="2"/><text class="t" x="63" y="452.5">Studies included in review (n = 6)</text><text class="t" x="63" y="466.5">Reports of included studies (n = 6)</text>
+<text class="fn" x="54" y="504">* Consider, if feasible, reporting the number of records identified from each database or register searched,</text>
+<text class="fn" x="54" y="517">rather than the total across all of them.</text>
+<text class="fn" x="54" y="530">** If automation tools were used, indicate how many records were excluded by a human and how many were</text>
+<text class="fn" x="54" y="543">excluded by automation tools.</text>
+</svg>

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 448" role="img" aria-labelledby="figTitle figDesc">
+<title id="figTitle">Risk-of-bias summary (RoB 2), n=6 studies</title>
+<desc id="figDesc">Risk-of-bias summary, RoB 2, 6 studies. D1 Randomization process: 0 Low, 5 Some concerns, 1 High. D2 Deviations from intended interventions: 0 Low, 5 Some concerns, 1 High. D3 Missing outcome data: 0 Low, 3 Some concerns, 3 High. D4 Measurement of the outcome: 0 Low, 5 Some concerns, 1 High. D5 Selection of the reported result: 0 Low, 6 Some concerns, 0 High. Overall: 0 Low, 2 Some concerns, 4 High. Overall is derived as the worst domain judgment per study.</desc>
+<style>
+.lab{font:13px system-ui,sans-serif;fill:#5a6478}
+.ttl{font:600 15px system-ui,sans-serif;fill:#5a6478}
+.seg{font:600 13px system-ui,sans-serif;fill:#1b1f27}
+.small{font:12px system-ui,sans-serif;fill:#5a6478}
+.ax{stroke:#8a94a8;stroke-width:1;fill:none}
+.sep{stroke:#8a94a8;stroke-width:1;stroke-dasharray:4 3;fill:none}
+@media (prefers-color-scheme: dark){.lab,.ttl,.small{fill:#b4bfd4}.ax,.sep{stroke:#8f9ab0}}
+</style>
+<text class="ttl" x="12" y="28">Risk of bias by domain, RoB 2 (n=6 studies)</text>
+<text class="small" x="12" y="48">Each bar counts the studies at each judgment; segment labels give the letter and the study count.</text>
+<text class="lab" x="12" y="92.5">D1 Randomization process</text>
+<rect x="330.0" y="74" width="391.7" height="28" fill="#d4a72c"><title>D1 Randomization process: 5 of 6 Some concerns</title></rect>
+<text class="seg" x="525.8" y="92.5" text-anchor="middle">S 5</text>
+<rect x="721.7" y="74" width="78.3" height="28" fill="#d0574b"><title>D1 Randomization process: 1 of 6 High</title></rect>
+<text class="seg" x="760.8" y="92.5" text-anchor="middle">H 1</text>
+<text class="lab" x="12" y="136.5">D2 Deviations from intended interventions</text>
+<rect x="330.0" y="118" width="391.7" height="28" fill="#d4a72c"><title>D2 Deviations from intended interventions: 5 of 6 Some concerns</title></rect>
+<text class="seg" x="525.8" y="136.5" text-anchor="middle">S 5</text>
+<rect x="721.7" y="118" width="78.3" height="28" fill="#d0574b"><title>D2 Deviations from intended interventions: 1 of 6 High</title></rect>
+<text class="seg" x="760.8" y="136.5" text-anchor="middle">H 1</text>
+<text class="lab" x="12" y="180.5">D3 Missing outcome data</text>
+<rect x="330.0" y="162" width="235.0" height="28" fill="#d4a72c"><title>D3 Missing outcome data: 3 of 6 Some concerns</title></rect>
+<text class="seg" x="447.5" y="180.5" text-anchor="middle">S 3</text>
+<rect x="565.0" y="162" width="235.0" height="28" fill="#d0574b"><title>D3 Missing outcome data: 3 of 6 High</title></rect>
+<text class="seg" x="682.5" y="180.5" text-anchor="middle">H 3</text>
+<text class="lab" x="12" y="224.5">D4 Measurement of the outcome</text>
+<rect x="330.0" y="206" width="391.7" height="28" fill="#d4a72c"><title>D4 Measurement of the outcome: 5 of 6 Some concerns</title></rect>
+<text class="seg" x="525.8" y="224.5" text-anchor="middle">S 5</text>
+<rect x="721.7" y="206" width="78.3" height="28" fill="#d0574b"><title>D4 Measurement of the outcome: 1 of 6 High</title></rect>
+<text class="seg" x="760.8" y="224.5" text-anchor="middle">H 1</text>
+<text class="lab" x="12" y="268.5">D5 Selection of the reported result</text>
+<rect x="330.0" y="250" width="470.0" height="28" fill="#d4a72c"><title>D5 Selection of the reported result: 6 of 6 Some concerns</title></rect>
+<text class="seg" x="565.0" y="268.5" text-anchor="middle">S 6</text>
+<line class="sep" x1="12" y1="298" x2="808" y2="298"/>
+<text class="lab" x="12" y="326.5">Overall (worst domain)</text>
+<rect x="330.0" y="308" width="156.7" height="28" fill="#d4a72c"><title>Overall: 2 of 6 Some concerns</title></rect>
+<text class="seg" x="408.3" y="326.5" text-anchor="middle">S 2</text>
+<rect x="486.7" y="308" width="313.3" height="28" fill="#d0574b"><title>Overall: 4 of 6 High</title></rect>
+<text class="seg" x="643.3" y="326.5" text-anchor="middle">H 4</text>
+<line class="ax" x1="330" y1="346" x2="800" y2="346"/>
+<line class="ax" x1="330.0" y1="346" x2="330.0" y2="351"/>
+<text class="small" x="330.0" y="365" text-anchor="middle">0</text>
+<line class="ax" x1="408.3" y1="346" x2="408.3" y2="351"/>
+<text class="small" x="408.3" y="365" text-anchor="middle">1</text>
+<line class="ax" x1="486.7" y1="346" x2="486.7" y2="351"/>
+<text class="small" x="486.7" y="365" text-anchor="middle">2</text>
+<line class="ax" x1="565.0" y1="346" x2="565.0" y2="351"/>
+<text class="small" x="565.0" y="365" text-anchor="middle">3</text>
+<line class="ax" x1="643.3" y1="346" x2="643.3" y2="351"/>
+<text class="small" x="643.3" y="365" text-anchor="middle">4</text>
+<line class="ax" x1="721.7" y1="346" x2="721.7" y2="351"/>
+<text class="small" x="721.7" y="365" text-anchor="middle">5</text>
+<line class="ax" x1="800.0" y1="346" x2="800.0" y2="351"/>
+<text class="small" x="800.0" y="365" text-anchor="middle">6</text>
+<text class="small" x="565.0" y="383" text-anchor="middle">Number of studies</text>
+<rect x="12" y="397" width="14" height="14" fill="#3f9b4f"/>
+<text class="lab" x="32" y="408">L = Low (no study rated Low in any domain)</text>
+<rect x="358.40000000000003" y="397" width="14" height="14" fill="#d4a72c"/>
+<text class="lab" x="378.40000000000003" y="408">S = Some concerns</text>
+<rect x="524.8000000000001" y="397" width="14" height="14" fill="#d0574b"/>
+<text class="lab" x="544.8000000000001" y="408">H = High</text>
+<text class="small" x="12" y="434">Overall is derived, not rated: each study takes its worst judgment across D1–D5. Source: rob.csv.</text>
+</svg>

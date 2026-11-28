@@ -1,0 +1,6 @@
+study_id,instrument,domain,judgment,support_quote,location
+pm-40567995,RoB 2,D1 Randomization process,Some concerns,"Block randomization with a block size of 4 was used. The allocation was carried out by independent researchers using a computer-generated random number sequence.",§2.3
+pm-40567995,RoB 2,D2 Deviations from intended interventions,Some concerns,"Initially 65 older adults participated in the study and randomly assigned to the experimental group or control group. But finally 60 participants finished the training session and all the measurements.",§3.1
+pm-40567995,RoB 2,D3 Missing outcome data,Some concerns,"Initially 65 older adults participated in the study and randomly assigned to the experimental group or control group. But finally 60 participants finished the training session and all the measurements.",§3.1
+pm-40567995,RoB 2,D4 Measurement of the outcome,Some concerns,"The questionnaire was filled by the subjects themselves before the walking test.",§2.5.4
+pm-40567995,RoB 2,D5 Selection of the reported result,Some concerns,"The trial was registered at http://www.ClinicalTrials.gov ( NCT06216236 ).",§2.1
