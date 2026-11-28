@@ -173,6 +173,21 @@ def quotes():
         rc, _, err = run(VERIFY, "--fulltext", os.path.join(QC, "quote-check", "fulltext"), os.path.join(t, "norec.md"))
         check("a Markdown file naming no records is refused (exit 2)", rc == 2, f"exit {rc}")
 
+    # A PDF breaks a hyphenated word across lines; nothing says whether the hyphen was real.
+    with tempfile.TemporaryDirectory() as t:
+        os.mkdir(os.path.join(t, "ft"))
+        with open(os.path.join(t, "ft", "R1.txt"), "w") as f:
+            f.write("The design drew on self-\ndetermination theory and the moti-\nvation scale used before.\n"
+                    "A mean difference of -0.5 points was seen between the arms.\n")
+        with open(os.path.join(t, "a.md"), "w") as f:
+            f.write('Records: R1\n\n- "drew on self-determination theory and the motivation scale"\n'
+                    '- "A mean difference of 0.5 points was seen"\n')
+        rc, out, _ = run(VERIFY, "--fulltext", os.path.join(t, "ft"), os.path.join(t, "a.md"))
+        check("a word hyphenated across a line break still verifies, real hyphen or not",
+              "verified 1, not found 1" in out, out[-200:])
+        check("a dropped minus sign is not forgiven as a hyphen",
+              "NOT FOUND" in out and "0.5 points" in out, out[-300:])
+
 
 # ---------------------------------------------------------------- fetch_fulltext.py
 def fetch():
