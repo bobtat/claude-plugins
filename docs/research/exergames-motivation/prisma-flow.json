@@ -12,48 +12,49 @@
     "by a human reviewer": 0
   },
   "sought": 60,
-  "not_retrieved": 35,
-  "assessed": 25,
+  "not_retrieved": 20,
+  "assessed": 40,
   "excluded_with_reasons": {
-    "E5: No named motivation instrument": 15,
-    "E1: Not an exergame": 3,
-    "E2: Not randomized": 1,
+    "E5: No named motivation instrument": 22,
+    "E1: Not an exergame": 8,
+    "E4: Under two weeks": 2,
     "E6: No motivation results by arm": 1,
-    "E4: Under two weeks": 1
+    "E9: Not a primary report": 1
   },
   "other_methods": {
-    "Citation searching (backward)": 6
+    "Citation searching (backward)": 10
   },
-  "other_sought": 2,
-  "other_not_retrieved": 0,
-  "other_assessed": 2,
+  "other_sought": 5,
+  "other_not_retrieved": 1,
+  "other_assessed": 4,
   "other_excluded_with_reasons": {
-    "E4: Under two weeks": 2
+    "E4: Under two weeks": 2,
+    "E5: No named motivation instrument": 2
   },
-  "included_reports": 4,
-  "included_studies": 4,
+  "included_reports": 6,
+  "included_studies": 6,
   "eligibility_doubt": {
-    "included_reports": 3,
-    "included_studies": 3,
+    "included_reports": 4,
+    "included_studies": 4,
     "by_criterion": {
-      "I1": 2,
-      "I2": 1
+      "I6": 2,
+      "I1": 2
     }
   },
   "screening_agreement": {
     "title_abstract": {
-      "pairs": 146,
-      "raw_agreement": 0.966,
-      "kappa": 0.933
+      "pairs": 150,
+      "raw_agreement": 0.967,
+      "kappa": 0.935
     },
     "full_text": {
-      "pairs": 27,
-      "raw_agreement": 0.926,
-      "kappa": 0.71
+      "pairs": 44,
+      "raw_agreement": 0.932,
+      "kappa": 0.732
     }
   },
   "notes": [
-    "Other methods: 6 identified, 0 removed before screening and 4 excluded at title/abstract before 2 were sought. The v2 template has no box for these; state them in the caption.",
-    "Eligibility doubt on 3 of 4 included reports (I1 x2, I2 x1). List them at the gate; the synthesis reports with and without them."
+    "Other methods: 10 identified, 0 removed before screening and 5 excluded at title/abstract before 5 were sought. The v2 template has no box for these; state them in the caption.",
+    "Eligibility doubt on 4 of 6 included reports (I6 x2, I1 x2). List them at the gate; the synthesis reports with and without them."
   ]
 }

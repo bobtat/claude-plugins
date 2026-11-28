@@ -61,3 +61,47 @@ pm-41664928,no,europepmc:not-open-access,,0,
 oa-W4408275182,no,europepmc-doi-lookup:no-record,,0,"No arXiv ID or PMID. Europe PMC searched by DOI on 2026-11-28: no record, so no open-access PubMed Central text. Not retrieved (protocol: PMC and arXiv only)."
 s1-oa-W4403263759,yes,europepmc:PMC11731695,yes,48963,
 s1-oa-W4399730896,yes,europepmc:PMC11209055,yes,36601,
+oa-W4413422558,yes,oa-copy:hal.science,yes,34849,submittedVersion; https://hal.science/hal-05223885/document
+oa-W7143500910,yes,oa-copy:www.scielo.br,yes,40950,publishedVersion; https://www.scielo.br/j/jbpsiq/a/MzQbLqwnZBbGZfjcxbTK7Xt/?lang=en&format=pdf
+pm-39952553,no,europepmc:not-open-access; oa-copy:no-copy-usable,,0,www.sciencedirect.com: HTTPError: HTTP Error 403: Forbidden; doi.org: no-pdf-at-copy; pmc.ncbi.nlm.nih.gov: no-pdf-at-copy; pmc.ncbi.nlm.nih.gov: declared-link-is-not-a-pdf
+oa-W4414250592,no,oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+oa-W4394692400,no,oa-copy:no-copy-usable,,0,link.springer.com: no-pdf-at-copy; doi.org: no-pdf-at-copy
+pm-40983137,no,europepmc:not-open-access; oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+oa-W4413201399,no,oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+pm-39069966,no,europepmc:not-open-access; oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+pm-38801680,yes,oa-copy:ieeexplore.ieee.org,yes,60722,publishedVersion; https://ieeexplore.ieee.org/ielx7/7333/4359219/10539093.pdf
+oa-W4405999390,yes,oa-copy:eduimed.usm.my,yes,34921,publishedVersion; https://eduimed.usm.my/EIMJ20241604/EIMJ20241604_10.pdf
+pm-42223906,no,europepmc:not-open-access; oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+oa-W7220200190,yes,oa-copy:game-nexus.org,yes,42249,publishedVersion; https://game-nexus.org/index.php/gamenexus/article/download/23/23
+oa-W7237392436,no,oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+oa-W4414186250,yes,oa-copy:he01.tci-thaijo.org,yes,33503,publishedVersion; https://he01.tci-thaijo.org/index.php/bulletinAMS/article/download/277119/188784
+oa-W7165591188,yes,oa-copy:jhwcr.com,yes,29714,publishedVersion; https://jhwcr.com/index.php/jhwcr/article/download/1761/1748
+oa-W7125699163,no,oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+pm-42583323,no,europepmc:not-open-access; oa-copy:no-copy-usable,,0,pmc.ncbi.nlm.nih.gov: HTTPError: HTTP Error 403: Forbidden
+pm-42551496,no,europepmc:not-open-access; oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+oa-W7213433529,no,oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+oa-W7220702081,no,oa-copy:no-copy-usable,,0,frooyesh.ir: HTTPError: HTTP Error 503: Service Unavailable; doi.org: URLError: <urlopen error [Errno 104] Connection reset by peer>
+pm-42261097,yes,oa-copy:www.medrxiv.org,yes,57423,submittedVersion; https://www.medrxiv.org/content/medrxiv/early/2025/06/25/2025.06.24.25330240.full.pdf
+oa-W4395005416,yes,oa-copy:idvyorynw6xy.compat.objectstorage.us-ashburn-1.oraclecloud.com,yes,61057,submittedVersion; https://idvyorynw6xy.compat.objectstorage.us-ashburn-1.oraclecloud.com/cos-prod-osf-1-files-ash/f9eb559a1320c3b06a372715f4c32e5873ba7ed9d9fbdc8185fd69ea7ab0af1b?response-content-disposition=attachment%3B+filename%3D%22Slankers_paper.pdf%22%3B+filename%2A%3DUTF-8%27%27Slankers_paper.pdf&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=8a1e5869d3122814cba7bd4265a84ad444199855%2F20261128%2Fus-ashburn-1%2Fs3%2Faws4_request&X-Amz-Date=20261128T035452Z&X-Amz-Expires=60&X-Amz-SignedHeaders=host&X-Amz-Signature=aff4811f5dc0e1e8aebdabde240e58306e469dbe43297942a43a69f8ab5f88a3
+oa-W7164739728,yes,oa-copy:weblogoa.com,yes,17172,submittedVersion; https://weblogoa.com/articles/wjptr.2026.e2505/PDF
+oa-W7130314881,yes,oa-copy:e-journal.hamzanwadi.ac.id,yes,35530,publishedVersion; https://e-journal.hamzanwadi.ac.id/index.php/porkes/article/download/31349/7773
+oa-W4416431672,no,oa-copy:no-copy-usable,,0,thehealerjournal.com: HTTPError: HTTP Error 403: Forbidden; doi.org: HTTPError: HTTP Error 403: Forbidden
+oa-W7220097264,yes,oa-copy:game-nexus.org,yes,45397,publishedVersion; https://game-nexus.org/index.php/gamenexus/article/download/20/20
+oa-W4415152829,no,oa-copy:no-copy-usable,,0,ter.isave.pt: no-pdf-at-copy; doi.org: no-pdf-at-copy
+oa-W7167468688,yes,oa-copy:unisciencepub.com,yes,40023,publishedVersion; https://unisciencepub.com/wp-content/uploads/2026/07/Two-Goals-with-One-Approach-Elevating-Patient-Engagement-and-Outcomes-through-a.pdf
+pm-42857931,no,europepmc:not-open-access; oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+oa-W4402875116,no,oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+oa-W4413463698,yes,oa-copy:housingscience.org,yes,38186,publishedVersion; https://housingscience.org/2025/Issue%203/20253-600-IJHSA.pdf
+oa-W4415982674,yes,oa-copy:ptji.org,yes,39651,publishedVersion; https://ptji.org/index.php/ptji/article/download/321/381
+pm-41990569,no,europepmc:not-open-access; oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+pm-41664928,no,europepmc:not-open-access; oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+oa-W4408275182,no,oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+oa-W7220702081,no,oa-copy:no-copy-usable,,0,frooyesh.ir: HTTPError: HTTP Error 503: Service Unavailable; doi.org: URLError: <urlopen error [Errno 104] Connection reset by peer>
+pm-39952553,no,europepmc:not-open-access; oa-copy:no-copy-usable,,0,www.sciencedirect.com: HTTPError: HTTP Error 403: Forbidden; doi.org: no-pdf-at-copy; pmc.ncbi.nlm.nih.gov: no-pdf-at-copy; pmc.ncbi.nlm.nih.gov: no-pdf-at-copy
+pm-42583323,no,europepmc:not-open-access; oa-copy:no-copy-usable,,0,pmc.ncbi.nlm.nih.gov: HTTPError: HTTP Error 403: Forbidden
+oa-W4416431672,no,oa-copy:no-copy-usable,,0,thehealerjournal.com: HTTPError: HTTP Error 403: Forbidden; doi.org: HTTPError: HTTP Error 403: Forbidden
+s1-oa-W4401613739,no,none,,0,no arXiv ID or PMID; --oa-copies not given
+s1-oa-W4411350775,no,none,,0,no arXiv ID or PMID; --oa-copies not given
+s1-oa-W4405428558,yes,europepmc:PMC11649137,yes,117589,
+s1-oa-W4401613739,no,oa-copy:none-listed,,0,OpenAlex lists no open-access copy
+s1-oa-W4411350775,yes,oa-copy:assets-eu.researchsquare.com,yes,50596,submittedVersion; https://assets-eu.researchsquare.com/files/rs-6856013/v1/8336c363-3ff5-4d1a-b03d-ed5774e13563.pdf?c=1754308925

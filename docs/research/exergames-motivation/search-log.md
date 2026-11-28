@@ -97,3 +97,57 @@ First pilot (20 records): 2 advanced, projecting 14 full texts against the proto
 ## Full-text retrieval, 2026-11-28
 
 62 reports sought (60 database, 2 citation searching). 27 retrieved, all from Europe PMC open-access XML and all title-checked. 35 not retrieved: 11 PubMed records with no open-access PubMed Central text; 21 OpenAlex-only records with a DOI and no Europe PMC record; 3 OpenAlex-only records with no DOI. No other route was tried (protocol: PubMed Central and arXiv only). Per record: `retrieval.csv`.
+
+## After gate 2 — work called for by the user's answers, 2026-11-28
+
+The user answered gate 2 on 2026-11-28 (recorded in `gate-2.md`; amendments A2–A5 and
+the ratification of A1 in `protocol.md` section 14). Between the two invocations the
+plugin was updated from 0.3.0 to 0.4.0, which added `fetch_fulltext.py --oa-copies`.
+
+### Full-text retrieval, second pass (amendment A2)
+
+`fetch_fulltext.py --oa-copies` was run on the 35 reports logged as not retrieved.
+**15 retrieved**, each a PDF from a location OpenAlex marks open access, converted with
+`pdftotext` and title-checked; **20 still not retrieved** (14 with no open-access copy
+listed by OpenAlex; 6 where a copy is listed and no PDF could be had from it: 2 gave no
+PDF at any listed copy, 4 answered HTTP 403 or 503 or reset the connection). The script was run once more on
+those last 4, with the same result. No copy was fetched by hand. The log gives
+`submittedVersion` (a preprint) for 4 of the 15: `oa-W4413422558`, `pm-42261097`,
+`oa-W4395005416`, `oa-W7164739728`. Per record, with each copy's version and address:
+`retrieval.csv` (a record logged more than once: the last row counts).
+
+### Pass 1, continued — backward citation searching from the two newly included database reports
+
+Same pass, same rule and caps (protocol section 5: backward only, one iteration, 15 per
+seed, 20 new records in total of which 6 were already taken). Records found are not
+seeds.
+
+### Citation searching (backward) — 2026-11-28 (extension of iteration 1, two further seeds)
+- Mode: snowball (backward), iteration 1 (continuation of search-log.snowball1.md)
+- Route: https://api.openalex.org/works/W7220097264?select=id,referenced_works,referenced_works_count (seed 1, no DOI) and https://api.openalex.org/works/doi:10.26603/001c.172561?select=... (seed 2, resolved to W7225011377). Keyless, no mailto, HTTP 200 both, references returned; Crossref fallback not needed. Referenced works resolved in batches of up to 50 via https://api.openalex.org/works?filter=openalex:<id|id|...>&select=... (keyless; all 31 and 32 references returned; no 429 or budget error).
+- Rule (protocol section 5): keep references with publication year >= 2024 whose title contains an exergame-block term or "serious game" (case-insensitive substring); if more than 15 remain, keep the 15 most recent. Per-seed cap 15; cap for this part: at most 14 new records after dedup against records.csv (DOI, PMID, OpenAlex id, normalized title+year) and between seeds (first seed credited).
+- Limits: backward only; no forward search was run.
+- Cap: none hit (per-seed cap not reached; 4 new records of 14 available). Both seeds processed. NOT RUN: none.
+
+| Seed | In reference list | Dated >= 2024 | Title term matched | Already in records.csv | Duplicate of earlier seed | Taken (new) |
+|---|---|---|---|---|---|---|
+| 1. oa-W7220097264 | 31 | 18 | 6 | 3 (W4410929396, W4407129649, W4392373743) | 0 | 3 |
+| 2. pm-42974341 (W7225011377) | 32 | 2 | 1 | 0 | 0 | 1 |
+
+Taken, by seed (all matches under the cap of 15):
+- oa-W7220097264: s1-oa-W4411350775, s1-oa-W4403443509, s1-oa-W4401613739
+- pm-42974341: s1-oa-W4405428558
+
+Total new records in this part: 4 (earlier part 6; pass total 10 of 20). References total 63 across seeds.
+Notes: title-term test is a plain substring match on the OpenAlex title. None of the four taken records is in records.snowball1.csv. Taken record s1-oa-W4401613739 has no abstract in OpenAlex (no key in abstracts.snowball1b.json). Files: records.snowball1b.csv, abstracts.snowball1b.json.
+
+Merged into `records.csv` and `abstracts.json`. Pass 1 total: 6 seeds, 255 references
+listed (192 + 63), 10 new records; the cap of 20 was not reached. Forward citation
+searching: **not run** (protocol section 5).
+
+Screening of the 4 new records: 1 excluded at title/abstract (E3, both screeners), 3
+sought. Retrieval: `s1-oa-W4405428558` from Europe PMC; `s1-oa-W4411350775` by the
+OpenAlex open-access-copy route (a Research Square preprint, `submittedVersion`);
+`s1-oa-W4401613739` not retrieved (no PMID, and OpenAlex lists no open-access copy).
+Both retrieved reports were excluded at full text (E5), so the pass added no inclusion.
+

@@ -12,6 +12,25 @@
 | VERIFIED | pm-42247423 | the remaining registered outcomes will be reported separately |  | `screening/ft-ft1-s2.csv:4:rationale` |
 | VERIFIED | pm-41002748 | our Nintendo Switch-based protocol focused on fine motor and cognitive skills |  | `screening/ft-ft1-s2.csv:5:rationale` |
 | VERIFIED | pm-40790569 | Three primary outcomes were assessed |  | `screening/ft-ft1-s2.csv:6:rationale` |
+| VERIFIED | oa-W7220097264 | The Behavioral Regulation in Exercise Questionnaire-3 (BREQ-3) |  | `screening/ft-ft10-s1.csv:3:rationale` |
+| VERIFIED | oa-W7220097264 | motivation increased substantially in the VR group (M = 4.08, SD = 0.52) compared to the control group |  | `screening/ft-ft10-s1.csv:3:rationale` |
+| VERIFIED | oa-W7220097264 | The intervention lasted eight structured sessions over two months |  | `screening/ft-ft10-s1.csv:3:rationale` |
+| VERIFIED | oa-W7143500910 | Neuropsychiatric symptoms were assessed using the Neuropsychiatric Inventory (NPI) |  | `screening/ft-ft10-s1.csv:4:rationale` |
+| VERIFIED | oa-W4415982674 | examinations included HR, respiratory |  | `screening/ft-ft10-s1.csv:5:rationale` |
+| VERIFIED | oa-W4415982674 | Cognitive function was assessed using the Indonesian version |  | `screening/ft-ft10-s2.csv:2:rationale` |
+| VERIFIED | oa-W7143500910 | Neuropsychiatric symptoms were assessed using the |  | `screening/ft-ft10-s2.csv:3:rationale` |
+| VERIFIED | oa-W7220097264 | Behavioral Regulation in Exercise Questionnaire-3 (BREQ-3) |  | `screening/ft-ft10-s2.csv:4:rationale` |
+| VERIFIED | oa-W7220097264 | motivation increased substantially in the VR group (M = 4.08, SD = 0.52) |  | `screening/ft-ft10-s2.csv:4:rationale` |
+| VERIFIED | oa-W7220097264 | Participants were randomly assigned |  | `screening/ft-ft10-s2.csv:4:rationale` |
+| VERIFIED | oa-W7220097264 | The intervention lasted eight structured sessions over two months |  | `screening/ft-ft10-s2.csv:4:rationale` |
+| VERIFIED | oa-W7167468688 | the authors aim to bridge key gaps in dual-task rehabilitation by providing clinical tools for application |  | `screening/ft-ft10-s2.csv:5:rationale` |
+| VERIFIED | s1-oa-W4411350775 | participants were asked to complete a short four question form on the training, use of the technology and their overall enjoyment |  | `screening/ft-ft11-s1.csv:2:rationale` |
+| VERIFIED | s1-oa-W4411350775 | a partially randomised trial (PRT) |  | `screening/ft-ft11-s1.csv:2:doubt` |
+| VERIFIED | s1-oa-W4411350775 | were allocated to the control group |  | `screening/ft-ft11-s1.csv:2:doubt` |
+| VERIFIED | s1-oa-W4405428558 | Secondary outcomes included performance metrics, fear of movement, and the severity of perceived ankle instability |  | `screening/ft-ft11-s1.csv:3:rationale` |
+| VERIFIED | s1-oa-W4405428558 | Secondary outcomes included performance metrics, fear of movement, and the severity of perceived ankle instability |  | `screening/ft-ft11-s2.csv:2:rationale` |
+| VERIFIED | s1-oa-W4411350775 | participants were asked to complete a short four question form on the training, use of the technology and their overall enjoyment |  | `screening/ft-ft11-s2.csv:3:rationale` |
+| VERIFIED | s1-oa-W4411350775 | Those participants who expressed a stronger rejection of the technology and/or higher discomfort or motion sickness were allocated to the control group |  | `screening/ft-ft11-s2.csv:3:doubt` |
 | VERIFIED | pm-41168901 | The intervention utilized two commercially available mobile applications—MyFitnessPal and 7-Minute Workout—as digital tools |  | `screening/ft-ft2-s1.csv:2:rationale` |
 | VERIFIED | pm-41627139 | The RAI score is 15.79±3.80 |  | `screening/ft-ft2-s1.csv:3:rationale` |
 | VERIFIED | pm-42958576 | Outcome measures included concentration, hand and foot reaction time, flexibility, and multidirectional balance. |  | `screening/ft-ft2-s1.csv:4:rationale` |
@@ -68,6 +87,40 @@
 | VERIFIED | s1-oa-W4399730896 | Participants played the VR exergaming for 8 min. |  | `screening/ft-ft6-s2.csv:2:rationale` |
 | VERIFIED | s1-oa-W4403263759 | we focused on the acute effects of a single session of the game |  | `screening/ft-ft6-s2.csv:3:rationale` |
 | VERIFIED | s1-oa-W4403263759 | performed 48 hours apart |  | `screening/ft-ft6-s2.csv:3:rationale` |
+| VERIFIED | oa-W4395005416 | The Slankers game is a serious game-based training developed based on the cognitive processes involved in the phase of response |  | `screening/ft-ft7-s1.csv:2:rationale` |
+| VERIFIED | oa-W4405999390 | Eleven metrics were taken for evaluation which |  | `screening/ft-ft7-s1.csv:3:rationale` |
+| VERIFIED | pm-38801680 | Five clinical outcome measures were |  | `screening/ft-ft7-s1.csv:4:rationale` |
+| VERIFIED | oa-W4413463698 | the comparison table of the joint coordinates of the dance trainee and the standard movement |  | `screening/ft-ft7-s1.csv:5:rationale` |
+| VERIFIED | oa-W4413463698 | interest in learning sports dance |  | `screening/ft-ft7-s1.csv:5:doubt` |
+| VERIFIED | oa-W4395005416 | serious game-based training developed based on the cognitive processes |  | `screening/ft-ft7-s2.csv:2:rationale` |
+| VERIFIED | pm-38801680 | FMA-UE, ARAT, and BBT whereas MBI and SSQOL were |  | `screening/ft-ft7-s2.csv:3:rationale` |
+| VERIFIED | oa-W4405999390 | The performance metric for each virtual laparoscopic cholecystectomy simulation was |  | `screening/ft-ft7-s2.csv:4:rationale` |
+| VERIFIED | oa-W4413463698 | The results of the comparison of the experimental group's interest in learning physical education dance before and |  | `screening/ft-ft7-s2.csv:5:rationale` |
+| VERIFIED | oa-W7130314881 | 24 unique educational games |  | `screening/ft-ft8-s1.csv:2:rationale` |
+| VERIFIED | pm-42261097 | (4) sham group, who used one muscle to control a cursor in 1D. |  | `screening/ft-ft8-s1.csv:3:rationale` |
+| VERIFIED | pm-42261097 | 73% of participants who completed the study agreed at least slightly that MINT was enjoyable |  | `screening/ft-ft8-s1.csv:3:rationale` |
+| VERIFIED | oa-W7220200190 | Each session integrates game-based elements (points, levels, rewards) with behavioral strategies |  | `screening/ft-ft8-s1.csv:4:rationale` |
+| VERIFIED | oa-W7220200190 | step-count battles, mini-games, or aerobic tasks |  | `screening/ft-ft8-s1.csv:4:rationale` |
+| VERIFIED | oa-W4414186250 | The Pediatric Balance Scale was used to measure balance levels in both groups through pre-test and post-test assessments. |  | `screening/ft-ft8-s1.csv:5:rationale` |
+| VERIFIED | oa-W4414186250 | Outcome measure Pediatric Balance Scale (PBS) |  | `screening/ft-ft8-s2.csv:2:rationale` |
+| VERIFIED | pm-42261097 | sham group, who used one muscle to control a cursor in 1D |  | `screening/ft-ft8-s2.csv:3:rationale` |
+| VERIFIED | pm-42261097 | Mean scores were calculated for all participants, overall survey responses, and within each category. |  | `screening/ft-ft8-s2.csv:3:rationale` |
+| VERIFIED | oa-W7220200190 | The questionnaire consists of 19 items divided into five |  | `screening/ft-ft8-s2.csv:4:rationale` |
+| VERIFIED | oa-W7220200190 | while the control group showed minimal change |  | `screening/ft-ft8-s2.csv:4:rationale` |
+| VERIFIED | oa-W7220200190 | mobile fitness game app |  | `screening/ft-ft8-s2.csv:4:doubt` |
+| VERIFIED | oa-W7220200190 | step-count battles, mini-games, or aerobic tasks |  | `screening/ft-ft8-s2.csv:4:doubt` |
+| VERIFIED | oa-W7130314881 | This strategy includes 24 unique educational games |  | `screening/ft-ft8-s2.csv:5:rationale` |
+| VERIFIED | oa-W7164739728 | Shoulder Pain and Disability Index (SPADI) and Range of Motion (ROM) assessments |  | `screening/ft-ft9-s1.csv:2:rationale` |
+| VERIFIED | oa-W7165591188 | The primary outcomes were pain intensity measured using the Visual Analog Scale |  | `screening/ft-ft9-s1.csv:3:rationale` |
+| VERIFIED | oa-W4413422558 | Each week comprised a single exercise session (AVG or RUN) |  | `screening/ft-ft9-s1.csv:4:rationale` |
+| VERIFIED | pm-42974341 | the gamified group reporting greater (5.04±1.18) Enjoyment than those in the traditional group (3.17±1.31) |  | `screening/ft-ft9-s1.csv:5:rationale` |
+| VERIFIED | pm-42974341 | pseudo-randomized procedure constrained to produce approximately equal group sizes |  | `screening/ft-ft9-s1.csv:5:doubt` |
+| VERIFIED | oa-W7164739728 | Shoulder Pain and Disability Index (SPADI) and Range of Motion (ROM) assessments |  | `screening/ft-ft9-s2.csv:2:rationale` |
+| VERIFIED | pm-42974341 | Four subscales relevant to the study aims were assessed: Interest/Enjoyment, Perceived Competence, Effort/Importance, and Value/Usefulness. |  | `screening/ft-ft9-s2.csv:3:rationale` |
+| VERIFIED | pm-42974341 | Interest/Enjoyment 5.04 ± 1.18 3.17 ± 1.31 |  | `screening/ft-ft9-s2.csv:3:rationale` |
+| VERIFIED | pm-42974341 | using a pseudo-randomized procedure constrained to produce approximately equal group sizes |  | `screening/ft-ft9-s2.csv:3:doubt` |
+| VERIFIED | oa-W7165591188 | The primary outcomes were pain intensity measured using the Visual Analog Scale and functional |  | `screening/ft-ft9-s2.csv:4:rationale` |
+| VERIFIED | oa-W4413422558 | Each week comprised a single exercise session (AVG or RUN) and a subsequent |  | `screening/ft-ft9-s2.csv:5:rationale` |
 | VERIFIED | pm-41384807 | Participants were then instructed to continue the 10-minute intervention daily for 7 consecutive days independently |  | `screening/adjudication-main.csv:2:reasoning` |
 | VERIFIED | pm-41384807 | At the end of the 1-week period, researchers returned to collect the devices |  | `screening/adjudication-main.csv:2:reasoning` |
 | VERIFIED | pm-41384807 | User engagement over the 1-week intervention period was measured by the number of completed exercise sessions |  | `screening/adjudication-main.csv:2:reasoning` |
@@ -77,5 +130,13 @@
 | VERIFIED | pm-41628428 | requested to change their assigned allocation, and these requests were accommodated to minimize participant dropout |  | `screening/adjudication-main.csv:3:reasoning` |
 | VERIFIED | pm-41628428 | participants were analyzed according to the group they actually participated in, instead of their original randomized groups |  | `screening/adjudication-main.csv:3:reasoning` |
 | VERIFIED | pm-41628428 | Results before group reassignment for modified intention-to-treat analysis |  | `screening/adjudication-main.csv:3:reasoning` |
+| VERIFIED | oa-W7220200190 | track daily activity, nutrition, and exercise data through the app |  | `screening/adjudication-oa.csv:2:reasoning` |
+| VERIFIED | oa-W7220200190 | Participants practice logging their behaviors |  | `screening/adjudication-oa.csv:2:reasoning` |
+| VERIFIED | oa-W7220200190 | step-count battles, mini-games, or aerobic tasks |  | `screening/adjudication-oa.csv:2:reasoning` |
+| VERIFIED | oa-W4413463698 | Assisted training based on joint coordinates |  | `screening/adjudication-oa.csv:3:reasoning` |
+| VERIFIED | oa-W4413463698 | the specific difference between the trainer's dance |  | `screening/adjudication-oa.csv:3:reasoning` |
+| VERIFIED | pm-42261097 | The EMG envelopes were mapped to |  | `screening/adjudication-oa.csv:4:reasoning` |
+| VERIFIED | pm-42261097 | (4) sham group, who used one muscle to control a cursor in 1D |  | `screening/adjudication-oa.csv:4:reasoning` |
+| VERIFIED | pm-42261097 | Mean scores were calculated for |  | `screening/adjudication-oa.csv:4:reasoning` |
 
-75 quotations; verified 75, not found 0, transplant 0, uncheckable 0, own words 0.
+136 quotations; verified 136, not found 0, transplant 0, uncheckable 0, own words 0.

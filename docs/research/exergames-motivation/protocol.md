@@ -1,6 +1,6 @@
 # Protocol — Exergames and exercise motivation
 
-**Drafted:** 2026-11-28 · **Approved:** 2026-11-28 · **Approved by:** user · **Status:** approved
+**Drafted:** 2026-11-28 · **Approved:** 2026-11-28 · **Approved by:** user · **Status:** approved; amended 2026-11-28 after gate 2 (section 14, A1–A5, each approved by the user)
 
 This review is machine-conducted. Screening, extraction and appraisal are done by
 language-model agents; the two approval gates are decided by the user.
@@ -60,13 +60,22 @@ What the limits cost, and what the drafter's reading leaves out:
 - **Trials described only as "serious games" are not searched for.** That term added 46
   PubMed records to the pilot and was left out for volume; so was the broad MeSH heading
   `Video Games` (65).
-- **Full text is retrieved only from open-access PubMed Central and arXiv.** A
-  count-only PubMed query with the section 4 string on 2026-11-28 found open-access
-  PubMed Central full text for 59 of 83 records. A report whose full text cannot be
-  retrieved by these routes cannot be screened at full text, extracted or appraised.
-  It is reported as **not retrieved**, never as excluded on a criterion, and gate 2
-  lists every such report by name. The included set is therefore drawn from
-  open-access reports only; this is stated as a limitation in the review.
+- **Full text is retrieved by three routes only: open-access PubMed Central, arXiv,
+  and — added after gate 2 by amendment A2 — an open-access PDF copy that OpenAlex
+  lists for the record** (`fetch_fulltext.py --oa-copies`: OpenAlex is asked by DOI or
+  OpenAlex ID which open-access copies exist; only a PDF is accepted, converted with
+  `pdftotext` and title-checked; nothing is fetched from a location OpenAlex does not
+  mark open access, and no copy is fetched by hand). As approved at gate 1 this
+  limitation named the first two routes only. A count-only PubMed query with the
+  section 4 string on 2026-11-28 found open-access PubMed Central full text for 59 of
+  83 records. A report whose full text cannot be retrieved by these routes cannot be
+  screened at full text, extracted or appraised. It is reported as **not retrieved**,
+  never as excluded on a criterion, and gate 2 lists every such report by name. The
+  included set is therefore drawn from open-access reports only. Some copies reached
+  by the third route are preprints (`submittedVersion`) and may differ from the paper
+  of record, in their numbers above all; text converted from a PDF is also rougher
+  than the other two routes'. The review names every report read as a preprint. All
+  of this is stated as a limitation in the review.
 
 ## 2. Eligibility criteria
 
@@ -81,7 +90,7 @@ conventional exercise has a non-exergame arm.
 | Code | Label | Criterion | Decidable at title/abstract? |
 |---|---|---|---|
 | I1 | Exergame intervention | At least one arm receives an exergame: a digital game in which the player's movement of limbs or trunk is the game input and the game has a goal or score that the movement pursues | yes |
-| I2 | Randomized allocation | Participants or clusters were allocated to arms at random | partly — `unsure` when the abstract describes two or more arms without saying how allocation was made |
+| I2 | Randomized allocation | Participants or clusters were allocated to arms at random. Both of these count as random allocation (amendment A3): random allocation after which a minority of participants were reassigned at their own request before the intervention began; and allocation the paper describes as random but made by a constrained or pseudo-randomized procedure | partly — `unsure` when the abstract describes two or more arms without saying how allocation was made |
 | I3 | Non-exergame comparator | At least one arm receives no exergame | partly — `unsure` if arms are not described |
 | I4 | Two weeks or more | The exergame arm was scheduled to last two weeks or more | partly — `unsure` if duration is not given |
 | I5 | Named motivation instrument | Motivation for exercise, physical activity or the training activity was measured with a named multi-item self-report instrument or subscale whose items concern motivation or motives | no — full text, unless the abstract names the instrument or shows there is none |
@@ -89,7 +98,7 @@ conventional exercise has a non-exergame arm.
 | I7 | First results 2024 or later | The trial's first results report was published on or after 2024-01-01 | partly — a record dated before 2024 is decidable; `unsure` when the abstract presents itself as a secondary or follow-up analysis of an earlier trial |
 | I8 | English full text | The full text is in English | yes |
 | E1 | Not an exergame | No arm receives an exergame as I1 defines it | yes |
-| E2 | Not randomized | Allocation was not random, or there is one arm | partly |
+| E2 | Not randomized | Allocation was not random, or there is one arm. E2 is not cited for random allocation after which a minority of participants were reassigned at their own request before the intervention began, nor for allocation the paper describes as random but made by a constrained or pseudo-randomized procedure (amendment A3) | partly |
 | E3 | No non-exergame comparator | Every arm receives an exergame | partly |
 | E4 | Under two weeks | The exergame arm was scheduled to last under two weeks | partly |
 | E5 | No named motivation instrument | Motivation was not measured with a named multi-item self-report instrument or subscale | no — full text, unless the abstract settles it |
@@ -107,7 +116,9 @@ as exercise); a stationary bike or treadmill whose pedalling or walking drives a
 with a goal or score; a custom rehabilitation game controlled by stepping, reaching
 with the arm, or shifting weight; a game played by walking or running in real time
 (location-based or audio-narrative running games); a robot- or exoskeleton-assisted
-game in which the patient moves actively.
+game in which the patient moves actively; a movement-training system that gives the
+player a running score for matching target movements, whether or not the paper calls
+it a game (amendment A4).
 Out: movement feedback alone — speed, distance, heart rate, accuracy or posture cues,
 or virtual scenery that moves with pedalling or walking — with no goal or score: that
 is not a game; a fitness app or wearable that awards points or badges for steps
@@ -121,7 +132,11 @@ I1; whether it is in overall turns on I3.
 
 **I2 / E2 — randomized.**
 In: parallel, cluster-randomized and randomized crossover trials; trials called pilot
-or feasibility, if randomized.
+or feasibility, if randomized; random allocation after which a minority of
+participants were reassigned at their own request before the intervention began; and
+allocation the paper describes as random but made by a constrained or
+pseudo-randomized procedure (both by amendment A3 — the weakness is rated under risk
+of bias, D1 and D2, not decided here).
 Out: allocation by alternation, by date, by class or site chosen by the researchers,
 or by participant preference; single-arm pre–post studies; a secondary analysis of one
 arm of a trial.
@@ -143,7 +158,8 @@ day; a crossover trial in which each condition lasts two weeks or more.
 Out: a single session; a programme described as shorter than two weeks; a crossover
 trial with one session per condition, even when the sessions are weeks apart.
 A stated number of weeks decides over a count of days. The scheduled duration decides,
-not what participants completed.
+not what participants completed. Where a paper gives conflicting durations, the
+schedule in the Methods decides over the Abstract (amendment A5).
 
 **I5 / E5 — named motivation instrument.**
 In: Intrinsic Motivation Inventory (any subscale set, including the interest/enjoyment
@@ -197,6 +213,16 @@ editorials, letters without data, conference abstracts with no full paper. A con
 | PubMed | NCBI E-utilities (esearch, esummary, efetch), no key | 2024-01-01 to 2026-11-28 | Indexes the health, rehabilitation and sports-medicine journals where exergame trials are published; has a thesaurus (MeSH `Exergaming`, `Motivation`) and a true total |
 | OpenAlex | `api.openalex.org/works`, `title_and_abstract.search` filter, **no key** | 2024-01-01 to 2026-11-28 | Covers psychology, education, human–computer interaction and games venues that PubMed does not index |
 | Reference lists of included reports | OpenAlex single-work lookup (`referenced_works`), Crossref as fallback | — | Backward citation searching, section 5 |
+
+**Full-text retrieval routes** (not search sources; amended by A2). Each report sought
+is fetched once by `fetch_fulltext.py`, and every saved text must carry the record's
+title:
+
+| Route | Interface | Added |
+|---|---|---|
+| Open-access PubMed Central | Europe PMC full-text XML | approved at gate 1 |
+| arXiv | arXiv HTML rendering | approved at gate 1 |
+| Open-access copies listed by OpenAlex | `fetch_fulltext.py --oa-copies`: OpenAlex looked up by DOI or OpenAlex ID, the open-access copies it lists tried in order, PDF only, converted with `pdftotext`. A copy may be a preprint (`submittedVersion`); the retrieval log gives each copy's version and address | **2026-11-28, after gate 2 (A2)**, with plugin version 0.4.0; the run began under 0.3.0, which had no such route |
 
 Not searched, and reported as limitations: PsycINFO, SPORTDiscus, Scopus, Web of
 Science, Embase and CINAHL (no access from this environment); trial registries; grey
@@ -261,8 +287,9 @@ inputs and no shared context. Title/abstract uses the liberal rule: a record adv
 if either screener answers include or unsure. Full-text disagreements go to the
 screening adjudicator, which decides from the saved text or escalates to the user.
 
-Full text is fetched once per advanced record, from open-access PubMed Central or arXiv
-only (section 1). A report with no retrievable full text is counted in the flow diagram
+Full text is fetched once per advanced record, from open-access PubMed Central or
+arXiv, and — by amendment A2, in a second pass over the records those two routes did
+not reach — from an open-access PDF copy OpenAlex lists (sections 1 and 3). A report with no retrievable full text is counted in the flow diagram
 as a report not retrieved, is never given an exclusion code, and is named at gate 2.
 
 A calibration batch of 20 records is screened first. If Cohen's κ on it, or at either
@@ -451,4 +478,8 @@ What they imply:
 
 | Date | Change | Reason |
 |---|---|---|
-| 2026-11-28 | **A1 — when E5 may be cited at title/abstract.** Added to the I5/E5 row's stage rule: at title and abstract, E5 is cited only when the abstract itself says how motivation was assessed and that way is on I5's Out list (interviews or focus groups only, a single item, adherence or play time as the measure, enjoyment alone), or when the report is qualitative only. An abstract that lists its outcomes or instruments and names no motivation instrument does **not** show there is none; the record is answered `unsure` and goes to full text. Eligibility itself is unchanged. Made by the orchestrator during calibration, before the full screening run; **not approved by the user in advance — listed at gate 2 for ratification.** It can only advance more records, never exclude one. | Calibration pilot (20 records): both screeners excluded 6 records under E5 because the abstract's outcome list named no motivation instrument, and one or both recorded a doubt on each that the list might not be exhaustive. Section 2 already marks E5 as needing the full text "unless the abstract names the instrument or shows there is none", and section 13 estimates full-text volume on that reading; the pilot showed screeners reading "shows there is none" more loosely than the protocol intends. The search requires a motivation term in every record, so a motivation measure reported only in the full text is the case the review most needs to find. |
+| 2026-11-28 | **A1 — when E5 may be cited at title/abstract.** Added to the I5/E5 row's stage rule: at title and abstract, E5 is cited only when the abstract itself says how motivation was assessed and that way is on I5's Out list (interviews or focus groups only, a single item, adherence or play time as the measure, enjoyment alone), or when the report is qualitative only. An abstract that lists its outcomes or instruments and names no motivation instrument does **not** show there is none; the record is answered `unsure` and goes to full text. Eligibility itself is unchanged. Made by the orchestrator during calibration, before the full screening run; **not approved by the user in advance — listed at gate 2 for ratification.** It can only advance more records, never exclude one. **Ratified by the user on 2026-11-28, in their answer to gate 2 (decision 1.4).** | Calibration pilot (20 records): both screeners excluded 6 records under E5 because the abstract's outcome list named no motivation instrument, and one or both recorded a doubt on each that the list might not be exhaustive. Section 2 already marks E5 as needing the full text "unless the abstract names the instrument or shows there is none", and section 13 estimates full-text volume on that reading; the pilot showed screeners reading "shows there is none" more loosely than the protocol intends. The search requires a motivation term in every record, so a motivation measure reported only in the full text is the case the review most needs to find. |
+| 2026-11-28 | **A2 — a third full-text retrieval route.** Sections 1, 3 and 6 now name, beside open-access PubMed Central and arXiv, the open-access copies OpenAlex lists for a record, fetched by `fetch_fulltext.py --oa-copies` (PDF only, converted with `pdftotext`, title-checked; nothing from a location OpenAlex does not mark open access; no copy fetched by hand). Run as a second pass over the 35 records the first two routes did not reach; every newly retrieved report is screened at full text by two independent screeners, with the quote check and adjudication, like any other. A copy may be a preprint (`submittedVersion`); the review names the reports read as preprints and states it as a limitation. The route did not exist when the run began: it came with the plugin's update from 0.3.0 to 0.4.0, made between gate 2 being written and being answered. **Approved by the user on 2026-11-28, in their answer to gate 2 (decision 1.1).** | Gate 2: 35 of 62 reports sought were not retrieved by the two approved routes, 24 of them not in PubMed at all, so the inclusion set described the retrieval route more than the literature. |
+| 2026-11-28 | **A3 — I2/E2, two borderline kinds of allocation are in.** I2 now counts as random allocation (a) random allocation after which a minority of participants were reassigned at their own request before the intervention began, and (b) allocation the paper describes as random but made by a constrained or pseudo-randomized procedure. E2 carries the mirror wording: it is not cited for either. The weakness is carried by risk of bias (D1, D2). Consequences: `pm-41628428` is included by the user's decision; `pm-42974341`, excluded by both screeners under E2 and judged on I2 only, is re-screened at full text on all criteria; every other E2 exclusion at either stage is checked against the new wording and re-screened if it could be decided differently. **Approved by the user on 2026-11-28, in their answer to gate 2 (decision 1.2).** | Gate 2: the adjudicator escalated `pm-41628428` because I2/E2 did not say which side of the line reassignment-after-randomization falls; the user chose to include both borderline trials and let the risk-of-bias rating carry the weakness. |
+| 2026-11-28 | **A4 — I1, a scored movement-training system is an exergame.** Added to I1's In cases: a movement-training system that gives the player a running score for matching target movements is an exergame under I1, whether or not the paper calls it a game. `pm-40567995` and `pm-43021294` stay in; the appraisal judges rule on eligibility again from the full paper. **Approved by the user on 2026-11-28, in their answer to gate 2 (decision 1.3).** | Gate 2: three of four inclusions were doubtful, two of them on I1 (a Kinect system that scores limb angles against a model and is never called a game). |
+| 2026-11-28 | **A5 — I4, conflicting durations.** Added to I4/E4: where a paper gives conflicting durations, the schedule in the Methods decides over the Abstract. **Approved by the user on 2026-11-28, in their answer to gate 2 (decision 1.4).** | Proposed by the screening adjudicator on `pm-41384807`, whose Abstract says seven weeks and whose Methods and Results say one; the exclusion under E4 now follows from the criterion rather than from a reading. |
