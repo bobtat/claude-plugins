@@ -1,0 +1,6 @@
+study_id,instrument,domain,judgment,support_quote,location
+oa-W7220097264,RoB 2,D1 Randomization process,Some concerns,"Participants were randomly assigned to either the intervention group (VR exergame training) or the control group (traditional physical activity without VR).","Methods, Study Design and Participants"
+oa-W7220097264,RoB 2,D2 Deviations from intended interventions,Some concerns,"Repeated-measures analysis of variance (ANOVA) was employed to examine within- and between-group differences over time, focusing on exercise motivation and self-efficacy as dependent variables.","Methods, Data Analysis"
+oa-W7220097264,RoB 2,D3 Missing outcome data,Some concerns,"a main effect of group, F(1,27) = 21.77, p < .001, η² = .43","Findings and Results, text after Table 2"
+oa-W7220097264,RoB 2,D4 Measurement of the outcome,High,"motivation increased substantially in the VR group (M = 4.08, SD = 0.52) compared to the control group (M = 3.15, SD = 0.46)","Findings and Results, text after Table 1"
+oa-W7220097264,RoB 2,D5 Selection of the reported result,High,"The instrument contains 24 items divided into six subscales: amotivation, external regulation, introjected regulation, identified regulation, integrated regulation, and intrinsic regulation.","Methods, Data Collection"

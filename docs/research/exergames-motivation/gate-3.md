@@ -1,7 +1,24 @@
 # Gate 3 — Appraisal: four adjudications escalated to the user
 
 **Written:** 2026-11-28
-**Decision:** — (awaiting the user) · **Decided by:** —
+**Decision:** all five questions answered; answers recorded in the next section · **Decided by:** user · **Date:** 2026-11-28
+
+## Decision — decided by the user, 2026-11-28
+
+Everything below this section is the gate as it was put to the user (also kept
+unchanged as `checks/superseded/gate-3.as-put-to-user.md`). The user answered it on
+2026-11-28, on resuming the run. Their answers, and what was done with each:
+
+| # | Answer (decided by: user, 2026-11-28) | What was done |
+|---|---|---|
+| 1 | **Q1: sentence (a).** Reporting only the total or composite score of an instrument whose subscales the Methods name is rated Some concerns under D5, unless a registration or protocol named the subscales as outcomes; how the total was formed is rated under D4. This settles D5 as **Some concerns** for `pm-40567995` and `pm-43021294`. The agreed D5 High for `oa-W7220097264` was reached on the reading now rejected, so that one domain goes back to an agent that reads the paper, to be rated under sentence (a); the orchestrator does not change it. The conduct disclosure says this agreed rating was re-rated after a user ruling, and why | Amendment **A10** entered in `protocol.md` (sections 8 and 14). Both rulings entered in `appraisals/pm-40567995.adjudication.csv` and `appraisals/pm-43021294.adjudication.csv` as decided by the user. The re-rating of `oa-W7220097264` D5 is recorded under "Re-rating" below |
+| 2 | **Q2a: the first sentence.** A composite decides `direction` only when the paper states how it is formed and its valence follows from that; otherwise the code is `other` and the result is recorded in `motivation_result`. `oa-W7220097264`'s direction is `other`. **Q2b:** a time × group interaction on the I5 instrument counts as the between-group test at end of intervention when the paper reports no separate test there | Amendment **A11** entered (sections 7 and 14). Ruling entered in `appraisals/oa-W7220097264.adjudication.csv` as decided by the user. `pm-41307454`'s agreed `favours exergame` stands under Q2b and was not reopened |
+| 3 | **Q3: the input device decides.** `pm-41307454`'s `exergame_platform` is `exercise equipment with game` | Amendment **A12** entered (sections 7 and 14). Ruling entered in `appraisals/pm-41307454.adjudication.csv` as decided by the user |
+| 4 | **Q4: adopted.** Reassignment at participants' request after allocation is rated under D2; D1 carries a constrained or pseudo-randomized procedure. The adjudicator's D1 Some concerns for `pm-41628428` stands | Amendment **A13** entered (sections 2, 8 and 14). The confirmation is noted on the adjudicator's row in `appraisals/pm-41628428.adjudication.csv`; the decision remains the adjudicator's |
+| 5 | **Section 3's handling is what the user meant:** the synthesis states each conclusion with and without `oa-W7220097264`, names it as doubtful by the user's decision, and says the judges cleared the other two screening doubts from the text | Carried into `review.md` and the conduct disclosure. `extraction.csv`'s `eligibility` column stays as the merge writes it from the judges' rulings |
+
+The protocol as it stood before these amendments is kept as
+`checks/superseded/protocol.before-gate-3.md`.
 
 This is not one of the two approval gates. It is the stop the user asked for in their
 answer to the revised gate 2: *if an adjudication is escalated and nobody can rule, do

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 954 536" role="img" aria-labelledby="t d">
+<title id="t">Evidence map: population group by direction of result, with overall risk of bias</title>
+<desc id="d">Evidence map of 6 included studies by population group (rows) and direction of the between-group result (columns), one mark per study showing its overall risk-of-bias rating. Cell counts: adults × other: 1 (oa-W7220097264 High); adults × favours exergame: 2 (pm-41307454 High, pm-42974341 High); adults × mixed across subscales: 1 (pm-41628428 Some concerns); older adults × other: 1 (pm-40567995 Some concerns); older adults × favours exergame: 0; older adults × mixed across subscales: 0; children and adolescents × other: 1 (pm-43021294 High); children and adolescents × favours exergame: 0; children and adolescents × mixed across subscales: 0. Overall risk of bias: 4 High, 2 Some concerns. Eligibility kept marked doubtful by the user: oa-W7220097264. Direction codes come from each trial's own between-group test and are not effect sizes; 'other' means only a total or composite score of unstated construction or valence was reported, so no direction is coded (amendment A11).</desc>
+<style>
+.lab{font:13px system-ui,sans-serif;fill:#5a6478}.hd{font:600 13px system-ui,sans-serif;fill:#5a6478}
+.ttl{font:600 15px system-ui,sans-serif;fill:#5a6478}.sm{font:12px system-ui,sans-serif;fill:#6b7488}
+.let{font:700 14px system-ui,sans-serif;fill:#1f2633}.grid{stroke:#8a93a6;stroke-width:1;fill:none}
+.dash{stroke:#5a6478;stroke-width:1.5;fill:none;stroke-dasharray:4 3}
+@media (prefers-color-scheme: dark){.lab,.hd,.ttl{fill:#c3cad8}.sm{fill:#aab2c2}.dash{stroke:#c3cad8}}
+</style>
+<text class="ttl" x="12" y="28">Included studies by population group and direction of the between-group result</text>
+<text class="hd" x="582.0" y="58" text-anchor="middle">Direction (as coded; columns in order of first appearance, not a scale)</text>
+<text class="hd" x="342.0" y="82" text-anchor="middle">other</text>
+<text class="hd" x="582.0" y="82" text-anchor="middle">favours exergame</text>
+<text class="hd" x="822.0" y="82" text-anchor="middle">mixed across subscales</text>
+<text class="hd" x="12" y="82">Population group</text>
+<text class="lab" x="12" y="146.0">adults</text>
+<rect class="grid" x="222" y="92" width="240" height="98"/>
+<rect class="dash" x="232" y="102" width="212" height="38" rx="4"/>
+<rect x="236" y="106" width="30" height="30" rx="3" fill="#d0504a"/>
+<text class="let" x="251.0" y="126.0" text-anchor="middle">H</text>
+<text class="lab" x="274" y="126.0">oa-W7220097264 †</text>
+<rect class="grid" x="462" y="92" width="240" height="98"/>
+<rect x="476" y="106" width="30" height="30" rx="3" fill="#d0504a"/>
+<text class="let" x="491.0" y="126.0" text-anchor="middle">H</text>
+<text class="lab" x="514" y="126.0">pm-41307454</text>
+<rect x="476" y="146" width="30" height="30" rx="3" fill="#d0504a"/>
+<text class="let" x="491.0" y="166.0" text-anchor="middle">H</text>
+<text class="lab" x="514" y="166.0">pm-42974341</text>
+<rect class="grid" x="702" y="92" width="240" height="98"/>
+<rect x="716" y="106" width="30" height="30" rx="3" fill="#e0a526"/>
+<text class="let" x="731.0" y="126.0" text-anchor="middle">S</text>
+<text class="lab" x="754" y="126.0">pm-41628428</text>
+<text class="lab" x="12" y="244.0">older adults</text>
+<rect class="grid" x="222" y="190" width="240" height="98"/>
+<rect x="236" y="204" width="30" height="30" rx="3" fill="#e0a526"/>
+<text class="let" x="251.0" y="224.0" text-anchor="middle">S</text>
+<text class="lab" x="274" y="224.0">pm-40567995</text>
+<rect class="grid" x="462" y="190" width="240" height="98"/>
+<text class="sm" x="582.0" y="243.0" text-anchor="middle">no studies</text>
+<rect class="grid" x="702" y="190" width="240" height="98"/>
+<text class="sm" x="822.0" y="243.0" text-anchor="middle">no studies</text>
+<text class="lab" x="12" y="342.0">children and adolescents</text>
+<rect class="grid" x="222" y="288" width="240" height="98"/>
+<rect x="236" y="302" width="30" height="30" rx="3" fill="#d0504a"/>
+<text class="let" x="251.0" y="322.0" text-anchor="middle">H</text>
+<text class="lab" x="274" y="322.0">pm-43021294</text>
+<rect class="grid" x="462" y="288" width="240" height="98"/>
+<text class="sm" x="582.0" y="341.0" text-anchor="middle">no studies</text>
+<rect class="grid" x="702" y="288" width="240" height="98"/>
+<text class="sm" x="822.0" y="341.0" text-anchor="middle">no studies</text>
+<text class="hd" x="12" y="412">Overall risk of bias</text>
+<rect x="162" y="396" width="22" height="22" rx="3" fill="#d0504a"/>
+<text class="let" x="173" y="412" text-anchor="middle">H</text>
+<text class="lab" x="192" y="412">High</text>
+<rect x="312" y="396" width="22" height="22" rx="3" fill="#e0a526"/>
+<text class="let" x="323" y="412" text-anchor="middle">S</text>
+<text class="lab" x="342" y="412">Some concerns</text>
+<rect class="dash" x="462" y="396" width="22" height="22" rx="3"/>
+<text class="lab" x="492" y="412">† eligibility kept marked doubtful by the user (I1)</text>
+<text class="sm" x="12" y="448">Direction codes come from each trial’s own between-group test; they are not effect sizes.</text>
+<text class="sm" x="12" y="470">“other”: the trial reported only a total or composite score of unstated construction or valence, so no direction is coded (protocol amendment A11).</text>
+<text class="sm" x="12" y="492">Source: evidence-map.csv (extraction.csv joined with Overall rows of rob.csv), n = 6 studies.</text>
+</svg>
