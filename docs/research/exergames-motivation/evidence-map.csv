@@ -1,7 +1,7 @@
-study_id,population_group,direction,overall_risk_of_bias,eligibility_judges,kept_marked_doubtful_by_user
-oa-W7220097264,adults,other,High,clear,"yes: I1 (gate 2 decision, amendment A6)"
-pm-40567995,older adults,other,Some concerns,clear,no
-pm-41307454,adults,favours exergame,High,clear,no
-pm-41628428,adults,mixed across subscales,Some concerns,clear,no
-pm-42974341,adults,favours exergame,High,clear,no
-pm-43021294,children and adolescents,other,High,clear,no
+study_id,label,population_group,direction,overall_risk_of_bias,eligibility_judges,kept_marked_doubtful_by_user
+oa-W7220097264,Nikolova 2025,adults,other,High,clear,"yes: I1 (gate 2 decision, amendment A6)"
+pm-40567995,Huang 2025,older adults,no between-group difference,Some concerns,clear,no
+pm-41307454,Liu 2025,adults,favours exergame,High,clear,no
+pm-41628428,Ngo 2026,adults,mixed across subscales,Some concerns,clear,no
+pm-42974341,Anderson 2026,adults,favours exergame,High,clear,no
+pm-43021294,Tunc 2026,children and adolescents,other,High,clear,no

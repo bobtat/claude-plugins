@@ -1,0 +1,114 @@
+{
+  "studies": 6,
+  "ratings": {
+    "pairs": 30,
+    "raw_agreement": 0.9,
+    "kappa": 0.737,
+    "adjudicated": 3,
+    "escalated_taken_as_worse": 0
+  },
+  "eligibility": {
+    "judges_gave_the_same_verdict": 6,
+    "doubtful_studies": 0
+  },
+  "extraction_queries": {
+    "raised": 7,
+    "changed": 5,
+    "kept": 0
+  },
+  "disagreements": [
+    {
+      "study_id": "pm-40567995",
+      "domain": "D5 Selection of the reported result",
+      "judge_1": "High",
+      "judge_2": "Some concerns"
+    },
+    {
+      "study_id": "pm-41628428",
+      "domain": "D1 Randomization process",
+      "judge_1": "High",
+      "judge_2": "Some concerns"
+    },
+    {
+      "study_id": "pm-43021294",
+      "domain": "D5 Selection of the reported result",
+      "judge_1": "High",
+      "judge_2": "Some concerns"
+    }
+  ],
+  "decided": [
+    {
+      "study_id": "oa-W7220097264",
+      "kind": "extraction",
+      "item": "direction",
+      "extracted": "favours exergame",
+      "suggested": "other",
+      "taken": "other",
+      "basis": "adjudicated"
+    },
+    {
+      "study_id": "pm-40567995",
+      "kind": "rating",
+      "item": "D5 Selection of the reported result",
+      "judge_1": "High",
+      "judge_2": "Some concerns",
+      "taken": "Some concerns",
+      "basis": "adjudicated"
+    },
+    {
+      "study_id": "pm-40567995",
+      "kind": "extraction",
+      "item": "direction",
+      "extracted": "no between-group difference",
+      "suggested": "other",
+      "taken": "other",
+      "basis": "adjudicated"
+    },
+    {
+      "study_id": "pm-41307454",
+      "kind": "extraction",
+      "item": "exergame_platform",
+      "extracted": "immersive vr headset",
+      "suggested": "exercise equipment with game",
+      "taken": "exercise equipment with game",
+      "basis": "adjudicated"
+    },
+    {
+      "study_id": "pm-41307454",
+      "kind": "extraction",
+      "item": "n_randomized",
+      "extracted": "38 randomized in total (Participant Flow); per-arm numbers randomized not stated; analysed 36: intervention n=17, control n=19",
+      "suggested": "38 randomized; per arm 19 intervention and 19 control, derived from the stated flow (2 dropouts, both from the intervention arm; control n=19 analysed); analysed 36: intervention n=17, control n=19",
+      "taken": "38 randomized in total (Participant Flow); Abstract states 36 randomized: intervention n=17, control n=19; per-arm numbers randomized not stated in the Participant Flow; analysed 36: intervention n=17, control n=19",
+      "basis": "adjudicated"
+    },
+    {
+      "study_id": "pm-41628428",
+      "kind": "rating",
+      "item": "D1 Randomization process",
+      "judge_1": "High",
+      "judge_2": "Some concerns",
+      "taken": "Some concerns",
+      "basis": "adjudicated"
+    },
+    {
+      "study_id": "pm-43021294",
+      "kind": "rating",
+      "item": "D5 Selection of the reported result",
+      "judge_1": "High",
+      "judge_2": "Some concerns",
+      "taken": "Some concerns",
+      "basis": "adjudicated"
+    },
+    {
+      "study_id": "pm-43021294",
+      "kind": "extraction",
+      "item": "direction",
+      "extracted": "favours exergame",
+      "suggested": "other",
+      "taken": "other",
+      "basis": "adjudicated"
+    }
+  ],
+  "escalated": []
+}

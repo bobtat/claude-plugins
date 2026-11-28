@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 544" role="img" aria-labelledby="figTitle figDesc">
+<title id="figTitle">Risk-of-bias traffic-light plot (RoB 2), by study and domain</title>
+<desc id="figDesc">Risk of bias (RoB 2) for 6 studies across five domains and an overall judgment. Counts per domain — D1 Randomization process: 0 low, 5 some concerns, 1 high; D2 Deviations from intended interventions: 0 low, 5 some concerns, 1 high; D3 Missing outcome data: 0 low, 3 some concerns, 3 high; D4 Measurement of the outcome: 0 low, 5 some concerns, 1 high; D5 Selection of the reported result: 0 low, 6 some concerns, 0 high; Overall: 0 low, 2 some concerns, 4 high. No study was rated low risk in any domain. Overall is derived as the worst domain judgment. 3 cells were adjudicated: pm-40567995 D5, pm-41628428 D1, pm-43021294 D5. Per study, oa-W7220097264: D1 S, D2 S, D3 S, D4 H, D5 S, Overall H; pm-40567995: D1 S, D2 S, D3 S, D4 S, D5 S, Overall S; pm-41307454: D1 S, D2 S, D3 H, D4 S, D5 S, Overall H; pm-41628428: D1 S, D2 S, D3 S, D4 S, D5 S, Overall S; pm-42974341: D1 H, D2 S, D3 H, D4 S, D5 S, Overall H; pm-43021294: D1 S, D2 H, D3 H, D4 S, D5 S, Overall H.</desc>
+<style>
+.label { font: 13px system-ui, sans-serif; fill: #5a6680; }
+.head { font: bold 13px system-ui, sans-serif; fill: #5a6680; }
+.small { font: 12px system-ui, sans-serif; fill: #5a6680; }
+.let { font: bold 14px system-ui, sans-serif; fill: #1e2430; }
+.grid { stroke: #8a94a8; stroke-width: 1; fill: none; }
+.adj { fill: #5a6680; stroke: #d0d6e2; stroke-width: 1; }
+@media (prefers-color-scheme: dark) { .label, .head, .small { fill: #a9b6d0; } .grid { stroke: #6c7890; } }
+</style>
+<text class="head" x="12" y="28">Risk of bias (RoB 2), n = 6 studies</text>
+<text class="head" x="197.0" y="60" text-anchor="middle">D1</text>
+<text class="head" x="271.0" y="60" text-anchor="middle">D2</text>
+<text class="head" x="345.0" y="60" text-anchor="middle">D3</text>
+<text class="head" x="419.0" y="60" text-anchor="middle">D4</text>
+<text class="head" x="493.0" y="60" text-anchor="middle">D5</text>
+<text class="head" x="567.0" y="60" text-anchor="middle">Overall</text>
+<line class="grid" x1="530" y1="70" x2="530" y2="334"/>
+<text class="label" x="12" y="96.5">oa-W7220097264</text>
+<line class="grid" x1="12" y1="70" x2="604" y2="70"/>
+<circle cx="197.0" cy="92.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="197.0" y="97.0" text-anchor="middle">S</text>
+<circle cx="271.0" cy="92.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="271.0" y="97.0" text-anchor="middle">S</text>
+<circle cx="345.0" cy="92.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="345.0" y="97.0" text-anchor="middle">S</text>
+<circle cx="419.0" cy="92.0" r="16" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="419.0" y="97.0" text-anchor="middle">H</text>
+<circle cx="493.0" cy="92.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="493.0" y="97.0" text-anchor="middle">S</text>
+<circle cx="567.0" cy="92.0" r="16" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="567.0" y="97.0" text-anchor="middle">H</text>
+<text class="label" x="12" y="140.5">pm-40567995</text>
+<line class="grid" x1="12" y1="114" x2="604" y2="114"/>
+<circle cx="197.0" cy="136.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="197.0" y="141.0" text-anchor="middle">S</text>
+<circle cx="271.0" cy="136.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="271.0" y="141.0" text-anchor="middle">S</text>
+<circle cx="345.0" cy="136.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="345.0" y="141.0" text-anchor="middle">S</text>
+<circle cx="419.0" cy="136.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="419.0" y="141.0" text-anchor="middle">S</text>
+<circle cx="493.0" cy="136.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="493.0" y="141.0" text-anchor="middle">S</text>
+<path class="adj" d="M512.0 117.0 L517.0 122.0 L512.0 127.0 L507.0 122.0 Z"/>
+<circle cx="567.0" cy="136.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="567.0" y="141.0" text-anchor="middle">S</text>
+<text class="label" x="12" y="184.5">pm-41307454</text>
+<line class="grid" x1="12" y1="158" x2="604" y2="158"/>
+<circle cx="197.0" cy="180.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="197.0" y="185.0" text-anchor="middle">S</text>
+<circle cx="271.0" cy="180.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="271.0" y="185.0" text-anchor="middle">S</text>
+<circle cx="345.0" cy="180.0" r="16" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="345.0" y="185.0" text-anchor="middle">H</text>
+<circle cx="419.0" cy="180.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="419.0" y="185.0" text-anchor="middle">S</text>
+<circle cx="493.0" cy="180.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="493.0" y="185.0" text-anchor="middle">S</text>
+<circle cx="567.0" cy="180.0" r="16" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="567.0" y="185.0" text-anchor="middle">H</text>
+<text class="label" x="12" y="228.5">pm-41628428</text>
+<line class="grid" x1="12" y1="202" x2="604" y2="202"/>
+<circle cx="197.0" cy="224.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="197.0" y="229.0" text-anchor="middle">S</text>
+<path class="adj" d="M216.0 205.0 L221.0 210.0 L216.0 215.0 L211.0 210.0 Z"/>
+<circle cx="271.0" cy="224.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="271.0" y="229.0" text-anchor="middle">S</text>
+<circle cx="345.0" cy="224.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="345.0" y="229.0" text-anchor="middle">S</text>
+<circle cx="419.0" cy="224.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="419.0" y="229.0" text-anchor="middle">S</text>
+<circle cx="493.0" cy="224.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="493.0" y="229.0" text-anchor="middle">S</text>
+<circle cx="567.0" cy="224.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="567.0" y="229.0" text-anchor="middle">S</text>
+<text class="label" x="12" y="272.5">pm-42974341</text>
+<line class="grid" x1="12" y1="246" x2="604" y2="246"/>
+<circle cx="197.0" cy="268.0" r="16" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="197.0" y="273.0" text-anchor="middle">H</text>
+<circle cx="271.0" cy="268.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="271.0" y="273.0" text-anchor="middle">S</text>
+<circle cx="345.0" cy="268.0" r="16" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="345.0" y="273.0" text-anchor="middle">H</text>
+<circle cx="419.0" cy="268.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="419.0" y="273.0" text-anchor="middle">S</text>
+<circle cx="493.0" cy="268.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="493.0" y="273.0" text-anchor="middle">S</text>
+<circle cx="567.0" cy="268.0" r="16" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="567.0" y="273.0" text-anchor="middle">H</text>
+<text class="label" x="12" y="316.5">pm-43021294</text>
+<line class="grid" x1="12" y1="290" x2="604" y2="290"/>
+<circle cx="197.0" cy="312.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="197.0" y="317.0" text-anchor="middle">S</text>
+<circle cx="271.0" cy="312.0" r="16" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="271.0" y="317.0" text-anchor="middle">H</text>
+<circle cx="345.0" cy="312.0" r="16" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="345.0" y="317.0" text-anchor="middle">H</text>
+<circle cx="419.0" cy="312.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="419.0" y="317.0" text-anchor="middle">S</text>
+<circle cx="493.0" cy="312.0" r="16" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="493.0" y="317.0" text-anchor="middle">S</text>
+<path class="adj" d="M512.0 293.0 L517.0 298.0 L512.0 303.0 L507.0 298.0 Z"/>
+<circle cx="567.0" cy="312.0" r="16" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="567.0" y="317.0" text-anchor="middle">H</text>
+<line class="grid" x1="12" y1="334" x2="604" y2="334"/>
+<text class="head" x="628" y="78">Judgment</text>
+<circle cx="640" cy="104" r="11" fill="#3f9b4f" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="640" y="109" text-anchor="middle">L</text>
+<text class="label" x="658" y="108.5">Low</text>
+<circle cx="640" cy="134" r="11" fill="#d6a21e" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="640" y="139" text-anchor="middle">S</text>
+<text class="label" x="658" y="138.5">Some concerns</text>
+<circle cx="640" cy="164" r="11" fill="#c8463a" stroke="#7a8498" stroke-width="1"/>
+<text class="let" x="640" y="169" text-anchor="middle">H</text>
+<text class="label" x="658" y="168.5">High</text>
+<path class="adj" d="M640 188 L646 194 L640 200 L634 194 Z"/>
+<text class="label" x="658" y="198.5">Adjudicated</text>
+<text class="small" x="12" y="362">D1: Randomization process</text>
+<text class="small" x="12" y="380">D2: Deviations from intended interventions</text>
+<text class="small" x="12" y="398">D3: Missing outcome data</text>
+<text class="small" x="12" y="416">D4: Measurement of the outcome</text>
+<text class="small" x="12" y="434">D5: Selection of the reported result</text>
+<text class="small" x="12" y="452">Overall: derived as the worst domain judgment, not separately rated.</text>
+<text class="small" x="12" y="470">Adjudicated: judgment set by adjudication (basis = adjudicated). Source: rob.csv.</text>
+</svg>

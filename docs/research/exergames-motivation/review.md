@@ -9,6 +9,8 @@ date: 2026-11-28
 |---|---|
 | 2026-11-28 | Compiled. |
 | 2026-11-28 | Audit pass 1 (`audit.md`). Corrections left visible in place, each marked "Corrected after audit": the abstract and §4.1 now state the null between-group result of the trial recoded to `other` and say the count of trials favouring the exergame arm depends on two recodes the user has not individually ruled on (H1); §3.8 no longer says every difference was on autonomous forms of motivation (H2); the abstract's with-and-without sentence (M1); the "only trial" sentence in §3.4 (M2); a column without the high-risk trials added to the §4.1 table (M3); the as-treated analysis of one trial stated in §3.3 and §3.4 (M4); a research implication moved to the review's own limitations (M5); eight smaller wordings (L2 to L8). |
+| 2026-11-28 | The user's ruling on two `direction` codes, given after audit pass 1, and protocol amendment A14. `pm-40567995` [@huang2025effects] is restored to `no between-group difference`; `pm-43021294` [@tunc2026rehabilitative] stays `other`, ratified by the user. The direction counts are now two favouring the exergame arm, one mixed, one with no between-group difference and two not coded. Changed, with the earlier wording struck through and marked "Corrected after the user's ruling": the abstract, §2.4, §2.7, the tables and counts of §3.4, §3.5 to §3.8, §3.10, §4.1 and its sensitivity table, §4.3. Wording that called the two codes an open question is struck. Figures 3 and 5 now label studies by first author and year; Figure 5 is redrawn from the changed data. |
+| 2026-11-28 | Audit pass 2 (`critique-2.md`; an independent critic read the text above after the ruling was applied): 0 High, 3 Medium, 7 Low, all accepted. Corrections marked "Corrected after audit pass 2": the abstract's sentence on who changed which code (M1) and a clause on what the search probably missed; §2.4 now says that no protocol rule decides between tests that disagree and that one trial's code rests on the user's ruling by name (M2); the count of screening disagreements in §3.1 (L3); the control-arm caveat in §3.4 (L4); the adherence statement in §4.4 (L5); a row label in the §4.1 table (L6); the wording of §4.1's main paragraph (L2). Outside this file: the conduct disclosure's Audit section (M3), the note in Figure 3 (L1), checklist items 13c and 16a (L7). |
 
 > **This review was conducted by an automated agent pipeline.** Searching, screening,
 > data extraction and risk-of-bias assessment were done by language-model agents. A
@@ -38,11 +40,15 @@ marked as of doubtful eligibility by the user's decision. Four trials were rated
 high risk of bias overall and two at some concerns; none was rated low in any domain.
 By each trial's own between-group test at the end of the programme, two trials favoured
 the exergame arm (one against no intervention, one against conventional training on one
-of four subscales), one was mixed across subscales, and three reported only a total
+of four subscales), one was mixed across subscales, ~~and three reported only a total
 score whose construction or direction the paper does not state, so no direction was
+coded for them~~ *[Corrected after the user's ruling, 2026-11-28]* one, a trial not rated high, showed no
+difference between arms on its total score (between-group P read as 0.936), and two
+reported only a total or composite score whose construction or direction the paper
+does not state, with a difference on at least one of their tests, so no direction was
 coded for them. Both trials coded as favouring the exergame arm are rated at high risk
 of bias. ~~Setting the doubtful trial aside changes none of these counts except that
-two, not three, trials have no coded direction.~~ *[Corrected after audit, 2026-11-28]* Of the three with no
+two, not three, trials have no coded direction.~~ *[Corrected after audit, 2026-11-28]* ~~Of the three with no
 coded direction, one, a trial not rated high, reported no difference between arms on
 its total score (between-group P read as 0.936); one reported a difference in change
 scores but not in final scores; one is the doubtful trial. The count of two favouring
@@ -51,7 +57,20 @@ user adopted for another trial, and on which the user has not ruled individually
 first coded, three trials favoured the exergame arm, one showed no between-group
 difference, one was mixed and one had no coded direction. Setting the doubtful trial
 aside leaves the direction counts unchanged except that two, not three, trials have no
-coded direction, and three of five, not four of six, are at high risk of bias.
+coded direction, and three of five, not four of six, are at high risk of bias.~~
+*[Corrected after the user's ruling, 2026-11-28]* Of the two with no coded direction, one reported a
+difference in change scores but not in final scores, and one is the doubtful trial.
+~~Two of these codes were changed by the pipeline during appraisal without the user's
+instruction; the user has since ruled on both, restoring the null result to no
+between-group difference and ratifying the other as not coded.~~ *[Corrected after audit pass 2, 2026-11-28]*
+During appraisal the pipeline changed two codes without the user's instruction: the
+null trial's (to not coded) and the change-score trial's (from favouring the exergame
+arm to not coded). The user has since restored the first and ratified the second. The
+doubtful trial's code is the user's own earlier ruling. The search probably missed
+trials that reported motivation only in the full text, which are more likely to be
+null. Setting the doubtful
+trial aside leaves the direction counts unchanged except that one, not two, trials
+have no coded direction, and three of five, not four of six, are at high risk of bias.
 
 **Conclusion.** The included trials do not show whether exergame programmes change
 exercise motivation. Certainty is very low. The answer rests on six small open-access
@@ -155,7 +174,18 @@ intervention, coded from the reported test and not from the authors' conclusion.
 not an effect size. A code of `other` here means the trial reported only a total or
 composite score and the paper does not state how it is formed in a way that fixes its
 direction (amendment A11), so no direction is coded and the quoted result is reported
-instead.
+instead. *[Corrected after the user's ruling, 2026-11-28]* A between-group test that shows no difference
+is coded `no between-group difference` whatever the construction of the score, because
+a null result needs no direction (amendment A14). *[Corrected after audit pass 2, 2026-11-28]*
+The protocol has no rule for which test decides when a paper reports several
+between-group tests that disagree. One included trial does
+[@tunc2026rehabilitative]: its final scores did not differ between arms and its
+change scores and baseline-adjusted analysis did. Read on the final scores alone, A14
+would give it `no between-group difference`; it is coded `other` because the user
+ratified that code for this trial by name, under A11. That A14 applies only when no
+end-of-programme between-group test on the instrument shows a difference is this
+review's inference from the two rulings, not something the user stated, and it is
+listed for confirmation in the conduct disclosure.
 
 ### 2.5 Risk of bias
 
@@ -184,7 +214,7 @@ abstract.
 
 ### 2.7 Amendments to the protocol
 
-All thirteen are dated 2026-11-28, and are in `protocol.md` section 14 with reasons.
+All ~~thirteen~~ fourteen *[Corrected after the user's ruling, 2026-11-28]* are dated 2026-11-28, and are in `protocol.md` section 14 with reasons.
 
 | # | Change | Approved |
 |---|---|---|
@@ -201,6 +231,7 @@ All thirteen are dated 2026-11-28, and are in `protocol.md` section 14 with reas
 | A11 | A composite decides `direction` only when the paper states how it is formed and its valence follows; otherwise `other`. A time × group interaction counts as the end-of-intervention between-group test when no separate test is reported | User, gate 3 |
 | A12 | When an exercise machine is the game input and the game is seen in a headset, the platform is `exercise equipment with game` | User, gate 3 |
 | A13 | Reassignment at participants' request is rated under domain 2; domain 1 carries a constrained or pseudo-randomized procedure | User, gate 3 |
+| A14 | Qualifies A11: a between-group test on the motivation instrument that shows no difference is coded `no between-group difference` whatever the construction or valence of the score, because a null result needs no direction | User, after the audit |
 
 Two consequences of the gate 3 amendments went beyond the items the user ruled on, and
 are stated here and in the conduct disclosure. Under A10, the domain 5 rating both
@@ -211,8 +242,14 @@ judge agents per study, without a specific instruction from the user, so that th
 three such trials would be treated alike; all four queried the code and the
 adjudicator changed both to `other`. Before that, both original judges had accepted
 `no between-group difference` for `pm-40567995` and `favours exergame` for
-`pm-43021294`. The user has not ruled on these two changes; every count below that
-depends on them says so.
+`pm-43021294`. ~~The user has not ruled on these two changes; every count below that
+depends on them says so.~~ *[Corrected after the user's ruling, 2026-11-28]* The pipeline made these
+two changes before asking. The user then ruled on both: `pm-40567995` is restored to
+`no between-group difference`, under amendment A14, which the user adopted for it;
+`pm-43021294` stays `other`, ratified by the user under A11 as written, because the
+paper gives the score's range but does not say whether the amotivation items are
+reverse-scored. Both rulings are entered in the studies' adjudication files as decided
+by the user. Every count below follows them.
 
 ## 3. Results
 
@@ -251,8 +288,11 @@ were excluded by a human and how many were excluded by automation tools.
 Agreement between the two screeners: at title and abstract, 150 pairs, raw agreement
 0.967, Cohen's κ 0.935; at full text, 44 pairs, raw agreement 0.932, κ 0.732. These
 are two instances of one model; the number overstates what it would mean between two
-people. Five full-text disagreements went to the adjudicator: it decided three and
-escalated two to the user. Two screening decisions were made by the
+people. ~~Five full-text disagreements went to the adjudicator: it decided three and
+escalated two to the user.~~ *[Corrected after audit pass 2, 2026-11-28]* Five full-text items went to
+the adjudicator: three on which the screeners' decisions differed (the three behind
+the agreement figure above) and two that both screeners excluded under different
+codes. It decided three and escalated two to the user. Two screening decisions were made by the
 user: the inclusion of `pm-41628428` (random allocation with seven participants
 reassigned at their request; amendment A3) and the exclusion code of `pm-42261097`
 (amendment A9).
@@ -306,11 +346,13 @@ allocated as each paper describes.
 
 ![Risk-of-bias traffic-light plot](figures/rob-traffic-light.svg)
 
-**Figure 3.** RoB 2 judgments per study and domain. Generated from `rob.csv`,
-2026-11-28. Rows are labelled by study ID: `oa-W7220097264` is @nikolova2025effect,
-`pm-40567995` @huang2025effects, `pm-41307454` @liu2025effects, `pm-41628428`
-@ngo2026effects, `pm-42974341` @anderson2026gamified, `pm-43021294`
-@tunc2026rehabilitative. The Overall column is derived as the worst domain. Of the
+**Figure 3.** RoB 2 judgments per study and domain. Generated from `rob-labelled.csv`
+(`rob.csv` with a first-author and year label per study), 2026-11-28. Rows are
+labelled by first author and year; the record IDs are: Nikolova 2025,
+`oa-W7220097264` [@nikolova2025effect]; Huang 2025, `pm-40567995`
+[@huang2025effects]; Liu 2025, `pm-41307454` [@liu2025effects]; Ngo 2026,
+`pm-41628428` [@ngo2026effects]; Anderson 2026, `pm-42974341`
+[@anderson2026gamified]; Tunc 2026, `pm-43021294` [@tunc2026rehabilitative]. The Overall column is derived as the worst domain. Of the
 three cells marked adjudicated, two (domain 5 of `pm-40567995` and `pm-43021294`) were
 decided by the user under amendment A10; the data file has no separate label for a
 user ruling.
@@ -368,14 +410,16 @@ text, which are more likely to be null.*
 |---|---|---|---|---|
 | @anderson2026gamified | Wobble-board training | IMI Interest/Enjoyment 5.04 ± 1.18 against 3.17 ± 1.31; the other three subscales not different (p 0.61, 0.81, 0.45) | favours exergame | High |
 | @ngo2026effects | On-court tennis | Game arm higher at post-test on intrinsic motivation to know (22.39 against 17.21) and to accomplish (21.82 against 18.41), and also on external regulation (23.11 against 18.24); four subscales not different | mixed across subscales | Some concerns |
-| @huang2025effects | The same dance by video | One BREQ-2 score per arm; between-group P read as 0.936 | other | Some concerns |
+| @huang2025effects | The same dance by video | One BREQ-2 score per arm; between-group P read as 0.936 | ~~other~~ no between-group difference *[Corrected after the user's ruling, 2026-11-28]* | Some concerns |
 | @tunc2026rehabilitative | Conventional exercises | MSPPA total: absolute scores at week 24 not different (p 0.13); change scores and ANCOVA different (p = 0.015 for the ANCOVA) | other | High |
 | @nikolova2025effect † | "Traditional physical activity" | One composite: 4.08 (0.52) against 3.15 (0.46), with a group effect and a time × group interaction | other | High |
 | @liu2025effects | No intervention | BREQ-2 intrinsic regulation 3.71 (0.94) to 4.81 (0.26) against 3.63 (0.86) to 3.76 (0.61); identified regulation also in favour; three subscales without a significant interaction | favours exergame | High |
 
 **Against conventional exercise (five trials).** One trial is coded as favouring the
-exergame arm, one as mixed and three have no coded direction. With the doubtful trial
-set aside the counts are one, one and two.
+exergame arm, one as mixed ~~and three have no coded direction. With the doubtful trial
+set aside the counts are one, one and two.~~ *[Corrected after the user's ruling, 2026-11-28]*, one as
+showing no between-group difference and two have no coded direction. With the doubtful
+trial set aside the counts are one, one, one and one.
 
 The one trial coded as favouring the game arm does so on one of four subscales of the
 IMI, measured once, after training, with no baseline, and it is rated high for both
@@ -389,8 +433,9 @@ joined, not the arm they were allocated to (section 3.3). These two results do n
 each other, and they do not confirm each other either: the instruments and the
 constructs differ.
 
-For the three trials with no coded direction, the papers' own conclusions are more
-favourable than their tables.
+For ~~the three trials with no coded direction~~ *[Corrected after the user's ruling, 2026-11-28]* the
+trial coded as showing no between-group difference (the first below) and the two with
+no coded direction, the papers' own conclusions are more favourable than their tables.
 
 - One concludes that its Kinect programme improved exercise behaviour regulation. The
   test that supports this is a within-group change in the game arm; the control arm
@@ -414,7 +459,10 @@ on a game-driven exercise bike was followed by higher identified and intrinsic
 regulation than in a control arm that did nothing, by the time × group interaction
 (amendment A11 counts that test) [@liu2025effects]. The trial is rated high for missing
 data: both dropouts came from the game arm. Its own limitations section says the
-interactions were probably inflated by deterioration in the control arm, and the F and
+interactions were probably inflated by deterioration in the control arm *[Corrected after audit pass 2, 2026-11-28]*
+(the deterioration it names is in depressive symptoms, body fat and fitness; on the
+two motivation subscales that differed, the control arm's scores in the table above
+did not fall), and the F and
 P printed for the intrinsic-regulation interaction do not correspond to each other. A
 second trial had a no-training arm and did not give it the motivation instrument
 [@anderson2026gamified], so nothing can be said from it.
@@ -434,13 +482,17 @@ none against it.
 
 **Figure 5.** Included studies by population group and coded direction, marked by
 overall risk of bias. Generated from `evidence-map.csv` (derived from `extraction.csv`
-and the Overall rows of `rob.csv`), 2026-11-28. Study IDs as in Figure 3. The dagger
-marks the trial kept as doubtful by the user's decision.
+and the Overall rows of `rob.csv`, with a first-author and year label per study),
+2026-11-28. Studies are labelled by first author and year; record IDs as in the
+caption of Figure 3 and in the data file's `study_id` column. The dagger marks the
+trial kept as doubtful by the user's decision.
 
 Four trials are in healthy adults, and their codes are favours exergame (two), mixed
-(one) and none (one, the doubtful trial). The one trial in older adults
+(one) and none (one, the doubtful trial). ~~The one trial in older adults
 [@huang2025effects] and the one in adolescents [@tunc2026rehabilitative] each have no
-coded direction. No population group other than healthy adults has more than one
+coded direction.~~ *[Corrected after the user's ruling, 2026-11-28]* The one trial in older adults is
+coded as showing no between-group difference [@huang2025effects], and the one in
+adolescents has no coded direction [@tunc2026rehabilitative]. No population group other than healthy adults has more than one
 included trial, so nothing can be said about whether results differ by age or
 condition. No included trial recruited people with a neurological, cardiometabolic,
 oncological or mental-health condition; that is an absence in six open-access trials
@@ -451,7 +503,7 @@ and not a statement about the field.
 *Rests on: six studies at tier A; one of doubtful eligibility.*
 
 Three trials used a console or camera motion game, with codes of favours exergame
-[@anderson2026gamified], mixed [@ngo2026effects] and none [@huang2025effects]. One used
+[@anderson2026gamified], mixed [@ngo2026effects] and ~~none~~ no between-group difference *[Corrected after the user's ruling, 2026-11-28]* [@huang2025effects]. One used
 exercise equipment with a game seen through a headset [@liu2025effects], one a headset
 game the paper does not name [@nikolova2025effect], and one a balance board and
 phone-camera games [@tunc2026rehabilitative]. With one trial each, nothing can be said
@@ -469,8 +521,12 @@ Two trials measured motivation after the programme ended. One reports the same s
 BREQ-2 score one month later, with a between-group P read as 1.000
 [@huang2025effects]. The other reports its composite at five months, 3.92 (0.49)
 against 3.12 (0.43), with no between-group test at that time point
-[@nikolova2025effect]. Both are totals of unstated construction, so neither supports a
-statement about direction at follow-up. Without the doubtful trial, one study remains
+[@nikolova2025effect]. ~~Both are totals of unstated construction, so neither supports a
+statement about direction at follow-up.~~ *[Corrected after the user's ruling, 2026-11-28]* Both are
+totals of unstated construction. The first showed no difference between arms a month
+after the programme, which needs no direction to read (the `direction` code itself
+covers only the end of the programme); the second has no between-group test at
+follow-up, so nothing can be said from it about a difference between arms then. Without the doubtful trial, one study remains
 and this is a single-study finding. Four trials report no follow-up.
 
 Fewer than two trials report adherence in a way that can be compared between arms.
@@ -492,8 +548,12 @@ Three of the six report only a total or composite score
 [@nikolova2025effect; @huang2025effects; @tunc2026rehabilitative]. Each of these
 instruments includes amotivation alongside more autonomous forms of motivation, and
 none of the three papers says how the total treats items that point the other way.
-This is the main reason the review cannot code a direction for half of its trials.
-The three trials that report subscales are the three with a coded direction.
+~~This is the main reason the review cannot code a direction for half of its trials.
+The three trials that report subscales are the three with a coded direction.~~
+*[Corrected after the user's ruling, 2026-11-28]* This is why the review cannot code a direction for
+two of its trials; the third reported no difference between arms, which is coded as
+such without needing one (amendment A14). The three trials that report subscales are
+the three coded as favouring the exergame arm or as mixed.
 
 ~~Where subscales are reported, any difference between arms is on intrinsic or
 identified forms of motivation~~ *[Corrected after audit, 2026-11-28]* Where subscales are reported, all three
@@ -531,7 +591,7 @@ trials whose motivation result was worth putting in the abstract.
 
 | Outcome | Studies (randomized) | Certainty (GRADE) | Reasons |
 |---|---|---|---|
-| Motivation at end of programme, exergame against a non-exergame arm | 6 trials ([computed: 257]) | Very low | Risk of bias: 4 of 6 high overall, none low in any domain. Inconsistency: directions differ and three cannot be coded. Indirectness: instruments, comparators and populations differ; one comparison is with no exercise. Imprecision: small trials, no pooled estimate. Publication bias suspected from the search design |
+| Motivation at end of programme, exergame against a non-exergame arm | 6 trials ([computed: 257]) | Very low | Risk of bias: 4 of 6 high overall, none low in any domain. Inconsistency: directions differ and ~~three~~ two *[Corrected after the user's ruling, 2026-11-28]* cannot be coded. Indirectness: instruments, comparators and populations differ; one comparison is with no exercise. Imprecision: small trials, no pooled estimate. Publication bias suspected from the search design |
 | Motivation at follow-up | 2 trials | Not rated | Both report a total of unstated construction; one is of doubtful eligibility |
 | Adherence | 1 trial | Not rated | A single study, identical in both arms among completers |
 
@@ -543,8 +603,11 @@ Every included study is tier A, so no rating is withheld for lack of a full text
 
 The included trials do not answer the question. Two of six favour the exergame arm by
 their own test, both at high risk of bias, one of them against a control arm that did
-no exercise and one on a single subscale measured once. One is mixed. Three report a
-score that cannot be given a direction. No trial favours the comparator. *[Corrected after audit, 2026-11-28]*
+no exercise and one on a single subscale measured once. One is mixed. ~~Three report a
+score that cannot be given a direction.~~ *[Corrected after the user's ruling, 2026-11-28]* One showed no
+difference between arms on its total score (between-group P read as 0.936 at the end
+of the programme and 1.000 a month later) [@huang2025effects]. Two report a score
+that cannot be given a direction. No trial favours the comparator. ~~*[Corrected after audit, 2026-11-28]*
 "Cannot be given a direction" must not be read as "showed nothing": one of the three
 reported no difference between arms on its total (between-group P read as 0.936 at the
 end of the programme and 1.000 a month later) [@huang2025effects], and both of its
@@ -554,20 +617,32 @@ first coded as favouring the game arm [@tunc2026rehabilitative]. Both codes were
 changed to `other` during appraisal under amendment A11, by agents, without an
 individual ruling from the user (section 2.7). As first coded the counts were three
 favouring, one no difference, one mixed and one uncoded. Under either coding the
-answer below is the same. Counting
+answer below is the same.~~ *[Corrected after the user's ruling, 2026-11-28]* Of the two that
+cannot be given a direction, one reported a difference in change scores and in a
+baseline-adjusted analysis but not in final scores [@tunc2026rehabilitative]; it was
+first coded as favouring the game arm and recoded during appraisal, and the user has
+ratified the recode. The other is the doubtful trial [@nikolova2025effect]. The user
+restored ~~the first trial above~~ *[Corrected after audit pass 2, 2026-11-28]* the trial with the null result
+[@huang2025effects] to no between-group difference after the pipeline had
+recoded it without instruction (section 2.7). Had the ratified recode gone the other
+way, three trials and not two would count as favouring; the answer below would be the
+same. Counting
 these is vote-counting over small trials and is a weak basis for any statement; the
 counts are given because they are all there is.
 
 This is not evidence that exergames do not affect motivation. It is six small trials
-that measured motivation as one outcome among several and, in half of them, reported
-it in a form that cannot be interpreted. No other evidence was consulted, so the
+that measured motivation as one outcome among several and, in ~~half of them, reported
+it in a form that cannot be interpreted~~ *[Corrected after the user's ruling, 2026-11-28]* half
+of them, reported it only as a total of unstated construction; for two of those the
+result cannot be given a direction. No other evidence was consulted, so the
 review does not place this in the context of earlier work.
 
 **Sensitivity to risk of bias.** With the four trials rated high set aside, two remain:
 one mixed [@ngo2026effects] and one ~~with no coded direction~~ *[Corrected after audit, 2026-11-28]* whose total
-score showed no difference between arms and has no coded direction
-[@huang2025effects]. No trial coded as favouring the exergame arm remains, under
-either coding. The table below gives the other conclusions without the high-risk
+score showed no difference between arms ~~and has no coded direction~~
+*[Corrected after the user's ruling, 2026-11-28]* and is coded as such
+[@huang2025effects]. No trial coded as favouring the exergame arm remains~~, under
+either coding~~. The table below gives the other conclusions without the high-risk
 trials.
 
 **Sensitivity to eligibility.**
@@ -575,13 +650,14 @@ trials.
 | Conclusion | With all six | Without the doubtful trial (I1, authors' label only) | Without the four trials rated high *[column added after audit]* |
 |---|---|---|---|
 | Trials coded as favouring the exergame arm | 2 | 2; unchanged | 0 |
-| Trials with no coded direction | 3 | 2 | 1, and its total showed no between-group difference |
+| Trials coded as showing no between-group difference *[row added after the user's ruling, 2026-11-28]* | 1 | 1 | 1 |
+| Trials with no coded direction | ~~3~~ 2 | ~~2~~ 1 | ~~1, and its total showed no between-group difference~~ 0 *[corrected after the user's ruling, 2026-11-28]* |
 | Trials coded mixed | 1 | 1 | 1 |
 | Trials rated high overall | 4 of 6 | 3 of 5 | Not applicable; both remaining are some concerns |
 | Comparison with no intervention | 1 trial, favours | 1 trial, favours | No trial remains |
 | Populations with any trial | Healthy adults (4), older adults (1), adolescents (1) | Healthy adults (3), older adults (1), adolescents (1) | Healthy adults (1), older adults (1) |
-| Evidence at follow-up | 2 trials, neither with a coded direction | 1 trial; a single-study finding | 1 trial; its total showed no between-group difference a month after the programme |
-| Headset games represented | 1 trial | None coded as a headset game | None |
+| Evidence at follow-up | 2 trials~~, neither with a coded direction~~: one total with no between-group difference, one composite with no between-group test *[corrected after the user's ruling, 2026-11-28]* | 1 trial; a single-study finding | 1 trial; its total showed no between-group difference a month after the programme |
+| ~~Headset games represented~~ Trials coded `immersive vr headset` *[Corrected after audit pass 2, 2026-11-28]* | 1 trial | None coded as a headset game | None |
 | Certainty for the primary outcome | Very low | Very low | Very low: two small trials, one of them analysed by arm joined |
 | Overall answer: the trials do not show whether motivation changes | Holds | Holds | Holds |
 
@@ -623,9 +699,13 @@ trials.
   the title, abstract or index terms. Trials described only as "serious games" were
   not searched for. Two sources were searched; six named databases, registries and
   grey literature were not.
-- **The protocol changed thirteen times after approval**, each change dated and
-  approved by the user, one of them (A1) only after the fact. Four were made after
-  appraisal had begun, and they changed one overall rating and three direction codes.
+- **The protocol changed ~~thirteen~~ fourteen times after approval**, each change dated and
+  approved by the user, one of them (A1) only after the fact. ~~Four were made after
+  appraisal had begun, and they changed one overall rating and three direction codes.~~
+  *[Corrected after the user's ruling, 2026-11-28]* Five were made after appraisal had begun (A10 to
+  A14). Between them they decided one overall rating and left two direction codes
+  different from their first coding; a third code was changed by the pipeline without
+  the user's instruction and restored by the user under A14.
 - **Five excluded reports were read as preprints** (`oa-W4413422558`, `pm-42261097`,
   `oa-W4395005416`, `oa-W7164739728`, `s1-oa-W4411350775`) and one as an accepted
   manuscript (`pm-38801680`); a published version could differ.
@@ -646,7 +726,9 @@ raise, or to lower, exercise motivation compared with conventional exercise.
 For research, ~~three~~ two absences in the included set, each bounded by this search
 *[Corrected after audit, 2026-11-28]* (a third item, about registrations, described a gap in this review and has
 moved to section 4.3): half report a total score without saying how it was formed;
-none reports motivation and comparable adherence in both arms. These are statements about
+~~none reports motivation and comparable adherence in both arms~~ *[Corrected after audit pass 2, 2026-11-28]* none
+reports adherence for all randomized participants in both arms; the one that reports
+it does so for completers only and finds it identical [@anderson2026gamified]. These are statements about
 six trials, not about the field.
 
 ## 5. Other information
@@ -662,7 +744,7 @@ six trials, not about the field.
   for the review.
 - **Availability of data, code and materials (27).** Everything is in this directory:
   `protocol.md`, `search-log.md`, `records.csv`, `screening.csv`, `retrieval.csv`,
-  `prisma-flow.json`, `appraisals/`, `rob.csv`, `extraction.csv`, `evidence-map.csv`,
+  `prisma-flow.json`, `appraisals/`, `rob.csv`, `rob-labelled.csv`, `extraction.csv`, `evidence-map.csv`,
   `appraisal-agreement.json`, `checks/`, `figures/`, `references.bib`,
   `study-keys.csv`, `synthesis-plan.md`, the three gate files, `prisma-checklist.md`
   and `conduct-disclosure.md`. The scripts are those of the `literature-review` plugin.

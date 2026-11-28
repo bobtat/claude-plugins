@@ -10,6 +10,7 @@ independent human reviewers, and the differences are below.
 |---|---|---|
 | Approval gates | **Both decided by the user**, on 2026-11-28: gate 1 (the protocol) and gate 2 (the inclusion set, answered twice: once on the first set and once on the revised set). The run was attended throughout; nothing was pre-authorized | n/a |
 | Gate 3 | Not an approval gate. Four adjudications the appraisal adjudicator escalated were put to the user, who answered all of them on 2026-11-28 (`gate-3.md`) | n/a |
+| Ruling after the audit | Not a gate. The user ruled on 2026-11-28 on two `direction` codes the pipeline had changed without instruction, and adopted amendment A14 | n/a |
 | Search | One agent per source: PubMed through NCBI E-utilities (no key); OpenAlex through its REST API (keyless); backward citation searching through OpenAlex `referenced_works` | 6, 7 |
 | Screening | Two agents per record, identical inputs, no shared context. Title and abstract: 150 pairs, raw agreement 0.967, κ 0.935. Full text: 44 pairs, raw agreement 0.932, κ 0.732 | 8 |
 | Extraction | One agent per study, coded values from the protocol's lists and quoted, located numbers | 9 |
@@ -40,7 +41,13 @@ user also:
   `oa-W7220097264`; `exergame_platform` = `exercise equipment with game` for
   `pm-41307454`. These are entered in each study's adjudication file as decided by the
   user. The merge script labels them `adjudicated` in `rob.csv` and
-  `appraisal-agreement.json`; it has no separate label for a user ruling.
+  `appraisal-agreement.json`; it has no separate label for a user ruling;
+- after the audit, ruled on the two `direction` codes the pipeline had changed
+  without instruction (see Appraisal below): restored `pm-40567995` to `no
+  between-group difference`, adopting amendment A14 for it, and ratified `other` for
+  `pm-43021294` under A11 as written. Both are entered in the studies' adjudication
+  files as decided by the user; the merge records the first as `kept` (the extracted
+  value stands) and the second as `adjudicated`.
 
 The limits of roughly 150 records at screening and backward-only citation searching
 were set by the operator who launched the run, and accepted by the user at gate 1.
@@ -56,7 +63,8 @@ amendment A13), and two were escalated by the adjudicator and **decided by the u
 (`pm-40567995` and `pm-43021294`, domain 5, Some concerns, under amendment A10). The
 judges gave the same eligibility verdict on 6 of 6 studies (clear), and 0 studies are
 marked doubtful by a judge. The judges raised 7 queries of extracted values, on 5
-cells; all 5 cells were changed. Escalated and still open for a person: none.
+cells; 4 cells were changed and 1 was kept as extracted (`pm-40567995`, `direction`,
+by the user's ruling under A14). Escalated and still open for a person: none.
 Figures are from `appraisal-agreement.json`. The same caveat applies as to screening:
 this is two readings by one model, not two reviewers.
 
@@ -72,25 +80,44 @@ pair counted in the agreement statistics is the re-rated pair (the original pair
 agreed, so raw agreement is unchanged by the swap). The study's overall rating stays
 High because of domain 4. The original files are in `checks/superseded/`.
 
-**Two direction codes were re-examined without a specific instruction from the user.**
-Amendment A11, adopted for `oa-W7220097264`, says a composite decides `direction` only
-when the paper states how it is formed and its valence follows. Two other studies
-report only a total score (`pm-40567995`, BREQ-2; `pm-43021294`, MSPPA), and their
-`direction` codes (`no between-group difference` and `favours exergame`) had been
-accepted by both judges before A11 existed. The orchestrator sent that one value back
-to two fresh judge agents per study, on the same principle the user gave for domain
-5. All four queried it; the adjudicator changed both to `other`. This changed the
-review's count of trials favouring the exergame arm from three to two. The user did
-not rule on these two codes individually and may wish to; the files as they stood
-before are in `checks/superseded/`.
+**The pipeline changed two direction codes before asking the user; the user has
+since ruled on both.** Amendment A11, adopted for `oa-W7220097264`, says a composite
+decides `direction` only when the paper states how it is formed and its valence
+follows. Two other studies report only a total score (`pm-40567995`, BREQ-2;
+`pm-43021294`, MSPPA), and their `direction` codes (`no between-group difference` and
+`favours exergame`) had been accepted by both judges before A11 existed. Without an
+instruction from the user, the orchestrator sent that one value back to two fresh
+judge agents per study. All four queried it, and the adjudicator changed both to
+`other`. The review was written, audited and exported on those codes. The user then
+ruled, on 2026-11-28:
+
+- `pm-40567995` is **restored** to `no between-group difference`. The user adopted
+  amendment A14, qualifying A11: a between-group test on the I5 instrument that shows
+  no difference is coded `no between-group difference` whatever the construction or
+  valence of the score, because a null result needs no direction.
+- `pm-43021294` **stays** `other`. The user ratified the recode under A11 as written:
+  the paper gives the score's range but does not say whether the amotivation items
+  are reverse-scored.
+
+Both rulings were entered in the adjudication files, and the merge and the appraisal
+check were run again; no coded value was edited any other way. The direction counts
+are now two favouring the exergame arm, one mixed, one with no between-group
+difference and two not coded (`extraction.csv`). The files as they stood before each
+step are in `checks/superseded/`.
 
 **The adjudicator proposed two further protocol sentences that were not adopted**,
 because adopting one is the user's decision: (1) that a total including an
 opposite-valence subscale has a stated valence only when the paper says those items
 are reverse-scored or that higher means more autonomous motivation; (2) a rule for
 which between-group test decides `direction` when a paper reports several
-(`pm-43021294` reports three that disagree). Neither changes a value in this review
-as it stands.
+(`pm-43021294` reports three that disagree). Neither was needed for the values as
+they stand, because the user ruled on `pm-43021294` by name, under A11 as written.
+Proposal (2) is not moot, though: `pm-43021294`'s final scores do not differ between
+arms (p 0.13), and on that test alone A14 would give `no between-group difference`.
+The review reads the two rulings together as meaning that A14 applies only when no
+end-of-programme between-group test on the instrument shows a difference. That scope
+is the pipeline's inference; the user did not state it, and the protocol was not
+amended to say it.
 
 **One formatting repair was made by the orchestrator.** The extractor's row for
 `pm-41628428` had an unquoted comma inside its `registration` cell, which split the
@@ -122,7 +149,7 @@ words are in the paper named; it does not check paraphrase, or that a quotation
 supports the judgment it is cited for.
 
 Every number credited to a study in `review.md` was traced by script to that study's
-saved text: 37 traced before the audit and 39 after its corrections, 0 corrected or re-cited, 2 marked as the
+saved text: 37 traced before the audit, 39 after its corrections and 41 after the user's ruling was applied, 0 corrected or re-cited, 2 marked as the
 review's own arithmetic. Coded data items and risk-of-bias ratings were checked
 against the protocol's lists and scale, and each study's overall rating was derived
 by rule.
@@ -145,14 +172,17 @@ by rule.
   is from HTML through `weasyprint`.
 - **Nobody has looked at the figures as a person.** The orchestrator viewed
   rasterized renders of the flow diagram, the two risk-of-bias figures and the
-  evidence map.
+  evidence map, and viewed the traffic-light plot and the evidence map again after
+  they were redrawn with first-author and year labels.
 
 ## What a human must still do
 
-- [ ] Say whether A11 was meant to reach a null result on a total: the audit (`audit.md`, High 1) points out that `pm-40567995`'s between-group P of 0.936 is no difference whichever way its total points. The review states its counts under both codings
-- [ ] Confirm or reverse the two `direction` codes changed to `other` under A11
-      without an individual ruling (`pm-40567995`, `pm-43021294`), and decide on the
-      adjudicator's two proposed protocol sentences: `appraisals/*.adjudication.csv`
+- [ ] Confirm the scope of A14 the review infers (it applies only when no
+      end-of-programme between-group test shows a difference), or adopt a rule for
+      which test decides when a paper's tests disagree; `pm-43021294`'s code is the
+      user's ruling by name either way
+- [ ] Decide whether to adopt the adjudicator's other proposed protocol sentence
+      (above); it is not needed for a value in this review
 - [ ] Decide whether `oa-W7220097264` stays: it is included on the authors' label
       alone (A6) and marked doubtful by the user's decision: `gate-2.md`, `review.md`
       §3.8 and §4.1
@@ -168,9 +198,18 @@ by rule.
 
 ## Audit
 
-One audit pass with an independent critic and citation verifier, and a second pass of
-mechanical re-checks only (`audit.md`, `critique.md`). 2 High, 5 Medium and 8 Low
-findings; all accepted and corrected in `review.md` with the corrections left visible,
-except that the two recoded `direction` values were not reverted (a coded value is a
-reading, and the adopted wording of A11 gives `other`), and checklist items 13f and
-20d stay N/A. The corrected text was not read again by an independent agent.
+Pass 1: an independent critic and citation verifier (`audit.md`, `critique.md`). 2
+High, 5 Medium and 8 Low findings; all accepted and corrected in `review.md` with the
+corrections left visible, except that checklist items 13f and 20d stay N/A, and that
+the pipeline did not revert the two recoded `direction` values. The user later ruled
+on both: `pm-40567995` restored under A14, `pm-43021294` ratified under A11.
+
+After the user's ruling was applied, the quote check and the number trace were run
+again (660 quotations, 0 not found, 0 from another paper; 41 numbers traced, 0 not in
+source) and an independent critic read the final text and artifacts (pass 2,
+`critique-2.md`): 0 High, 3 Medium, 7 Low, all accepted and corrected, with the
+corrections in `review.md` left visible. One finding (M2) could be corrected only by
+disclosure: the review now says which rule it inferred, and the question is listed
+above for the user. **The sentences written to correct pass 2's findings have not
+been read by an independent agent**; the number trace and figure checker were run
+over them. Two audit passes is the limit the method sets.

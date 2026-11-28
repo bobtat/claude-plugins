@@ -13,8 +13,8 @@
   },
   "extraction_queries": {
     "raised": 7,
-    "changed": 5,
-    "kept": 0
+    "changed": 4,
+    "kept": 1
   },
   "disagreements": [
     {
@@ -61,7 +61,7 @@
       "item": "direction",
       "extracted": "no between-group difference",
       "suggested": "other",
-      "taken": "other",
+      "taken": "no between-group difference",
       "basis": "adjudicated"
     },
     {

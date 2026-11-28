@@ -30,3 +30,13 @@ decision at gate 2; the judges ruled all six eligible, so `extraction.csv` says 
 ## Certainty
 
 One outcome is rated: motivation at end of intervention, exergame versus non-exergame arm. Follow-up and adherence: too few studies to rate; said so.
+
+## Note added 2026-11-28, after the user's ruling on two direction codes
+
+This plan was written before the user's ruling. `pm-40567995` is now coded `no
+between-group difference` (amendment A14), not `other`; `pm-43021294` stays `other`,
+ratified by the user. Where the plan above says `pm-40567995` (other), read `no
+between-group difference`. Counts: favours exergame 2, mixed across subscales 1, no
+between-group difference 1, other 2. Without the four studies rated High: `pm-40567995`
+(no between-group difference) and `pm-41628428` (mixed) remain. Without
+`oa-W7220097264`: `other` goes from 2 to 1. `extraction.csv` is the source.

@@ -1,7 +1,7 @@
 # Audit — review.md (exergames and exercise motivation)
 
 **Mode:** full artifact set
-**Audited:** 2026-11-28 (pass 1)
+**Audited:** 2026-11-28 (pass 1; then the user's ruling and pass 2, recorded below under "After pass 1" and "Pass 2 (second and last)")
 **Coverage:** `review.md` against `protocol.md`, `records.csv`, `screening.csv`, `prisma-flow.json`, `appraisals/`, `rob.csv`, `extraction.csv`, `appraisal-agreement.json`, `fulltext/`, `figures/`, `checks/`, `references.bib`. The audit is run by the same pipeline that wrote the review; the critic and the citation verifier are separate agents that did not write it.
 
 ## Summary
@@ -42,11 +42,41 @@ Source: the critic's report (`critique.md`, 2 High, 5 Medium, 8 Low) merged with
 7. **Co-intervention in the doubtful trial's game arm not reported.** **Accepted; fixed.**
 8. **"construction is not given" too strong for the MSPPA; preprints not named.** **Accepted; fixed.**
 
-## Pass 2
+## Mechanical re-check after pass 1's corrections
 
 Run after the corrections, mechanical only: the number trace was re-run over the corrected `review.md` (39 traced, 0 not in source), and the citation keys are unchanged (9 cited, 9 in `references.bib`). **The critic was not run a second time**, so the corrected sentences have not been read cold by an agent that did not write them.
 
-## Mechanical checks (steps 1, 4, 5)
+## After pass 1: the user's ruling, 2026-11-28
+
+Pass 1's High 1 left two `direction` codes for the user. The user ruled: `pm-40567995` is restored to `no between-group difference`, with protocol amendment A14 (a between-group test on the I5 instrument that shows no difference is coded `no between-group difference` whatever the construction or valence of the score, because a null result needs no direction); `pm-43021294` stays `other`, ratified under A11 as written. Both were entered in the studies' adjudication files as decided by the user, and `appraisal_merge.py` and `appraisal_check.py` were run again. Nothing else in the coded data changed: `rob.csv` is identical in every rating, and `extraction.csv` differs in one cell. `appraisal-agreement.json` now shows 7 queries raised, 4 changed, 1 kept. The direction counts in `extraction.csv` are favours exergame 2, mixed across subscales 1, no between-group difference 1, other 2.
+
+Brought into line: `evidence-map.csv` and Figure 5 (redrawn by a figure agent from the data file); every direction count in `review.md`, with the earlier wording struck through; `conduct-disclosure.md`; `prisma-checklist.md`; the exports. Figures 3 and 5 now label studies by first author and year, with record IDs in the figure notes, the captions and the data files (`rob-labelled.csv`, `evidence-map.csv`). The statements in pass 1 above that the codes "remain for the user" and that "the user has not ruled" describe the state at pass 1 and are superseded by this section. Files as they stood before are in `checks/superseded/`.
+
+## Pass 2 (second and last), 2026-11-28
+
+Run on the final text, after the ruling was applied. Pass 2 as first recorded above was mechanical only; this replaces it.
+
+- **Quotations**, re-run over the screening, adjudication, appraisal, query and rating files: 660 checked, 643 verified in the papers, 17 the protocol's own words, 0 not found, 0 transplant, 0 uncheckable (`audit-quotes.md`).
+- **Numbers**, re-run over `review.md`: 41 traced, 0 not in source, both before and after the critic's corrections (`audit-numbers.md`).
+- **Figures**: `check_figure.py` passes on all five; the orchestrator viewed renders of the two that changed.
+- **Critic**: `literature-review:review-critic`, reading cold, wrote `critique-2.md`: **0 High, 3 Medium, 7 Low**. It found every count of directions and risk-of-bias ratings, and the flow arithmetic, in agreement with the data files, and no standing text that calls the two codes open.
+
+| # | Finding | Outcome |
+|---|---|---|
+| M1 | The abstract's "Two of these codes were changed by the pipeline" pointed at the two uncoded trials, one of which (the doubtful trial) was coded by the user's own ruling, and then said one was restored to a null | **Accepted; fixed.** Sentence struck and rewritten to say which code the pipeline changed and which the user ruled on |
+| M2 | A14 as stated would code `pm-43021294` as no between-group difference on its final-score test (p 0.13); the rule that yields `other` was stated only in Figure 5's note | **Accepted; fixed by disclosure, not by a rule.** §2.4 and the conduct disclosure now say the protocol has no rule for tests that disagree, that this trial's code rests on the user's ruling by name, and that the scope of A14 is the review's inference; it is listed for the user. Figure 5's note no longer states it as a rule. **Not done:** the protocol was not amended; that is the user's decision |
+| M3 | The conduct disclosure's Audit section still said the recodes were not reverted | **Accepted; fixed** |
+| L1 | Figure 3's note and description attributed all three marked cells to adjudication; two are user rulings | **Accepted; fixed** in the note and `<desc>`: the mark means the judges differed and the adjudicator or, on escalation, the user settled it. The figure has one mark for both because its data file has one label |
+| L2 | §4.1's main paragraph: an orphaned correction marker and an ambiguous "the first trial above" | **Accepted; fixed** |
+| L3 | §3.1 "five full-text disagreements" against three in the agreement statistic | **Accepted; fixed** (three decision disagreements, two differences of exclusion code; checked against `screening.csv`) |
+| L4 | The control-arm deterioration caveat for `pm-41307454` sat beside motivation scores that did not fall | **Accepted; fixed** |
+| L5 | §4.4's adherence statement disagreed with §3.7 and §3.10 | **Accepted; fixed** |
+| L6 | Sensitivity-table row "Headset games represented" left out a game seen through a headset but coded as exercise equipment | **Accepted; fixed** (row relabelled by the code) |
+| L7 | Checklist items 13c and 16a marked `met` for machine-made displays; the abstract lacked the protocol's statement of what the search probably missed | **Accepted; fixed** |
+
+**Left unread:** the sentences written to correct pass 2's findings were not read by an independent agent. Two passes is the method's limit.
+
+## Mechanical checks (steps 1, 4, 5), as run at pass 1
 
 - **Inventory.** 9 works cited in the text, 9 entries in `references.bib`; every key in the text is in the file and every entry is cited. Near-miss and not-retrieved records are identified by record ID and are not citations.
 - **Flow arithmetic**, recomputed from `records.csv` and `screening.csv`: databases 189 (PubMed 83, OpenAlex 106) − 49 duplicates = 140 screened; − 80 excluded (all `automation`) = 60 sought; − 20 not retrieved = 40 assessed; − 34 excluded (E5 22, E1 8, E4 2, E6 1, E9 1) = 6 included. Citation searching: 10 identified, 0 duplicates, 5 excluded at title/abstract, 5 sought, 1 not retrieved, 4 assessed, 4 excluded (E4 2, E5 2), 0 included. Prose, `prisma-flow.json` and the figure agree with the CSVs.
@@ -119,4 +149,4 @@ This check confirms that each identifier resolves to a record whose title matche
 - One reference (`nikolova2025effect`) has no DOI or PMID; it was matched on an OpenAlex ID and the publisher's page, which share a source.
 - Bibliography fields beyond title, first author and year.
 - How the figures read to a person. The orchestrator viewed rasterized renders; `check_figure.py` passes on all five.
-- The corrected text after pass 1, beyond the mechanical re-checks.
+- The sentences written to correct pass 2's findings, beyond the mechanical re-checks.
