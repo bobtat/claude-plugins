@@ -44,6 +44,34 @@ def run(script, *args, cwd=None):
     return p.returncode, p.stdout, p.stderr
 
 
+def load(path):
+    """Import a script as a module, without leaving a bytecode cache beside it."""
+    import importlib.util
+    sys.dont_write_bytecode = True
+    spec = importlib.util.spec_from_file_location(os.path.basename(path)[:-3], path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def tiny_pdf(lines):
+    """A one-page PDF holding these lines of text, built by hand."""
+    stream = "BT /F1 6 Tf 40 800 Td 7 TL\n" + "\n".join(
+        "(" + l.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)") + ") Tj T*" for l in lines) + "\nET"
+    objs = ["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+            f"<< /Length {len(stream)} >>\nstream\n{stream}\nendstream",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"]
+    out, offs = "%PDF-1.4\n", []
+    for i, o in enumerate(objs, start=1):
+        offs.append(len(out))
+        out += f"{i} 0 obj\n{o}\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objs) + 1}\n0000000000 65535 f \n" + "".join(f"{o:010d} 00000 n \n" for o in offs)
+    out += f"trailer\n<< /Size {len(objs) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n"
+    return out.encode("latin-1")
+
+
 def read(path):
     with open(path, encoding="utf-8") as f:
         return f.read()
@@ -154,6 +182,41 @@ def fetch():
                          "--out", out, "--log", os.path.join(t, "log.csv"))
         check("fetch_fulltext refuses a dotted record ID before fetching anything",
               rc == 2 and not os.path.exists(out), f"exit {rc}: {err[-160:]}")
+
+        # A record with no arXiv ID or PMID is not looked up anywhere unless asked.
+        recs = os.path.join(t, "records.csv")
+        with open(recs, "w") as f:
+            f.write("record_id,doi,arxiv_id,pmid,openalex_id,title\nX1,10.1000/x1,,,,A paper nobody indexed\n")
+        log = os.path.join(t, "log2.csv")
+        rc, o, err = run(FETCH, recs, "X1", "--out", out, "--log", log)
+        check("without --oa-copies a record with no arXiv ID or PMID is logged, not looked up",
+              rc == 0 and "retrieved 0 of 1" in o and "--oa-copies not given" in read(log), f"exit {rc}: {o} {err[-160:]}")
+
+    ff = load(FETCH)
+    work = {"best_oa_location": {"is_oa": True, "version": "publishedVersion", "pdf_url": "https://j.example/a.pdf",
+                                 "landing_page_url": "https://j.example/a"},
+            "locations": [{"is_oa": False, "pdf_url": "https://paywall.example/a.pdf"},
+                          {"is_oa": True, "version": "submittedVersion", "pdf_url": None,
+                           "landing_page_url": "https://preprints.example/a"},
+                          {"is_oa": True, "version": "publishedVersion", "pdf_url": "https://j.example/a.pdf"}]}
+    check("only copies OpenAlex marks open access are tried, best first, each once, with its version",
+          ff.oa_urls(work) == [("publishedVersion", "https://j.example/a.pdf"), ("publishedVersion", "https://j.example/a"),
+                               ("submittedVersion", "https://preprints.example/a")], str(ff.oa_urls(work)))
+    check("a work with no open-access copy yields nothing to fetch",
+          ff.oa_urls({"best_oa_location": None, "locations": [{"is_oa": False, "pdf_url": "https://p.example/x.pdf"}]}) == [])
+    page = '<html><head><meta content="/article/download/20/20" name="citation_pdf_url"><meta name="citation_title" content="T"></head></html>'
+    check("a landing page's declared PDF link is found and made absolute",
+          ff.pdf_link(page, "https://j.example/index.php/j/article/view/20") == "https://j.example/article/download/20/20")
+    check("a landing page that declares no PDF gives none", ff.pdf_link("<html><a href='x.pdf'>PDF</a></html>", "https://j.example/") is None)
+    if ff.shutil.which("pdftotext"):
+        body = ["Effect of a test intervention on a test outcome"] + [f"Line {i} of the methods says what was done to whom." for i in range(90)]
+        text, why = ff.pdf_to_text(tiny_pdf(body))
+        check("a PDF with a text layer becomes text", text is not None and "Line 89 of the methods" in text, why)
+        check("the converted text carries the title", text is not None and ff.title_matches(body[0], text))
+        text, why = ff.pdf_to_text(tiny_pdf(["Scanned page"]))
+        check("a PDF with almost no text is refused as a scan", text is None and why == "pdf-has-no-text-layer", str(why))
+    else:
+        print("  note  pdftotext is not installed: the three PDF conversion checks did not run")
 
 
 # ---------------------------------------------------------------- screening_stats.py and the flow
