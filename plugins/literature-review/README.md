@@ -91,7 +91,9 @@ If you enable a paper-search server yourself, the plugin's agents will not use i
 - **Optional: `OPENALEX_API_KEY`.** Without it, forward citation searching outside biomedicine does not run, and OpenAlex search depends on a shared quota. A missing key is raised at the first gate.
 - **Optional, for Word and PDF:** `pandoc`; an SVG rasterizer (`rsvg-convert`, `inkscape`, ImageMagick with an SVG delegate, or `svglib` through `uvx`); and for PDF an engine (`xelatex`, `tectonic`, `typst` or `weasyprint`). The toolchain is probed before the first gate, and a missing format is reported, never silently dropped.
 
-Full texts come from arXiv's HTML rendering and open-access PubMed Central. Anything else is logged as not retrieved unless you supply it; open-access routes only.
+- **Optional: `pdftotext`** (poppler). Without it, an open-access copy that exists only as a PDF cannot be read.
+
+Full texts come from three places: arXiv's HTML rendering, open-access PubMed Central, and the open-access copies OpenAlex lists for a paper, which are read as PDFs. Anything else is logged as not retrieved unless you supply it. A paywalled paper is never fetched.
 
 ## Installation
 
@@ -171,7 +173,7 @@ literature-review/
 
 One full run, on an arXiv-heavy computing question, is the evidence behind this version. It did not exercise:
 
-- any field whose papers are not on arXiv or in open-access PubMed Central;
+- any field whose papers are mostly paywalled: in a health-science run, the first two routes reached 27 of 62 reports and the open-access-copy route 15 more in a test, leaving a third unread;
 - stopping at a gate for a person, or resuming a stopped run;
 - a full review appraised by an extractor and two judges per study: that design has been tested on three studies only;
 - an adjudicator settling a rating in a live run;

@@ -127,9 +127,12 @@ Deliberately not covered:
 The pipeline has run end to end once, unattended, on an arXiv-heavy computing
 question. What that run did not exercise, most likely to be wrong first:
 
-1. **Any field that is not on arXiv or in open-access PubMed Central.** 62 of the 64
-   full texts in that run came from arXiv's HTML rendering. Elsewhere most reports
-   will be "not retrieved" unless the user supplies them.
+1. **Any field whose papers are mostly paywalled.** 62 of the 64 full texts in that
+   run came from arXiv's HTML rendering. In a later health-science run, arXiv and
+   open-access PubMed Central reached 27 of 62 reports; the open-access copies
+   OpenAlex lists, read as PDFs, reached 15 more in a test. The rest are "not
+   retrieved" unless the user supplies them, and text taken from a PDF is rougher
+   than the other routes'.
 2. **Resuming, and stopping at a gate for a person.** The run passed both gates
    pre-authorized. The stop-and-resume path has not run.
 3. **A reader correcting a failed quotation.** The first-check procedure has run; no
